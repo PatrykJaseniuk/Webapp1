@@ -22,6 +22,7 @@ CREATE INDEX idx_leases_tenant_id ON public.lease_agreements(tenant_id);
 CREATE INDEX idx_leases_property_id ON public.lease_agreements(property_id);
 CREATE INDEX idx_leases_status ON public.lease_agreements(status);
 CREATE INDEX idx_leases_dates ON public.lease_agreements(start_date, end_date);
+CREATE INDEX idx_leases_created_by ON public.lease_agreements(created_by);
 -- Composite index for finding active leases per property
 CREATE INDEX idx_leases_property_active ON public.lease_agreements(property_id, status) 
     WHERE status = 'active';
@@ -37,6 +38,7 @@ CREATE INDEX idx_billing_items_lease_id ON public.billing_items(lease_id);
 CREATE INDEX idx_billing_items_status ON public.billing_items(status);
 CREATE INDEX idx_billing_items_due_date ON public.billing_items(due_date);
 CREATE INDEX idx_billing_items_type ON public.billing_items(item_type);
+CREATE INDEX idx_billing_items_created_by ON public.billing_items(created_by);
 -- Composite index for unpaid/overdue items
 CREATE INDEX idx_billing_unpaid ON public.billing_items(status, due_date) 
     WHERE status IN ('pending', 'overdue');
@@ -45,6 +47,7 @@ CREATE INDEX idx_billing_unpaid ON public.billing_items(status, due_date)
 CREATE INDEX idx_payments_billing_item_id ON public.payments(billing_item_id);
 CREATE INDEX idx_payments_date ON public.payments(payment_date DESC);
 CREATE INDEX idx_payments_method ON public.payments(payment_method);
+CREATE INDEX idx_payments_created_by ON public.payments(created_by);
 
 -- METERS INDEXES
 CREATE INDEX idx_meters_property_id ON public.meters(property_id);
@@ -60,6 +63,8 @@ CREATE INDEX idx_meter_readings_created_by ON public.meter_readings(created_by);
 CREATE INDEX idx_utility_bills_lease_id ON public.utility_bills(lease_id);
 CREATE INDEX idx_utility_bills_meter_id ON public.utility_bills(meter_id);
 CREATE INDEX idx_utility_bills_billing_item_id ON public.utility_bills(billing_item_id);
+CREATE INDEX idx_utility_bills_start_reading ON public.utility_bills(start_reading_id);
+CREATE INDEX idx_utility_bills_end_reading ON public.utility_bills(end_reading_id);
 CREATE INDEX idx_utility_bills_period ON public.utility_bills(billing_period_start, billing_period_end);
 
 -- UTILITY PRICES INDEXES
