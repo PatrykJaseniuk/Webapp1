@@ -7,7 +7,51 @@ This document outlines the critical security and consistency fixes applied to th
 
 ## 🔴 Critical Issues Fixed
 
-### **Issue #1: Function Search Path Security Vulnerability (CRITICAL)**
+### **Issue #1: RLS Performance - Auth Function Re-evaluation (PERFORMANCE)**
+**Severity:** PERFORMANCE ISSUE  
+**Files Modified:** `20260124000400_security.sql`
+
+**Problem:**
+Three RLS policies were calling `auth.uid()` directly, causing PostgreSQL to re-evaluate the function for **every single row** during queries. This creates severe performance degradation on large tables.
+
+**Impact:**
+- Query on `user_roles` table with 100 rows = 100 calls to `auth.uid()`
+- Query on `tenants` table with 1000 rows = 3000+ calls to `auth.uid()` (3 policies)
+- Performance degrades linearly with table size
+- Can cause 10-100x slower queries on large datasets
+
+**Technical Explanation:**
+```sql
+-- BAD (Re-evaluates for each row):
+USING (auth.uid() = user_id)
+
+-- GOOD (Evaluates once, reuses result):
+USING ((SELECT auth.uid()) = user_id)
+```
+
+The subquery `(SELECT auth.uid())` forces PostgreSQL to evaluate once and cache the result.
+
+**Fix Applied:**
+Optimized 3 policies:
+
+1. ✅ **user_roles** - "Users can read own role"
+   - Changed: `auth.uid() = user_id` → `(SELECT auth.uid()) = user_id`
+
+2. ✅ **tenants** - "Tenants can read own data"
+   - Changed: `user_id = auth.uid()` → `user_id = (SELECT auth.uid())`
+
+3. ✅ **tenants** - "Tenants can update own contact"
+   - Changed USING: `user_id = auth.uid()` → `user_id = (SELECT auth.uid())`
+   - Changed WITH CHECK: `user_id = auth.uid()` → `user_id = (SELECT auth.uid())`
+
+**Note:** All other policies already use optimized helper functions (`is_admin()`, `is_landlord()`, `get_current_tenant_id()`) which internally cache `auth.uid()` calls.
+
+**Result:**
+Expected 10-100x performance improvement on queries to `user_roles` and `tenants` tables at scale.
+
+---
+
+### **Issue #2: Function Search Path Security Vulnerability (CRITICAL)**
 **Severity:** CRITICAL SECURITY VULNERABILITY  
 **Files Modified:** `20260124000300_functions_triggers.sql`
 

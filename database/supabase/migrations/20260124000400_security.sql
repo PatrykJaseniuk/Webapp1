@@ -95,7 +95,7 @@ CREATE POLICY "Users can read own role"
     ON public.user_roles
     FOR SELECT
     TO authenticated
-    USING (auth.uid() = user_id);
+    USING ((SELECT auth.uid()) = user_id);
 
 -- Admins can read all roles
 CREATE POLICY "Admins can read all roles"
@@ -169,15 +169,15 @@ CREATE POLICY "Tenants can read own data"
     ON public.tenants
     FOR SELECT
     TO authenticated
-    USING (user_id = auth.uid());
+    USING (user_id = (SELECT auth.uid()));
 
 -- Tenants can update their own contact information
 CREATE POLICY "Tenants can update own contact"
     ON public.tenants
     FOR UPDATE
     TO authenticated
-    USING (user_id = auth.uid())
-    WITH CHECK (user_id = auth.uid());
+    USING (user_id = (SELECT auth.uid()))
+    WITH CHECK (user_id = (SELECT auth.uid()));
 
 -- ================================================
 -- STEP 6: LEASE AGREEMENTS POLICIES
