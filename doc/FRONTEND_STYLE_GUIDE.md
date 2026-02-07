@@ -2,6 +2,8 @@
 
 **Purpose:** Rules and patterns for Next.js/React frontend code. Guide for LLMs.
 
+**All code in FUNCTIONAL style**
+
 ## ⚠️ Architecture: Client-Only (No Server Components)
 
 This is a **fully client-side application**:
@@ -185,18 +187,6 @@ const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
 ## Error Handling (Client-Side)
 
-### Result Object Pattern
-```typescript
-const result = await database.from('table').select('*');
-
-// Supabase returns: { data: [...], error: null } or { data: null, error: Error }
-const handleResponse = (result: any) => {
-  return result.error ? 
-    { success: false, message: result.error.message } :
-    { success: true, data: result.data };
-};
-```
-
 ### In Components
 ```typescript
 const state = useAsync(async () => {
@@ -209,126 +199,6 @@ return (
   state.loading ? <Spinner /> :
   <ItemList items={state.value?.data ?? []} />
 );
-```
-
----
-
-## Authentication Pattern
-
-### Auth Context
-```typescript
-'use client';
-import { createContext, useContext, useEffect, useState } from 'react';
-import { database } from '@/api/database';
-
-interface AuthContextType {
-  user: any | null;
-  role: string | null;
-  loading: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string, role: string) => Promise<any>;
-  signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<any>(null);
-  const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const initAuth = async () => {
-      const { data: { user } } = await database.auth.getUser();
-      
-      if (user) {
-        setUser(user);
-        const { data: roleData } = await database
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-        setRole(roleData?.role ?? null);
-      }
-      
-      setLoading(false);
-    };
-
-    initAuth();
-  }, []);
-
-  const value = {
-    user,
-    role,
-    loading,
-    signIn: async (email: string, password: string) => {
-      const result = await database.auth.signInWithPassword({ email, password });
-      return result;
-    },
-    signUp: async (email: string, password: string, role: string) => {
-      const authResult = await database.auth.signUp({ email, password });
-      if (authResult.error) return authResult;
-      
-      const roleResult = await database.from('user_roles').insert({
-        user_id: authResult.data.user?.id,
-        role,
-      });
-      return roleResult.error ? { error: roleResult.error } : { data: authResult.data };
-    },
-    signOut: async () => {
-      await database.auth.signOut();
-      setUser(null);
-      setRole(null);
-    },
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used inside AuthProvider');
-  return ctx;
-};
-```
-
-### Protected Route Component
-```typescript
-'use client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-
-export const ProtectedRoute = ({ 
-  children, 
-  requiredRole 
-}: { 
-  children: React.ReactNode; 
-  requiredRole?: string; 
-}) => {
-  const { user, role, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-    if (!loading && requiredRole && role !== requiredRole) {
-      router.push('/access-denied');
-    }
-  }, [user, role, loading, requiredRole, router]);
-
-  return (
-    loading ? <div>Loading...</div> :
-    !user ? null :
-    requiredRole && role !== requiredRole ? null :
-    children
-  );
-};
 ```
 
 ---
@@ -450,50 +320,10 @@ export const Card = ({ title, children }: any) => (
 
 ---
 
-## File Structure
-
-```
-frontend/src/
-├── api/
-│   ├── database.ts          # Supabase client
-│   ├── database.types.ts    # Auto-generated types
-├── app/
-│   ├── layout.tsx           # Root layout
-│   ├── page.tsx             # Home page
-│   ├── login/page.tsx       # Login page
-│   ├── items/
-│   │   ├── page.tsx         # Items list
-│   │   └── [id]/page.tsx    # Item detail
-├── components/
-│   ├── Button.tsx
-│   ├── Button.module.css
-│   ├── ItemList.tsx
-│   ├── ItemList.module.css
-├── contexts/
-│   └── AuthContext.tsx      # Auth state
-└── styles/
-    └── globals.css
-```
-
 ---
 
 ## Common Patterns
 
-### Form Validation
-```typescript
-const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-const isValidPassword = (pwd: string) => pwd.length >= 8;
-
-return (
-  <form>
-    <input onChange={(e) => setEmail(e.target.value)} />
-    {email && !isValidEmail(email) && <span>Invalid email</span>}
-    <button disabled={!isValidEmail(email) || !isValidPassword(password)}>
-      Sign Up
-    </button>
-  </form>
-);
-```
 
 ### Permission Checks
 ```typescript
@@ -524,132 +354,3 @@ const [actionState, handleDelete] = useAsyncFn(async (id: string) => {
 ```
 
 ---
-
-## Client-Only Architecture Patterns
-
-### localStorage for State Persistence
-```typescript
-'use client';
-import { useEffect, useState } from 'react';
-
-// Custom hook for persistent state
-export const useLocalStorage = <T,>(key: string, initial: T) => {
-  const [value, setValue] = useState<T>(initial);
-  const [hydrated, setHydrated] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(key);
-    if (stored) {
-      setValue(JSON.parse(stored));
-    }
-    setHydrated(true);
-  }, [key]);
-
-  // Save to localStorage when value changes
-  useEffect(() => {
-    if (hydrated) {
-      localStorage.setItem(key, JSON.stringify(value));
-    }
-  }, [value, key, hydrated]);
-
-  return [value, setValue, hydrated] as const;
-};
-
-// Usage: persist user preferences
-const [theme, setTheme, hydrated] = useLocalStorage('theme', 'light');
-return hydrated ? <App theme={theme} /> : null; // Avoid hydration mismatch
-```
-
-### Auth Token Management (Client-Only)
-```typescript
-'use client';
-import { useEffect, useState } from 'react';
-import { database } from '@/api/database';
-
-export const useAuthToken = () => {
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const getToken = async () => {
-      const { data: { session } } = await database.auth.getSession();
-      setToken(session?.access_token ?? null);
-      setLoading(false);
-    };
-
-    getToken();
-
-    // Listen for auth changes
-    const { data: { subscription } } = database.auth.onAuthStateChange(async (event, session) => {
-      setToken(session?.access_token ?? null);
-    });
-
-    return () => subscription?.unsubscribe();
-  }, []);
-
-  return { token, loading };
-};
-```
-
-### Hydration Safety (SSG + Client-Only)
-```typescript
-'use client';
-import { useEffect, useState } from 'react';
-
-// Avoid hydration mismatch: don't render until client-side loaded
-export const ClientOnly = ({ children }: { children: React.ReactNode }) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return mounted ? <>{children}</> : null;
-};
-
-// Usage
-export default function Page() {
-  return (
-    <ClientOnly>
-      <ProtectedContent /> {/* Only renders on client */}
-    </ClientOnly>
-  );
-}
-```
-
----
-
-## Common Pitfalls (Client-Only App)
-
-| Issue | Solution |
-|-------|----------|
-| Hydration mismatch | Wrap dynamic content in `<ClientOnly>` or check `mounted` state |
-| Sensitive data in localStorage | Use secure storage, never store passwords/secrets |
-| Auth state resets on reload | Use Context + localStorage + useEffect |
-| `localStorage` undefined in SSG | Access only in useEffect (not during render) |
-| JWT token expired | Implement refresh token logic in AuthContext |
-| Direct mutations | Always create new objects: `{ ...prev, field }` |
-| `NEXT_PUBLIC_*` vars undefined | Restart dev server after `.env.local` change |
-| Security logic in client | ❌ WRONG - All security in RLS policies + backend |
-| Missing RLS policies | ❌ CRITICAL - Frontend validation is useless without RLS |
-
----
-
-## Deployment
-
-```bash
-# Build
-npm run build
-
-# Outputs: ./out/ (static HTML)
-# Deploy to GitHub Pages via GitHub Actions or manual push
-```
-
-**Pre-deployment checklist:**
-- [ ] All env vars set (NEXT_PUBLIC_SUPABASE_URL, key)
-- [ ] Build succeeds locally: `npm run build`
-- [ ] Auth tested (sign up, login, logout)
-- [ ] No console errors
-- [ ] Mobile responsive
-- [ ] `basePath` correct in next.config.ts

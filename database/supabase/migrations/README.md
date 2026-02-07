@@ -59,6 +59,8 @@ The migrations are organized in dependency order with clear separation of concer
 - `latest_meter_readings` - Most recent readings per meter
 - `property_financial_summary` - Income vs expenses per property
 
+**Security**: All views use `security_invoker = true` to respect RLS policies of the querying user, preventing security bypasses.
+
 ### **7. Seed Data** (`20260124000700_seed_data.sql`)
 **Purpose**: Initial reference data
 **Contains**:

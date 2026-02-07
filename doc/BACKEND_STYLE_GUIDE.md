@@ -61,55 +61,194 @@ ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 
 ## Row Level Security (RLS)
 
+### ⚠️ Critical Performance Rule: One Policy Per Action
+
+**NEVER create multiple permissive policies for the same action on the same table!**
+
+PostgreSQL evaluates **ALL permissive policies** for each query. Multiple policies = severe performance degradation.
+
+```sql
+-- ❌ WRONG: Multiple SELECT policies (both evaluated every query!)
+CREATE POLICY "admins_read" ON items FOR SELECT USING (is_admin());
+CREATE POLICY "users_read_own" ON items FOR SELECT USING (created_by = auth.uid());
+-- Performance: 2x slower! Both policies checked for EVERY row.
+
+-- ✅ CORRECT: ONE SELECT policy with OR logic
+CREATE POLICY "authenticated_users_read_items" ON items
+    FOR SELECT
+    TO authenticated
+    USING (
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    );
+-- Performance: Optimal! Single evaluation per query.
+```
+
+**Performance Impact:**
+- Multiple policies = N × evaluations per query
+- `FOR ALL` includes all actions (SELECT/INSERT/UPDATE/DELETE) - creates redundancy
+- Consolidating policies = 2-10x faster queries
+
 ### Enable RLS
 ```sql
 ALTER TABLE items ENABLE ROW LEVEL SECURITY;
 
--- Default deny all (explicit allow in policies)
-DROP POLICY IF EXISTS "default_deny" ON items;
-CREATE POLICY "default_deny" ON items
-  FOR ALL USING (false);
+-- RLS is now enabled with default deny
+-- Create explicit allow policies below
 ```
 
-### Basic Policies
+### auth.uid() Performance Optimization
 
-**Users see own data:**
+**ALWAYS wrap auth.uid() in a subquery to force single evaluation:**
+
 ```sql
-CREATE POLICY "users_see_own" ON items
-  FOR SELECT USING (created_by = auth.uid());
+-- ❌ WRONG: Re-evaluated for EVERY row
+USING (auth.uid() = created_by)
+-- On 1000 rows = 1000 calls to auth.uid()
 
-CREATE POLICY "users_create" ON items
-  FOR INSERT WITH CHECK (created_by = auth.uid());
-
-CREATE POLICY "users_update_own" ON items
-  FOR UPDATE USING (created_by = auth.uid())
-  WITH CHECK (created_by = auth.uid());
-
-CREATE POLICY "users_delete_own" ON items
-  FOR DELETE USING (created_by = auth.uid());
+-- ✅ CORRECT: Evaluated ONCE and cached
+USING ((SELECT auth.uid()) = created_by)
+-- On 1000 rows = 1 call to auth.uid()
 ```
 
-**Admins see all:**
+### Complete Policy Pattern (Recommended)
+
+For a typical table with multiple roles, use this pattern:
+
 ```sql
-CREATE POLICY "admins_all" ON items
-  FOR ALL USING (is_admin());
+-- ============================================
+-- SELECT: ONE consolidated policy for all roles
+-- ============================================
+CREATE POLICY "authenticated_users_read_items" ON items
+    FOR SELECT
+    TO authenticated
+    USING (
+        -- Admins see everything
+        is_admin()
+        OR
+        -- Users see their own items
+        created_by = (SELECT auth.uid())
+        OR
+        -- Public items visible to authenticated users
+        is_public = true
+    );
+
+-- ============================================
+-- INSERT: Who can create new items
+-- ============================================
+CREATE POLICY "authenticated_users_insert_items" ON items
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (
+        -- Users can only create items owned by themselves
+        created_by = (SELECT auth.uid())
+    );
+
+-- ============================================
+-- UPDATE: Who can modify items
+-- ============================================
+CREATE POLICY "authenticated_users_update_items" ON items
+    FOR UPDATE
+    TO authenticated
+    USING (
+        -- Can only update if admin or owner
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    )
+    WITH CHECK (
+        -- After update, must still satisfy these conditions
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    );
+
+-- ============================================
+-- DELETE: Who can remove items
+-- ============================================
+CREATE POLICY "authenticated_users_delete_items" ON items
+    FOR DELETE
+    TO authenticated
+    USING (
+        -- Only admins or owners can delete
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    );
 ```
 
-**Public read, authenticated write:**
-```sql
-CREATE POLICY "public_read" ON items
-  FOR SELECT USING (true);
+### Policy Naming Convention
 
-CREATE POLICY "auth_write" ON items
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+Use descriptive names that indicate:
+1. **Who** - Which role(s) the policy applies to
+2. **Action** - What operation (read/insert/update/delete)
+3. **What** - Which table
+
+**Format:** `{who}_{action}_{table}`
+
+Examples:
+- `authenticated_users_read_items`
+- `admins_delete_users`
+- `public_read_posts`
+- `owners_update_properties`
+
+### Simple Patterns
+
+**Public read, owner write:**
+```sql
+-- SELECT: Everyone can read
+CREATE POLICY "public_read_items" ON items
+    FOR SELECT USING (true);
+
+-- INSERT: Authenticated users only
+CREATE POLICY "authenticated_insert_items" ON items
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (created_by = (SELECT auth.uid()));
+
+-- UPDATE/DELETE: Owners only
+CREATE POLICY "owners_update_items" ON items
+    FOR UPDATE
+    TO authenticated
+    USING (created_by = (SELECT auth.uid()))
+    WITH CHECK (created_by = (SELECT auth.uid()));
+
+CREATE POLICY "owners_delete_items" ON items
+    FOR DELETE
+    TO authenticated
+    USING (created_by = (SELECT auth.uid()));
+```
+
+**Admin-only table:**
+```sql
+CREATE POLICY "admins_read_config" ON config
+    FOR SELECT USING (is_admin());
+
+CREATE POLICY "admins_insert_config" ON config
+    FOR INSERT WITH CHECK (is_admin());
+
+CREATE POLICY "admins_update_config" ON config
+    FOR UPDATE 
+    USING (is_admin()) 
+    WITH CHECK (is_admin());
+
+CREATE POLICY "admins_delete_config" ON config
+    FOR DELETE USING (is_admin());
 ```
 
 ### Helper Functions (SECURITY DEFINER)
 
+Helper functions should **ALWAYS** include `SET search_path` for security:
+
 **Check if admin:**
 ```sql
-CREATE FUNCTION is_admin() RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+CREATE OR REPLACE FUNCTION is_admin() 
+RETURNS boolean
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM user_roles 
@@ -121,24 +260,49 @@ $$;
 
 **Check if owns resource:**
 ```sql
-CREATE FUNCTION owns_item(item_id uuid) RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+CREATE OR REPLACE FUNCTION owns_item(item_id uuid) 
+RETURNS boolean
+LANGUAGE plpgsql 
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM items 
-    WHERE id = item_id AND created_by = auth.uid()
+    WHERE id = item_id AND created_by = (SELECT auth.uid())
   );
 END;
 $$;
 ```
 
-**Use in policies:**
+**Use in consolidated policies:**
 ```sql
-CREATE POLICY "users_or_admin" ON items
-  FOR ALL USING (
-    created_by = auth.uid() OR is_admin()
-  );
+-- ✅ CORRECT: One policy per action using helper functions
+CREATE POLICY "authenticated_users_read_items" ON items
+    FOR SELECT
+    TO authenticated
+    USING (
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    );
+
+CREATE POLICY "authenticated_users_update_items" ON items
+    FOR UPDATE
+    TO authenticated
+    USING (
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    )
+    WITH CHECK (
+        is_admin() 
+        OR 
+        created_by = (SELECT auth.uid())
+    );
 ```
+
+**⚠️ Security Note:** Always use `SET search_path` in `SECURITY DEFINER` functions to prevent search path injection attacks!
 
 ---
 
