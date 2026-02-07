@@ -12,22 +12,21 @@ import styles from './SignupForm.module.css';
 export const SignupForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [role, setRole] = useState('');
+    // const [role, setRole] = useState('');
     const { signUp } = useAuth();
     const router = useRouter();
 
-    const roleOptions = [
-        { value: 'tenant', label: 'Tenant' },
-        { value: 'landlord', label: 'Landlord' },
-        { value: 'admin', label: 'Admin' },
-    ];
+    // const roleOptions = [
+    //     { value: 'tenant', label: 'Tenant' },
+    //     { value: 'landlord', label: 'Landlord' },
+    //     { value: 'admin', label: 'Admin' },
+    // ];
 
     const [state, handleSubmit] = useAsyncFn(async () => {
-        const result = await signUp(email, password, role);
-        return result.success ?
-            router.push('/login') :
-            result;
-    }, [email, password, role, signUp, router]);
+        const result = await signUp(email, password);
+        result.success && router.push('/login');
+        return result
+    }, [email, password, signUp, router]);
 
     const onSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -36,7 +35,8 @@ export const SignupForm = () => {
 
     return (
         <form onSubmit={onSubmit} className={styles.form}>
-            <ErrorBanner msg={state.error?.message ?? 'Signup failed'} />
+            {state.value?.error &&
+                <ErrorBanner msg={state.value.error ?? 'Signup failed'} />}
 
             <FormInput
                 label="Email"
@@ -58,20 +58,11 @@ export const SignupForm = () => {
                 disabled={state.loading}
             />
 
-            <FormInput
-                label="Role"
-                type="select"
-                value={role}
-                onChange={setRole}
-                options={roleOptions}
-                required
-                disabled={state.loading}
-            />
 
             <Button
                 type="submit"
                 label={state.loading ? 'Creating account...' : 'Sign Up'}
-                disabled={state.loading || !email || !password || !role}
+                disabled={state.loading || !email || !password}
                 variant="primary"
             />
         </form>

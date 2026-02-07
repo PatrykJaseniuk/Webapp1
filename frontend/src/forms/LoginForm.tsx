@@ -17,9 +17,10 @@ export const LoginForm = () => {
 
     const [state, handleSubmit] = useAsyncFn(async () => {
         const result = await signIn(email, password);
-        return result.success ?
-            router.push('/') :
-            result;
+        console.log(result)
+        console.log(state)
+        result.success && router.push('/');
+        return result;
     }, [email, password, signIn, router]);
 
     const onSubmit = (e: React.FormEvent) => {
@@ -29,7 +30,7 @@ export const LoginForm = () => {
 
     return (
         <form onSubmit={onSubmit} className={styles.form}>
-            {state.error && <ErrorBanner msg={state.error.message ?? 'Login failed'} />}
+            {state.value?.error && <ErrorBanner msg={state.value.error ?? 'Login failed'} />}
 
             <FormInput
                 label="Email"

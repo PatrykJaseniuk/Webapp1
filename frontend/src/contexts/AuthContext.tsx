@@ -8,8 +8,8 @@ interface AuthContextType {
   user: User | null;
   role: string | null;
   loading: boolean;
-  signUp: (email: string, password: string, role: string) => Promise<{ success: boolean; error?: any }>;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: any }>;
+  signUp: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
 }
 
@@ -34,8 +34,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get initial session
     database.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      session?.user ? 
-        fetchUserRole(session.user.id).then(setRole) : 
+      session?.user ?
+        fetchUserRole(session.user.id).then(setRole) :
         setRole(null);
       setLoading(false);
 
@@ -44,8 +44,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes
     const { data: { subscription } } = database.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null);
-      session?.user ? 
-        fetchUserRole(session.user.id).then(setRole) : 
+      session?.user ?
+        fetchUserRole(session.user.id).then(setRole) :
         setRole(null);
       setLoading(false);
     });
@@ -53,38 +53,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, userRole: string) => {
+  const signUp: AuthContextType['signUp'] = async (email: string, password: string) => {
     const { data: authData, error: authError } = await database.auth.signUp({
       email,
       password,
     });
 
-    const userCreated = authData?.user && !authError;
-
-    const roleResult = userCreated && authData.user ?
-      await database.from('user_roles').insert({
-        user_id: authData.user.id,
-        role: userRole,
-      }) :
-      { data: null, error: authError };
-
-    return roleResult.error ?
-      { success: false, error: roleResult.error } :
+    return authError ?
+      { success: false, error: authError.message } :
       { success: true };
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn: AuthContextType['signIn'] = async (email: string, password: string) => {
     const { data, error } = await database.auth.signInWithPassword({
       email,
       password,
     });
 
     return error ?
-      { success: false, error } :
+      { success: false, error: error.message } :
       { success: true };
   };
 
-  const signOut = async () => {
+  const signOut: AuthContextType['signOut'] = async () => {
     await database.auth.signOut();
   };
 
