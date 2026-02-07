@@ -24,7 +24,7 @@ export const SignupForm = () => {
 
     const [state, handleSubmit] = useAsyncFn(async () => {
         const result = await signUp(email, password);
-        result.success && router.push('/login');
+        result.success && router.push('/');
         return result
     }, [email, password, signUp, router]);
 
