@@ -8,8 +8,10 @@
 -- VIEW 1: BILLING WITH PAYMENTS
 -- ================================================
 -- Shows billing items with payment status and balance
+-- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.billing_with_payments AS
+CREATE VIEW public.billing_with_payments 
+WITH (security_invoker = true) AS
 SELECT 
     bi.*,
     COALESCE(SUM(p.amount), 0) as total_paid,
@@ -26,8 +28,10 @@ GROUP BY bi.id;
 -- VIEW 2: ACTIVE LEASES WITH DETAILS
 -- ================================================
 -- Shows active leases with tenant and property information
+-- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.active_leases AS
+CREATE VIEW public.active_leases 
+WITH (security_invoker = true) AS
 SELECT 
     la.*,
     t.first_name || ' ' || t.last_name as tenant_name,
@@ -51,8 +55,10 @@ WHERE la.status = 'active';
 -- VIEW 3: PROPERTY OCCUPANCY STATUS
 -- ================================================
 -- Shows property status with current lease information
+-- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.property_occupancy AS
+CREATE VIEW public.property_occupancy 
+WITH (security_invoker = true) AS
 SELECT 
     p.*,
     la.id as current_lease_id,
@@ -69,8 +75,10 @@ LEFT JOIN public.tenants t ON la.tenant_id = t.id;
 -- VIEW 4: UNPAID BILLING SUMMARY
 -- ================================================
 -- Shows unpaid and overdue billing items per lease
+-- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.unpaid_billing_summary AS
+CREATE VIEW public.unpaid_billing_summary 
+WITH (security_invoker = true) AS
 SELECT 
     la.id as lease_id,
     la.tenant_id,
@@ -93,8 +101,10 @@ GROUP BY la.id, la.tenant_id, la.property_id, t.first_name, t.last_name, p.name;
 -- VIEW 5: LATEST METER READINGS
 -- ================================================
 -- Shows the most recent meter reading for each meter
+-- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.latest_meter_readings AS
+CREATE VIEW public.latest_meter_readings 
+WITH (security_invoker = true) AS
 SELECT DISTINCT ON (mr.meter_id)
     mr.*,
     m.meter_type,
@@ -111,8 +121,10 @@ ORDER BY mr.meter_id, mr.reading_date DESC, mr.created_at DESC;
 -- VIEW 6: PROPERTY FINANCIAL SUMMARY
 -- ================================================
 -- Shows income and expenses per property
+-- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.property_financial_summary AS
+CREATE VIEW public.property_financial_summary 
+WITH (security_invoker = true) AS
 SELECT 
     p.id as property_id,
     p.name as property_name,

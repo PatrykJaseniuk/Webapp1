@@ -78,7 +78,7 @@ CREATE TABLE public.attachments (
     file_type text CHECK (file_type IN ('image', 'video', 'pdf', 'document', 'other')),
     file_size integer,
     description text,
-    uploaded_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     created_at timestamptz DEFAULT now()
 );
 

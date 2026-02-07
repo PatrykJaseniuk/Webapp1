@@ -10,21 +10,28 @@
 
 -- Function to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     NEW.updated_at = now();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function to automatically set created_by to current user
 CREATE OR REPLACE FUNCTION public.set_created_by()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
 BEGIN
     NEW.created_by = auth.uid();
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ================================================
 -- BUSINESS LOGIC FUNCTIONS
@@ -32,7 +39,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Function to automatically update property status based on lease changes
 CREATE OR REPLACE FUNCTION public.auto_update_property_status()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
 BEGIN
     -- When a new lease becomes active, mark property as occupied
     IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') AND NEW.status = 'active' THEN
@@ -74,17 +84,21 @@ BEGIN
     
     RETURN COALESCE(NEW, OLD);
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- Function to automatically assign 'tenant' role to new user registrations
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
     INSERT INTO public.user_roles (user_id, role)
     VALUES (NEW.id, 'tenant');
     RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
 -- ================================================
 -- APPLY TRIGGERS TO TABLES
@@ -187,11 +201,11 @@ CREATE TRIGGER set_expenses_created_by
     EXECUTE FUNCTION public.set_created_by();
 
 -- ATTACHMENTS TRIGGERS
--- Note: uploaded_by should be set explicitly, but we provide fallback
-CREATE TRIGGER set_attachments_uploaded_by 
+-- Note: created_by auto-populated if not provided
+CREATE TRIGGER set_attachments_created_by 
     BEFORE INSERT ON public.attachments
     FOR EACH ROW 
-    WHEN (NEW.uploaded_by IS NULL)
+    WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();
 
 -- METER READINGS TRIGGERS

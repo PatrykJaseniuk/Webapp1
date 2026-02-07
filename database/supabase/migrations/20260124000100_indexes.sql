@@ -29,7 +29,7 @@ CREATE INDEX idx_leases_property_active ON public.lease_agreements(property_id, 
 -- ATTACHMENTS INDEXES
 CREATE INDEX idx_attachments_related ON public.attachments(related_to_type, related_to_id);
 CREATE INDEX idx_attachments_type ON public.attachments(file_type);
-CREATE INDEX idx_attachments_uploaded_by ON public.attachments(uploaded_by);
+CREATE INDEX idx_attachments_created_by ON public.attachments(created_by);
 CREATE INDEX idx_attachments_created_at ON public.attachments(created_at DESC);
 
 -- BILLING ITEMS INDEXES
