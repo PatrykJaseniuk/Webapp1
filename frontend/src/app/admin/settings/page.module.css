@@ -1,0 +1,99 @@
+.container {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 32px;
+}
+
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.description {
+    margin: 0;
+    color: #6b7280;
+    font-size: 14px;
+    max-width: 600px;
+}
+
+.addForm {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.formTitle {
+    margin: 0 0 20px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.formButtons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.tableWrapper {
+    margin-top: 24px;
+}
+
+.utilityBadge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    .title {
+        font-size: 24px;
+        margin-bottom: 24px;
+    }
+
+    .cardHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .description {
+        max-width: 100%;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .formButtons {
+        flex-direction: column;
+    }
+}
