@@ -1,44 +1,22 @@
 .inputGroup {
-<<<<<<< HEAD
-=======
     display: flex;
     flex-direction: column;
     gap: 6px;
->>>>>>> LLM(claude-haiku-4-5)
     margin-bottom: 16px;
 }
 
 .label {
-<<<<<<< HEAD
-    display: block;
-    margin-bottom: 8px;
-=======
     font-size: 14px;
->>>>>>> LLM(claude-haiku-4-5)
     font-weight: 500;
     color: #333;
 }
 
 .required {
-<<<<<<< HEAD
-    color: #dc3545;
-=======
     color: #e53e3e;
->>>>>>> LLM(claude-haiku-4-5)
     margin-left: 4px;
 }
 
 .input,
-<<<<<<< HEAD
-.input:focus {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #ddd;
-    border-radius: 6px;
-    font-size: 16px;
-    transition: border-color 0.2s ease;
-    box-sizing: border-box;
-=======
 select.input {
     padding: 10px 12px;
     border: 1px solid #ddd;
@@ -46,25 +24,10 @@ select.input {
     font-size: 14px;
     transition: border-color 0.2s ease;
     background-color: white;
->>>>>>> LLM(claude-haiku-4-5)
 }
 
 .input:focus {
     outline: none;
-<<<<<<< HEAD
-    border-color: #007bff;
-}
-
-.input.error {
-    border-color: #dc3545;
-}
-
-.errorText {
-    display: block;
-    margin-top: 4px;
-    color: #dc3545;
-    font-size: 14px;
-=======
     border-color: #0070f3;
 }
 
@@ -80,5 +43,4 @@ select.input {
 .errorText {
     font-size: 12px;
     color: #e53e3e;
->>>>>>> LLM(claude-haiku-4-5)
 }

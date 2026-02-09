@@ -1,0 +1,93 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header {
+    margin-bottom: 30px;
+}
+
+.title {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 8px 0;
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: #666;
+    margin: 0;
+}
+
+.emptyMessage {
+    margin: 0;
+    color: #666;
+    text-align: center;
+    padding: 40px;
+}
+
+.documentGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.documentCard {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #fff;
+    transition: box-shadow 0.2s ease;
+}
+
+.documentCard:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.documentIcon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.documentInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.documentName {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0 0 4px 0;
+    word-break: break-word;
+}
+
+.documentDescription {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0 0 8px 0;
+    line-height: 1.4;
+}
+
+.documentMeta {
+    display: flex;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.fileSize,
+.uploadDate {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.documentActions {
+    flex-shrink: 0;
+}
