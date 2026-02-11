@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
+import styles from './PaymentsList.module.css';
+
 const METHOD_LABELS: Record<string, string> = {
     cash: 'Gotówka',
     bank_transfer: 'Przelew',
@@ -33,11 +35,11 @@ export const PaymentsList = () => {
     const payments = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Płatności</h1>
-                <Link href="/landlord/payments?action=new">
-                    <button>Zarejestruj płatność</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Płatności</h1>
+                <Link href="/landlord/payments?action=new" className={styles.addButton}>
+                    Zarejestruj płatność
                 </Link>
             </div>
 
@@ -51,7 +53,7 @@ export const PaymentsList = () => {
                                 actionHref="/landlord/payments?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Data</th>
@@ -64,9 +66,9 @@ export const PaymentsList = () => {
                                 <tbody>
                                     {payments.map(payment => (
                                         <tr key={payment.id}>
-                                            <td>{formatDate(payment.payment_date)}</td>
-                                            <td>{formatCurrency(payment.amount)}</td>
-                                            <td>{METHOD_LABELS[payment.payment_method] ?? payment.payment_method}</td>
+                                            <td className={styles.date}>{formatDate(payment.payment_date)}</td>
+                                            <td className={styles.amount}>{formatCurrency(payment.amount)}</td>
+                                            <td className={styles.method}>{METHOD_LABELS[payment.payment_method] ?? payment.payment_method}</td>
                                             <td>{(payment as any).billing_items?.description ?? payment.billing_item_id}</td>
                                             <td>{payment.notes ?? '—'}</td>
                                         </tr>

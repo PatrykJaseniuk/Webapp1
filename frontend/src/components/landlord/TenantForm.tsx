@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './TenantForm.module.css';
+
 interface TenantFormProps {
     id?: string;
 }
@@ -73,21 +75,23 @@ export const TenantForm = ({ id }: TenantFormProps) => {
     }, [firstName, lastName, email, phone, idDocumentNumber, emergencyContactName, emergencyContactPhone, notes, status, id, isEdit, router]);
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/tenants">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/tenants" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>{isEdit ? 'Edytuj najemcę' : 'Nowy najemca'}</h1>
+            <h1 className={styles.title}>{isEdit ? 'Edytuj najemcę' : 'Nowy najemca'}</h1>
 
             {loadState.loading ? <Spinner /> :
                 loadState.error ? <ErrorBanner msg={loadState.error.message} /> :
                     loadState.value?.error ? <ErrorBanner msg={loadState.value.error.message} /> :
-                        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                            {(submitState.error || submitState.value?.error) && (
+                                <div className={styles.errorSection}>
+                                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                                </div>
+                            )}
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="firstName">Imię</label>
                                 <input
                                     id="firstName"
@@ -99,7 +103,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="lastName">Nazwisko</label>
                                 <input
                                     id="lastName"
@@ -111,7 +115,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="email">Email</label>
                                 <input
                                     id="email"
@@ -123,7 +127,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="phone">Telefon</label>
                                 <input
                                     id="phone"
@@ -135,7 +139,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="idDocumentNumber">Nr dokumentu tożsamości</label>
                                 <input
                                     id="idDocumentNumber"
@@ -146,7 +150,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="emergencyContactName">Kontakt awaryjny — imię i nazwisko</label>
                                 <input
                                     id="emergencyContactName"
@@ -157,7 +161,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="emergencyContactPhone">Kontakt awaryjny — telefon</label>
                                 <input
                                     id="emergencyContactPhone"
@@ -168,7 +172,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="status">Status</label>
                                 <select
                                     id="status"
@@ -181,18 +185,17 @@ export const TenantForm = ({ id }: TenantFormProps) => {
                                 </select>
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="notes">Notatki</label>
                                 <textarea
                                     id="notes"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    rows={3}
                                     placeholder="Dodatkowe informacje..."
                                 />
                             </div>
 
-                            <button type="submit" disabled={submitState.loading}>
+                            <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                                 {submitState.loading ? 'Zapisywanie...' : isEdit ? 'Zapisz zmiany' : 'Dodaj najemcę'}
                             </button>
                         </form>

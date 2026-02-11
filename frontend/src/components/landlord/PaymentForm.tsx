@@ -10,6 +10,8 @@ import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { formatCurrency } from '@/utils/formatCurrency';
 
+import styles from './PaymentForm.module.css';
+
 export const PaymentForm = () => {
     const router = useRouter();
 
@@ -45,19 +47,21 @@ export const PaymentForm = () => {
     const unpaidItems = unpaidState.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/payments">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/payments" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>Zarejestruj płatność</h1>
+            <h1 className={styles.title}>Zarejestruj płatność</h1>
 
             {unpaidState.loading ? <Spinner /> :
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    {(submitState.error || submitState.value?.error) && (
+                        <div className={styles.errorSection}>
+                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        </div>
+                    )}
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="billingItemId">Pozycja rozliczeniowa</label>
                         <select
                             id="billingItemId"
@@ -74,7 +78,7 @@ export const PaymentForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="amount">Kwota (PLN)</label>
                         <input
                             id="amount"
@@ -87,7 +91,7 @@ export const PaymentForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="paymentDate">Data płatności</label>
                         <input
                             id="paymentDate"
@@ -98,7 +102,7 @@ export const PaymentForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="paymentMethod">Metoda płatności</label>
                         <select
                             id="paymentMethod"
@@ -112,18 +116,17 @@ export const PaymentForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="notes">Notatki</label>
                         <textarea
                             id="notes"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            rows={3}
                             placeholder="Dodatkowe informacje..."
                         />
                     </div>
 
-                    <button type="submit" disabled={submitState.loading}>
+                    <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                         {submitState.loading ? 'Zapisywanie...' : 'Zarejestruj płatność'}
                     </button>
                 </form>

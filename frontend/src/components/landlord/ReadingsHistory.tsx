@@ -10,6 +10,8 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatDate } from '@/utils/formatDate';
 
+import styles from './ReadingsHistory.module.css';
+
 interface ReadingsHistoryProps {
     meterId: string;
 }
@@ -48,19 +50,17 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
     });
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/meters">← Powrót do listy</Link>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>
+                    Historia odczytów
+                    {meter && ` — ${(meter as any).properties?.name} (${meter.meter_type}, ${meter.meter_number})`}
+                </h1>
+
+                <Link href={`/landlord/meters?action=new-reading&meterId=${meterId}`} className={styles.addButton}>
+                    Dodaj odczyt
+                </Link>
             </div>
-
-            <h1>
-                Historia odczytów
-                {meter && ` — ${(meter as any).properties?.name} (${meter.meter_type}, ${meter.meter_number})`}
-            </h1>
-
-            <Link href={`/landlord/meters?action=new-reading&meterId=${meterId}`}>
-                <button>Dodaj odczyt</button>
-            </Link>
 
             {state.error ? <ErrorBanner msg={state.error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :
@@ -72,7 +72,7 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
                                 actionHref={`/landlord/meters?action=new-reading&meterId=${meterId}`}
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Data</th>
@@ -84,10 +84,19 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
                                 <tbody>
                                     {readingsWithDelta.map(reading => (
                                         <tr key={reading.id}>
-                                            <td>{formatDate(reading.reading_date)}</td>
-                                            <td>{reading.reading_value} {meter?.unit ?? ''}</td>
-                                            <td>{reading.delta !== null ? `${reading.delta.toFixed(2)} ${meter?.unit ?? ''}` : '—'}</td>
-                                            <td>{reading.notes ?? '—'}</td>
+                                            <td className={styles.date}>{formatDate(reading.reading_date)}</td>
+                                            <td className={styles.readingValue}>
+                                                {reading.reading_value} {meter?.unit ?? ''}
+                                            </td>
+                                            <td className={`${styles.consumption} ${reading.delta !== null && reading.delta >= 0
+                                                    ? styles.consumptionPositive
+                                                    : reading.delta !== null && reading.delta < 0
+                                                        ? styles.consumptionNegative
+                                                        : ''
+                                                }`}>
+                                                {reading.delta !== null ? `${reading.delta.toFixed(2)} ${meter?.unit ?? ''}` : '—'}
+                                            </td>
+                                            <td className={styles.notes}>{reading.notes ?? '—'}</td>
                                         </tr>
                                     ))}
                                 </tbody>

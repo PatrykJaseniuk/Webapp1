@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
+import styles from './ExpensesList.module.css';
+
 const TYPE_LABELS: Record<string, string> = {
     maintenance: 'Konserwacja',
     tax: 'Podatek',
@@ -40,20 +42,21 @@ export const ExpensesList = () => {
     const expenses = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Wydatki na nieruchomości</h1>
-                <Link href="/landlord/expenses?action=new">
-                    <button>Dodaj wydatek</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Wydatki na nieruchomości</h1>
+                <Link href="/landlord/expenses?action=new" className={styles.addButton}>
+                    Dodaj wydatek
                 </Link>
             </div>
 
-            <div>
-                <label htmlFor="filterType">Filtruj wg typu: </label>
+            <div className={styles.header}>
+                <label htmlFor="filterType" className={styles.category}>Filtruj wg typu: </label>
                 <select
                     id="filterType"
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
+                    className={styles.category}
                 >
                     <option value="">Wszystkie</option>
                     <option value="maintenance">Konserwacja</option>
@@ -74,7 +77,7 @@ export const ExpensesList = () => {
                                 actionHref="/landlord/expenses?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Nieruchomość</th>
@@ -88,10 +91,10 @@ export const ExpensesList = () => {
                                     {expenses.map(expense => (
                                         <tr key={expense.id}>
                                             <td>{(expense as any).properties?.name ?? expense.property_id}</td>
-                                            <td>{expense.description}</td>
-                                            <td>{TYPE_LABELS[expense.expense_type] ?? expense.expense_type}</td>
-                                            <td>{formatCurrency(expense.amount)}</td>
-                                            <td>{formatDate(expense.expense_date)}</td>
+                                            <td className={styles.description}>{expense.description}</td>
+                                            <td className={styles.category}>{TYPE_LABELS[expense.expense_type] ?? expense.expense_type}</td>
+                                            <td className={styles.amount}>{formatCurrency(expense.amount)}</td>
+                                            <td className={styles.date}>{formatDate(expense.expense_date)}</td>
                                         </tr>
                                     ))}
                                 </tbody>

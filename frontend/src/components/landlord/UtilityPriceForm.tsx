@@ -8,6 +8,8 @@ import Link from 'next/link';
 import { database } from '@/api/database';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './UtilityPriceForm.module.css';
+
 export const UtilityPriceForm = () => {
     const router = useRouter();
 
@@ -28,18 +30,20 @@ export const UtilityPriceForm = () => {
     }, [utilityType, pricePerUnit, effectiveDate, router]);
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/utility-prices">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/utility-prices" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>Nowa cena medium</h1>
+            <h1 className={styles.title}>Nowa cena medium</h1>
 
-            <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+            <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                {(submitState.error || submitState.value?.error) && (
+                    <div className={styles.errorSection}>
+                        {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                        {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                    </div>
+                )}
 
-                <div>
+                <div className={styles.formField}>
                     <label htmlFor="utilityType">Typ medium</label>
                     <select
                         id="utilityType"
@@ -53,7 +57,7 @@ export const UtilityPriceForm = () => {
                     </select>
                 </div>
 
-                <div>
+                <div className={styles.formField}>
                     <label htmlFor="pricePerUnit">Cena za jednostkę (PLN)</label>
                     <input
                         id="pricePerUnit"
@@ -66,7 +70,7 @@ export const UtilityPriceForm = () => {
                     />
                 </div>
 
-                <div>
+                <div className={styles.formField}>
                     <label htmlFor="effectiveDate">Data obowiązywania od</label>
                     <input
                         id="effectiveDate"
@@ -77,7 +81,7 @@ export const UtilityPriceForm = () => {
                     />
                 </div>
 
-                <button type="submit" disabled={submitState.loading}>
+                <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                     {submitState.loading ? 'Zapisywanie...' : 'Dodaj cenę'}
                 </button>
             </form>

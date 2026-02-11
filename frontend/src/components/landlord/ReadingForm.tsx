@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './ReadingForm.module.css';
+
 interface ReadingFormProps {
     meterId?: string;
 }
@@ -46,19 +48,21 @@ export const ReadingForm = ({ meterId: initialMeterId }: ReadingFormProps) => {
     const meters = metersState.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/meters">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/meters" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>Nowy odczyt licznika</h1>
+            <h1 className={styles.title}>Nowy odczyt licznika</h1>
 
             {metersState.loading ? <Spinner /> :
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    {(submitState.error || submitState.value?.error) && (
+                        <div className={styles.errorSection}>
+                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        </div>
+                    )}
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="meterId">Licznik</label>
                         <select
                             id="meterId"
@@ -75,7 +79,7 @@ export const ReadingForm = ({ meterId: initialMeterId }: ReadingFormProps) => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="readingValue">Wartość odczytu</label>
                         <input
                             id="readingValue"
@@ -88,7 +92,7 @@ export const ReadingForm = ({ meterId: initialMeterId }: ReadingFormProps) => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="readingDate">Data odczytu</label>
                         <input
                             id="readingDate"
@@ -99,18 +103,17 @@ export const ReadingForm = ({ meterId: initialMeterId }: ReadingFormProps) => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="notes">Notatki</label>
                         <textarea
                             id="notes"
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
-                            rows={3}
                             placeholder="Dodatkowe informacje..."
                         />
                     </div>
 
-                    <button type="submit" disabled={submitState.loading}>
+                    <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                         {submitState.loading ? 'Zapisywanie...' : 'Zapisz odczyt'}
                     </button>
                 </form>

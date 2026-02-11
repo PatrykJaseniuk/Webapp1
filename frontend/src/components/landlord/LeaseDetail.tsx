@@ -10,6 +10,8 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
+import styles from './LeaseDetail.module.css';
+
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywna',
     expired: 'Wygasła',
@@ -67,120 +69,167 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
     const error = state.error ?? state.value?.error;
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/leases">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/leases" className={styles.backLink}>← Powrót do listy</Link>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :
                     !lease ? <ErrorBanner msg="Nie znaleziono umowy" /> :
                         <>
-                            <div>
-                                <h1>Umowa najmu</h1>
-                                <Link href={`/landlord/leases?action=edit&id=${id}`}>
-                                    <button>Edytuj</button>
+                            <div className={styles.header}>
+                                <h1 className={styles.title}>Umowa najmu</h1>
+                                <Link href={`/landlord/leases?action=edit&id=${id}`} className={styles.editButton}>
+                                    Edytuj
                                 </Link>
                             </div>
 
-                            <div>
-                                <div>
-                                    <h3>Szczegóły umowy</h3>
-                                    <dl>
-                                        <dt>Nieruchomość</dt>
-                                        <dd>
-                                            <Link href={`/landlord/properties?id=${lease.property_id}`}>
-                                                {(lease as any).properties?.name ?? lease.property_id}
-                                            </Link>
-                                        </dd>
-                                        <dt>Najemca</dt>
-                                        <dd>
-                                            <Link href={`/landlord/tenants?id=${lease.tenant_id}`}>
-                                                {(lease as any).tenants
-                                                    ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
-                                                    : lease.tenant_id}
-                                            </Link>
-                                        </dd>
-                                        <dt>Status</dt>
-                                        <dd>{STATUS_LABELS[lease.status] ?? lease.status}</dd>
-                                        <dt>Okres</dt>
-                                        <dd>{lease.start_date} — {lease.end_date ?? 'Bezterminowa'}</dd>
-                                        <dt>Czynsz miesięczny</dt>
-                                        <dd>{formatCurrency(lease.monthly_rent)}</dd>
-                                        <dt>Kaucja</dt>
-                                        <dd>{formatCurrency(lease.deposit_amount)}</dd>
-                                        {lease.notes && (
-                                            <>
-                                                <dt>Notatki</dt>
-                                                <dd>{lease.notes}</dd>
-                                            </>
-                                        )}
-                                        <dt>Utworzono</dt>
-                                        <dd>{lease.created_at ? formatDate(lease.created_at) : '—'}</dd>
-                                    </dl>
-                                </div>
-                            </div>
+                            <div className={styles.content}>
+                                <div className={styles.mainContent}>
+                                    <div className={styles.section}>
+                                        <h2 className={styles.sectionTitle}>Szczegóły umowy</h2>
+                                        <div className={styles.infoGrid}>
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Nieruchomość</span>
+                                                <span className={styles.infoValue}>
+                                                    <Link href={`/landlord/properties?id=${lease.property_id}`}>
+                                                        {(lease as any).properties?.name ?? lease.property_id}
+                                                    </Link>
+                                                </span>
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Najemca</span>
+                                                <span className={styles.infoValue}>
+                                                    <Link href={`/landlord/tenants?id=${lease.tenant_id}`}>
+                                                        {(lease as any).tenants
+                                                            ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
+                                                            : lease.tenant_id}
+                                                    </Link>
+                                                </span>
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Status</span>
+                                                <span className={`${styles.statusBadge} ${lease.status === 'active' ? styles.statusActive :
+                                                        lease.status === 'expired' ? styles.statusExpired :
+                                                            styles.statusTerminated
+                                                    }`}>
+                                                    {STATUS_LABELS[lease.status] ?? lease.status}
+                                                </span>
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Okres</span>
+                                                <span className={styles.infoValue}>
+                                                    {lease.start_date} — {lease.end_date ?? 'Bezterminowa'}
+                                                </span>
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Czynsz miesięczny</span>
+                                                <span className={styles.infoValueAmount}>{formatCurrency(lease.monthly_rent)}</span>
+                                            </div>
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Kaucja</span>
+                                                <span className={styles.infoValueAmount}>{formatCurrency(lease.deposit_amount)}</span>
+                                            </div>
+                                            {lease.notes && (
+                                                <div className={styles.infoItem}>
+                                                    <span className={styles.infoLabel}>Notatki</span>
+                                                    <span className={styles.infoValue}>{lease.notes}</span>
+                                                </div>
+                                            )}
+                                            <div className={styles.infoItem}>
+                                                <span className={styles.infoLabel}>Utworzono</span>
+                                                <span className={styles.infoValue}>
+                                                    {lease.created_at ? formatDate(lease.created_at) : '—'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <div>
-                                <h3>Rozliczenia ({billingItems.length})</h3>
-                                {billingState.loading ? <Spinner /> :
-                                    billingItems.length === 0 ? (
-                                        <p>Brak rozliczeń dla tej umowy</p>
-                                    ) : (
-                                        <table>
-                                            <thead>
-                                                <tr>
-                                                    <th>Opis</th>
-                                                    <th>Typ</th>
-                                                    <th>Kwota</th>
-                                                    <th>Zapłacono</th>
-                                                    <th>Saldo</th>
-                                                    <th>Termin</th>
-                                                    <th>Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {billingItems.map(item => (
-                                                    <tr key={item.id}>
-                                                        <td>{item.description}</td>
-                                                        <td>{item.item_type}</td>
-                                                        <td>{formatCurrency(item.amount ?? 0)}</td>
-                                                        <td>{formatCurrency(item.total_paid ?? 0)}</td>
-                                                        <td>{formatCurrency(item.balance ?? 0)}</td>
-                                                        <td>{item.due_date ? formatDate(item.due_date) : '—'}</td>
-                                                        <td>{item.status}</td>
+                                    <div className={styles.section}>
+                                        <h2 className={styles.sectionTitle}>Rozliczenia ({billingItems.length})</h2>
+                                        {billingState.loading ? <Spinner /> :
+                                            billingItems.length === 0 ? (
+                                                <p>Brak rozliczeń dla tej umowy</p>
+                                            ) : (
+                                                <table className={styles.table}>
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Opis</th>
+                                                            <th>Typ</th>
+                                                            <th>Kwota</th>
+                                                            <th>Zapłacono</th>
+                                                            <th>Saldo</th>
+                                                            <th>Termin</th>
+                                                            <th>Status</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {billingItems.map(item => (
+                                                            <tr key={item.id}>
+                                                                <td>{item.description}</td>
+                                                                <td>{item.item_type}</td>
+                                                                <td>{formatCurrency(item.amount ?? 0)}</td>
+                                                                <td>{formatCurrency(item.total_paid ?? 0)}</td>
+                                                                <td>{formatCurrency(item.balance ?? 0)}</td>
+                                                                <td>{item.due_date ? formatDate(item.due_date) : '—'}</td>
+                                                                <td>{item.status}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                    </div>
+
+                                    {payments.length > 0 && (
+                                        <div className={styles.section}>
+                                            <h2 className={styles.sectionTitle}>Ostatnie płatności</h2>
+                                            <table className={styles.table}>
+                                                <thead>
+                                                    <tr>
+                                                        <th>Data</th>
+                                                        <th>Kwota</th>
+                                                        <th>Metoda</th>
+                                                        <th>Notatki</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                    {payments.map(payment => (
+                                                        <tr key={payment.id}>
+                                                            <td>{formatDate(payment.payment_date)}</td>
+                                                            <td>{formatCurrency(payment.amount)}</td>
+                                                            <td>{payment.payment_method}</td>
+                                                            <td>{payment.notes ?? '—'}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     )}
-                            </div>
-
-                            {payments.length > 0 && (
-                                <div>
-                                    <h3>Ostatnie płatności</h3>
-                                    <table>
-                                        <thead>
-                                            <tr>
-                                                <th>Data</th>
-                                                <th>Kwota</th>
-                                                <th>Metoda</th>
-                                                <th>Notatki</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {payments.map(payment => (
-                                                <tr key={payment.id}>
-                                                    <td>{formatDate(payment.payment_date)}</td>
-                                                    <td>{formatCurrency(payment.amount)}</td>
-                                                    <td>{payment.payment_method}</td>
-                                                    <td>{payment.notes ?? '—'}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
                                 </div>
-                            )}
+
+                                <div className={styles.sidebar}>
+                                    <div className={styles.leaseInfo}>
+                                        <h3 className={styles.leaseInfoTitle}>Podsumowanie</h3>
+                                        <div className={styles.leaseInfoItem}>
+                                            <span className={styles.leaseInfoLabel}>Czynsz miesięczny</span>
+                                            <span className={styles.leaseInfoValueAmount}>{formatCurrency(lease.monthly_rent)}</span>
+                                        </div>
+                                        <div className={styles.leaseInfoItem}>
+                                            <span className={styles.leaseInfoLabel}>Kaucja</span>
+                                            <span className={styles.leaseInfoValueAmount}>{formatCurrency(lease.deposit_amount)}</span>
+                                        </div>
+                                        <div className={styles.leaseInfoItem}>
+                                            <span className={styles.leaseInfoLabel}>Status</span>
+                                            <span className={styles.leaseInfoValue}>{STATUS_LABELS[lease.status] ?? lease.status}</span>
+                                        </div>
+                                        <div className={styles.leaseInfoItem}>
+                                            <span className={styles.leaseInfoLabel}>Okres</span>
+                                            <span className={styles.leaseInfoValue}>
+                                                {lease.start_date} — {lease.end_date ?? 'Bezterminowa'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </>
             }
         </div>

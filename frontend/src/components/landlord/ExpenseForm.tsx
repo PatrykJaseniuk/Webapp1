@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './ExpenseForm.module.css';
+
 export const ExpenseForm = () => {
     const router = useRouter();
 
@@ -43,19 +45,21 @@ export const ExpenseForm = () => {
     const properties = propertiesState.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/expenses">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/expenses" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>Nowy wydatek</h1>
+            <h1 className={styles.title}>Nowy wydatek</h1>
 
             {propertiesState.loading ? <Spinner /> :
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    {(submitState.error || submitState.value?.error) && (
+                        <div className={styles.errorSection}>
+                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        </div>
+                    )}
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="propertyId">Nieruchomość</label>
                         <select
                             id="propertyId"
@@ -72,7 +76,7 @@ export const ExpenseForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="expenseType">Typ wydatku</label>
                         <select
                             id="expenseType"
@@ -87,7 +91,7 @@ export const ExpenseForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="description">Opis</label>
                         <input
                             id="description"
@@ -99,7 +103,7 @@ export const ExpenseForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="amount">Kwota (PLN)</label>
                         <input
                             id="amount"
@@ -112,7 +116,7 @@ export const ExpenseForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="expenseDate">Data wydatku</label>
                         <input
                             id="expenseDate"
@@ -123,7 +127,7 @@ export const ExpenseForm = () => {
                         />
                     </div>
 
-                    <button type="submit" disabled={submitState.loading}>
+                    <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                         {submitState.loading ? 'Zapisywanie...' : 'Dodaj wydatek'}
                     </button>
                 </form>

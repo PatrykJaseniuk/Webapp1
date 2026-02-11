@@ -10,6 +10,8 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatDate } from '@/utils/formatDate';
 
+import styles from './UtilityPricesList.module.css';
+
 const TYPE_LABELS: Record<string, string> = {
     electricity: 'Prąd',
     water: 'Woda',
@@ -32,11 +34,11 @@ export const UtilityPricesList = () => {
     const prices = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Ceny mediów</h1>
-                <Link href="/landlord/utility-prices?action=new">
-                    <button>Dodaj cenę</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Ceny mediów</h1>
+                <Link href="/landlord/utility-prices?action=new" className={styles.addButton}>
+                    Dodaj cenę
                 </Link>
             </div>
 
@@ -50,20 +52,35 @@ export const UtilityPricesList = () => {
                                 actionHref="/landlord/utility-prices?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Typ</th>
                                         <th>Cena za jednostkę</th>
                                         <th>Data obowiązywania</th>
+                                        <th>Akcje</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {prices.map(price => (
                                         <tr key={price.id}>
-                                            <td>{TYPE_LABELS[price.utility_type] ?? price.utility_type}</td>
-                                            <td>{price.price_per_unit} PLN</td>
-                                            <td>{formatDate(price.effective_date)}</td>
+                                            <td className={styles.utilityType}>
+                                                {TYPE_LABELS[price.utility_type] ?? price.utility_type}
+                                            </td>
+                                            <td className={styles.priceAmount}>
+                                                {price.price_per_unit} PLN
+                                            </td>
+                                            <td className={styles.dateRange}>
+                                                {formatDate(price.effective_date)}
+                                            </td>
+                                            <td className={styles.actions}>
+                                                <Link
+                                                    href={`/landlord/utility-prices?action=edit&id=${price.id}`}
+                                                    className={`${styles.actionButton} ${styles.editButton}`}
+                                                >
+                                                    Edytuj
+                                                </Link>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

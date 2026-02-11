@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './LeaseForm.module.css';
+
 interface LeaseFormProps {
     id?: string;
 }
@@ -91,21 +93,23 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
     const isDataLoading = tenantsState.loading || propertiesState.loading || loadState.loading;
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/leases">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/leases" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>{isEdit ? 'Edytuj umowę najmu' : 'Nowa umowa najmu'}</h1>
+            <h1 className={styles.title}>{isEdit ? 'Edytuj umowę najmu' : 'Nowa umowa najmu'}</h1>
 
             {isDataLoading ? <Spinner /> :
                 loadState.error ? <ErrorBanner msg={loadState.error.message} /> :
                     loadState.value?.error ? <ErrorBanner msg={loadState.value.error.message} /> :
-                        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                            {(submitState.error || submitState.value?.error) && (
+                                <div className={styles.errorSection}>
+                                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                                </div>
+                            )}
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="tenantId">Najemca</label>
                                 <select
                                     id="tenantId"
@@ -122,7 +126,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 </select>
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="propertyId">Nieruchomość</label>
                                 <select
                                     id="propertyId"
@@ -139,7 +143,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 </select>
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="startDate">Data rozpoczęcia</label>
                                 <input
                                     id="startDate"
@@ -150,7 +154,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="endDate">Data zakończenia (opcjonalna)</label>
                                 <input
                                     id="endDate"
@@ -160,7 +164,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="monthlyRent">Czynsz miesięczny (PLN)</label>
                                 <input
                                     id="monthlyRent"
@@ -173,7 +177,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="depositAmount">Kaucja (PLN)</label>
                                 <input
                                     id="depositAmount"
@@ -186,7 +190,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 />
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="status">Status</label>
                                 <select
                                     id="status"
@@ -199,18 +203,17 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
                                 </select>
                             </div>
 
-                            <div>
+                            <div className={styles.formField}>
                                 <label htmlFor="notes">Notatki</label>
                                 <textarea
                                     id="notes"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    rows={3}
                                     placeholder="Dodatkowe informacje..."
                                 />
                             </div>
 
-                            <button type="submit" disabled={submitState.loading}>
+                            <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                                 {submitState.loading ? 'Zapisywanie...' : isEdit ? 'Zapisz zmiany' : 'Dodaj umowę'}
                             </button>
                         </form>

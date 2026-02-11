@@ -1,0 +1,184 @@
+.page {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.backLink {
+    display: inline-block;
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 500;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    transition: background-color 0.2s ease;
+}
+
+.backLink:hover {
+    background-color: var(--color-primary-light);
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-xl);
+}
+
+.title {
+    font-size: var(--font-3xl);
+    font-weight: 700;
+    color: var(--color-text);
+    margin: 0;
+}
+
+.editButton {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--font-base);
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.2s ease;
+}
+
+.editButton:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.content {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: var(--spacing-xl);
+}
+
+.mainContent {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.section {
+    background-color: var(--color-bg-white);
+    padding: var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.sectionTitle {
+    font-size: var(--font-xl);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-lg) 0;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--color-primary);
+}
+
+.infoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.infoItem {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.infoLabel {
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    font-size: var(--font-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.infoValue {
+    font-size: var(--font-base);
+    color: var(--color-text);
+    font-weight: 500;
+}
+
+.infoValueEmail {
+    font-family: var(--font-mono);
+    color: var(--color-primary);
+}
+
+.infoValuePhone {
+    font-family: var(--font-mono);
+}
+
+.statusBadge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.statusActive {
+    background-color: var(--color-success-light);
+    color: var(--color-success);
+}
+
+.statusPast {
+    background-color: var(--color-secondary);
+    color: var(--color-bg-white);
+}
+
+.statusApplicant {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.leasesSection {
+    background-color: var(--color-bg-white);
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.leasesTitle {
+    font-size: var(--font-lg);
+    font-weight: 600;
+    color: var(--color-text);
+    margin: 0 0 var(--spacing-md) 0;
+}
+
+.leaseItem {
+    padding: var(--spacing-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--spacing-sm);
+    background-color: var(--color-bg);
+}
+
+.leaseProperty {
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-xs);
+}
+
+.leaseDates {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+}
+
+.noLeases {
+    color: var(--color-text-secondary);
+    font-style: italic;
+    text-align: center;
+    padding: var(--spacing-md);
+}

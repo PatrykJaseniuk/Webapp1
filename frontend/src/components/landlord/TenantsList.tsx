@@ -9,6 +9,8 @@ import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 
+import styles from './TenantsList.module.css';
+
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywny',
     past: 'Były',
@@ -30,11 +32,11 @@ export const TenantsList = () => {
     const tenants = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Najemcy</h1>
-                <Link href="/landlord/tenants?action=new">
-                    <button>Dodaj najemcę</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Najemcy</h1>
+                <Link href="/landlord/tenants?action=new" className={styles.addButton}>
+                    Dodaj najemcę
                 </Link>
             </div>
 
@@ -48,7 +50,7 @@ export const TenantsList = () => {
                                 actionHref="/landlord/tenants?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Imię i nazwisko</th>
@@ -61,16 +63,20 @@ export const TenantsList = () => {
                                 <tbody>
                                     {tenants.map(tenant => (
                                         <tr key={tenant.id}>
-                                            <td>
+                                            <td className={styles.name}>
                                                 <Link href={`/landlord/tenants?id=${tenant.id}`}>
                                                     {tenant.first_name} {tenant.last_name}
                                                 </Link>
                                             </td>
-                                            <td>{tenant.email}</td>
-                                            <td>{tenant.phone}</td>
-                                            <td>{STATUS_LABELS[tenant.status] ?? tenant.status}</td>
+                                            <td className={styles.email}>{tenant.email}</td>
+                                            <td className={styles.phone}>{tenant.phone}</td>
                                             <td>
-                                                <Link href={`/landlord/tenants?action=edit&id=${tenant.id}`}>
+                                                <span className={`${styles.status} ${tenant.status === 'active' ? styles.statusActive : styles.statusInactive}`}>
+                                                    {STATUS_LABELS[tenant.status] ?? tenant.status}
+                                                </span>
+                                            </td>
+                                            <td className={styles.actions}>
+                                                <Link href={`/landlord/tenants?action=edit&id=${tenant.id}`} className={styles.actionLink}>
                                                     Edytuj
                                                 </Link>
                                             </td>

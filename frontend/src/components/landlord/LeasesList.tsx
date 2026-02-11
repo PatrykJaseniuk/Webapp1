@@ -10,6 +10,8 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 
+import styles from './LeasesList.module.css';
+
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywna',
     expired: 'Wygasła',
@@ -37,20 +39,21 @@ export const LeasesList = () => {
     const leases = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Umowy najmu</h1>
-                <Link href="/landlord/leases?action=new">
-                    <button>Dodaj umowę</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Umowy najmu</h1>
+                <Link href="/landlord/leases?action=new" className={styles.addButton}>
+                    Dodaj umowę
                 </Link>
             </div>
 
-            <div>
-                <label htmlFor="filterStatus">Filtruj wg statusu: </label>
+            <div className={styles.header}>
+                <label htmlFor="filterStatus" className={styles.propertyName}>Filtruj wg statusu: </label>
                 <select
                     id="filterStatus"
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
+                    className={styles.propertyName}
                 >
                     <option value="">Wszystkie</option>
                     <option value="active">Aktywne</option>
@@ -69,7 +72,7 @@ export const LeasesList = () => {
                                 actionHref="/landlord/leases?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Nieruchomość</th>
@@ -83,21 +86,28 @@ export const LeasesList = () => {
                                 <tbody>
                                     {leases.map(lease => (
                                         <tr key={lease.id}>
-                                            <td>
+                                            <td className={styles.propertyName}>
                                                 <Link href={`/landlord/leases?id=${lease.id}`}>
                                                     {(lease as any).properties?.name ?? lease.property_id}
                                                 </Link>
                                             </td>
-                                            <td>
+                                            <td className={styles.tenantName}>
                                                 {(lease as any).tenants
                                                     ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
                                                     : lease.tenant_id}
                                             </td>
-                                            <td>{lease.start_date} — {lease.end_date ?? 'Bezterminowa'}</td>
-                                            <td>{formatCurrency(lease.monthly_rent)}</td>
-                                            <td>{STATUS_LABELS[lease.status] ?? lease.status}</td>
+                                            <td className={styles.dateRange}>{lease.start_date} — {lease.end_date ?? 'Bezterminowa'}</td>
+                                            <td className={styles.rentAmount}>{formatCurrency(lease.monthly_rent)}</td>
                                             <td>
-                                                <Link href={`/landlord/leases?action=edit&id=${lease.id}`}>
+                                                <span className={`${styles.status} ${lease.status === 'active' ? styles.statusActive :
+                                                        lease.status === 'expired' ? styles.statusExpired :
+                                                            styles.statusDraft
+                                                    }`}>
+                                                    {STATUS_LABELS[lease.status] ?? lease.status}
+                                                </span>
+                                            </td>
+                                            <td className={styles.actions}>
+                                                <Link href={`/landlord/leases?action=edit&id=${lease.id}`} className={styles.actionLink}>
                                                     Edytuj
                                                 </Link>
                                             </td>

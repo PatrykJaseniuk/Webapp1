@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './BillingForm.module.css';
+
 export const BillingForm = () => {
     const router = useRouter();
 
@@ -42,19 +44,21 @@ export const BillingForm = () => {
     const leases = leasesState.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/billing">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/billing" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>Nowa pozycja rozliczeniowa</h1>
+            <h1 className={styles.title}>Nowa pozycja rozliczeniowa</h1>
 
             {leasesState.loading ? <Spinner /> :
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    {(submitState.error || submitState.value?.error) && (
+                        <div className={styles.errorSection}>
+                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        </div>
+                    )}
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="leaseId">Umowa najmu</label>
                         <select
                             id="leaseId"
@@ -71,7 +75,7 @@ export const BillingForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="itemType">Typ</label>
                         <select
                             id="itemType"
@@ -86,7 +90,7 @@ export const BillingForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="description">Opis</label>
                         <input
                             id="description"
@@ -98,7 +102,7 @@ export const BillingForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="amount">Kwota (PLN)</label>
                         <input
                             id="amount"
@@ -111,7 +115,7 @@ export const BillingForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="dueDate">Termin płatności</label>
                         <input
                             id="dueDate"
@@ -122,7 +126,7 @@ export const BillingForm = () => {
                         />
                     </div>
 
-                    <button type="submit" disabled={submitState.loading}>
+                    <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                         {submitState.loading ? 'Zapisywanie...' : 'Dodaj pozycję'}
                     </button>
                 </form>

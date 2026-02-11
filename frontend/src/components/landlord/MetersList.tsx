@@ -9,6 +9,8 @@ import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 
+import styles from './MetersList.module.css';
+
 const TYPE_LABELS: Record<string, string> = {
     electricity: 'Prąd',
     water: 'Woda',
@@ -42,15 +44,15 @@ export const MetersList = () => {
         latestReadings.find(r => r.meter_id === meterId);
 
     return (
-        <div>
-            <div>
-                <h1>Liczniki</h1>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Liczniki</h1>
                 <div>
-                    <Link href="/landlord/meters?action=new-meter">
-                        <button>Dodaj licznik</button>
+                    <Link href="/landlord/meters?action=new-meter" className={styles.addButton}>
+                        Dodaj licznik
                     </Link>
-                    <Link href="/landlord/meters?action=new-reading">
-                        <button>Dodaj odczyt</button>
+                    <Link href="/landlord/meters?action=new-reading" className={styles.addButton}>
+                        Dodaj odczyt
                     </Link>
                 </div>
             </div>
@@ -65,7 +67,7 @@ export const MetersList = () => {
                                 actionHref="/landlord/meters?action=new-meter"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Nieruchomość</th>
@@ -82,22 +84,25 @@ export const MetersList = () => {
                                         const latest = getLatestReading(meter.id);
                                         return (
                                             <tr key={meter.id}>
-                                                <td>{(meter as any).properties?.name ?? meter.property_id}</td>
-                                                <td>{TYPE_LABELS[meter.meter_type] ?? meter.meter_type}</td>
-                                                <td>{meter.meter_number}</td>
+                                                <td className={styles.location}>{(meter as any).properties?.name ?? meter.property_id}</td>
+                                                <td className={styles.utilityType}>{TYPE_LABELS[meter.meter_type] ?? meter.meter_type}</td>
+                                                <td className={styles.meterType}>{meter.meter_number}</td>
                                                 <td>{meter.unit}</td>
                                                 <td>
                                                     {latest
                                                         ? `${latest.reading_value} ${latest.unit} (${latest.reading_date})`
                                                         : 'Brak'}
                                                 </td>
-                                                <td>{meter.active ? 'Tak' : 'Nie'}</td>
                                                 <td>
-                                                    <Link href={`/landlord/meters?meterId=${meter.id}`}>
+                                                    <span className={`${styles.status} ${meter.active ? styles.statusActive : styles.statusInactive}`}>
+                                                        {meter.active ? 'Aktywny' : 'Nieaktywny'}
+                                                    </span>
+                                                </td>
+                                                <td className={styles.actions}>
+                                                    <Link href={`/landlord/meters?meterId=${meter.id}`} className={styles.actionLink}>
                                                         Historia
                                                     </Link>
-                                                    {' | '}
-                                                    <Link href={`/landlord/meters?action=new-reading&meterId=${meter.id}`}>
+                                                    <Link href={`/landlord/meters?action=new-reading&meterId=${meter.id}`} className={styles.actionLink}>
                                                         Odczyt
                                                     </Link>
                                                 </td>

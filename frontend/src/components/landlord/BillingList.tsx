@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
+import styles from './BillingList.module.css';
+
 const STATUS_LABELS: Record<string, string> = {
     pending: 'Oczekuje',
     paid: 'Zapłacone',
@@ -46,18 +48,19 @@ export const BillingList = () => {
     const billingItems = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Rozliczenia</h1>
-                <Link href="/landlord/billing?action=new">
-                    <button>Dodaj pozycję</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Rozliczenia</h1>
+                <Link href="/landlord/billing?action=new" className={styles.addButton}>
+                    Dodaj pozycję
                 </Link>
             </div>
 
-            <div>
-                <label htmlFor="filterStatus">Filtruj wg statusu: </label>
+            <div className={styles.filterSection}>
+                <label htmlFor="filterStatus" className={styles.filterLabel}>Filtruj wg statusu: </label>
                 <select
                     id="filterStatus"
+                    className={styles.filterSelect}
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
                 >
@@ -78,7 +81,7 @@ export const BillingList = () => {
                                 actionHref="/landlord/billing?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Opis</th>
@@ -94,12 +97,18 @@ export const BillingList = () => {
                                     {billingItems.map(item => (
                                         <tr key={item.id}>
                                             <td>{item.description}</td>
-                                            <td>{TYPE_LABELS[item.item_type ?? ''] ?? item.item_type}</td>
-                                            <td>{formatCurrency(item.amount ?? 0)}</td>
-                                            <td>{formatCurrency(item.total_paid ?? 0)}</td>
-                                            <td>{formatCurrency(item.balance ?? 0)}</td>
+                                            <td className={styles.typeLabel}>{TYPE_LABELS[item.item_type ?? ''] ?? item.item_type}</td>
+                                            <td className={styles.amount}>{formatCurrency(item.amount ?? 0)}</td>
+                                            <td className={styles.amount}>{formatCurrency(item.total_paid ?? 0)}</td>
+                                            <td className={`${styles.amount} ${(item.balance ?? 0) >= 0 ? styles.balancePositive : styles.balanceNegative}`}>
+                                                {formatCurrency(item.balance ?? 0)}
+                                            </td>
                                             <td>{item.due_date ? formatDate(item.due_date) : '—'}</td>
-                                            <td>{STATUS_LABELS[item.status ?? ''] ?? item.status}</td>
+                                            <td>
+                                                <span className={`${styles.status} ${styles[`status${(item.status ?? '').charAt(0).toUpperCase() + (item.status ?? '').slice(1)}`]}`}>
+                                                    {STATUS_LABELS[item.status ?? ''] ?? item.status}
+                                                </span>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

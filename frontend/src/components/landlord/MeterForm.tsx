@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './MeterForm.module.css';
+
 export const MeterForm = () => {
     const router = useRouter();
 
@@ -43,19 +45,21 @@ export const MeterForm = () => {
     const properties = propertiesState.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/meters">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/meters" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>Nowy licznik</h1>
+            <h1 className={styles.title}>Nowy licznik</h1>
 
             {propertiesState.loading ? <Spinner /> :
-                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
-                    {submitState.error && <ErrorBanner msg={submitState.error.message} />}
-                    {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                    {(submitState.error || submitState.value?.error) && (
+                        <div className={styles.errorSection}>
+                            {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                            {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                        </div>
+                    )}
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="propertyId">Nieruchomość</label>
                         <select
                             id="propertyId"
@@ -72,7 +76,7 @@ export const MeterForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="meterType">Typ licznika</label>
                         <select
                             id="meterType"
@@ -89,7 +93,7 @@ export const MeterForm = () => {
                         </select>
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="meterNumber">Numer licznika</label>
                         <input
                             id="meterNumber"
@@ -101,7 +105,7 @@ export const MeterForm = () => {
                         />
                     </div>
 
-                    <div>
+                    <div className={styles.formField}>
                         <label htmlFor="unit">Jednostka</label>
                         <select
                             id="unit"
@@ -113,18 +117,17 @@ export const MeterForm = () => {
                         </select>
                     </div>
 
-                    <div>
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={active}
-                                onChange={(e) => setActive(e.target.checked)}
-                            />
-                            {' '}Aktywny
-                        </label>
+                    <div className={styles.checkboxField}>
+                        <input
+                            id="active"
+                            type="checkbox"
+                            checked={active}
+                            onChange={(e) => setActive(e.target.checked)}
+                        />
+                        <label htmlFor="active">Aktywny</label>
                     </div>
 
-                    <button type="submit" disabled={submitState.loading}>
+                    <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                         {submitState.loading ? 'Zapisywanie...' : 'Dodaj licznik'}
                     </button>
                 </form>
