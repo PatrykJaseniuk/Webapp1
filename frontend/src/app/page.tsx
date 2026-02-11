@@ -9,7 +9,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/shared/Spinner';
 
 const ROLE_REDIRECTS: Record<string, string> = {
-    tenant: '/tenant/dashboard',
+    tenant: '/tenant',
     landlord: '/landlord',
     admin: '/admin/users',
 };

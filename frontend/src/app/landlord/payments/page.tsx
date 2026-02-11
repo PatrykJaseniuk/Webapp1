@@ -1,10 +1,16 @@
-import { RoleGuard } from '@/components/shared/RoleGuard';
-import { PaymentsPage } from '@/components/landlord/PaymentsPage';
+'use client';
 
-export default function Page() {
+import { useSearchParams } from 'next/navigation';
+
+import { AppLayout } from '@/components/shared/AppLayout';
+import { PaymentsList } from '@/components/landlord/PaymentsList';
+import { PaymentForm } from '@/components/landlord/PaymentForm';
+
+export default () => {
+    const searchParams = useSearchParams();
+    const action = searchParams.get('action');
+
     return (
-        <RoleGuard allowedRoles={['landlord', 'admin']}>
-            <PaymentsPage />
-        </RoleGuard>
+        action === 'new' ? <PaymentForm /> : <PaymentsList />
     );
-}
+};

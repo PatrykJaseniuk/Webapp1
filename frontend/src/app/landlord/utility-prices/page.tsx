@@ -12,10 +12,6 @@ export default function Page() {
     const action = searchParams.get('action');
 
     return (
-        <RoleGuard allowedRoles={['landlord', 'admin']}>
-            <AppLayout>
-                {action === 'new' ? <UtilityPriceForm /> : <UtilityPricesList />}
-            </AppLayout>
-        </RoleGuard>
+        action === 'new' ? <UtilityPriceForm /> : <UtilityPricesList />
     );
 }

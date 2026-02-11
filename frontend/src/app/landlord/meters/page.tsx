@@ -1,10 +1,22 @@
-import { RoleGuard } from '@/components/shared/RoleGuard';
-import { MetersPage } from '@/components/landlord/MetersPage';
+'use client';
 
-export default function Page() {
+import { useSearchParams } from 'next/navigation';
+
+import { AppLayout } from '@/components/shared/AppLayout';
+import { MetersList } from '@/components/landlord/MetersList';
+import { MeterForm } from '@/components/landlord/MeterForm';
+import { ReadingForm } from '@/components/landlord/ReadingForm';
+import { ReadingsHistory } from '@/components/landlord/ReadingsHistory';
+
+export default () => {
+    const searchParams = useSearchParams();
+    const action = searchParams.get('action');
+    const meterId = searchParams.get('meterId');
+
     return (
-        <RoleGuard allowedRoles={['landlord', 'admin']}>
-            <MetersPage />
-        </RoleGuard>
+        action === 'new-meter' ? <MeterForm /> :
+            action === 'new-reading' ? <ReadingForm meterId={meterId ?? undefined} /> :
+                meterId ? <ReadingsHistory meterId={meterId} /> :
+                    <MetersList />
     );
-}
+};

@@ -26,11 +26,12 @@ export const RoleGuard = ({ allowedRoles, children }: RoleGuardProps) => {
                     <Link className={styles.link} href="/login">Przejdź do logowania</Link>
                 </div>
             ) :
-                !role || !allowedRoles.includes(role) ? (
+                !(role && allowedRoles.includes(role)) ? (
                     <div className={styles.container}>
                         <h2 className={styles.title}>Brak dostępu</h2>
                         <p className={styles.message}>Nie masz uprawnień do wyświetlenia tej strony.</p>
                         <Link className={styles.link} href="/">Powrót do strony głównej</Link>
+                        <p>rola: {role} includes {allowedRoles}</p>
                     </div>
                 ) :
                     <>{children}</>

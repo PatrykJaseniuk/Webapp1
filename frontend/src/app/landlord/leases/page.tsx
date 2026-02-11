@@ -1,10 +1,24 @@
-import { RoleGuard } from '@/components/shared/RoleGuard';
-import { LeasesPage } from '@/components/landlord/LeasesPage';
+'use client';
 
-export default function Page() {
+import { useSearchParams } from 'next/navigation';
+
+import { AppLayout } from '@/components/shared/AppLayout';
+import { LeasesList } from '@/components/landlord/LeasesList';
+import { LeaseDetail } from '@/components/landlord/LeaseDetail';
+import { LeaseForm } from '@/components/landlord/LeaseForm';
+
+
+const PATH = 'landlord/leases'
+
+export default () => {
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
+    const action = searchParams.get('action');
+
     return (
-        <RoleGuard allowedRoles={['landlord', 'admin']}>
-            <LeasesPage />
-        </RoleGuard>
+        action === 'new' ? <LeaseForm /> :
+            action === 'edit' && id ? <LeaseForm id={id} /> :
+                id ? <LeaseDetail id={id} /> :
+                    <LeasesList />
     );
-}
+};

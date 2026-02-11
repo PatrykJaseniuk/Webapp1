@@ -3,7 +3,7 @@ import { RoleGuard } from "@/components/shared/RoleGuard";
 
 export default function LandlordLayout({ children }: { children: React.ReactNode }) {
     return (
-        <RoleGuard allowedRoles={['Landlord', 'admin']}>
+        <RoleGuard allowedRoles={['landlord', 'admin']}>
             <AppLayout>
                 {children}
             </AppLayout>
