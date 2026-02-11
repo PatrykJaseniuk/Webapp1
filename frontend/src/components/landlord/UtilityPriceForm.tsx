@@ -9,7 +9,7 @@ import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './UtilityPriceForm.module.css';
+import styles from './FormPage.module.css';
 
 export const UtilityPriceForm = () => {
     const router = useRouter();

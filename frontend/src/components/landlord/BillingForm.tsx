@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './BillingForm.module.css';
+import styles from './FormPage.module.css';
 
 export const BillingForm = () => {
     const router = useRouter();
@@ -45,10 +45,8 @@ export const BillingForm = () => {
     const leases = leasesState.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <Link href={routes.landlord.billing()}>← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href={routes.landlord.billing()} className={styles.backLink}>← Powrót do listy</Link>
 
             <h1 className={styles.title}>Nowa pozycja rozliczeniowa</h1>
 

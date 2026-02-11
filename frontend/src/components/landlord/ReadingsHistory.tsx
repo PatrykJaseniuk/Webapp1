@@ -11,7 +11,7 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './ReadingsHistory.module.css';
+import styles from './ListPage.module.css';
 
 interface ReadingsHistoryProps {
     meterId: string;

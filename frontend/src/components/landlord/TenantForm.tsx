@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './TenantForm.module.css';
+import styles from './FormPage.module.css';
 
 interface TenantFormProps {
     id?: string;
@@ -77,7 +77,7 @@ export const TenantForm = ({ id }: TenantFormProps) => {
 
     return (
         <div className={styles.page}>
-            <Link href={routes.landlord.tenants()}>← Powrót do listy</Link>
+            <Link href={routes.landlord.tenants()} className={styles.backLink}>← Powrót do listy</Link>
 
 
             <h1 className={styles.title}>{isEdit ? 'Edytuj najemcę' : 'Nowy najemca'}</h1>

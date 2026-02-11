@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './ExpenseForm.module.css';
+import styles from './FormPage.module.css';
 
 export const ExpenseForm = () => {
     const router = useRouter();

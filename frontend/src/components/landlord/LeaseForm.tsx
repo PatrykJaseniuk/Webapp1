@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './LeaseForm.module.css';
+import styles from './FormPage.module.css';
 
 interface LeaseFormProps {
     id?: string;
@@ -96,9 +96,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
     return (
 
         <div className={styles.page}>
-            <div>
-                <Link href={routes.landlord.leases()}>← Powrót do listy</Link>
-            </div>
+            <Link href={routes.landlord.leases()} className={styles.backLink}>← Powrót do listy</Link>
 
             <h1 className={styles.title}>{isEdit ? 'Edytuj umowę najmu' : 'Nowa umowa najmu'}</h1>
 

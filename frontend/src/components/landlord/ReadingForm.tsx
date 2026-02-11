@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './ReadingForm.module.css';
+import styles from './FormPage.module.css';
 
 interface ReadingFormProps {
     meterId?: string;
@@ -50,7 +50,7 @@ export const ReadingForm = ({ meterId: initialMeterId }: ReadingFormProps) => {
 
     return (
         <div className={styles.page}>
-            <Link href={routes.landlord.meters()}>← Powrót do listy</Link>
+            <Link href={routes.landlord.meters()} className={styles.backLink}>← Powrót do listy</Link>
 
             <h1 className={styles.title}>Nowy odczyt licznika</h1>
 

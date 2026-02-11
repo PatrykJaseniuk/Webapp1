@@ -11,7 +11,7 @@ import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { formatCurrency } from '@/utils/formatCurrency';
 
-import styles from './PaymentForm.module.css';
+import styles from './FormPage.module.css';
 
 export const PaymentForm = () => {
     const router = useRouter();

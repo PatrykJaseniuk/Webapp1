@@ -7,7 +7,7 @@ import { routes } from '@/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './SignupForm.module.css';
+import styles from './AuthForm.module.css';
 
 export const SignupForm = () => {
     const { signup, signupState } = useAuth();

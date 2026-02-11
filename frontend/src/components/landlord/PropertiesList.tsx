@@ -11,7 +11,7 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 
-import styles from './PropertiesList.module.css';
+import styles from './ListPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
     available: 'Wolna',

@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './ExpensesList.module.css';
+import styles from './ListPage.module.css';
 
 const TYPE_LABELS: Record<string, string> = {
     maintenance: 'Konserwacja',

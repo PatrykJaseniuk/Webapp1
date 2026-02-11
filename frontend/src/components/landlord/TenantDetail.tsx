@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './TenantDetail.module.css';
+import styles from './DetailPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywny',
@@ -73,7 +73,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
 
     return (
         <div className={styles.page}>
-            <Link href={routes.landlord.tenants()}>← Powrót do listy</Link>
+            <Link href={routes.landlord.tenants()} className={styles.backLink}>← Powrót do listy</Link>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :

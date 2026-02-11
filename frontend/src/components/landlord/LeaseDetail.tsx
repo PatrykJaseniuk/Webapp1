@@ -11,7 +11,7 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './LeaseDetail.module.css';
+import styles from './DetailPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywna',

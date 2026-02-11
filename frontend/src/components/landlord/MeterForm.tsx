@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './MeterForm.module.css';
+import styles from './FormPage.module.css';
 
 export const MeterForm = () => {
     const router = useRouter();

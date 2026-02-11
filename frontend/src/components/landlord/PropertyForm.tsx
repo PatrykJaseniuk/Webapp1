@@ -10,7 +10,7 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './PropertyForm.module.css';
+import styles from './FormPage.module.css';
 
 interface PropertyFormProps {
     id?: string;
@@ -88,10 +88,9 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                             {submitState.error && <ErrorBanner msg={submitState.error.message} />}
                             {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
 
-                            <div className={styles.field}>
-                                <label className={styles.label} htmlFor="name">Nazwa</label>
+                            <div className={styles.formField}>
+                                <label htmlFor="name">Nazwa</label>
                                 <input
-                                    className={styles.input}
                                     id="name"
                                     type="text"
                                     value={name}
@@ -101,10 +100,9 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 />
                             </div>
 
-                            <div className={styles.field}>
-                                <label className={styles.label} htmlFor="address">Adres</label>
+                            <div className={styles.formField}>
+                                <label htmlFor="address">Adres</label>
                                 <input
-                                    className={styles.input}
                                     id="address"
                                     type="text"
                                     value={address}
@@ -114,10 +112,9 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 />
                             </div>
 
-                            <div className={styles.field}>
-                                <label className={styles.label} htmlFor="propertyType">Typ nieruchomości</label>
+                            <div className={styles.formField}>
+                                <label htmlFor="propertyType">Typ nieruchomości</label>
                                 <select
-                                    className={styles.select}
                                     id="propertyType"
                                     value={propertyType}
                                     onChange={(e) => setPropertyType(e.target.value)}
@@ -129,11 +126,10 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 </select>
                             </div>
 
-                            <div className={styles.grid}>
-                                <div className={styles.field}>
-                                    <label className={styles.label} htmlFor="sizeSqm">Powierzchnia (m²)</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-lg)' }}>
+                                <div className={styles.formField}>
+                                    <label htmlFor="sizeSqm">Powierzchnia (m²)</label>
                                     <input
-                                        className={styles.input}
                                         id="sizeSqm"
                                         type="number"
                                         step="0.01"
@@ -143,10 +139,9 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                     />
                                 </div>
 
-                                <div className={styles.field}>
-                                    <label className={styles.label} htmlFor="bedrooms">Liczba sypialni</label>
+                                <div className={styles.formField}>
+                                    <label htmlFor="bedrooms">Liczba sypialni</label>
                                     <input
-                                        className={styles.input}
                                         id="bedrooms"
                                         type="number"
                                         value={bedrooms}
@@ -156,11 +151,10 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 </div>
                             </div>
 
-                            <div className={styles.grid}>
-                                <div className={styles.field}>
-                                    <label className={styles.label} htmlFor="monthlyRent">Czynsz miesięczny (PLN)</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--spacing-lg)' }}>
+                                <div className={styles.formField}>
+                                    <label htmlFor="monthlyRent">Czynsz miesięczny (PLN)</label>
                                     <input
-                                        className={styles.input}
                                         id="monthlyRent"
                                         type="number"
                                         step="0.01"
@@ -171,10 +165,9 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                     />
                                 </div>
 
-                                <div className={styles.field}>
-                                    <label className={styles.label} htmlFor="depositAmount">Kaucja (PLN)</label>
+                                <div className={styles.formField}>
+                                    <label htmlFor="depositAmount">Kaucja (PLN)</label>
                                     <input
-                                        className={styles.input}
                                         id="depositAmount"
                                         type="number"
                                         step="0.01"
@@ -186,10 +179,9 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 </div>
                             </div>
 
-                            <div className={styles.field}>
-                                <label className={styles.label} htmlFor="status">Status</label>
+                            <div className={styles.formField}>
+                                <label htmlFor="status">Status</label>
                                 <select
-                                    className={styles.select}
                                     id="status"
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value)}
@@ -200,19 +192,17 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 </select>
                             </div>
 
-                            <div className={styles.field}>
-                                <label className={styles.label} htmlFor="notes">Notatki</label>
+                            <div className={styles.formField}>
+                                <label htmlFor="notes">Notatki</label>
                                 <textarea
-                                    className={styles.textarea}
                                     id="notes"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
-                                    rows={3}
                                     placeholder="Dodatkowe informacje..."
                                 />
                             </div>
 
-                            <button className={styles.button} type="submit" disabled={submitState.loading}>
+                            <button type="submit" className={styles.submitButton} disabled={submitState.loading}>
                                 {submitState.loading ? 'Zapisywanie...' : isEdit ? 'Zapisz zmiany' : 'Dodaj nieruchomość'}
                             </button>
                         </form>

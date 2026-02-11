@@ -10,7 +10,7 @@ import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 
-import styles from './TenantsList.module.css';
+import styles from './ListPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywny',

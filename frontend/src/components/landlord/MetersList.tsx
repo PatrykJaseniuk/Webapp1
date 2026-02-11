@@ -10,7 +10,7 @@ import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 
-import styles from './MetersList.module.css';
+import styles from './ListPage.module.css';
 
 const TYPE_LABELS: Record<string, string> = {
     electricity: 'Prąd',

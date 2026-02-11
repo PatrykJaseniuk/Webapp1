@@ -10,7 +10,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
-import styles from './LoginForm.module.css';
+import styles from './AuthForm.module.css';
 
 export const LoginForm = () => {
     const router = useRouter();

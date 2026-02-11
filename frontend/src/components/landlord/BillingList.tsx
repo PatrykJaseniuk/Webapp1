@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './BillingList.module.css';
+import styles from './ListPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
     pending: 'Oczekuje',

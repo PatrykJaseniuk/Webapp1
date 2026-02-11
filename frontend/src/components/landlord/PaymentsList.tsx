@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './PaymentsList.module.css';
+import styles from './ListPage.module.css';
 
 const METHOD_LABELS: Record<string, string> = {
     cash: 'Gotówka',
