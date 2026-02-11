@@ -1,14 +1,13 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import type { PaymentRouteParams } from '@/routes';
+import { useRouteParams } from '@/routes/useRouteParams';
 
-import { AppLayout } from '@/components/shared/AppLayout';
 import { PaymentsList } from '@/components/landlord/PaymentsList';
 import { PaymentForm } from '@/components/landlord/PaymentForm';
 
 export default () => {
-    const searchParams = useSearchParams();
-    const action = searchParams.get('action');
+    const { action } = useRouteParams<PaymentRouteParams>();
 
     return (
         action === 'new' ? <PaymentForm /> : <PaymentsList />

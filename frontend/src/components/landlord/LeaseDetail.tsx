@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -70,7 +71,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/leases" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.leases()} className={styles.backLink}>← Powrót do listy</Link>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :
@@ -78,7 +79,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                         <>
                             <div className={styles.header}>
                                 <h1 className={styles.title}>Umowa najmu</h1>
-                                <Link href={`/landlord/leases?action=edit&id=${id}`} className={styles.editButton}>
+                                <Link href={routes.landlord.leases({ action: 'edit', id })} className={styles.editButton}>
                                     Edytuj
                                 </Link>
                             </div>
@@ -91,7 +92,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Nieruchomość</span>
                                                 <span className={styles.infoValue}>
-                                                    <Link href={`/landlord/properties?id=${lease.property_id}`}>
+                                                    <Link href={routes.landlord.properties({ id: lease.property_id })}>
                                                         {(lease as any).properties?.name ?? lease.property_id}
                                                     </Link>
                                                 </span>
@@ -99,7 +100,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Najemca</span>
                                                 <span className={styles.infoValue}>
-                                                    <Link href={`/landlord/tenants?id=${lease.tenant_id}`}>
+                                                    <Link href={routes.landlord.tenants({ id: lease.tenant_id })}>
                                                         {(lease as any).tenants
                                                             ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
                                                             : lease.tenant_id}
@@ -109,8 +110,8 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Status</span>
                                                 <span className={`${styles.statusBadge} ${lease.status === 'active' ? styles.statusActive :
-                                                        lease.status === 'expired' ? styles.statusExpired :
-                                                            styles.statusTerminated
+                                                    lease.status === 'expired' ? styles.statusExpired :
+                                                        styles.statusTerminated
                                                     }`}>
                                                     {STATUS_LABELS[lease.status] ?? lease.status}
                                                 </span>

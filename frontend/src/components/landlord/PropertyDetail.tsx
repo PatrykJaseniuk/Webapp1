@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -69,7 +70,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/properties" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.properties()} className={styles.backLink}>← Powrót do listy</Link>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :
@@ -77,7 +78,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                         <>
                             <div className={styles.header}>
                                 <h1 className={styles.title}>{property.name}</h1>
-                                <Link href={`/landlord/properties?action=edit&id=${id}`} className={styles.editButton}>
+                                <Link href={routes.landlord.properties({ action: 'edit', id })} className={styles.editButton}>
                                     Edytuj
                                 </Link>
                             </div>
@@ -100,8 +101,8 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Status</span>
                                                 <span className={`${styles.statusBadge} ${property.status === 'available' ? styles.statusAvailable :
-                                                        property.status === 'occupied' ? styles.statusOccupied :
-                                                            styles.statusMaintenance
+                                                    property.status === 'occupied' ? styles.statusOccupied :
+                                                        styles.statusMaintenance
                                                     }`}>
                                                     {STATUS_LABELS[property.status ?? ''] ?? property.status}
                                                 </span>
@@ -148,7 +149,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                                 <div className={styles.infoItem}>
                                                     <span className={styles.infoLabel}>Najemca</span>
                                                     <span className={styles.infoValue}>
-                                                        <Link href={`/landlord/tenants?id=${property.tenant_id}`}>
+                                                        <Link href={routes.landlord.tenants({ id: property.tenant_id ?? undefined })}>
                                                             {property.current_tenant_name}
                                                         </Link>
                                                     </span>
@@ -164,7 +165,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <Link href={`/landlord/leases?id=${property.current_lease_id}`} className={styles.editButton}>
+                                            <Link href={routes.landlord.leases({ id: property.current_lease_id })} className={styles.editButton}>
                                                 Szczegóły umowy →
                                             </Link>
                                         </div>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -42,7 +43,7 @@ export const LeasesList = () => {
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Umowy najmu</h1>
-                <Link href="/landlord/leases?action=new" className={styles.addButton}>
+                <Link href={routes.landlord.leases({ action: 'new' })} className={styles.addButton}>
                     Dodaj umowę
                 </Link>
             </div>
@@ -69,7 +70,7 @@ export const LeasesList = () => {
                             <EmptyState
                                 message="Brak umów najmu"
                                 actionLabel="Dodaj pierwszą umowę"
-                                actionHref="/landlord/leases?action=new"
+                                actionHref={routes.landlord.leases({ action: 'new' })}
                             />
                         ) : (
                             <table className={styles.table}>
@@ -87,7 +88,7 @@ export const LeasesList = () => {
                                     {leases.map(lease => (
                                         <tr key={lease.id}>
                                             <td className={styles.propertyName}>
-                                                <Link href={`/landlord/leases?id=${lease.id}`}>
+                                                <Link href={routes.landlord.leases({ id: lease.id })}>
                                                     {(lease as any).properties?.name ?? lease.property_id}
                                                 </Link>
                                             </td>
@@ -100,14 +101,14 @@ export const LeasesList = () => {
                                             <td className={styles.rentAmount}>{formatCurrency(lease.monthly_rent)}</td>
                                             <td>
                                                 <span className={`${styles.status} ${lease.status === 'active' ? styles.statusActive :
-                                                        lease.status === 'expired' ? styles.statusExpired :
-                                                            styles.statusDraft
+                                                    lease.status === 'expired' ? styles.statusExpired :
+                                                        styles.statusDraft
                                                     }`}>
                                                     {STATUS_LABELS[lease.status] ?? lease.status}
                                                 </span>
                                             </td>
                                             <td className={styles.actions}>
-                                                <Link href={`/landlord/leases?action=edit&id=${lease.id}`} className={styles.actionLink}>
+                                                <Link href={routes.landlord.leases({ action: 'edit', id: lease.id })} className={styles.actionLink}>
                                                     Edytuj
                                                 </Link>
                                             </td>

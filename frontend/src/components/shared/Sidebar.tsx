@@ -2,33 +2,34 @@
 
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { useUserRole } from '@/hooks/useUserRole';
 
 import styles from './Sidebar.module.css';
 
 const TENANT_NAV = [
-    { href: '/tenant/dashboard', label: 'Panel główny' },
-    { href: '/tenant/properties', label: 'Nieruchomości' },
-    { href: '/tenant/leases', label: 'Umowy najmu' },
-    { href: '/tenant/billing', label: 'Rozliczenia' },
-    { href: '/tenant/meters', label: 'Liczniki' },
-    { href: '/tenant/profile', label: 'Profil' },
+    { href: routes.tenant.dashboard(), label: 'Panel główny' },
+    { href: routes.tenant.properties(), label: 'Nieruchomości' },
+    { href: routes.tenant.leases(), label: 'Umowy najmu' },
+    { href: routes.tenant.billing(), label: 'Rozliczenia' },
+    { href: routes.tenant.meters(), label: 'Liczniki' },
+    { href: routes.tenant.profile(), label: 'Profil' },
 ];
 
 const LANDLORD_NAV = [
-    { href: '/landlord/dashboard', label: 'Panel główny' },
-    { href: '/landlord/properties', label: 'Nieruchomości' },
-    { href: '/landlord/tenants', label: 'Najemcy' },
-    { href: '/landlord/leases', label: 'Umowy najmu' },
-    { href: '/landlord/billing', label: 'Rozliczenia' },
-    { href: '/landlord/payments', label: 'Płatności' },
-    { href: '/landlord/meters', label: 'Liczniki' },
-    { href: '/landlord/utility-prices', label: 'Ceny mediów' },
-    { href: '/landlord/expenses', label: 'Wydatki' },
+    { href: routes.landlord.dashboard(), label: 'Panel główny' },
+    { href: routes.landlord.properties(), label: 'Nieruchomości' },
+    { href: routes.landlord.tenants(), label: 'Najemcy' },
+    { href: routes.landlord.leases(), label: 'Umowy najmu' },
+    { href: routes.landlord.billing(), label: 'Rozliczenia' },
+    { href: routes.landlord.payments(), label: 'Płatności' },
+    { href: routes.landlord.meters(), label: 'Liczniki' },
+    { href: routes.landlord.utilityPrices(), label: 'Ceny mediów' },
+    { href: routes.landlord.expenses(), label: 'Wydatki' },
 ];
 
 const ADMIN_NAV = [
-    { href: '/admin/users', label: 'Użytkownicy' },
+    { href: routes.admin.users(), label: 'Użytkownicy' },
 ];
 
 export const Sidebar = () => {

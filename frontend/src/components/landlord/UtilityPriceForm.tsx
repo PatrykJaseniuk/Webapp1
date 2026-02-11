@@ -5,6 +5,7 @@ import { useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
@@ -25,13 +26,13 @@ export const UtilityPriceForm = () => {
         };
 
         const { error } = await database.from('utility_prices').insert(payload);
-        !error && router.push('/landlord/utility-prices');
+        !error && router.push(routes.landlord.utilityPrices());
         return { error };
     }, [utilityType, pricePerUnit, effectiveDate, router]);
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/utility-prices" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.utilityPrices()} className={styles.backLink}>← Powrót do listy</Link>
 
             <h1 className={styles.title}>Nowa cena medium</h1>
 

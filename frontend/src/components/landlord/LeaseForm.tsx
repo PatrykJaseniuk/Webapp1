@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -84,7 +85,7 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
             ? await database.from('lease_agreements').update(payload).eq('id', id!)
             : await database.from('lease_agreements').insert(payload);
 
-        !error && router.push('/landlord/leases');
+        !error && router.push(routes.landlord.leases());
         return { error };
     }, [tenantId, propertyId, startDate, endDate, monthlyRent, depositAmount, status, notes, id, isEdit, router]);
 
@@ -93,8 +94,11 @@ export const LeaseForm = ({ id }: LeaseFormProps) => {
     const isDataLoading = tenantsState.loading || propertiesState.loading || loadState.loading;
 
     return (
+
         <div className={styles.page}>
-            <Link href="/landlord/leases" className={styles.backLink}>← Powrót do listy</Link>
+            <div>
+                <Link href={routes.landlord.leases()}>← Powrót do listy</Link>
+            </div>
 
             <h1 className={styles.title}>{isEdit ? 'Edytuj umowę najmu' : 'Nowa umowa najmu'}</h1>
 

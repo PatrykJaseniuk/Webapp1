@@ -4,18 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes, ROLE_REDIRECTS } from '@/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
 import styles from './LoginForm.module.css';
-
-const ROLE_REDIRECTS: Record<string, string> = {
-    tenant: '/tenant/dashboard',
-    landlord: '/landlord/dashboard',
-    admin: '/admin/users',
-};
 
 export const LoginForm = () => {
     const router = useRouter();
@@ -76,7 +71,7 @@ export const LoginForm = () => {
                 </form>
 
                 <p className={styles.link}>
-                    Nie masz konta? <Link href="/signup">Zarejestruj się</Link>
+                    Nie masz konta? <Link href={routes.signup()}>Zarejestruj się</Link>
                 </p>
             </div>
     );

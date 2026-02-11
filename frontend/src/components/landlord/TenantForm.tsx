@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -70,13 +71,14 @@ export const TenantForm = ({ id }: TenantFormProps) => {
             ? await database.from('tenants').update(payload).eq('id', id!)
             : await database.from('tenants').insert(payload);
 
-        !error && router.push('/landlord/tenants');
+        !error && router.push(routes.landlord.tenants());
         return { error };
     }, [firstName, lastName, email, phone, idDocumentNumber, emergencyContactName, emergencyContactPhone, notes, status, id, isEdit, router]);
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/tenants" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.tenants()}>← Powrót do listy</Link>
+
 
             <h1 className={styles.title}>{isEdit ? 'Edytuj najemcę' : 'Nowy najemca'}</h1>
 

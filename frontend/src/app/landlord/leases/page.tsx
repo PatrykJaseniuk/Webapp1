@@ -1,19 +1,14 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import type { LeaseRouteParams } from '@/routes';
+import { useRouteParams } from '@/routes/useRouteParams';
 
-import { AppLayout } from '@/components/shared/AppLayout';
 import { LeasesList } from '@/components/landlord/LeasesList';
 import { LeaseDetail } from '@/components/landlord/LeaseDetail';
 import { LeaseForm } from '@/components/landlord/LeaseForm';
 
-
-const PATH = 'landlord/leases'
-
 export default () => {
-    const searchParams = useSearchParams();
-    const id = searchParams.get('id');
-    const action = searchParams.get('action');
+    const { id, action } = useRouteParams<LeaseRouteParams>();
 
     return (
         action === 'new' ? <LeaseForm /> :

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -72,7 +73,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/tenants" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.tenants()}>← Powrót do listy</Link>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :
@@ -80,8 +81,9 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                         <>
                             <div className={styles.header}>
                                 <h1 className={styles.title}>{tenant.first_name} {tenant.last_name}</h1>
-                                <Link href={`/landlord/tenants?action=edit&id=${id}`} className={styles.editButton}>
+                                <Link href={routes.landlord.tenants({ action: 'edit', id })}>
                                     Edytuj
+
                                 </Link>
                             </div>
 
@@ -101,8 +103,8 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Status</span>
                                                 <span className={`${styles.statusBadge} ${tenant.status === 'active' ? styles.statusActive :
-                                                        tenant.status === 'past' ? styles.statusPast :
-                                                            styles.statusApplicant
+                                                    tenant.status === 'past' ? styles.statusPast :
+                                                        styles.statusApplicant
                                                     }`}>
                                                     {STATUS_LABELS[tenant.status] ?? tenant.status}
                                                 </span>
@@ -135,7 +137,6 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                             </div>
                                         </div>
                                     </div>
-
                                     <div className={styles.section}>
                                         <h2 className={styles.sectionTitle}>Umowy najmu ({leases.length})</h2>
                                         {leasesState.loading ? <Spinner /> :
@@ -155,7 +156,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                                         {leases.map(lease => (
                                                             <tr key={lease.id}>
                                                                 <td>
-                                                                    <Link href={`/landlord/properties?id=${lease.property_id}`}>
+                                                                    <Link href={routes.landlord.properties({ id: lease.property_id })}>
                                                                         {(lease as any).properties?.name ?? lease.property_id}
                                                                     </Link>
                                                                 </td>
@@ -181,6 +182,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                                         <th>Saldo</th>
                                                         <th>Termin</th>
                                                         <th>Status</th>
+
                                                     </tr>
                                                 </thead>
                                                 <tbody>

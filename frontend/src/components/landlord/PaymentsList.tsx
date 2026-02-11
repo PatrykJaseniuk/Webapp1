@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -38,7 +39,7 @@ export const PaymentsList = () => {
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Płatności</h1>
-                <Link href="/landlord/payments?action=new" className={styles.addButton}>
+                <Link href={routes.landlord.payments({ action: 'new' })} className={styles.addButton}>
                     Zarejestruj płatność
                 </Link>
             </div>
@@ -50,7 +51,7 @@ export const PaymentsList = () => {
                             <EmptyState
                                 message="Brak zarejestrowanych płatności"
                                 actionLabel="Zarejestruj pierwszą płatność"
-                                actionHref="/landlord/payments?action=new"
+                                actionHref={routes.landlord.payments({ action: 'new' })}
                             />
                         ) : (
                             <table className={styles.table}>

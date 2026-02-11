@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -38,7 +39,7 @@ export const MeterForm = () => {
         };
 
         const { error } = await database.from('meters').insert(payload);
-        !error && router.push('/landlord/meters');
+        !error && router.push(routes.landlord.meters());
         return { error };
     }, [propertyId, meterType, meterNumber, unit, active, router]);
 
@@ -46,7 +47,7 @@ export const MeterForm = () => {
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/meters" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.meters()} className={styles.backLink}>← Powrót do listy</Link>
 
             <h1 className={styles.title}>Nowy licznik</h1>
 

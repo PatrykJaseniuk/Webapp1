@@ -1,15 +1,13 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import type { UtilityPriceRouteParams } from '@/routes';
+import { useRouteParams } from '@/routes/useRouteParams';
 
-import { RoleGuard } from '@/components/shared/RoleGuard';
-import { AppLayout } from '@/components/shared/AppLayout';
 import { UtilityPricesList } from '@/components/landlord/UtilityPricesList';
 import { UtilityPriceForm } from '@/components/landlord/UtilityPriceForm';
 
 export default function Page() {
-    const searchParams = useSearchParams();
-    const action = searchParams.get('action');
+    const { action } = useRouteParams<UtilityPriceRouteParams>();
 
     return (
         action === 'new' ? <UtilityPriceForm /> : <UtilityPricesList />

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -37,7 +38,7 @@ export const UtilityPricesList = () => {
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Ceny mediów</h1>
-                <Link href="/landlord/utility-prices?action=new" className={styles.addButton}>
+                <Link href={routes.landlord.utilityPrices({ action: 'new' })} className={styles.addButton}>
                     Dodaj cenę
                 </Link>
             </div>
@@ -49,7 +50,7 @@ export const UtilityPricesList = () => {
                             <EmptyState
                                 message="Brak zdefiniowanych cen mediów"
                                 actionLabel="Dodaj pierwszą cenę"
-                                actionHref="/landlord/utility-prices?action=new"
+                                actionHref={routes.landlord.utilityPrices({ action: 'new' })}
                             />
                         ) : (
                             <table className={styles.table}>
@@ -75,7 +76,7 @@ export const UtilityPricesList = () => {
                                             </td>
                                             <td className={styles.actions}>
                                                 <Link
-                                                    href={`/landlord/utility-prices?action=edit&id=${price.id}`}
+                                                    href={routes.landlord.utilityPrices({ action: 'edit', id: price.id })}
                                                     className={`${styles.actionButton} ${styles.editButton}`}
                                                 >
                                                     Edytuj

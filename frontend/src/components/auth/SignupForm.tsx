@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
@@ -31,7 +32,7 @@ export const SignupForm = () => {
             <div className={styles.successContainer}>
                 <h1 className={styles.successTitle}>Rejestracja zakończona</h1>
                 <p className={styles.successText}>Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto.</p>
-                <Link className={styles.successLink} href="/login">Przejdź do logowania</Link>
+                <Link className={styles.successLink} href={routes.login()}>Przejdź do logowania</Link>
             </div>
         ) :
             <div className={styles.container}>
@@ -90,7 +91,7 @@ export const SignupForm = () => {
                 </form>
 
                 <p className={styles.link}>
-                    Masz już konto? <Link href="/login">Zaloguj się</Link>
+                    Masz już konto? <Link href={routes.login()}>Zaloguj się</Link>
                 </p>
             </div>
     );

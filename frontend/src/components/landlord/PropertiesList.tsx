@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -43,7 +44,7 @@ export const PropertiesList = () => {
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Nieruchomości</h1>
-                <Link href="/landlord/properties?action=new" className={styles.addButton}>
+                <Link href={routes.landlord.properties({ action: 'new' })} className={styles.addButton}>
                     Dodaj nieruchomość
                 </Link>
             </div>
@@ -55,7 +56,7 @@ export const PropertiesList = () => {
                             <EmptyState
                                 message="Brak nieruchomości"
                                 actionLabel="Dodaj pierwszą nieruchomość"
-                                actionHref="/landlord/properties?action=new"
+                                actionHref={routes.landlord.properties({ action: 'new' })}
                             />
                         ) : (
                             <table className={styles.table}>
@@ -73,7 +74,7 @@ export const PropertiesList = () => {
                                     {properties.map(property => (
                                         <tr key={property.id}>
                                             <td>
-                                                <Link className={styles.tableLink} href={`/landlord/properties?id=${property.id}`}>
+                                                <Link className={styles.tableLink} href={routes.landlord.properties({ id: property.id })}>
                                                     {property.name}
                                                 </Link>
                                             </td>
@@ -86,7 +87,7 @@ export const PropertiesList = () => {
                                             </td>
                                             <td className={styles.amount}>{formatCurrency(property.monthly_rent)}</td>
                                             <td className={styles.actions}>
-                                                <Link className={styles.actionLink} href={`/landlord/properties?action=edit&id=${property.id}`}>
+                                                <Link className={styles.actionLink} href={routes.landlord.properties({ action: 'edit', id: property.id })}>
                                                     Edytuj
                                                 </Link>
                                             </td>

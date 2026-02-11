@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -51,7 +52,7 @@ export const BillingList = () => {
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Rozliczenia</h1>
-                <Link href="/landlord/billing?action=new" className={styles.addButton}>
+                <Link href={routes.landlord.billing({ action: 'new' })} className={styles.addButton}>
                     Dodaj pozycję
                 </Link>
             </div>
@@ -78,7 +79,7 @@ export const BillingList = () => {
                             <EmptyState
                                 message="Brak pozycji rozliczeniowych"
                                 actionLabel="Dodaj pierwszą pozycję"
-                                actionHref="/landlord/billing?action=new"
+                                actionHref={routes.landlord.billing({ action: 'new' })}
                             />
                         ) : (
                             <table className={styles.table}>

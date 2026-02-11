@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -52,15 +53,19 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
     return (
         <div className={styles.page}>
             <div className={styles.header}>
+                <div>
+                    <Link href={routes.landlord.meters()}>← Powrót do listy</Link>
+                </div>
                 <h1 className={styles.title}>
                     Historia odczytów
                     {meter && ` — ${(meter as any).properties?.name} (${meter.meter_type}, ${meter.meter_number})`}
                 </h1>
 
-                <Link href={`/landlord/meters?action=new-reading&meterId=${meterId}`} className={styles.addButton}>
-                    Dodaj odczyt
+                <Link href={routes.landlord.meters({ action: 'new-reading', meterId })}>
+                    <button>Dodaj odczyt</button>
                 </Link>
             </div>
+
 
             {state.error ? <ErrorBanner msg={state.error.message} retry={handleRefresh} /> :
                 state.loading ? <Spinner /> :
@@ -69,7 +74,7 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
                             <EmptyState
                                 message="Brak odczytów dla tego licznika"
                                 actionLabel="Dodaj odczyt"
-                                actionHref={`/landlord/meters?action=new-reading&meterId=${meterId}`}
+                                actionHref={routes.landlord.meters({ action: 'new-reading', meterId })}
                             />
                         ) : (
                             <table className={styles.table}>
@@ -89,10 +94,10 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
                                                 {reading.reading_value} {meter?.unit ?? ''}
                                             </td>
                                             <td className={`${styles.consumption} ${reading.delta !== null && reading.delta >= 0
-                                                    ? styles.consumptionPositive
-                                                    : reading.delta !== null && reading.delta < 0
-                                                        ? styles.consumptionNegative
-                                                        : ''
+                                                ? styles.consumptionPositive
+                                                : reading.delta !== null && reading.delta < 0
+                                                    ? styles.consumptionNegative
+                                                    : ''
                                                 }`}>
                                                 {reading.delta !== null ? `${reading.delta.toFixed(2)} ${meter?.unit ?? ''}` : '—'}
                                             </td>
