@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -35,7 +36,7 @@ export const UtilityPricesList = () => {
         <div>
             <div>
                 <h1>Ceny mediów</h1>
-                <Link href="/landlord/utility-prices?action=new">
+                <Link href={routes.landlord.utilityPrices({ action: 'new' })}>
                     <button>Dodaj cenę</button>
                 </Link>
             </div>
@@ -47,7 +48,7 @@ export const UtilityPricesList = () => {
                             <EmptyState
                                 message="Brak zdefiniowanych cen mediów"
                                 actionLabel="Dodaj pierwszą cenę"
-                                actionHref="/landlord/utility-prices?action=new"
+                                actionHref={routes.landlord.utilityPrices({ action: 'new' })}
                             />
                         ) : (
                             <table>

@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -38,7 +39,7 @@ export const PaymentForm = () => {
         };
 
         const { error } = await database.from('payments').insert(payload);
-        !error && router.push('/landlord/payments');
+        !error && router.push(routes.landlord.payments());
         return { error };
     }, [billingItemId, amount, paymentDate, paymentMethod, notes, router]);
 
@@ -47,7 +48,7 @@ export const PaymentForm = () => {
     return (
         <div>
             <div>
-                <Link href="/landlord/payments">← Powrót do listy</Link>
+                <Link href={routes.landlord.payments()}>← Powrót do listy</Link>
             </div>
 
             <h1>Zarejestruj płatność</h1>

@@ -1,14 +1,13 @@
-"use client"
+'use client';
 
-import { BillingForm } from "@/components/landlord/BillingForm";
-import { BillingList } from "@/components/landlord/BillingList";
-import { useSearchParams } from "next/navigation";
+import type { BillingRouteParams } from '@/routes';
+import { useRouteParams } from '@/routes/useRouteParams';
 
+import { BillingList } from '@/components/landlord/BillingList';
+import { BillingForm } from '@/components/landlord/BillingForm';
 
 export default function Page() {
-
-    const searchParams = useSearchParams();
-    const action = searchParams.get('action');
+    const { action } = useRouteParams<BillingRouteParams>();
 
     return (
         action === 'new' ? <BillingForm /> : <BillingList />

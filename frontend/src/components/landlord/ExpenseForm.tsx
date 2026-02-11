@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -36,7 +37,7 @@ export const ExpenseForm = () => {
         };
 
         const { error } = await database.from('property_expenses').insert(payload);
-        !error && router.push('/landlord/expenses');
+        !error && router.push(routes.landlord.expenses());
         return { error };
     }, [propertyId, expenseType, description, amount, expenseDate, router]);
 
@@ -45,7 +46,7 @@ export const ExpenseForm = () => {
     return (
         <div>
             <div>
-                <Link href="/landlord/expenses">← Powrót do listy</Link>
+                <Link href={routes.landlord.expenses()}>← Powrót do listy</Link>
             </div>
 
             <h1>Nowy wydatek</h1>

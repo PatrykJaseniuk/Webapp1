@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -35,7 +36,7 @@ export const BillingForm = () => {
         };
 
         const { error } = await database.from('billing_items').insert(payload);
-        !error && router.push('/landlord/billing');
+        !error && router.push(routes.landlord.billing());
         return { error };
     }, [leaseId, itemType, description, amount, dueDate, router]);
 
@@ -44,7 +45,7 @@ export const BillingForm = () => {
     return (
         <div>
             <div>
-                <Link href="/landlord/billing">← Powrót do listy</Link>
+                <Link href={routes.landlord.billing()}>← Powrót do listy</Link>
             </div>
 
             <h1>Nowa pozycja rozliczeniowa</h1>

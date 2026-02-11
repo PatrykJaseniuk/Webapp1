@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -50,7 +51,7 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
     return (
         <div>
             <div>
-                <Link href="/landlord/meters">← Powrót do listy</Link>
+                <Link href={routes.landlord.meters()}>← Powrót do listy</Link>
             </div>
 
             <h1>
@@ -58,7 +59,7 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
                 {meter && ` — ${(meter as any).properties?.name} (${meter.meter_type}, ${meter.meter_number})`}
             </h1>
 
-            <Link href={`/landlord/meters?action=new-reading&meterId=${meterId}`}>
+            <Link href={routes.landlord.meters({ action: 'new-reading', meterId })}>
                 <button>Dodaj odczyt</button>
             </Link>
 
@@ -69,7 +70,7 @@ export const ReadingsHistory = ({ meterId }: ReadingsHistoryProps) => {
                             <EmptyState
                                 message="Brak odczytów dla tego licznika"
                                 actionLabel="Dodaj odczyt"
-                                actionHref={`/landlord/meters?action=new-reading&meterId=${meterId}`}
+                                actionHref={routes.landlord.meters({ action: 'new-reading', meterId })}
                             />
                         ) : (
                             <table>

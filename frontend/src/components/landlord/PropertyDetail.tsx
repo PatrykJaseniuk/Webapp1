@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -68,7 +69,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
     return (
         <div>
             <div>
-                <Link href="/landlord/properties">← Powrót do listy</Link>
+                <Link href={routes.landlord.properties()}>← Powrót do listy</Link>
             </div>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
@@ -77,7 +78,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                         <>
                             <div>
                                 <h1>{property.name}</h1>
-                                <Link href={`/landlord/properties?action=edit&id=${id}`}>
+                                <Link href={routes.landlord.properties({ action: 'edit', id })}>
                                     <button>Edytuj</button>
                                 </Link>
                             </div>
@@ -125,7 +126,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                         <dl>
                                             <dt>Najemca</dt>
                                             <dd>
-                                                <Link href={`/landlord/tenants?id=${property.tenant_id}`}>
+                                                <Link href={routes.landlord.tenants({ id: property.tenant_id ?? undefined })}>
                                                     {property.current_tenant_name}
                                                 </Link>
                                             </dd>
@@ -136,7 +137,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                                 {property.lease_start} — {property.lease_end ?? 'Bezterminowa'}
                                             </dd>
                                         </dl>
-                                        <Link href={`/landlord/leases?id=${property.current_lease_id}`}>
+                                        <Link href={routes.landlord.leases({ id: property.current_lease_id })}>
                                             Szczegóły umowy →
                                         </Link>
                                     </div>

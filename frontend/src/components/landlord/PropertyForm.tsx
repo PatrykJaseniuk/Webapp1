@@ -5,6 +5,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -70,13 +71,13 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
             ? await database.from('properties').update(payload).eq('id', id!)
             : await database.from('properties').insert(payload);
 
-        !error && router.push('/landlord/properties');
+        !error && router.push(routes.landlord.properties());
         return { error };
     }, [name, address, propertyType, sizeSqm, bedrooms, monthlyRent, depositAmount, status, notes, id, isEdit, router]);
 
     return (
         <div className={styles.page}>
-            <Link href="/landlord/properties" className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.properties()} className={styles.backLink}>← Powrót do listy</Link>
 
             <h1 className={styles.title}>{isEdit ? 'Edytuj nieruchomość' : 'Nowa nieruchomość'}</h1>
 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -33,7 +34,7 @@ export const TenantsList = () => {
         <div>
             <div>
                 <h1>Najemcy</h1>
-                <Link href="/landlord/tenants?action=new">
+                <Link href={routes.landlord.tenants({ action: 'new' })}>
                     <button>Dodaj najemcę</button>
                 </Link>
             </div>
@@ -45,7 +46,7 @@ export const TenantsList = () => {
                             <EmptyState
                                 message="Brak najemców"
                                 actionLabel="Dodaj pierwszego najemcę"
-                                actionHref="/landlord/tenants?action=new"
+                                actionHref={routes.landlord.tenants({ action: 'new' })}
                             />
                         ) : (
                             <table>
@@ -62,7 +63,7 @@ export const TenantsList = () => {
                                     {tenants.map(tenant => (
                                         <tr key={tenant.id}>
                                             <td>
-                                                <Link href={`/landlord/tenants?id=${tenant.id}`}>
+                                                <Link href={routes.landlord.tenants({ id: tenant.id })}>
                                                     {tenant.first_name} {tenant.last_name}
                                                 </Link>
                                             </td>
@@ -70,7 +71,7 @@ export const TenantsList = () => {
                                             <td>{tenant.phone}</td>
                                             <td>{STATUS_LABELS[tenant.status] ?? tenant.status}</td>
                                             <td>
-                                                <Link href={`/landlord/tenants?action=edit&id=${tenant.id}`}>
+                                                <Link href={routes.landlord.tenants({ action: 'edit', id: tenant.id })}>
                                                     Edytuj
                                                 </Link>
                                             </td>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -69,7 +70,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
     return (
         <div>
             <div>
-                <Link href="/landlord/leases">← Powrót do listy</Link>
+                <Link href={routes.landlord.leases()}>← Powrót do listy</Link>
             </div>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
@@ -78,7 +79,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                         <>
                             <div>
                                 <h1>Umowa najmu</h1>
-                                <Link href={`/landlord/leases?action=edit&id=${id}`}>
+                                <Link href={routes.landlord.leases({ action: 'edit', id })}>
                                     <button>Edytuj</button>
                                 </Link>
                             </div>
@@ -89,13 +90,13 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                     <dl>
                                         <dt>Nieruchomość</dt>
                                         <dd>
-                                            <Link href={`/landlord/properties?id=${lease.property_id}`}>
+                                            <Link href={routes.landlord.properties({ id: lease.property_id })}>
                                                 {(lease as any).properties?.name ?? lease.property_id}
                                             </Link>
                                         </dd>
                                         <dt>Najemca</dt>
                                         <dd>
-                                            <Link href={`/landlord/tenants?id=${lease.tenant_id}`}>
+                                            <Link href={routes.landlord.tenants({ id: lease.tenant_id })}>
                                                 {(lease as any).tenants
                                                     ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
                                                     : lease.tenant_id}

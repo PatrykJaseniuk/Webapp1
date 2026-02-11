@@ -1,16 +1,14 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import type { TenantRouteParams } from '@/routes';
+import { useRouteParams } from '@/routes/useRouteParams';
 
-import { AppLayout } from '@/components/shared/AppLayout';
 import { TenantsList } from '@/components/landlord/TenantsList';
 import { TenantDetail } from '@/components/landlord/TenantDetail';
 import { TenantForm } from '@/components/landlord/TenantForm';
 
 export default () => {
-    const searchParams = useSearchParams();
-    const id = searchParams.get('id');
-    const action = searchParams.get('action');
+    const { id, action } = useRouteParams<TenantRouteParams>();
 
     return (
         action === 'new' ? <TenantForm /> :

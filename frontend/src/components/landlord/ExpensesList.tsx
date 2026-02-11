@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -43,7 +44,7 @@ export const ExpensesList = () => {
         <div>
             <div>
                 <h1>Wydatki na nieruchomości</h1>
-                <Link href="/landlord/expenses?action=new">
+                <Link href={routes.landlord.expenses({ action: 'new' })}>
                     <button>Dodaj wydatek</button>
                 </Link>
             </div>
@@ -71,7 +72,7 @@ export const ExpensesList = () => {
                             <EmptyState
                                 message="Brak wydatków"
                                 actionLabel="Dodaj pierwszy wydatek"
-                                actionHref="/landlord/expenses?action=new"
+                                actionHref={routes.landlord.expenses({ action: 'new' })}
                             />
                         ) : (
                             <table>

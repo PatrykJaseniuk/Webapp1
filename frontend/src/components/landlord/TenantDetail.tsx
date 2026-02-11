@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -71,7 +72,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
     return (
         <div>
             <div>
-                <Link href="/landlord/tenants">← Powrót do listy</Link>
+                <Link href={routes.landlord.tenants()}>← Powrót do listy</Link>
             </div>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
@@ -80,7 +81,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                         <>
                             <div>
                                 <h1>{tenant.first_name} {tenant.last_name}</h1>
-                                <Link href={`/landlord/tenants?action=edit&id=${id}`}>
+                                <Link href={routes.landlord.tenants({ action: 'edit', id })}>
                                     <button>Edytuj</button>
                                 </Link>
                             </div>
@@ -138,7 +139,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                                 {leases.map(lease => (
                                                     <tr key={lease.id}>
                                                         <td>
-                                                            <Link href={`/landlord/properties?id=${lease.property_id}`}>
+                                                            <Link href={routes.landlord.properties({ id: lease.property_id })}>
                                                                 {(lease as any).properties?.name ?? lease.property_id}
                                                             </Link>
                                                         </td>

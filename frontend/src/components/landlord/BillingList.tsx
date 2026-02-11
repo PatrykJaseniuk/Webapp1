@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -49,7 +50,7 @@ export const BillingList = () => {
         <div>
             <div>
                 <h1>Rozliczenia</h1>
-                <Link href="/landlord/billing?action=new">
+                <Link href={routes.landlord.billing({ action: 'new' })}>
                     <button>Dodaj pozycję</button>
                 </Link>
             </div>
@@ -75,7 +76,7 @@ export const BillingList = () => {
                             <EmptyState
                                 message="Brak pozycji rozliczeniowych"
                                 actionLabel="Dodaj pierwszą pozycję"
-                                actionHref="/landlord/billing?action=new"
+                                actionHref={routes.landlord.billing({ action: 'new' })}
                             />
                         ) : (
                             <table>

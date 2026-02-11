@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -86,7 +87,7 @@ export const LandlordDashboard = () => {
                                 <EmptyState
                                     message="Brak aktywnych umów najmu"
                                     actionLabel="Dodaj umowę"
-                                    actionHref="/landlord/leases?action=new"
+                                    actionHref={routes.landlord.leases({ action: 'new' })}
                                 />
                             ) : (
                                 <table className={styles.table}>
@@ -102,12 +103,12 @@ export const LandlordDashboard = () => {
                                         {leases.map(lease => (
                                             <tr key={lease.id}>
                                                 <td>
-                                                    <Link className={styles.tableLink} href={`/landlord/properties?id=${lease.property_id}`}>
+                                                    <Link className={styles.tableLink} href={routes.landlord.properties({ id: lease.property_id ?? undefined })}>
                                                         {lease.property_name}
                                                     </Link>
                                                 </td>
                                                 <td>
-                                                    <Link className={styles.tableLink} href={`/landlord/tenants?id=${lease.tenant_id}`}>
+                                                    <Link className={styles.tableLink} href={routes.landlord.tenants({ id: lease.tenant_id ?? undefined })}>
                                                         {lease.tenant_name}
                                                     </Link>
                                                 </td>

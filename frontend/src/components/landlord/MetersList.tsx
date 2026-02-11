@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
 
+import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -46,10 +47,10 @@ export const MetersList = () => {
             <div>
                 <h1>Liczniki</h1>
                 <div>
-                    <Link href="/landlord/meters?action=new-meter">
+                    <Link href={routes.landlord.meters({ action: 'new-meter' })}>
                         <button>Dodaj licznik</button>
                     </Link>
-                    <Link href="/landlord/meters?action=new-reading">
+                    <Link href={routes.landlord.meters({ action: 'new-reading' })}>
                         <button>Dodaj odczyt</button>
                     </Link>
                 </div>
@@ -62,7 +63,7 @@ export const MetersList = () => {
                             <EmptyState
                                 message="Brak liczników"
                                 actionLabel="Dodaj pierwszy licznik"
-                                actionHref="/landlord/meters?action=new-meter"
+                                actionHref={routes.landlord.meters({ action: 'new-meter' })}
                             />
                         ) : (
                             <table>
@@ -93,11 +94,11 @@ export const MetersList = () => {
                                                 </td>
                                                 <td>{meter.active ? 'Tak' : 'Nie'}</td>
                                                 <td>
-                                                    <Link href={`/landlord/meters?meterId=${meter.id}`}>
+                                                    <Link href={routes.landlord.meters({ meterId: meter.id })}>
                                                         Historia
                                                     </Link>
                                                     {' | '}
-                                                    <Link href={`/landlord/meters?action=new-reading&meterId=${meter.id}`}>
+                                                    <Link href={routes.landlord.meters({ action: 'new-reading', meterId: meter.id })}>
                                                         Odczyt
                                                     </Link>
                                                 </td>
