@@ -11,6 +11,8 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { AppLayout } from '@/components/shared/AppLayout';
 import { formatCurrency } from '@/utils/formatCurrency';
 
+import styles from './LandlordDashboard.module.css';
+
 export const LandlordDashboard = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
@@ -52,34 +54,34 @@ export const LandlordDashboard = () => {
         ?? propertiesState.value?.error ?? leasesState.value?.error ?? unpaidState.value?.error;
 
     return (
-        <div>
-            <h1>Panel wynajmującego</h1>
+        <div className={styles.page}>
+            <h1 className={styles.title}>Panel wynajmującego</h1>
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
                 isLoading ? <Spinner /> :
                     <>
-                        <div>
-                            <div>
-                                <h3>Nieruchomości</h3>
-                                <p>{totalProperties}</p>
-                                <span>Zajęte: {occupiedCount} · Wolne: {availableCount}</span>
+                        <div className={styles.statsGrid}>
+                            <div className={styles.statCard}>
+                                <h3 className={styles.statTitle}>Nieruchomości</h3>
+                                <p className={styles.statValue}>{totalProperties}</p>
+                                <span className={styles.statSubtitle}>Zajęte: {occupiedCount} · Wolne: {availableCount}</span>
                             </div>
 
-                            <div>
-                                <h3>Aktywne umowy</h3>
-                                <p>{activeLeases}</p>
+                            <div className={styles.statCard}>
+                                <h3 className={styles.statTitle}>Aktywne umowy</h3>
+                                <p className={styles.statValue}>{activeLeases}</p>
                             </div>
 
-                            <div>
-                                <h3>Do zapłaty</h3>
-                                <p>{formatCurrency(totalUnpaid)}</p>
+                            <div className={styles.statCard}>
+                                <h3 className={styles.statTitle}>Do zapłaty</h3>
+                                <p className={styles.statValue}>{formatCurrency(totalUnpaid)}</p>
                                 {totalOverdue > 0 && (
-                                    <span>Przeterminowane: {formatCurrency(totalOverdue)}</span>
+                                    <span className={styles.statSubtitle}>Przeterminowane: {formatCurrency(totalOverdue)}</span>
                                 )}
                             </div>
                         </div>
 
-                        <div>
-                            <h2>Aktywne umowy najmu</h2>
+                        <div className={styles.section}>
+                            <h2 className={styles.sectionTitle}>Aktywne umowy najmu</h2>
                             {leases.length === 0 ? (
                                 <EmptyState
                                     message="Brak aktywnych umów najmu"
@@ -87,7 +89,7 @@ export const LandlordDashboard = () => {
                                     actionHref="/landlord/leases?action=new"
                                 />
                             ) : (
-                                <table>
+                                <table className={styles.table}>
                                     <thead>
                                         <tr>
                                             <th>Nieruchomość</th>
@@ -100,16 +102,16 @@ export const LandlordDashboard = () => {
                                         {leases.map(lease => (
                                             <tr key={lease.id}>
                                                 <td>
-                                                    <Link href={`/landlord/properties?id=${lease.property_id}`}>
+                                                    <Link className={styles.tableLink} href={`/landlord/properties?id=${lease.property_id}`}>
                                                         {lease.property_name}
                                                     </Link>
                                                 </td>
                                                 <td>
-                                                    <Link href={`/landlord/tenants?id=${lease.tenant_id}`}>
+                                                    <Link className={styles.tableLink} href={`/landlord/tenants?id=${lease.tenant_id}`}>
                                                         {lease.tenant_name}
                                                     </Link>
                                                 </td>
-                                                <td>{formatCurrency(lease.monthly_rent ?? 0)}</td>
+                                                <td className={styles.amount}>{formatCurrency(lease.monthly_rent ?? 0)}</td>
                                                 <td>{lease.end_date ?? 'Bezterminowa'}</td>
                                             </tr>
                                         ))}
@@ -119,9 +121,9 @@ export const LandlordDashboard = () => {
                         </div>
 
                         {unpaid.length > 0 && (
-                            <div>
-                                <h2>Niezapłacone rachunki</h2>
-                                <table>
+                            <div className={styles.section}>
+                                <h2 className={styles.sectionTitle}>Niezapłacone rachunki</h2>
+                                <table className={styles.table}>
                                     <thead>
                                         <tr>
                                             <th>Najemca</th>
@@ -136,8 +138,8 @@ export const LandlordDashboard = () => {
                                             <tr key={item.lease_id}>
                                                 <td>{item.tenant_name}</td>
                                                 <td>{item.property_name}</td>
-                                                <td>{formatCurrency(item.total_unpaid_amount ?? 0)}</td>
-                                                <td>{formatCurrency(item.total_overdue_amount ?? 0)}</td>
+                                                <td className={styles.amount}>{formatCurrency(item.total_unpaid_amount ?? 0)}</td>
+                                                <td className={styles.overdue}>{formatCurrency(item.total_overdue_amount ?? 0)}</td>
                                                 <td>{item.unpaid_items_count}</td>
                                             </tr>
                                         ))}

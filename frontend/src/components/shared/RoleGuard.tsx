@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/shared/Spinner';
 
+import styles from './RoleGuard.module.css';
+
 interface RoleGuardProps {
     allowedRoles: string[];
     children: React.ReactNode;
@@ -18,17 +20,17 @@ export const RoleGuard = ({ allowedRoles, children }: RoleGuardProps) => {
     return (
         authLoading || roleLoading ? <Spinner /> :
             !isAuthenticated ? (
-                <div>
-                    <h2>Wymagane logowanie</h2>
-                    <p>Zaloguj się, aby uzyskać dostęp do tej strony.</p>
-                    <Link href="/login">Przejdź do logowania</Link>
+                <div className={styles.container}>
+                    <h2 className={styles.title}>Wymagane logowanie</h2>
+                    <p className={styles.message}>Zaloguj się, aby uzyskać dostęp do tej strony.</p>
+                    <Link className={styles.link} href="/login">Przejdź do logowania</Link>
                 </div>
             ) :
                 !role || !allowedRoles.includes(role) ? (
-                    <div>
-                        <h2>Brak dostępu</h2>
-                        <p>Nie masz uprawnień do wyświetlenia tej strony.</p>
-                        <Link href="/">Powrót do strony głównej</Link>
+                    <div className={styles.container}>
+                        <h2 className={styles.title}>Brak dostępu</h2>
+                        <p className={styles.message}>Nie masz uprawnień do wyświetlenia tej strony.</p>
+                        <Link className={styles.link} href="/">Powrót do strony głównej</Link>
                     </div>
                 ) :
                     <>{children}</>

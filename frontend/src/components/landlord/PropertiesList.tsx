@@ -10,6 +10,8 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 
+import styles from './PropertiesList.module.css';
+
 const STATUS_LABELS: Record<string, string> = {
     available: 'Wolna',
     occupied: 'Zajęta',
@@ -38,11 +40,11 @@ export const PropertiesList = () => {
     const properties = state.value?.data ?? [];
 
     return (
-        <div>
-            <div>
-                <h1>Nieruchomości</h1>
-                <Link href="/landlord/properties?action=new">
-                    <button>Dodaj nieruchomość</button>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h1 className={styles.title}>Nieruchomości</h1>
+                <Link href="/landlord/properties?action=new" className={styles.addButton}>
+                    Dodaj nieruchomość
                 </Link>
             </div>
 
@@ -56,7 +58,7 @@ export const PropertiesList = () => {
                                 actionHref="/landlord/properties?action=new"
                             />
                         ) : (
-                            <table>
+                            <table className={styles.table}>
                                 <thead>
                                     <tr>
                                         <th>Nazwa</th>
@@ -71,16 +73,20 @@ export const PropertiesList = () => {
                                     {properties.map(property => (
                                         <tr key={property.id}>
                                             <td>
-                                                <Link href={`/landlord/properties?id=${property.id}`}>
+                                                <Link className={styles.tableLink} href={`/landlord/properties?id=${property.id}`}>
                                                     {property.name}
                                                 </Link>
                                             </td>
                                             <td>{property.address}</td>
                                             <td>{TYPE_LABELS[property.property_type] ?? property.property_type}</td>
-                                            <td>{STATUS_LABELS[property.status] ?? property.status}</td>
-                                            <td>{formatCurrency(property.monthly_rent)}</td>
                                             <td>
-                                                <Link href={`/landlord/properties?action=edit&id=${property.id}`}>
+                                                <span className={`${styles.status} ${styles[`status${property.status.charAt(0).toUpperCase() + property.status.slice(1)}`]}`}>
+                                                    {STATUS_LABELS[property.status] ?? property.status}
+                                                </span>
+                                            </td>
+                                            <td className={styles.amount}>{formatCurrency(property.monthly_rent)}</td>
+                                            <td className={styles.actions}>
+                                                <Link className={styles.actionLink} href={`/landlord/properties?action=edit&id=${property.id}`}>
                                                     Edytuj
                                                 </Link>
                                             </td>

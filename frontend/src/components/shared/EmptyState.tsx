@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 
+import styles from './EmptyState.module.css';
+
 interface EmptyStateProps {
     message: string;
     actionLabel?: string;
@@ -9,10 +11,10 @@ interface EmptyStateProps {
 }
 
 export const EmptyState = ({ message, actionLabel, actionHref }: EmptyStateProps) => (
-    <div>
-        <p>{message}</p>
+    <div className={styles.container}>
+        <p className={styles.message}>{message}</p>
         {actionLabel && actionHref && (
-            <Link href={actionHref}>
+            <Link className={styles.actionLink} href={actionHref}>
                 {actionLabel}
             </Link>
         )}

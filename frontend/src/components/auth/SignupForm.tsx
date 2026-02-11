@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './SignupForm.module.css';
+
 export const SignupForm = () => {
     const { signup, signupState } = useAuth();
     const [email, setEmail] = useState('');
@@ -26,23 +28,24 @@ export const SignupForm = () => {
 
     return (
         isSuccess ? (
-            <div>
-                <h1>Rejestracja zakończona</h1>
-                <p>Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto.</p>
-                <Link href="/login">Przejdź do logowania</Link>
+            <div className={styles.successContainer}>
+                <h1 className={styles.successTitle}>Rejestracja zakończona</h1>
+                <p className={styles.successText}>Sprawdź swoją skrzynkę e-mail, aby potwierdzić konto.</p>
+                <Link className={styles.successLink} href="/login">Przejdź do logowania</Link>
             </div>
         ) :
-            <div>
-                <h1>Rejestracja</h1>
+            <div className={styles.container}>
+                <h1 className={styles.title}>Rejestracja</h1>
 
                 {validationError && <ErrorBanner msg={validationError} />}
                 {signupState.error && <ErrorBanner msg={signupState.error.message} />}
                 {signupState.value?.error && <ErrorBanner msg={signupState.value.error.message} />}
 
-                <form onSubmit={handleSubmit}>
-                    <div>
-                        <label htmlFor="email">Email</label>
+                <form className={styles.form} onSubmit={handleSubmit}>
+                    <div className={styles.field}>
+                        <label className={styles.label} htmlFor="email">Email</label>
                         <input
+                            className={styles.input}
                             id="email"
                             type="email"
                             value={email}
@@ -53,9 +56,10 @@ export const SignupForm = () => {
                         />
                     </div>
 
-                    <div>
-                        <label htmlFor="password">Hasło</label>
+                    <div className={styles.field}>
+                        <label className={styles.label} htmlFor="password">Hasło</label>
                         <input
+                            className={styles.input}
                             id="password"
                             type="password"
                             value={password}
@@ -66,9 +70,10 @@ export const SignupForm = () => {
                         />
                     </div>
 
-                    <div>
-                        <label htmlFor="confirmPassword">Potwierdź hasło</label>
+                    <div className={styles.field}>
+                        <label className={styles.label} htmlFor="confirmPassword">Potwierdź hasło</label>
                         <input
+                            className={styles.input}
                             id="confirmPassword"
                             type="password"
                             value={confirmPassword}
@@ -79,12 +84,12 @@ export const SignupForm = () => {
                         />
                     </div>
 
-                    <button type="submit" disabled={signupState.loading}>
+                    <button className={styles.button} type="submit" disabled={signupState.loading}>
                         {signupState.loading ? 'Rejestracja...' : 'Zarejestruj się'}
                     </button>
                 </form>
 
-                <p>
+                <p className={styles.link}>
                     Masz już konto? <Link href="/login">Zaloguj się</Link>
                 </p>
             </div>

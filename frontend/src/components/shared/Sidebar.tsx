@@ -4,6 +4,8 @@ import Link from 'next/link';
 
 import { useUserRole } from '@/hooks/useUserRole';
 
+import styles from './Sidebar.module.css';
+
 const TENANT_NAV = [
     { href: '/tenant/dashboard', label: 'Panel główny' },
     { href: '/tenant/properties', label: 'Nieruchomości' },
@@ -39,12 +41,12 @@ export const Sidebar = () => {
                     [];
 
     return (
-        <aside>
-            <nav>
-                <ul>
+        <aside className={styles.sidebar}>
+            <nav className={styles.nav}>
+                <ul className={styles.navList}>
                     {navItems.map(({ href, label }, index) => (
-                        <li key={index}>
-                            <Link href={href}>{label}</Link>
+                        <li key={index} className={styles.navItem}>
+                            <Link className={styles.navLink} href={href}>{label}</Link>
                         </li>
                     ))}
                 </ul>

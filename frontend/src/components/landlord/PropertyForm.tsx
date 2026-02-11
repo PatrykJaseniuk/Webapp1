@@ -9,6 +9,8 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './PropertyForm.module.css';
+
 interface PropertyFormProps {
     id?: string;
 }
@@ -73,23 +75,22 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
     }, [name, address, propertyType, sizeSqm, bedrooms, monthlyRent, depositAmount, status, notes, id, isEdit, router]);
 
     return (
-        <div>
-            <div>
-                <Link href="/landlord/properties">← Powrót do listy</Link>
-            </div>
+        <div className={styles.page}>
+            <Link href="/landlord/properties" className={styles.backLink}>← Powrót do listy</Link>
 
-            <h1>{isEdit ? 'Edytuj nieruchomość' : 'Nowa nieruchomość'}</h1>
+            <h1 className={styles.title}>{isEdit ? 'Edytuj nieruchomość' : 'Nowa nieruchomość'}</h1>
 
             {loadState.loading ? <Spinner /> :
                 loadState.error ? <ErrorBanner msg={loadState.error.message} /> :
                     loadState.value?.error ? <ErrorBanner msg={loadState.value.error.message} /> :
-                        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                        <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
                             {submitState.error && <ErrorBanner msg={submitState.error.message} />}
                             {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
 
-                            <div>
-                                <label htmlFor="name">Nazwa</label>
+                            <div className={styles.field}>
+                                <label className={styles.label} htmlFor="name">Nazwa</label>
                                 <input
+                                    className={styles.input}
                                     id="name"
                                     type="text"
                                     value={name}
@@ -99,9 +100,10 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="address">Adres</label>
+                            <div className={styles.field}>
+                                <label className={styles.label} htmlFor="address">Adres</label>
                                 <input
+                                    className={styles.input}
                                     id="address"
                                     type="text"
                                     value={address}
@@ -111,9 +113,10 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="propertyType">Typ nieruchomości</label>
+                            <div className={styles.field}>
+                                <label className={styles.label} htmlFor="propertyType">Typ nieruchomości</label>
                                 <select
+                                    className={styles.select}
                                     id="propertyType"
                                     value={propertyType}
                                     onChange={(e) => setPropertyType(e.target.value)}
@@ -125,58 +128,67 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 </select>
                             </div>
 
-                            <div>
-                                <label htmlFor="sizeSqm">Powierzchnia (m²)</label>
-                                <input
-                                    id="sizeSqm"
-                                    type="number"
-                                    step="0.01"
-                                    value={sizeSqm}
-                                    onChange={(e) => setSizeSqm(e.target.value)}
-                                    placeholder="np. 55.5"
-                                />
+                            <div className={styles.grid}>
+                                <div className={styles.field}>
+                                    <label className={styles.label} htmlFor="sizeSqm">Powierzchnia (m²)</label>
+                                    <input
+                                        className={styles.input}
+                                        id="sizeSqm"
+                                        type="number"
+                                        step="0.01"
+                                        value={sizeSqm}
+                                        onChange={(e) => setSizeSqm(e.target.value)}
+                                        placeholder="np. 55.5"
+                                    />
+                                </div>
+
+                                <div className={styles.field}>
+                                    <label className={styles.label} htmlFor="bedrooms">Liczba sypialni</label>
+                                    <input
+                                        className={styles.input}
+                                        id="bedrooms"
+                                        type="number"
+                                        value={bedrooms}
+                                        onChange={(e) => setBedrooms(e.target.value)}
+                                        placeholder="np. 2"
+                                    />
+                                </div>
                             </div>
 
-                            <div>
-                                <label htmlFor="bedrooms">Liczba sypialni</label>
-                                <input
-                                    id="bedrooms"
-                                    type="number"
-                                    value={bedrooms}
-                                    onChange={(e) => setBedrooms(e.target.value)}
-                                    placeholder="np. 2"
-                                />
+                            <div className={styles.grid}>
+                                <div className={styles.field}>
+                                    <label className={styles.label} htmlFor="monthlyRent">Czynsz miesięczny (PLN)</label>
+                                    <input
+                                        className={styles.input}
+                                        id="monthlyRent"
+                                        type="number"
+                                        step="0.01"
+                                        value={monthlyRent}
+                                        onChange={(e) => setMonthlyRent(e.target.value)}
+                                        required
+                                        placeholder="np. 2500.00"
+                                    />
+                                </div>
+
+                                <div className={styles.field}>
+                                    <label className={styles.label} htmlFor="depositAmount">Kaucja (PLN)</label>
+                                    <input
+                                        className={styles.input}
+                                        id="depositAmount"
+                                        type="number"
+                                        step="0.01"
+                                        value={depositAmount}
+                                        onChange={(e) => setDepositAmount(e.target.value)}
+                                        required
+                                        placeholder="np. 5000.00"
+                                    />
+                                </div>
                             </div>
 
-                            <div>
-                                <label htmlFor="monthlyRent">Czynsz miesięczny (PLN)</label>
-                                <input
-                                    id="monthlyRent"
-                                    type="number"
-                                    step="0.01"
-                                    value={monthlyRent}
-                                    onChange={(e) => setMonthlyRent(e.target.value)}
-                                    required
-                                    placeholder="np. 2500.00"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="depositAmount">Kaucja (PLN)</label>
-                                <input
-                                    id="depositAmount"
-                                    type="number"
-                                    step="0.01"
-                                    value={depositAmount}
-                                    onChange={(e) => setDepositAmount(e.target.value)}
-                                    required
-                                    placeholder="np. 5000.00"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="status">Status</label>
+                            <div className={styles.field}>
+                                <label className={styles.label} htmlFor="status">Status</label>
                                 <select
+                                    className={styles.select}
                                     id="status"
                                     value={status}
                                     onChange={(e) => setStatus(e.target.value)}
@@ -187,9 +199,10 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 </select>
                             </div>
 
-                            <div>
-                                <label htmlFor="notes">Notatki</label>
+                            <div className={styles.field}>
+                                <label className={styles.label} htmlFor="notes">Notatki</label>
                                 <textarea
+                                    className={styles.textarea}
                                     id="notes"
                                     value={notes}
                                     onChange={(e) => setNotes(e.target.value)}
@@ -198,7 +211,7 @@ export const PropertyForm = ({ id }: PropertyFormProps) => {
                                 />
                             </div>
 
-                            <button type="submit" disabled={submitState.loading}>
+                            <button className={styles.button} type="submit" disabled={submitState.loading}>
                                 {submitState.loading ? 'Zapisywanie...' : isEdit ? 'Zapisz zmiany' : 'Dodaj nieruchomość'}
                             </button>
                         </form>

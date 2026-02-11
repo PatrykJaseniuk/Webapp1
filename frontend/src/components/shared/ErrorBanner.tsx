@@ -1,15 +1,17 @@
 'use client';
 
+import styles from './ErrorBanner.module.css';
+
 interface ErrorBannerProps {
     msg: string;
     retry?: () => void;
 }
 
 export const ErrorBanner = ({ msg, retry }: ErrorBannerProps) => (
-    <div role="alert">
-        <span>Błąd: {msg}</span>
+    <div className={styles.banner} role="alert">
+        <span className={styles.message}>Błąd: {msg}</span>
         {retry && (
-            <button onClick={retry}>
+            <button className={styles.retryButton} onClick={retry}>
                 Ponów
             </button>
         )}

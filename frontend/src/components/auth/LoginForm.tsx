@@ -9,6 +9,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 
+import styles from './LoginForm.module.css';
+
 const ROLE_REDIRECTS: Record<string, string> = {
     tenant: '/tenant/dashboard',
     landlord: '/landlord/dashboard',
@@ -33,16 +35,17 @@ export const LoginForm = () => {
 
     return (
         isAuthenticated ? <Spinner /> :
-            <div>
-                <h1>Logowanie</h1>
+            <div className={styles.container}>
+                <h1 className={styles.title}>Logowanie</h1>
 
                 {loginState.error && <ErrorBanner msg={loginState.error.message} />}
                 {loginState.value?.error && <ErrorBanner msg={loginState.value.error.message} />}
 
-                <form onSubmit={handleSubmit}>
-                    <div>
-                        <label htmlFor="email">Email</label>
+                <form className={styles.form} onSubmit={handleSubmit}>
+                    <div className={styles.field}>
+                        <label className={styles.label} htmlFor="email">Email</label>
                         <input
+                            className={styles.input}
                             id="email"
                             type="email"
                             value={email}
@@ -53,9 +56,10 @@ export const LoginForm = () => {
                         />
                     </div>
 
-                    <div>
-                        <label htmlFor="password">Hasło</label>
+                    <div className={styles.field}>
+                        <label className={styles.label} htmlFor="password">Hasło</label>
                         <input
+                            className={styles.input}
                             id="password"
                             type="password"
                             value={password}
@@ -66,12 +70,12 @@ export const LoginForm = () => {
                         />
                     </div>
 
-                    <button type="submit" disabled={loginState.loading}>
+                    <button className={styles.button} type="submit" disabled={loginState.loading}>
                         {loginState.loading ? 'Logowanie...' : 'Zaloguj się'}
                     </button>
                 </form>
 
-                <p>
+                <p className={styles.link}>
                     Nie masz konta? <Link href="/signup">Zarejestruj się</Link>
                 </p>
             </div>
