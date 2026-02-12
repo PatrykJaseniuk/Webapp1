@@ -69,7 +69,7 @@ jobs:
 
             - name: Build for staging
               env:
-                  NEXT_PUBLIC_BASE_PATH: /staging
+                  NEXT_PUBLIC_BASE_PATH: /Webapp1/staging
                   NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
                   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
               run: npm run build

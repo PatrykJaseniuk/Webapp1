@@ -2,6 +2,20 @@
 
 This guide explains how to obtain each secret required for the CI/CD pipeline.
 
+## ⚠️ IMPORTANT: Enable GitHub Pages First!
+
+**Before running any workflow, you MUST enable GitHub Pages:**
+
+1. Go to your GitHub repository
+2. Click **Settings** tab
+3. In the left sidebar, click **Pages**
+4. Under "Build and deployment", set **Source** to **GitHub Actions**
+5. Click **Save**
+
+Without this step, the deployment will fail with: `Get Pages site failed. Please verify that the repository has Pages enabled`
+
+---
+
 ## Required Secrets Overview
 
 | Secret | Source | Description |
