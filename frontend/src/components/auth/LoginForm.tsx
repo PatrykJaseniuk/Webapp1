@@ -64,6 +64,38 @@ export const LoginForm = () => {
                             minLength={6}
                         />
                     </div>
+                    <div className={styles.testCredentials}>
+                        <p className={styles.testCredentialsTitle}>Konta testowe</p>
+                        <div
+                            className={styles.credentialItem}
+                            onClick={() => {
+                                setEmail('landlord@test.local');
+                                setPassword('password123');
+                            }}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <div className={styles.credentialRole}>Wynajmujący</div>
+                            <div className={styles.credentialData}>
+                                <span className={styles.credentialEmail}>landlord@test.local</span>
+                                <span className={styles.credentialPassword}>password123</span>
+                            </div>
+                        </div>
+                        <div
+                            className={styles.credentialItem}
+                            onClick={() => {
+                                setEmail('jan.kowalski@test.local');
+                                setPassword('password123');
+                            }}
+                            style={{ cursor: 'pointer' }}
+                        >
+                            <div className={styles.credentialRole}>Najemca</div>
+                            <div className={styles.credentialData}>
+                                <span className={styles.credentialEmail}>jan.kowalski@test.local</span>
+                                <span className={styles.credentialPassword}>password123</span>
+                            </div>
+                        </div>
+                    </div>
+
 
                     <button className={styles.button} type="submit" disabled={loginState.loading}>
                         {loginState.loading ? 'Logowanie...' : 'Zaloguj się'}

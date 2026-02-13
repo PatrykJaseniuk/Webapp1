@@ -89,6 +89,92 @@
     text-decoration: underline;
 }
 
+.testCredentials {
+    background: linear-gradient(135deg, var(--color-bg-secondary) 0%, #f8f9fa 100%);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-lg) 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.testCredentialsTitle {
+    font-size: var(--font-sm);
+    font-weight: 700;
+    color: var(--color-text-secondary);
+    margin-bottom: var(--spacing-md);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.testCredentialsTitle::before {
+    content: 'ℹ️';
+    font-size: var(--font-base);
+}
+
+.credentialItem {
+    background: var(--color-bg-white);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.credentialItem:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-bg-secondary);
+    transform: scale(1.02);
+}
+
+.credentialItem:last-child {
+    margin-bottom: 0;
+}
+
+.credentialRole {
+    font-weight: 700;
+    color: var(--color-text);
+    font-size: var(--font-sm);
+    margin-bottom: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.credentialRole::before {
+    content: '•';
+    color: var(--color-primary);
+}
+
+.credentialData {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    font-size: var(--font-sm);
+}
+
+.credentialEmail {
+    color: var(--color-primary);
+    font-family: monospace;
+    background: var(--color-bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    display: inline-block;
+}
+
+.credentialPassword {
+    color: var(--color-text-secondary);
+    font-family: monospace;
+    background: var(--color-bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    display: inline-block;
+}
+
 .successContainer {
     max-width: 400px;
     margin: 2rem auto;
