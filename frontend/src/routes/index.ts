@@ -18,14 +18,17 @@ export type LeaseRouteParams = {
 };
 
 export type BillingRouteParams = {
+    id?: string;
     action?: 'new';
 };
 
 export type PaymentRouteParams = {
+    id?: string;
     action?: 'new';
 };
 
 export type MeterRouteParams = {
+    id?: string;
     meterId?: string;
     action?: 'new-meter' | 'new-reading';
 };
@@ -36,6 +39,7 @@ export type UtilityPriceRouteParams = {
 };
 
 export type ExpenseRouteParams = {
+    id?: string;
     action?: 'new';
 };
 

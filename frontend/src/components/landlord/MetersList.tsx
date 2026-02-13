@@ -3,23 +3,21 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { METER_TYPE_LABELS } from '@/constants/labels';
+import { formatDate } from '@/utils/formatDate';
 
 import styles from './ListPage.module.css';
-
-const TYPE_LABELS: Record<string, string> = {
-    electricity: 'Prąd',
-    water: 'Woda',
-    gas: 'Gaz',
-    heating: 'Ogrzewanie',
-};
+import tableStyles from './tables/Tables.module.css';
 
 export const MetersList = () => {
+    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
@@ -44,6 +42,8 @@ export const MetersList = () => {
     const getLatestReading = (meterId: string) =>
         latestReadings.find(r => r.meter_id === meterId);
 
+    const handleRowClick = (meterId: string) => router.push(routes.landlord.meters({ id: meterId }));
+
     return (
         <div className={styles.page}>
             <div className={styles.header}>
@@ -63,55 +63,51 @@ export const MetersList = () => {
                     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
                         meters.length === 0 ? (
                             <EmptyState
-                                message="Brak liczników"
+                                message="Brak licznikow"
                                 actionLabel="Dodaj pierwszy licznik"
                                 actionHref={routes.landlord.meters({ action: 'new-meter' })}
                             />
                         ) : (
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Nieruchomość</th>
-                                        <th>Typ</th>
-                                        <th>Numer</th>
-                                        <th>Jednostka</th>
-                                        <th>Ostatni odczyt</th>
-                                        <th>Aktywny</th>
-                                        <th>Akcje</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {meters.map(meter => {
-                                        const latest = getLatestReading(meter.id);
-                                        return (
-                                            <tr key={meter.id}>
-                                                <td className={styles.location}>{(meter as any).properties?.name ?? meter.property_id}</td>
-                                                <td className={styles.utilityType}>{TYPE_LABELS[meter.meter_type] ?? meter.meter_type}</td>
-                                                <td className={styles.meterType}>{meter.meter_number}</td>
-                                                <td>{meter.unit}</td>
-                                                <td>
-                                                    {latest
-                                                        ? `${latest.reading_value} ${latest.unit} (${latest.reading_date})`
-                                                        : 'Brak'}
-                                                </td>
-                                                <td>
-                                                    <span className={`${styles.status} ${meter.active ? styles.statusActive : styles.statusInactive}`}>
-                                                        {meter.active ? 'Aktywny' : 'Nieaktywny'}
-                                                    </span>
-                                                </td>
-                                                <td className={styles.actions}>
-                                                    <Link href={routes.landlord.meters({ meterId: meter.id })} className={styles.actionLink}>
-                                                        Historia
-                                                    </Link>
-                                                    <Link href={routes.landlord.meters({ action: 'new-reading', meterId: meter.id })} className={styles.actionLink}>
-                                                        Odczyt
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                            <div className={tableStyles.section}>
+                                <table className={tableStyles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Nieruchomosc</th>
+                                            <th>Typ</th>
+                                            <th>Numer</th>
+                                            <th>Jednostka</th>
+                                            <th>Ostatni odczyt</th>
+                                            <th>Aktywny</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {meters.map(meter => {
+                                            const latest = getLatestReading(meter.id);
+                                            return (
+                                                <tr
+                                                    key={meter.id}
+                                                    className={tableStyles.clickableRow}
+                                                    onClick={() => handleRowClick(meter.id)}
+                                                >
+                                                    <td>{(meter as any).properties?.name ?? meter.property_id}</td>
+                                                    <td>{METER_TYPE_LABELS[meter.meter_type] ?? meter.meter_type}</td>
+                                                    <td>{meter.meter_number}</td>
+                                                    <td>{meter.unit}</td>
+                                                    <td>
+                                                        {latest
+                                                            ? `${latest.reading_value} ${latest.unit} (${formatDate(latest.reading_date ?? '')})`
+                                                            : 'Brak'
+                                                        }
+                                                    </td>
+                                                    <td className={meter.active ? tableStyles.active : tableStyles.inactive}>
+                                                        {meter.active ? 'Tak' : 'Nie'}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
         </div>
     );

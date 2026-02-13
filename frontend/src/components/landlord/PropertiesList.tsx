@@ -3,35 +3,28 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { PROPERTY_STATUS_LABELS, PROPERTY_TYPE_LABELS } from '@/constants/labels';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 import styles from './ListPage.module.css';
-import { useRouter } from 'next/navigation';
+import tableStyles from './tables/Tables.module.css';
 
-const STATUS_LABELS: Record<string, string> = {
-    available: 'Wolna',
-    occupied: 'Zajęta',
-    inactive: 'Nieaktywna',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-    apartment: 'Mieszkanie',
-    house: 'Dom',
-    commercial: 'Lokal użytkowy',
-    room: 'Pokój',
-};
+const getStatusClass = (status: string) =>
+    status === 'available' ? tableStyles.statusActive :
+        status === 'occupied' ? tableStyles.statusPending :
+            tableStyles.statusTerminated;
 
 export const PropertiesList = () => {
+    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
-    const router = useRouter();
-
 
     const state = useAsync(async () => {
         const { data, error } = await database
@@ -43,12 +36,14 @@ export const PropertiesList = () => {
 
     const properties = state.value?.data ?? [];
 
+    const handleRowClick = (propertyId: string) => router.push(routes.landlord.properties({ id: propertyId }));
+
     return (
         <div className={styles.page}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Nieruchomości</h1>
+                <h1 className={styles.title}>Nieruchomosci</h1>
                 <Link href={routes.landlord.properties({ action: 'new' })} className={styles.addButton}>
-                    Dodaj nieruchomość
+                    Dodaj nieruchomosc
                 </Link>
             </div>
 
@@ -57,39 +52,43 @@ export const PropertiesList = () => {
                     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
                         properties.length === 0 ? (
                             <EmptyState
-                                message="Brak nieruchomości"
-                                actionLabel="Dodaj pierwszą nieruchomość"
+                                message="Brak nieruchomosci"
+                                actionLabel="Dodaj pierwsza nieruchomosc"
                                 actionHref={routes.landlord.properties({ action: 'new' })}
                             />
                         ) : (
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Nazwa</th>
-                                        <th>Adres</th>
-                                        <th>Typ</th>
-                                        <th>Status</th>
-                                        <th>Czynsz</th>
-                                    </tr>
-                                </thead>
-                                <tbody >
-                                    {properties.map(property => (
-                                        <tr key={property.id}
-                                            onClick={() => router.push(routes.landlord.properties({ id: property.id }))}
-                                        >
-                                            <td>{property.name}</td>
-                                            <td>{property.address}</td>
-                                            <td>{TYPE_LABELS[property.property_type] ?? property.property_type}</td>
-                                            <td>
-                                                <span className={`${styles.status} ${styles[`status${property.status.charAt(0).toUpperCase() + property.status.slice(1)}`]}`}>
-                                                    {STATUS_LABELS[property.status] ?? property.status}
-                                                </span>
-                                            </td>
-                                            <td className={styles.amount}>{formatCurrency(property.monthly_rent)}</td>
+                            <div className={tableStyles.section}>
+                                <table className={tableStyles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Nazwa</th>
+                                            <th>Adres</th>
+                                            <th>Typ</th>
+                                            <th>Status</th>
+                                            <th>Czynsz</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {properties.map(property => (
+                                            <tr
+                                                key={property.id}
+                                                className={tableStyles.clickableRow}
+                                                onClick={() => property.id && handleRowClick(property.id)}
+                                            >
+                                                <td>{property.name}</td>
+                                                <td>{property.address}</td>
+                                                <td>{PROPERTY_TYPE_LABELS[property.property_type ?? ''] ?? property.property_type}</td>
+                                                <td>
+                                                    <span className={`${tableStyles.statusBadge} ${getStatusClass(property.status ?? '')}`}>
+                                                        {PROPERTY_STATUS_LABELS[property.status ?? ''] ?? property.status}
+                                                    </span>
+                                                </td>
+                                                <td>{formatCurrency(property.monthly_rent)}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
         </div>
     );

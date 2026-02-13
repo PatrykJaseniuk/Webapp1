@@ -1,40 +1,66 @@
 'use client';
 
 import { useState } from 'react';
-import { useAsync } from 'react-use';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAsync } from 'react-use';
 
-import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
+import { PROPERTY_STATUS_LABELS, PROPERTY_TYPE_LABELS } from '@/constants/labels';
+import { routes } from '@/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
+import { MetersTable } from './tables/MetersTable';
+import { LeasesTable } from './tables/LeasesTable';
+import { BillingTable } from './tables/BillingTable';
+import { PaymentsTable } from './tables/PaymentsTable';
+import { ExpensesTable } from './tables/ExpensesTable';
+import { AttachmentsGrid } from './tables/AttachmentsGrid';
+
 import styles from './DetailPage.module.css';
-
-const STATUS_LABELS: Record<string, string> = {
-    available: 'Wolna',
-    occupied: 'Zajęta',
-    inactive: 'Nieaktywna',
-};
-
-const TYPE_LABELS: Record<string, string> = {
-    apartment: 'Mieszkanie',
-    house: 'Dom',
-    commercial: 'Lokal użytkowy',
-    room: 'Pokój',
-};
 
 interface PropertyDetailProps {
     id: string;
 }
 
 export const PropertyDetail = ({ id }: PropertyDetailProps) => {
+    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
+
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
-    const state = useAsync(async () => {
+    // Optimized query with nested selects for directly related tables
+    const propertyState = useAsync(async () => {
+        const { data, error } = await database
+            .from('properties')
+            .select(`
+                *,
+                meters(*),
+                lease_agreements(
+                    *,
+                    tenants(
+                        first_name,
+                        last_name,
+                        email,
+                        phone
+                    ),
+                    billing_items(
+                        *,
+                        payments(*)
+                    )
+                ),
+                property_expenses(*)
+            `)
+            .eq('id', id)
+            .single();
+        return { data, error };
+    }, [id, refreshKey]);
+
+    // Current lease info from property_occupancy view
+    const occupancyState = useAsync(async () => {
         const { data, error } = await database
             .from('property_occupancy')
             .select('*')
@@ -43,46 +69,72 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
         return { data, error };
     }, [id, refreshKey]);
 
-    const metersState = useAsync(async () => {
+    // Attachments - separate query due to polymorphic relationship
+    const attachmentsState = useAsync(async () => {
         const { data, error } = await database
-            .from('meters')
+            .from('attachments')
             .select('*')
-            .eq('property_id', id)
-            .order('meter_type');
+            .eq('related_to_type', 'property')
+            .eq('related_to_id', id)
+            .order('created_at', { ascending: false });
         return { data, error };
     }, [id, refreshKey]);
 
-    const expensesState = useAsync(async () => {
-        const { data, error } = await database
-            .from('property_expenses')
-            .select('*')
-            .eq('property_id', id)
-            .order('expense_date', { ascending: false })
-            .limit(5);
-        return { data, error };
-    }, [id, refreshKey]);
+    // Extract data from states
+    const property = propertyState.value?.data;
+    const occupancy = occupancyState.value?.data;
+    const attachments = attachmentsState.value?.data ?? [];
 
-    const leaseAgreamentState = useAsync(async () => {
-        return await database
-        .from('properties')
-        .select('()')
-    }, [id, refreshKey])
+    // Extract nested data
+    const meters = (property as any)?.meters ?? [];
+    const leases = (property as any)?.lease_agreements ?? [];
+    const expenses = (property as any)?.property_expenses ?? [];
 
+    // Flatten billing items and payments from all leases
+    const billingItems = leases.flatMap((lease: any) =>
+        (lease.billing_items ?? []).map((item: any) => ({
+            ...item,
+            lease_id: lease.id,
+            tenant_name: lease.tenants ? `${lease.tenants.first_name} ${lease.tenants.last_name}` : null
+        }))
+    );
 
+    // Flatten all payments from all billing items
+    const payments = billingItems.flatMap((item: any) =>
+        (item.payments ?? []).map((payment: any) => ({
+            ...payment,
+            billing_item_id: item.id,
+            description: item.description
+        }))
+    );
 
-    const property = state.value?.data;
-    const meters = metersState.value?.data ?? [];
-    const expenses = expensesState.value?.data ?? [];
+    // Calculate financial summary
+    const totalBilling = billingItems.reduce((sum: number, item: any) => sum + (item.amount ?? 0), 0);
+    const totalPaid = payments.reduce((sum: number, payment: any) => sum + (payment.amount ?? 0), 0);
+    const totalBalance = totalBilling - totalPaid;
+    const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + (exp.amount ?? 0), 0);
+    const netProfit = totalPaid - totalExpenses;
 
-    const error = state.error ?? state.value?.error;
+    const error = propertyState.error ?? propertyState.value?.error;
+
+    // Navigation handlers
+    const handleMeterClick = (meterId: string) => router.push(routes.landlord.meters({ id: meterId }));
+    const handleLeaseClick = (leaseId: string) => router.push(routes.landlord.leases({ id: leaseId }));
+    const handleBillingClick = (billingId: string) => router.push(routes.landlord.billing({ id: billingId }));
+    const handlePaymentClick = (paymentId: string) => router.push(routes.landlord.payments({ id: paymentId }));
+    const handleExpenseClick = (expenseId: string) => router.push(routes.landlord.expenses({ id: expenseId }));
+    const handleAttachmentClick = (attachmentId: string) => {
+        const attachment = attachments.find(a => a.id === attachmentId);
+        attachment && window.open(attachment.file_url, '_blank');
+    };
 
     return (
         <div className={styles.page}>
-            <Link href={routes.landlord.properties()} className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.properties()} className={styles.backLink}>← Powrot do listy</Link>
 
             {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
-                state.loading ? <Spinner /> :
-                    !property ? <ErrorBanner msg="Nie znaleziono nieruchomości" /> :
+                propertyState.loading ? <Spinner /> :
+                    !property ? <ErrorBanner msg="Nie znaleziono nieruchomosci" /> :
                         <>
                             <div className={styles.header}>
                                 <h1 className={styles.title}>{property.name}</h1>
@@ -93,8 +145,9 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
 
                             <div className={styles.content}>
                                 <div className={styles.mainContent}>
+                                    {/* Property Details Section */}
                                     <div className={styles.section}>
-                                        <h2 className={styles.sectionTitle}>Szczegóły nieruchomości</h2>
+                                        <h2 className={styles.sectionTitle}>Szczegoly nieruchomosci</h2>
                                         <div className={styles.infoGrid}>
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Adres</span>
@@ -103,7 +156,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Typ</span>
                                                 <span className={styles.infoValue}>
-                                                    {TYPE_LABELS[property.property_type ?? ''] ?? property.property_type}
+                                                    {PROPERTY_TYPE_LABELS[property.property_type ?? ''] ?? property.property_type}
                                                 </span>
                                             </div>
                                             <div className={styles.infoItem}>
@@ -112,11 +165,11 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                                     property.status === 'occupied' ? styles.statusOccupied :
                                                         styles.statusMaintenance
                                                     }`}>
-                                                    {STATUS_LABELS[property.status ?? ''] ?? property.status}
+                                                    {PROPERTY_STATUS_LABELS[property.status ?? ''] ?? property.status}
                                                 </span>
                                             </div>
                                             <div className={styles.infoItem}>
-                                                <span className={styles.infoLabel}>Czynsz miesięczny</span>
+                                                <span className={styles.infoLabel}>Czynsz miesieczny</span>
                                                 <span className={styles.infoValueAmount}>{formatCurrency(property.monthly_rent ?? 0)}</span>
                                             </div>
                                             <div className={styles.infoItem}>
@@ -126,7 +179,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                             {property.size_sqm && (
                                                 <div className={styles.infoItem}>
                                                     <span className={styles.infoLabel}>Powierzchnia</span>
-                                                    <span className={styles.infoValue}>{property.size_sqm} m²</span>
+                                                    <span className={styles.infoValue}>{property.size_sqm} m2</span>
                                                 </div>
                                             )}
                                             {property.bedrooms && (
@@ -150,115 +203,74 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                         </div>
                                     </div>
 
-                                    {property.current_lease_id && (
+                                    {/* Current Lease Section */}
+                                    {occupancy?.current_lease_id && (
                                         <div className={styles.section}>
                                             <h2 className={styles.sectionTitle}>Aktualna umowa</h2>
                                             <div className={styles.infoGrid}>
                                                 <div className={styles.infoItem}>
                                                     <span className={styles.infoLabel}>Najemca</span>
                                                     <span className={styles.infoValue}>
-                                                        <Link href={routes.landlord.tenants({ id: property.tenant_id ?? undefined })}>
-                                                            {property.current_tenant_name}
+                                                        <Link href={routes.landlord.tenants({ id: occupancy.tenant_id ?? undefined })}>
+                                                            {occupancy.current_tenant_name}
                                                         </Link>
                                                     </span>
                                                 </div>
                                                 <div className={styles.infoItem}>
                                                     <span className={styles.infoLabel}>Czynsz</span>
-                                                    <span className={styles.infoValueAmount}>{formatCurrency(property.current_rent ?? 0)}</span>
+                                                    <span className={styles.infoValueAmount}>{formatCurrency(occupancy.current_rent ?? 0)}</span>
                                                 </div>
                                                 <div className={styles.infoItem}>
                                                     <span className={styles.infoLabel}>Okres</span>
                                                     <span className={styles.infoValue}>
-                                                        {property.lease_start} — {property.lease_end ?? 'Bezterminowa'}
+                                                        {occupancy.lease_start} — {occupancy.lease_end ?? 'Bezterminowa'}
                                                     </span>
                                                 </div>
                                             </div>
-                                            <Link href={routes.landlord.leases({ id: property.current_lease_id })} className={styles.editButton}>
-                                                Szczegóły umowy →
+                                            <Link href={routes.landlord.leases({ id: occupancy.current_lease_id })} className={styles.editButton}>
+                                                Szczegoly umowy →
                                             </Link>
                                         </div>
                                     )}
 
-                                    <div className={styles.section}>
-                                        <h2 className={styles.sectionTitle}>Liczniki ({meters.length})</h2>
-                                        {meters.length === 0 ? (
-                                            <p>Brak liczników</p>
-                                        ) : (
-                                            <table className={styles.table}>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Typ</th>
-                                                        <th>Numer</th>
-                                                        <th>Jednostka</th>
-                                                        <th>Aktywny</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {meters.map(meter => (
-                                                        <tr key={meter.id}>
-                                                            <td>{meter.meter_type}</td>
-                                                            <td>{meter.meter_number}</td>
-                                                            <td>{meter.unit}</td>
-                                                            <td>{meter.active ? 'Tak' : 'Nie'}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        )}
-                                    </div>
-
-                                    {expenses.length > 0 && (
-                                        <div className={styles.section}>
-                                            <h2 className={styles.sectionTitle}>Ostatnie wydatki</h2>
-                                            <table className={styles.table}>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Opis</th>
-                                                        <th>Typ</th>
-                                                        <th>Kwota</th>
-                                                        <th>Data</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {expenses.map(expense => (
-                                                        <tr key={expense.id}>
-                                                            <td>{expense.description}</td>
-                                                            <td>{expense.expense_type}</td>
-                                                            <td>{formatCurrency(expense.amount)}</td>
-                                                            <td>{formatDate(expense.expense_date)}</td>
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
+                                    {/* Table Components */}
+                                    <MetersTable data={meters} onRowClick={handleMeterClick} />
+                                    <LeasesTable data={leases} onRowClick={handleLeaseClick} />
+                                    <BillingTable data={billingItems} onRowClick={handleBillingClick} />
+                                    <PaymentsTable data={payments} onRowClick={handlePaymentClick} />
+                                    <ExpensesTable data={expenses} onRowClick={handleExpenseClick} />
+                                    <AttachmentsGrid data={attachments} onRowClick={handleAttachmentClick} />
                                 </div>
 
+                                {/* Financial Summary Sidebar */}
                                 <div className={styles.sidebar}>
-                                    <div className={styles.propertyStats}>
-                                        <h3 className={styles.statsTitle}>Statystyki</h3>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.statLabel}>Liczniki</span>
-                                            <span className={styles.statValue}>{meters.length}</span>
+                                    <div className={styles.summaryCard}>
+                                        <h3 className={styles.summaryTitle}>Podsumowanie finansowe</h3>
+                                        <div className={styles.summaryRow}>
+                                            <span>Suma rozliczen</span>
+                                            <span>{formatCurrency(totalBilling)}</span>
                                         </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.statLabel}>Wydatki (ostatnie 5)</span>
-                                            <span className={styles.statValue}>{expenses.length}</span>
+                                        <div className={styles.summaryRow}>
+                                            <span>Opłacono</span>
+                                            <span className={styles.positive}>{formatCurrency(totalPaid)}</span>
                                         </div>
-                                        <div className={styles.statItem}>
-                                            <span className={styles.statLabel}>Status</span>
-                                            <span className={styles.statValue}>
-                                                {STATUS_LABELS[property.status ?? ''] ?? property.status}
+                                        <div className={styles.summaryRow}>
+                                            <span>Saldo</span>
+                                            <span className={totalBalance > 0 ? styles.negative : styles.positive}>
+                                                {formatCurrency(totalBalance)}
                                             </span>
                                         </div>
-                                        {property.monthly_rent && (
-                                            <div className={styles.statItem}>
-                                                <span className={styles.statLabel}>Czynsz</span>
-                                                <span className={styles.statValueAmount}>
-                                                    {formatCurrency(property.monthly_rent)}
-                                                </span>
-                                            </div>
-                                        )}
+                                        <div className={styles.summaryDivider} />
+                                        <div className={styles.summaryRow}>
+                                            <span>Wydatki</span>
+                                            <span className={styles.negative}>{formatCurrency(totalExpenses)}</span>
+                                        </div>
+                                        <div className={styles.summaryRow}>
+                                            <span>Zysk netto</span>
+                                            <span className={netProfit >= 0 ? styles.positive : styles.negative}>
+                                                {formatCurrency(netProfit)}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

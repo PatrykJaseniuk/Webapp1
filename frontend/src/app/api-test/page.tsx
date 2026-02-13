@@ -13,6 +13,43 @@ export default () => {
             .eq('lease_agreements.tenants.email', 'anna.nowak@test.local')
         // .eq('lease_agreements.', 'Maria Kowalska')
     })
+    // const propertyDetails = useAsync(async () => {
+    //     return await database
+    //         .from('properties')
+    //         .select(`
+    //             *,
+    //             meters(
+    //                 *,
+    //                 meter_readings(
+    //                     *
+    //                 )
+    //             ),
+    //             lease_agreements(
+    //                 *,
+    //                 tenants(
+    //                     first_name,
+    //                     last_name,
+    //                     email,
+    //                     phone
+    //                 ),
+    //                 billing_items(
+    //                     *,
+    //                     payments(
+    //                         *
+    //                     )
+    //                 )
+    //             ),
+    //             property_expenses(
+    //                 *
+    //             ),
+    //             attachments(
+    //                 *
+    //             )
+    //         `)
+    //         .eq('id', id)
+    //         .single();
+    // })
+
 
     console.log(propertiesStatus)
 

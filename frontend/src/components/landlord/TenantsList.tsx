@@ -3,22 +3,25 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { TENANT_STATUS_LABELS } from '@/constants/labels';
 
 import styles from './ListPage.module.css';
+import tableStyles from './tables/Tables.module.css';
 
-const STATUS_LABELS: Record<string, string> = {
-    active: 'Aktywny',
-    past: 'Były',
-    applicant: 'Kandydat',
-};
+const getStatusClass = (status: string) =>
+    status === 'active' ? tableStyles.statusActive :
+        status === 'past' ? tableStyles.statusTerminated :
+            tableStyles.statusPending;
 
 export const TenantsList = () => {
+    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
@@ -32,12 +35,14 @@ export const TenantsList = () => {
 
     const tenants = state.value?.data ?? [];
 
+    const handleRowClick = (tenantId: string) => router.push(routes.landlord.tenants({ id: tenantId }));
+
     return (
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Najemcy</h1>
                 <Link href={routes.landlord.tenants({ action: 'new' })} className={styles.addButton}>
-                    Dodaj najemcę
+                    Dodaj najemce
                 </Link>
             </div>
 
@@ -46,45 +51,41 @@ export const TenantsList = () => {
                     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
                         tenants.length === 0 ? (
                             <EmptyState
-                                message="Brak najemców"
-                                actionLabel="Dodaj pierwszego najemcę"
+                                message="Brak najemcow"
+                                actionLabel="Dodaj pierwszego najemce"
                                 actionHref={routes.landlord.tenants({ action: 'new' })}
                             />
                         ) : (
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Imię i nazwisko</th>
-                                        <th>Email</th>
-                                        <th>Telefon</th>
-                                        <th>Status</th>
-                                        <th>Akcje</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {tenants.map(tenant => (
-                                        <tr key={tenant.id}>
-                                            <td className={styles.name}>
-                                                <Link href={routes.landlord.tenants({ id: tenant.id })}>
-                                                    {tenant.first_name} {tenant.last_name}
-                                                </Link>
-                                            </td>
-                                            <td className={styles.email}>{tenant.email}</td>
-                                            <td className={styles.phone}>{tenant.phone}</td>
-                                            <td>
-                                                <span className={`${styles.status} ${tenant.status === 'active' ? styles.statusActive : styles.statusInactive}`}>
-                                                    {STATUS_LABELS[tenant.status] ?? tenant.status}
-                                                </span>
-                                            </td>
-                                            <td className={styles.actions}>
-                                                <Link href={routes.landlord.tenants({ action: 'edit', id: tenant.id })} className={styles.actionLink}>
-                                                    Edytuj
-                                                </Link>
-                                            </td>
+                            <div className={tableStyles.section}>
+                                <table className={tableStyles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Imie i nazwisko</th>
+                                            <th>Email</th>
+                                            <th>Telefon</th>
+                                            <th>Status</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {tenants.map(tenant => (
+                                            <tr
+                                                key={tenant.id}
+                                                className={tableStyles.clickableRow}
+                                                onClick={() => tenant.id && handleRowClick(tenant.id)}
+                                            >
+                                                <td>{tenant.first_name} {tenant.last_name}</td>
+                                                <td>{tenant.email}</td>
+                                                <td>{tenant.phone}</td>
+                                                <td>
+                                                    <span className={`${tableStyles.statusBadge} ${getStatusClass(tenant.status ?? '')}`}>
+                                                        {TENANT_STATUS_LABELS[tenant.status ?? ''] ?? tenant.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
         </div>
     );

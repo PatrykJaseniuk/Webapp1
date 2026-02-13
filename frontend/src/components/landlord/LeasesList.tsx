@@ -3,23 +3,26 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { LEASE_STATUS_LABELS } from '@/constants/labels';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 import styles from './ListPage.module.css';
+import tableStyles from './tables/Tables.module.css';
 
-const STATUS_LABELS: Record<string, string> = {
-    active: 'Aktywna',
-    expired: 'Wygasła',
-    terminated: 'Rozwiązana',
-};
+const getStatusClass = (status: string) =>
+    status === 'active' ? tableStyles.statusActive :
+        status === 'expired' ? tableStyles.statusExpired :
+            tableStyles.statusTerminated;
 
 export const LeasesList = () => {
+    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const [filterStatus, setFilterStatus] = useState('');
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
@@ -39,12 +42,14 @@ export const LeasesList = () => {
 
     const leases = state.value?.data ?? [];
 
+    const handleRowClick = (leaseId: string) => router.push(routes.landlord.leases({ id: leaseId }));
+
     return (
         <div className={styles.page}>
             <div className={styles.header}>
                 <h1 className={styles.title}>Umowy najmu</h1>
                 <Link href={routes.landlord.leases({ action: 'new' })} className={styles.addButton}>
-                    Dodaj umowę
+                    Dodaj umowe
                 </Link>
             </div>
 
@@ -58,8 +63,8 @@ export const LeasesList = () => {
                 >
                     <option value="">Wszystkie</option>
                     <option value="active">Aktywne</option>
-                    <option value="expired">Wygasłe</option>
-                    <option value="terminated">Rozwiązane</option>
+                    <option value="expired">Wygasle</option>
+                    <option value="terminated">Rozwiazane</option>
                 </select>
             </div>
 
@@ -68,54 +73,47 @@ export const LeasesList = () => {
                     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
                         leases.length === 0 ? (
                             <EmptyState
-                                message="Brak umów najmu"
-                                actionLabel="Dodaj pierwszą umowę"
+                                message="Brak umow najmu"
+                                actionLabel="Dodaj pierwsza umowe"
                                 actionHref={routes.landlord.leases({ action: 'new' })}
                             />
                         ) : (
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Nieruchomość</th>
-                                        <th>Najemca</th>
-                                        <th>Okres</th>
-                                        <th>Czynsz</th>
-                                        <th>Status</th>
-                                        <th>Akcje</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {leases.map(lease => (
-                                        <tr key={lease.id}>
-                                            <td className={styles.propertyName}>
-                                                <Link href={routes.landlord.leases({ id: lease.id })}>
-                                                    {(lease as any).properties?.name ?? lease.property_id}
-                                                </Link>
-                                            </td>
-                                            <td className={styles.tenantName}>
-                                                {(lease as any).tenants
-                                                    ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
-                                                    : lease.tenant_id}
-                                            </td>
-                                            <td className={styles.dateRange}>{lease.start_date} — {lease.end_date ?? 'Bezterminowa'}</td>
-                                            <td className={styles.rentAmount}>{formatCurrency(lease.monthly_rent)}</td>
-                                            <td>
-                                                <span className={`${styles.status} ${lease.status === 'active' ? styles.statusActive :
-                                                    lease.status === 'expired' ? styles.statusExpired :
-                                                        styles.statusDraft
-                                                    }`}>
-                                                    {STATUS_LABELS[lease.status] ?? lease.status}
-                                                </span>
-                                            </td>
-                                            <td className={styles.actions}>
-                                                <Link href={routes.landlord.leases({ action: 'edit', id: lease.id })} className={styles.actionLink}>
-                                                    Edytuj
-                                                </Link>
-                                            </td>
+                            <div className={tableStyles.section}>
+                                <table className={tableStyles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Nieruchomosc</th>
+                                            <th>Najemca</th>
+                                            <th>Okres</th>
+                                            <th>Czynsz</th>
+                                            <th>Status</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {leases.map(lease => (
+                                            <tr
+                                                key={lease.id}
+                                                className={tableStyles.clickableRow}
+                                                onClick={() => handleRowClick(lease.id)}
+                                            >
+                                                <td>{(lease as any).properties?.name ?? lease.property_id}</td>
+                                                <td>
+                                                    {(lease as any).tenants
+                                                        ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
+                                                        : lease.tenant_id}
+                                                </td>
+                                                <td>{lease.start_date} — {lease.end_date ?? 'Bezterminowa'}</td>
+                                                <td>{formatCurrency(lease.monthly_rent)}</td>
+                                                <td>
+                                                    <span className={`${tableStyles.statusBadge} ${getStatusClass(lease.status)}`}>
+                                                        {LEASE_STATUS_LABELS[lease.status] ?? lease.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
         </div>
     );

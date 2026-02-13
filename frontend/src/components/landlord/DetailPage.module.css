@@ -239,3 +239,193 @@
     color: var(--color-text-secondary);
     font-style: italic;
 }
+
+/* Expandable readings */
+.expandButton {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.expandButton:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.readingsCell {
+    padding: 0 !important;
+    background-color: var(--color-bg);
+}
+
+.readingsList {
+    padding: var(--spacing-md);
+    margin: var(--spacing-sm);
+    background-color: var(--color-bg-white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.readingsList h4 {
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: var(--font-base);
+    color: var(--color-text);
+}
+
+.readingsTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-sm);
+}
+
+.readingsTable th,
+.readingsTable td {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.readingsTable th {
+    font-weight: 600;
+    color: var(--color-text-secondary);
+}
+
+/* Balance colors */
+.negativeBalance {
+    color: var(--color-error);
+    font-weight: 600;
+}
+
+.positiveBalance {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+/* Attachments grid */
+.attachmentsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.attachmentCard {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background-color: var(--color-bg);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.attachmentCard:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.attachmentIcon {
+    font-size: var(--font-2xl);
+    line-height: 1;
+}
+
+.attachmentInfo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    min-width: 0;
+}
+
+.attachmentName {
+    font-weight: 600;
+    color: var(--color-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachmentType {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+}
+
+.attachmentDesc {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    font-style: italic;
+}
+
+/* Info grid */
+.infoGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.infoItem {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.infoLabel {
+    font-size: var(--font-sm);
+    color: var(--color-text-secondary);
+    font-weight: 500;
+}
+
+.infoValue {
+    font-size: var(--font-base);
+    color: var(--color-text);
+}
+
+.infoValue a {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.infoValue a:hover {
+    text-decoration: underline;
+}
+
+.infoValueAmount {
+    font-size: var(--font-base);
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--color-text);
+}
+
+/* Content layout */
+.content {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: var(--spacing-xl);
+}
+
+.mainContent {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .content {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        order: -1;
+    }
+}

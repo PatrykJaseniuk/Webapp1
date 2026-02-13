@@ -3,24 +3,22 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { routes } from '@/routes';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { METER_TYPE_LABELS } from '@/constants/labels';
+import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
 import styles from './ListPage.module.css';
-
-const TYPE_LABELS: Record<string, string> = {
-    electricity: 'Prąd',
-    water: 'Woda',
-    gas: 'Gaz',
-    heating: 'Ogrzewanie',
-};
+import tableStyles from './tables/Tables.module.css';
 
 export const UtilityPricesList = () => {
+    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
@@ -34,12 +32,14 @@ export const UtilityPricesList = () => {
 
     const prices = state.value?.data ?? [];
 
+    const handleRowClick = (priceId: string) => router.push(routes.landlord.utilityPrices({ id: priceId }));
+
     return (
         <div className={styles.page}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Ceny mediów</h1>
+                <h1 className={styles.title}>Ceny mediow</h1>
                 <Link href={routes.landlord.utilityPrices({ action: 'new' })} className={styles.addButton}>
-                    Dodaj cenę
+                    Dodaj cene
                 </Link>
             </div>
 
@@ -48,44 +48,35 @@ export const UtilityPricesList = () => {
                     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
                         prices.length === 0 ? (
                             <EmptyState
-                                message="Brak zdefiniowanych cen mediów"
-                                actionLabel="Dodaj pierwszą cenę"
+                                message="Brak zdefiniowanych cen mediow"
+                                actionLabel="Dodaj pierwsza cene"
                                 actionHref={routes.landlord.utilityPrices({ action: 'new' })}
                             />
                         ) : (
-                            <table className={styles.table}>
-                                <thead>
-                                    <tr>
-                                        <th>Typ</th>
-                                        <th>Cena za jednostkę</th>
-                                        <th>Data obowiązywania</th>
-                                        <th>Akcje</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {prices.map(price => (
-                                        <tr key={price.id}>
-                                            <td className={styles.utilityType}>
-                                                {TYPE_LABELS[price.utility_type] ?? price.utility_type}
-                                            </td>
-                                            <td className={styles.priceAmount}>
-                                                {price.price_per_unit} PLN
-                                            </td>
-                                            <td className={styles.dateRange}>
-                                                {formatDate(price.effective_date)}
-                                            </td>
-                                            <td className={styles.actions}>
-                                                <Link
-                                                    href={routes.landlord.utilityPrices({ action: 'edit', id: price.id })}
-                                                    className={`${styles.actionButton} ${styles.editButton}`}
-                                                >
-                                                    Edytuj
-                                                </Link>
-                                            </td>
+                            <div className={tableStyles.section}>
+                                <table className={tableStyles.table}>
+                                    <thead>
+                                        <tr>
+                                            <th>Typ</th>
+                                            <th>Cena za jednostke</th>
+                                            <th>Data obowiazywania</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {prices.map(price => (
+                                            <tr
+                                                key={price.id}
+                                                className={tableStyles.clickableRow}
+                                                onClick={() => price.id && handleRowClick(price.id)}
+                                            >
+                                                <td>{METER_TYPE_LABELS[price.utility_type ?? ''] ?? price.utility_type}</td>
+                                                <td>{formatCurrency(price.price_per_unit)}</td>
+                                                <td>{price.effective_date ? formatDate(price.effective_date) : '—'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         )}
         </div>
     );
