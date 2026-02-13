@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { formatCurrency } from '@/utils/formatCurrency';
 
 import styles from './ListPage.module.css';
+import { useRouter } from 'next/navigation';
 
 const STATUS_LABELS: Record<string, string> = {
     available: 'Wolna',
@@ -29,6 +30,8 @@ const TYPE_LABELS: Record<string, string> = {
 export const PropertiesList = () => {
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
+    const router = useRouter();
+
 
     const state = useAsync(async () => {
         const { data, error } = await database
@@ -67,17 +70,14 @@ export const PropertiesList = () => {
                                         <th>Typ</th>
                                         <th>Status</th>
                                         <th>Czynsz</th>
-                                        <th>Akcje</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody >
                                     {properties.map(property => (
-                                        <tr key={property.id}>
-                                            <td>
-                                                <Link className={styles.tableLink} href={routes.landlord.properties({ id: property.id })}>
-                                                    {property.name}
-                                                </Link>
-                                            </td>
+                                        <tr key={property.id}
+                                            onClick={() => router.push(routes.landlord.properties({ id: property.id }))}
+                                        >
+                                            <td>{property.name}</td>
                                             <td>{property.address}</td>
                                             <td>{TYPE_LABELS[property.property_type] ?? property.property_type}</td>
                                             <td>
@@ -86,11 +86,6 @@ export const PropertiesList = () => {
                                                 </span>
                                             </td>
                                             <td className={styles.amount}>{formatCurrency(property.monthly_rent)}</td>
-                                            <td className={styles.actions}>
-                                                <Link className={styles.actionLink} href={routes.landlord.properties({ action: 'edit', id: property.id })}>
-                                                    Edytuj
-                                                </Link>
-                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

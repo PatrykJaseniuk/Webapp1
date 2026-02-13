@@ -76,7 +76,8 @@ export const PaymentsList = () => {
                                     ))}
                                 </tbody>
                             </table>
-                        )}
+                        )
+            }
         </div>
     );
 };

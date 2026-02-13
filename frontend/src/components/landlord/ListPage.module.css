@@ -89,7 +89,8 @@
     text-transform: uppercase;
 }
 
-.statusActive {
+.statusActive,
+.statusAvailable {
     background-color: var(--color-success-light);
     color: var(--color-success);
 }
@@ -99,7 +100,8 @@
     color: var(--color-bg-white);
 }
 
-.statusPending {
+.statusPending,
+.statusOccupied {
     background-color: var(--color-warning-light);
     color: var(--color-warning);
 }

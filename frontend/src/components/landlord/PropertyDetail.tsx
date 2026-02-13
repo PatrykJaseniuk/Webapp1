@@ -62,6 +62,14 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
         return { data, error };
     }, [id, refreshKey]);
 
+    const leaseAgreamentState = useAsync(async () => {
+        return await database
+        .from('properties')
+        .select('()')
+    }, [id, refreshKey])
+
+
+
     const property = state.value?.data;
     const meters = metersState.value?.data ?? [];
     const expenses = expensesState.value?.data ?? [];
