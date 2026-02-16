@@ -19,7 +19,7 @@ export const ExpenseForm = () => {
     const [expenseType, setExpenseType] = useState('maintenance');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
-    const [expenseDate, setExpenseDate] = useState('');
+    const [dueDate, setDueDate] = useState('');
 
     const propertiesState = useAsync(async () => {
         const { data, error } = await database
@@ -32,16 +32,17 @@ export const ExpenseForm = () => {
     const [submitState, handleSubmit] = useAsyncFn(async () => {
         const payload = {
             property_id: propertyId,
-            expense_type: expenseType,
+            type: 'expense',
             description,
             amount: parseFloat(amount),
-            expense_date: expenseDate,
+            due_date: dueDate,
+            status: 'paid',
         };
 
-        const { error } = await database.from('property_expenses').insert(payload);
+        const { error } = await database.from('transactions').insert(payload);
         !error && router.push(routes.landlord.expenses());
         return { error };
-    }, [propertyId, expenseType, description, amount, expenseDate, router]);
+    }, [propertyId, expenseType, description, amount, dueDate, router]);
 
     const properties = propertiesState.value?.data ?? [];
 
@@ -118,12 +119,12 @@ export const ExpenseForm = () => {
                     </div>
 
                     <div className={styles.formField}>
-                        <label htmlFor="expenseDate">Data wydatku</label>
+                        <label htmlFor="dueDate">Data wydatku</label>
                         <input
-                            id="expenseDate"
+                            id="dueDate"
                             type="date"
-                            value={expenseDate}
-                            onChange={(e) => setExpenseDate(e.target.value)}
+                            value={dueDate}
+                            onChange={(e) => setDueDate(e.target.value)}
                             required
                         />
                     </div>

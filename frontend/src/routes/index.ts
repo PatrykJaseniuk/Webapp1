@@ -27,17 +27,6 @@ export type PaymentRouteParams = {
     action?: 'new';
 };
 
-export type MeterRouteParams = {
-    id?: string;
-    meterId?: string;
-    action?: 'new-meter' | 'new-reading';
-};
-
-export type UtilityPriceRouteParams = {
-    id?: string;
-    action?: 'new' | 'edit';
-};
-
 export type ExpenseRouteParams = {
     id?: string;
     action?: 'new';
@@ -72,10 +61,6 @@ export const routes = {
             buildUrl('/landlord/billing', params),
         payments: (params?: PaymentRouteParams) =>
             buildUrl('/landlord/payments', params),
-        meters: (params?: MeterRouteParams) =>
-            buildUrl('/landlord/meters', params),
-        utilityPrices: (params?: UtilityPriceRouteParams) =>
-            buildUrl('/landlord/utility-prices', params),
         expenses: (params?: ExpenseRouteParams) =>
             buildUrl('/landlord/expenses', params),
     },

@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAsync } from 'react-use';
 
 import { database } from '@/api/database';
@@ -13,11 +12,7 @@ import { routes } from '@/routes';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import { MetersTable } from './tables/MetersTable';
 import { LeasesTable } from './tables/LeasesTable';
-import { BillingTable } from './tables/BillingTable';
-import { PaymentsTable } from './tables/PaymentsTable';
-import { ExpensesTable } from './tables/ExpensesTable';
 import { AttachmentsGrid } from './tables/AttachmentsGrid';
 
 import styles from './DetailPage.module.css';
@@ -27,33 +22,15 @@ interface PropertyDetailProps {
 }
 
 export const PropertyDetail = ({ id }: PropertyDetailProps) => {
-    const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
 
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
-    // Optimized query with nested selects for directly related tables
+    // Property query
     const propertyState = useAsync(async () => {
         const { data, error } = await database
             .from('properties')
-            .select(`
-                *,
-                meters(*),
-                lease_agreements(
-                    *,
-                    tenants(
-                        first_name,
-                        last_name,
-                        email,
-                        phone
-                    ),
-                    billing_items(
-                        *,
-                        payments(*)
-                    )
-                ),
-                property_expenses(*)
-            `)
+            .select('*')
             .eq('id', id)
             .single();
         return { data, error };
@@ -66,6 +43,16 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
             .select('*')
             .eq('id', id)
             .single();
+        return { data, error };
+    }, [id, refreshKey]);
+
+    // Get transactions for this property (billing/rent)
+    const transactionsState = useAsync(async () => {
+        const { data, error } = await database
+            .from('transactions')
+            .select('*')
+            .eq('property_id', id)
+            .order('due_date', { ascending: false });
         return { data, error };
     }, [id, refreshKey]);
 
@@ -83,34 +70,17 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
     // Extract data from states
     const property = propertyState.value?.data;
     const occupancy = occupancyState.value?.data;
+    const transactions = transactionsState.value?.data ?? [];
     const attachments = attachmentsState.value?.data ?? [];
 
-    // Extract nested data
-    const meters = (property as any)?.meters ?? [];
-    const leases = (property as any)?.lease_agreements ?? [];
-    const expenses = (property as any)?.property_expenses ?? [];
-
-    // Flatten billing items and payments from all leases
-    const billingItems = leases.flatMap((lease: any) =>
-        (lease.billing_items ?? []).map((item: any) => ({
-            ...item,
-            lease_id: lease.id,
-            tenant_name: lease.tenants ? `${lease.tenants.first_name} ${lease.tenants.last_name}` : null
-        }))
-    );
-
-    // Flatten all payments from all billing items
-    const payments = billingItems.flatMap((item: any) =>
-        (item.payments ?? []).map((payment: any) => ({
-            ...payment,
-            billing_item_id: item.id,
-            description: item.description
-        }))
-    );
+    // Separate transactions by type
+    const billingItems = transactions.filter(t => t.type !== 'expense');
+    const expenses = transactions.filter(t => t.type === 'expense');
+    const paidTransactions = billingItems.filter(t => t.status === 'paid');
 
     // Calculate financial summary
     const totalBilling = billingItems.reduce((sum: number, item: any) => sum + (item.amount ?? 0), 0);
-    const totalPaid = payments.reduce((sum: number, payment: any) => sum + (payment.amount ?? 0), 0);
+    const totalPaid = paidTransactions.reduce((sum: number, item: any) => sum + (item.amount ?? 0), 0);
     const totalBalance = totalBilling - totalPaid;
     const totalExpenses = expenses.reduce((sum: number, exp: any) => sum + (exp.amount ?? 0), 0);
     const netProfit = totalPaid - totalExpenses;
@@ -118,11 +88,9 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
     const error = propertyState.error ?? propertyState.value?.error;
 
     // Navigation handlers
-    const handleMeterClick = (meterId: string) => router.push(routes.landlord.meters({ id: meterId }));
-    const handleLeaseClick = (leaseId: string) => router.push(routes.landlord.leases({ id: leaseId }));
-    const handleBillingClick = (billingId: string) => router.push(routes.landlord.billing({ id: billingId }));
-    const handlePaymentClick = (paymentId: string) => router.push(routes.landlord.payments({ id: paymentId }));
-    const handleExpenseClick = (expenseId: string) => router.push(routes.landlord.expenses({ id: expenseId }));
+    const handleLeaseClick = (leaseId: string) => { };
+    const handleBillingClick = (billingId: string) => { };
+    const handleExpenseClick = (expenseId: string) => { };
     const handleAttachmentClick = (attachmentId: string) => {
         const attachment = attachments.find(a => a.id === attachmentId);
         attachment && window.open(attachment.file_url, '_blank');
@@ -233,12 +201,7 @@ export const PropertyDetail = ({ id }: PropertyDetailProps) => {
                                         </div>
                                     )}
 
-                                    {/* Table Components */}
-                                    <MetersTable data={meters} onRowClick={handleMeterClick} />
-                                    <LeasesTable data={leases} onRowClick={handleLeaseClick} />
-                                    <BillingTable data={billingItems} onRowClick={handleBillingClick} />
-                                    <PaymentsTable data={payments} onRowClick={handlePaymentClick} />
-                                    <ExpensesTable data={expenses} onRowClick={handleExpenseClick} />
+                                    {/* Attachments */}
                                     <AttachmentsGrid data={attachments} onRowClick={handleAttachmentClick} />
                                 </div>
 

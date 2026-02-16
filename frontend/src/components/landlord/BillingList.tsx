@@ -10,7 +10,6 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { BILLING_STATUS_LABELS, ITEM_TYPE_LABELS } from '@/constants/labels';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
@@ -22,6 +21,14 @@ const getStatusClass = (status: string) =>
         status === 'overdue' ? tableStyles.statusTerminated :
             tableStyles.statusPending;
 
+const TRANSACTION_TYPE_LABELS: Record<string, string> = {
+    rent: 'Czynsz',
+    utility: 'Media',
+    deposit: 'Kaucja',
+    fee: 'Opłata',
+    other: 'Inne',
+};
+
 export const BillingList = () => {
     const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
@@ -30,8 +37,9 @@ export const BillingList = () => {
 
     const state = useAsync(async () => {
         const query = database
-            .from('billing_with_payments')
+            .from('transactions')
             .select('*')
+            .eq('type', 'rent')
             .order('due_date', { ascending: false });
 
         const { data, error } = filterStatus
@@ -86,8 +94,6 @@ export const BillingList = () => {
                                             <th>Opis</th>
                                             <th>Typ</th>
                                             <th>Kwota</th>
-                                            <th>Zaplaceno</th>
-                                            <th>Saldo</th>
                                             <th>Termin</th>
                                             <th>Status</th>
                                         </tr>
@@ -100,16 +106,12 @@ export const BillingList = () => {
                                                 onClick={() => item.id && handleRowClick(item.id)}
                                             >
                                                 <td>{item.description}</td>
-                                                <td>{ITEM_TYPE_LABELS[item.item_type ?? ''] ?? item.item_type}</td>
+                                                <td>{TRANSACTION_TYPE_LABELS[item.type ?? ''] ?? item.type}</td>
                                                 <td>{formatCurrency(item.amount ?? 0)}</td>
-                                                <td>{formatCurrency(item.total_paid ?? 0)}</td>
-                                                <td className={(item.balance ?? 0) > 0 ? tableStyles.negative : tableStyles.positive}>
-                                                    {formatCurrency(item.balance ?? 0)}
-                                                </td>
                                                 <td>{item.due_date ? formatDate(item.due_date) : '—'}</td>
                                                 <td>
                                                     <span className={`${tableStyles.statusBadge} ${getStatusClass(item.status ?? '')}`}>
-                                                        {BILLING_STATUS_LABELS[item.status ?? ''] ?? item.status}
+                                                        {item.status === 'paid' ? 'Opłacone' : item.status === 'overdue' ? 'Przeterminowane' : 'Oczekujące'}
                                                     </span>
                                                 </td>
                                             </tr>

@@ -16,36 +16,35 @@ import styles from './FormPage.module.css';
 export const PaymentForm = () => {
     const router = useRouter();
 
-    const [billingItemId, setBillingItemId] = useState('');
+    const [transactionId, setTransactionId] = useState('');
     const [amount, setAmount] = useState('');
-    const [paymentDate, setPaymentDate] = useState('');
-    const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
-    const [notes, setNotes] = useState('');
+    const [description, setDescription] = useState('');
 
-    const unpaidState = useAsync(async () => {
+    // Get pending transactions (unpaid bills)
+    const pendingState = useAsync(async () => {
         const { data, error } = await database
-            .from('billing_with_payments')
+            .from('transactions')
             .select('*')
-            .in('status', ['pending', 'overdue'])
+            .eq('status', 'pending')
             .order('due_date');
         return { data, error };
     }, []);
 
     const [submitState, handleSubmit] = useAsyncFn(async () => {
-        const payload = {
-            billing_item_id: billingItemId,
-            amount: parseFloat(amount),
-            payment_date: paymentDate,
-            payment_method: paymentMethod,
-            notes: notes || null,
-        };
+        // Update the transaction to paid status
+        const { error } = await database
+            .from('transactions')
+            .update({
+                status: 'paid',
+                amount: parseFloat(amount)
+            })
+            .eq('id', transactionId);
 
-        const { error } = await database.from('payments').insert(payload);
         !error && router.push(routes.landlord.payments());
         return { error };
-    }, [billingItemId, amount, paymentDate, paymentMethod, notes, router]);
+    }, [transactionId, amount, description, router]);
 
-    const unpaidItems = unpaidState.value?.data ?? [];
+    const pendingItems = pendingState.value?.data ?? [];
 
     return (
         <div className={styles.page}>
@@ -53,7 +52,7 @@ export const PaymentForm = () => {
 
             <h1 className={styles.title}>Zarejestruj płatność</h1>
 
-            {unpaidState.loading ? <Spinner /> :
+            {pendingState.loading ? <Spinner /> :
                 <form className={styles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
                     {(submitState.error || submitState.value?.error) && (
                         <div className={styles.errorSection}>
@@ -63,17 +62,17 @@ export const PaymentForm = () => {
                     )}
 
                     <div className={styles.formField}>
-                        <label htmlFor="billingItemId">Pozycja rozliczeniowa</label>
+                        <label htmlFor="transactionId">Pozycja do opłacenia</label>
                         <select
-                            id="billingItemId"
-                            value={billingItemId}
-                            onChange={(e) => setBillingItemId(e.target.value)}
+                            id="transactionId"
+                            value={transactionId}
+                            onChange={(e) => setTransactionId(e.target.value)}
                             required
                         >
                             <option value="">— Wybierz pozycję —</option>
-                            {unpaidItems.map(item => (
+                            {pendingItems.map(item => (
                                 <option key={item.id} value={item.id!}>
-                                    {item.description} — {formatCurrency(item.balance ?? 0)} do zapłaty
+                                    {item.description} — {formatCurrency(item.amount ?? 0)} do zapłaty
                                 </option>
                             ))}
                         </select>
@@ -93,36 +92,11 @@ export const PaymentForm = () => {
                     </div>
 
                     <div className={styles.formField}>
-                        <label htmlFor="paymentDate">Data płatności</label>
-                        <input
-                            id="paymentDate"
-                            type="date"
-                            value={paymentDate}
-                            onChange={(e) => setPaymentDate(e.target.value)}
-                            required
-                        />
-                    </div>
-
-                    <div className={styles.formField}>
-                        <label htmlFor="paymentMethod">Metoda płatności</label>
-                        <select
-                            id="paymentMethod"
-                            value={paymentMethod}
-                            onChange={(e) => setPaymentMethod(e.target.value)}
-                        >
-                            <option value="bank_transfer">Przelew</option>
-                            <option value="cash">Gotówka</option>
-                            <option value="card">Karta</option>
-                            <option value="other">Inne</option>
-                        </select>
-                    </div>
-
-                    <div className={styles.formField}>
-                        <label htmlFor="notes">Notatki</label>
+                        <label htmlFor="description">Notatki</label>
                         <textarea
-                            id="notes"
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                             placeholder="Dodatkowe informacje..."
                         />
                     </div>

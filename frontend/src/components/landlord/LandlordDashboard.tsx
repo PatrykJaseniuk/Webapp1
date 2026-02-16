@@ -34,7 +34,7 @@ export const LandlordDashboard = () => {
 
     const unpaidState = useAsync(async () => {
         const { data, error } = await database
-            .from('unpaid_billing_summary')
+            .from('unpaid_transactions_summary')
             .select('*');
         return { data, error };
     }, [refreshKey]);

@@ -16,7 +16,7 @@ export const BillingForm = () => {
     const router = useRouter();
 
     const [leaseId, setLeaseId] = useState('');
-    const [itemType, setItemType] = useState('rent');
+    const [type, setType] = useState('rent');
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [dueDate, setDueDate] = useState('');
@@ -31,16 +31,17 @@ export const BillingForm = () => {
     const [submitState, handleSubmit] = useAsyncFn(async () => {
         const payload = {
             lease_id: leaseId,
-            item_type: itemType,
+            type: type,
             description,
             amount: parseFloat(amount),
             due_date: dueDate,
+            status: 'pending',
         };
 
-        const { error } = await database.from('billing_items').insert(payload);
+        const { error } = await database.from('transactions').insert(payload);
         !error && router.push(routes.landlord.billing());
         return { error };
-    }, [leaseId, itemType, description, amount, dueDate, router]);
+    }, [leaseId, type, description, amount, dueDate, router]);
 
     const leases = leasesState.value?.data ?? [];
 
@@ -77,11 +78,11 @@ export const BillingForm = () => {
                     </div>
 
                     <div className={styles.formField}>
-                        <label htmlFor="itemType">Typ</label>
+                        <label htmlFor="type">Typ</label>
                         <select
-                            id="itemType"
-                            value={itemType}
-                            onChange={(e) => setItemType(e.target.value)}
+                            id="type"
+                            value={type}
+                            onChange={(e) => setType(e.target.value)}
                         >
                             <option value="rent">Czynsz</option>
                             <option value="utility">Media</option>

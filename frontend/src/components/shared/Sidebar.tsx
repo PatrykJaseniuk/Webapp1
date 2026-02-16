@@ -12,7 +12,6 @@ const TENANT_NAV = [
     { href: routes.tenant.properties(), label: 'Nieruchomości' },
     { href: routes.tenant.leases(), label: 'Umowy najmu' },
     { href: routes.tenant.billing(), label: 'Rozliczenia' },
-    { href: routes.tenant.meters(), label: 'Liczniki' },
     { href: routes.tenant.profile(), label: 'Profil' },
 ];
 
@@ -23,8 +22,6 @@ const LANDLORD_NAV = [
     { href: routes.landlord.leases(), label: 'Umowy najmu' },
     { href: routes.landlord.billing(), label: 'Rozliczenia' },
     { href: routes.landlord.payments(), label: 'Płatności' },
-    { href: routes.landlord.meters(), label: 'Liczniki' },
-    { href: routes.landlord.utilityPrices(), label: 'Ceny mediów' },
     { href: routes.landlord.expenses(), label: 'Wydatki' },
 ];
 

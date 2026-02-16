@@ -36,37 +36,28 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
         return { data, error };
     }, [id, refreshKey]);
 
-    const billingState = useAsync(async () => {
+    // Get transactions for this lease
+    const transactionsState = useAsync(async () => {
         const { data, error } = await database
-            .from('billing_with_payments')
+            .from('transactions')
             .select('*')
             .eq('lease_id', id)
             .order('due_date', { ascending: false });
         return { data, error };
     }, [id, refreshKey]);
 
-    const paymentsState = useAsync(async () => {
-        const { data: billingItems } = await database
-            .from('billing_items')
-            .select('id')
-            .eq('lease_id', id);
-
-        const billingIds = (billingItems ?? []).map(b => b.id);
-
-        return billingIds.length > 0
-            ? database
-                .from('payments')
-                .select('*')
-                .in('billing_item_id', billingIds)
-                .order('payment_date', { ascending: false })
-                .limit(10)
-                .then(({ data, error }) => ({ data, error }))
-            : { data: [], error: null };
-    }, [id, refreshKey]);
-
     const lease = state.value?.data;
-    const billingItems = billingState.value?.data ?? [];
-    const payments = paymentsState.value?.data ?? [];
+    const transactions = transactionsState.value?.data ?? [];
+
+    // Separate income (rent) from expenses
+    const billingItems = transactions.filter(t => t.type !== 'expense');
+    const payments = transactions.filter(t => t.status === 'paid');
+
+    // Calculate totals
+    const totalBilling = billingItems.reduce((sum, item) => sum + (item.amount ?? 0), 0);
+    const totalPaid = payments.reduce((sum, item) => sum + (item.amount ?? 0), 0);
+    const totalBalance = totalBilling - totalPaid;
+
     const error = state.error ?? state.value?.error;
 
     return (
@@ -147,7 +138,7 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
 
                                     <div className={styles.section}>
                                         <h2 className={styles.sectionTitle}>Rozliczenia ({billingItems.length})</h2>
-                                        {billingState.loading ? <Spinner /> :
+                                        {transactionsState.loading ? <Spinner /> :
                                             billingItems.length === 0 ? (
                                                 <p>Brak rozliczeń dla tej umowy</p>
                                             ) : (
@@ -157,8 +148,6 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                                             <th>Opis</th>
                                                             <th>Typ</th>
                                                             <th>Kwota</th>
-                                                            <th>Zapłacono</th>
-                                                            <th>Saldo</th>
                                                             <th>Termin</th>
                                                             <th>Status</th>
                                                         </tr>
@@ -167,12 +156,10 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                                         {billingItems.map(item => (
                                                             <tr key={item.id}>
                                                                 <td>{item.description}</td>
-                                                                <td>{item.item_type}</td>
+                                                                <td>{item.type}</td>
                                                                 <td>{formatCurrency(item.amount ?? 0)}</td>
-                                                                <td>{formatCurrency(item.total_paid ?? 0)}</td>
-                                                                <td>{formatCurrency(item.balance ?? 0)}</td>
                                                                 <td>{item.due_date ? formatDate(item.due_date) : '—'}</td>
-                                                                <td>{item.status}</td>
+                                                                <td>{item.status === 'paid' ? 'Opłacone' : item.status === 'overdue' ? 'Przeterminowane' : 'Oczekujące'}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
@@ -188,17 +175,15 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                                     <tr>
                                                         <th>Data</th>
                                                         <th>Kwota</th>
-                                                        <th>Metoda</th>
-                                                        <th>Notatki</th>
+                                                        <th>Opis</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     {payments.map(payment => (
                                                         <tr key={payment.id}>
-                                                            <td>{formatDate(payment.payment_date)}</td>
+                                                            <td>{formatDate(payment.due_date)}</td>
                                                             <td>{formatCurrency(payment.amount)}</td>
-                                                            <td>{payment.payment_method}</td>
-                                                            <td>{payment.notes ?? '—'}</td>
+                                                            <td>{payment.description ?? '—'}</td>
                                                         </tr>
                                                     ))}
                                                 </tbody>
@@ -226,6 +211,12 @@ export const LeaseDetail = ({ id }: LeaseDetailProps) => {
                                             <span className={styles.leaseInfoLabel}>Okres</span>
                                             <span className={styles.leaseInfoValue}>
                                                 {lease.start_date} — {lease.end_date ?? 'Bezterminowa'}
+                                            </span>
+                                        </div>
+                                        <div className={styles.leaseInfoItem}>
+                                            <span className={styles.leaseInfoLabel}>Saldo</span>
+                                            <span className={totalBalance > 0 ? styles.negative : styles.positive}>
+                                                {formatCurrency(totalBalance)}
                                             </span>
                                         </div>
                                     </div>

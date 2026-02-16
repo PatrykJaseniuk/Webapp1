@@ -10,7 +10,6 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { PAYMENT_METHOD_LABELS } from '@/constants/labels';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
@@ -24,9 +23,10 @@ export const PaymentsList = () => {
 
     const state = useAsync(async () => {
         const { data, error } = await database
-            .from('payments')
-            .select('*, billing_items(description, lease_id)')
-            .order('payment_date', { ascending: false });
+            .from('transactions')
+            .select('*')
+            .eq('status', 'paid')
+            .order('due_date', { ascending: false });
         return { data, error };
     }, [refreshKey]);
 
@@ -59,9 +59,8 @@ export const PaymentsList = () => {
                                         <tr>
                                             <th>Data</th>
                                             <th>Kwota</th>
-                                            <th>Metoda</th>
-                                            <th>Pozycja rozliczeniowa</th>
-                                            <th>Notatki</th>
+                                            <th>Opis</th>
+                                            <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -71,11 +70,10 @@ export const PaymentsList = () => {
                                                 className={tableStyles.clickableRow}
                                                 onClick={() => handleRowClick(payment.id)}
                                             >
-                                                <td>{formatDate(payment.payment_date)}</td>
+                                                <td>{formatDate(payment.due_date)}</td>
                                                 <td className={tableStyles.positive}>{formatCurrency(payment.amount)}</td>
-                                                <td>{PAYMENT_METHOD_LABELS[payment.payment_method] ?? payment.payment_method}</td>
-                                                <td>{(payment as any).billing_items?.description ?? payment.billing_item_id}</td>
-                                                <td>{payment.notes ?? '—'}</td>
+                                                <td>{payment.description ?? '—'}</td>
+                                                <td>Opłacone</td>
                                             </tr>
                                         ))}
                                     </tbody>

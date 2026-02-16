@@ -10,12 +10,19 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { EXPENSE_TYPE_LABELS } from '@/constants/labels';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
 import styles from './ListPage.module.css';
 import tableStyles from './tables/Tables.module.css';
+
+const EXPENSE_TYPE_LABELS: Record<string, string> = {
+    maintenance: 'Konserwacja',
+    tax: 'Podatek',
+    insurance: 'Ubezpieczenie',
+    renovation: 'Remont',
+    other: 'Inne',
+};
 
 export const ExpensesList = () => {
     const router = useRouter();
@@ -25,12 +32,13 @@ export const ExpensesList = () => {
 
     const state = useAsync(async () => {
         const query = database
-            .from('property_expenses')
+            .from('transactions')
             .select('*, properties(name)')
-            .order('expense_date', { ascending: false });
+            .eq('type', 'expense')
+            .order('due_date', { ascending: false });
 
         const { data, error } = filterType
-            ? await query.eq('expense_type', filterType)
+            ? await query.eq('description', filterType)
             : await query;
 
         return { data, error };
@@ -96,9 +104,9 @@ export const ExpensesList = () => {
                                             >
                                                 <td>{(expense as any).properties?.name ?? expense.property_id}</td>
                                                 <td>{expense.description}</td>
-                                                <td>{EXPENSE_TYPE_LABELS[expense.expense_type] ?? expense.expense_type}</td>
+                                                <td>{EXPENSE_TYPE_LABELS[expense.type] ?? expense.type}</td>
                                                 <td className={tableStyles.negative}>{formatCurrency(expense.amount)}</td>
-                                                <td>{formatDate(expense.expense_date)}</td>
+                                                <td>{formatDate(expense.due_date)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
