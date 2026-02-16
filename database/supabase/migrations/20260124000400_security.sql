@@ -13,13 +13,7 @@ ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.lease_agreements ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.attachments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.billing_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meters ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.meter_readings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.utility_bills ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.utility_prices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.property_expenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
 -- ================================================
 -- STEP 2: HELPER FUNCTIONS FOR RLS
@@ -279,16 +273,13 @@ CREATE POLICY "Authenticated users can read attachments"
             )
         )
         OR
-        -- Tenants see meter reading attachments for their properties
+        -- Tenants see property attachments for their leased properties
         (
-            related_to_type = 'meter_reading' AND
+            related_to_type = 'property' AND
             related_to_id IN (
-                SELECT mr.id 
-                FROM public.meter_readings mr
-                JOIN public.meters m ON mr.meter_id = m.id
-                JOIN public.lease_agreements la ON m.property_id = la.property_id
-                WHERE la.tenant_id = get_current_tenant_id() 
-                AND la.status = 'active'
+                SELECT property_id FROM public.lease_agreements 
+                WHERE tenant_id = get_current_tenant_id() 
+                AND status = 'active'
             )
         )
     );
@@ -316,281 +307,50 @@ CREATE POLICY "Landlords can delete attachments"
     USING (is_landlord());
 
 -- ================================================
--- STEP 8: BILLING ITEMS POLICIES
+-- STEP 8: TRANSACTIONS POLICIES
 -- ================================================
 
 -- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read billing items"
-    ON public.billing_items
+CREATE POLICY "Authenticated users can read transactions"
+    ON public.transactions
     FOR SELECT
     TO authenticated
     USING (
-        -- Landlords see all billing items
+        -- Landlords see all transactions
         is_landlord()
         OR
-        -- Tenants see their own billing items
-        lease_id IN (
+        -- Tenants see transactions related to their leases
+        (lease_id IN (
             SELECT id FROM public.lease_agreements 
             WHERE tenant_id = get_current_tenant_id()
-        )
-    );
-
--- Landlords can insert billing items
-CREATE POLICY "Landlords can insert billing items"
-    ON public.billing_items
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (is_landlord());
-
--- Landlords can update billing items
-CREATE POLICY "Landlords can update billing items"
-    ON public.billing_items
-    FOR UPDATE
-    TO authenticated
-    USING (is_landlord())
-    WITH CHECK (is_landlord());
-
--- Landlords can delete billing items
-CREATE POLICY "Landlords can delete billing items"
-    ON public.billing_items
-    FOR DELETE
-    TO authenticated
-    USING (is_landlord());
-
--- ================================================
--- STEP 9: PAYMENTS POLICIES
--- ================================================
-
--- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read payments"
-    ON public.payments
-    FOR SELECT
-    TO authenticated
-    USING (
-        -- Landlords see all payments
-        is_landlord()
+        ))
         OR
-        -- Tenants see their own payments
-        billing_item_id IN (
-            SELECT bi.id FROM public.billing_items bi
-            JOIN public.lease_agreements la ON bi.lease_id = la.id
-            WHERE la.tenant_id = get_current_tenant_id()
-        )
-    );
-
--- Landlords can insert payments
-CREATE POLICY "Landlords can insert payments"
-    ON public.payments
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (is_landlord());
-
--- Landlords can update payments
-CREATE POLICY "Landlords can update payments"
-    ON public.payments
-    FOR UPDATE
-    TO authenticated
-    USING (is_landlord())
-    WITH CHECK (is_landlord());
-
--- Landlords can delete payments
-CREATE POLICY "Landlords can delete payments"
-    ON public.payments
-    FOR DELETE
-    TO authenticated
-    USING (is_landlord());
-
--- ================================================
--- STEP 10: METERS POLICIES
--- ================================================
-
--- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read meters"
-    ON public.meters
-    FOR SELECT
-    TO authenticated
-    USING (
-        -- Landlords see all meters
-        is_landlord()
-        OR
-        -- Tenants see meters for their leased properties
-        property_id IN (
+        -- Tenants see property-level transactions for their leased properties
+        (lease_id IS NULL AND property_id IN (
             SELECT property_id FROM public.lease_agreements 
             WHERE tenant_id = get_current_tenant_id() 
             AND status = 'active'
-        )
+        ))
     );
 
--- Landlords can insert meters
-CREATE POLICY "Landlords can insert meters"
-    ON public.meters
+-- Landlords can insert transactions
+CREATE POLICY "Landlords can insert transactions"
+    ON public.transactions
     FOR INSERT
     TO authenticated
     WITH CHECK (is_landlord());
 
--- Landlords can update meters
-CREATE POLICY "Landlords can update meters"
-    ON public.meters
+-- Landlords can update transactions
+CREATE POLICY "Landlords can update transactions"
+    ON public.transactions
     FOR UPDATE
     TO authenticated
     USING (is_landlord())
     WITH CHECK (is_landlord());
 
--- Landlords can delete meters
-CREATE POLICY "Landlords can delete meters"
-    ON public.meters
-    FOR DELETE
-    TO authenticated
-    USING (is_landlord());
-
--- ================================================
--- STEP 11: METER READINGS POLICIES
--- ================================================
-
--- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read meter readings"
-    ON public.meter_readings
-    FOR SELECT
-    TO authenticated
-    USING (
-        -- Landlords see all meter readings
-        is_landlord()
-        OR
-        -- Tenants see meter readings for their properties
-        meter_id IN (
-            SELECT m.id FROM public.meters m
-            JOIN public.lease_agreements la ON m.property_id = la.property_id
-            WHERE la.tenant_id = get_current_tenant_id() 
-            AND la.status = 'active'
-        )
-    );
-
--- Landlords can insert meter readings
-CREATE POLICY "Landlords can insert meter readings"
-    ON public.meter_readings
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (is_landlord());
-
--- Landlords can update meter readings
-CREATE POLICY "Landlords can update meter readings"
-    ON public.meter_readings
-    FOR UPDATE
-    TO authenticated
-    USING (is_landlord())
-    WITH CHECK (is_landlord());
-
--- Landlords can delete meter readings
-CREATE POLICY "Landlords can delete meter readings"
-    ON public.meter_readings
-    FOR DELETE
-    TO authenticated
-    USING (is_landlord());
-
--- ================================================
--- STEP 12: UTILITY BILLS POLICIES
--- ================================================
-
--- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read utility bills"
-    ON public.utility_bills
-    FOR SELECT
-    TO authenticated
-    USING (
-        -- Landlords see all utility bills
-        is_landlord()
-        OR
-        -- Tenants see their own utility bills
-        lease_id IN (
-            SELECT id FROM public.lease_agreements 
-            WHERE tenant_id = get_current_tenant_id()
-        )
-    );
-
--- Landlords can insert utility bills
-CREATE POLICY "Landlords can insert utility bills"
-    ON public.utility_bills
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (is_landlord());
-
--- Landlords can update utility bills
-CREATE POLICY "Landlords can update utility bills"
-    ON public.utility_bills
-    FOR UPDATE
-    TO authenticated
-    USING (is_landlord())
-    WITH CHECK (is_landlord());
-
--- Landlords can delete utility bills
-CREATE POLICY "Landlords can delete utility bills"
-    ON public.utility_bills
-    FOR DELETE
-    TO authenticated
-    USING (is_landlord());
-
--- ================================================
--- STEP 13: UTILITY PRICES POLICIES
--- ================================================
-
--- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read utility prices"
-    ON public.utility_prices
-    FOR SELECT
-    TO authenticated
-    USING (true);  -- Everyone can read utility prices for transparency
-
--- Landlords can insert utility prices
-CREATE POLICY "Landlords can insert utility prices"
-    ON public.utility_prices
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (is_landlord());
-
--- Landlords can update utility prices
-CREATE POLICY "Landlords can update utility prices"
-    ON public.utility_prices
-    FOR UPDATE
-    TO authenticated
-    USING (is_landlord())
-    WITH CHECK (is_landlord());
-
--- Landlords can delete utility prices
-CREATE POLICY "Landlords can delete utility prices"
-    ON public.utility_prices
-    FOR DELETE
-    TO authenticated
-    USING (is_landlord());
-
--- ================================================
--- STEP 14: PROPERTY EXPENSES POLICIES
--- ================================================
-
--- Landlords can read property expenses (tenants cannot see)
-CREATE POLICY "Landlords can read property expenses"
-    ON public.property_expenses
-    FOR SELECT
-    TO authenticated
-    USING (is_landlord());
-
--- Landlords can insert property expenses
-CREATE POLICY "Landlords can insert property expenses"
-    ON public.property_expenses
-    FOR INSERT
-    TO authenticated
-    WITH CHECK (is_landlord());
-
--- Landlords can update property expenses
-CREATE POLICY "Landlords can update property expenses"
-    ON public.property_expenses
-    FOR UPDATE
-    TO authenticated
-    USING (is_landlord())
-    WITH CHECK (is_landlord());
-
--- Landlords can delete property expenses
-CREATE POLICY "Landlords can delete property expenses"
-    ON public.property_expenses
+-- Landlords can delete transactions
+CREATE POLICY "Landlords can delete transactions"
+    ON public.transactions
     FOR DELETE
     TO authenticated
     USING (is_landlord());

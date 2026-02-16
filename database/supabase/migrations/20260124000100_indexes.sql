@@ -33,48 +33,13 @@ CREATE INDEX idx_attachments_type ON public.attachments(file_type);
 CREATE INDEX idx_attachments_created_by ON public.attachments(created_by);
 CREATE INDEX idx_attachments_created_at ON public.attachments(created_at DESC);
 
--- BILLING ITEMS INDEXES
-CREATE INDEX idx_billing_items_lease_id ON public.billing_items(lease_id);
-CREATE INDEX idx_billing_items_status ON public.billing_items(status);
-CREATE INDEX idx_billing_items_due_date ON public.billing_items(due_date);
-CREATE INDEX idx_billing_items_type ON public.billing_items(item_type);
-CREATE INDEX idx_billing_items_created_by ON public.billing_items(created_by);
--- Composite index for unpaid/overdue items
-CREATE INDEX idx_billing_unpaid ON public.billing_items(status, due_date) 
+-- TRANSACTIONS INDEXES
+CREATE INDEX idx_transactions_lease_id ON public.transactions(lease_id);
+CREATE INDEX idx_transactions_property_id ON public.transactions(property_id);
+CREATE INDEX idx_transactions_status ON public.transactions(status);
+CREATE INDEX idx_transactions_due_date ON public.transactions(due_date);
+CREATE INDEX idx_transactions_type ON public.transactions(type);
+CREATE INDEX idx_transactions_created_by ON public.transactions(created_by);
+-- Composite index for unpaid/overdue transactions
+CREATE INDEX idx_transactions_unpaid ON public.transactions(status, due_date) 
     WHERE status IN ('pending', 'overdue');
-
--- PAYMENTS INDEXES
-CREATE INDEX idx_payments_billing_item_id ON public.payments(billing_item_id);
-CREATE INDEX idx_payments_date ON public.payments(payment_date DESC);
-CREATE INDEX idx_payments_method ON public.payments(payment_method);
-CREATE INDEX idx_payments_created_by ON public.payments(created_by);
-
--- METERS INDEXES
-CREATE INDEX idx_meters_property_id ON public.meters(property_id);
-CREATE INDEX idx_meters_type ON public.meters(meter_type);
-CREATE INDEX idx_meters_active ON public.meters(active);
-
--- METER READINGS INDEXES
-CREATE INDEX idx_meter_readings_meter_id ON public.meter_readings(meter_id);
-CREATE INDEX idx_meter_readings_date ON public.meter_readings(reading_date DESC);
-CREATE INDEX idx_meter_readings_created_by ON public.meter_readings(created_by);
-
--- UTILITY BILLS INDEXES
-CREATE INDEX idx_utility_bills_lease_id ON public.utility_bills(lease_id);
-CREATE INDEX idx_utility_bills_meter_id ON public.utility_bills(meter_id);
-CREATE INDEX idx_utility_bills_billing_item_id ON public.utility_bills(billing_item_id);
-CREATE INDEX idx_utility_bills_start_reading ON public.utility_bills(start_reading_id);
-CREATE INDEX idx_utility_bills_end_reading ON public.utility_bills(end_reading_id);
-CREATE INDEX idx_utility_bills_period ON public.utility_bills(billing_period_start, billing_period_end);
-
--- UTILITY PRICES INDEXES
-CREATE INDEX idx_utility_prices_type ON public.utility_prices(utility_type);
-CREATE INDEX idx_utility_prices_date ON public.utility_prices(effective_date DESC);
--- Composite index for finding current price
-CREATE INDEX idx_utility_prices_type_date ON public.utility_prices(utility_type, effective_date DESC);
-
--- PROPERTY EXPENSES INDEXES
-CREATE INDEX idx_expenses_property_id ON public.property_expenses(property_id);
-CREATE INDEX idx_expenses_type ON public.property_expenses(expense_type);
-CREATE INDEX idx_expenses_date ON public.property_expenses(expense_date DESC);
-CREATE INDEX idx_expenses_created_by ON public.property_expenses(created_by);

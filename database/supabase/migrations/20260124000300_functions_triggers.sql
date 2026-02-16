@@ -152,66 +152,54 @@ CREATE TRIGGER auto_property_status_on_lease_change
     FOR EACH ROW 
     EXECUTE FUNCTION public.auto_update_property_status();
 
--- BILLING ITEMS TRIGGERS
-CREATE TRIGGER update_billing_items_updated_at 
-    BEFORE UPDATE ON public.billing_items
+-- TRANSACTIONS TRIGGERS
+-- Function to validate lease-property consistency
+CREATE OR REPLACE FUNCTION public.validate_transaction_lease_property()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+    lease_property_id uuid;
+BEGIN
+    -- Only check if both lease_id and property_id are set
+    IF NEW.lease_id IS NOT NULL AND NEW.property_id IS NOT NULL THEN
+        -- Get the property_id from the lease
+        SELECT property_id INTO lease_property_id
+        FROM public.lease_agreements
+        WHERE id = NEW.lease_id;
+        
+        -- If lease exists and property doesn't match, raise error
+        IF lease_property_id IS NOT NULL AND lease_property_id != NEW.property_id THEN
+            RAISE EXCEPTION 'Transaction property_id (%) does not match lease property_id (%)', 
+                NEW.property_id, lease_property_id;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER update_transactions_updated_at 
+    BEFORE UPDATE ON public.transactions
     FOR EACH ROW 
     EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER set_billing_items_created_by 
-    BEFORE INSERT ON public.billing_items
+CREATE TRIGGER set_transactions_created_by 
+    BEFORE INSERT ON public.transactions
     FOR EACH ROW 
     WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();
 
--- PAYMENTS TRIGGERS
-CREATE TRIGGER update_payments_updated_at 
-    BEFORE UPDATE ON public.payments
+CREATE TRIGGER validate_transaction_lease_property_trigger
+    BEFORE INSERT OR UPDATE ON public.transactions
     FOR EACH ROW 
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER set_payments_created_by 
-    BEFORE INSERT ON public.payments
-    FOR EACH ROW 
-    WHEN (NEW.created_by IS NULL)
-    EXECUTE FUNCTION public.set_created_by();
-
--- METERS TRIGGERS
-CREATE TRIGGER update_meters_updated_at 
-    BEFORE UPDATE ON public.meters
-    FOR EACH ROW 
-    EXECUTE FUNCTION public.update_updated_at_column();
-
--- UTILITY PRICES TRIGGERS
-CREATE TRIGGER update_utility_prices_updated_at 
-    BEFORE UPDATE ON public.utility_prices
-    FOR EACH ROW 
-    EXECUTE FUNCTION public.update_updated_at_column();
-
--- PROPERTY EXPENSES TRIGGERS
-CREATE TRIGGER update_expenses_updated_at 
-    BEFORE UPDATE ON public.property_expenses
-    FOR EACH ROW 
-    EXECUTE FUNCTION public.update_updated_at_column();
-
-CREATE TRIGGER set_expenses_created_by 
-    BEFORE INSERT ON public.property_expenses
-    FOR EACH ROW 
-    WHEN (NEW.created_by IS NULL)
-    EXECUTE FUNCTION public.set_created_by();
+    EXECUTE FUNCTION public.validate_transaction_lease_property();
 
 -- ATTACHMENTS TRIGGERS
 -- Note: created_by auto-populated if not provided
 CREATE TRIGGER set_attachments_created_by 
     BEFORE INSERT ON public.attachments
-    FOR EACH ROW 
-    WHEN (NEW.created_by IS NULL)
-    EXECUTE FUNCTION public.set_created_by();
-
--- METER READINGS TRIGGERS
--- created_by should be set explicitly, but we provide fallback
-CREATE TRIGGER set_meter_readings_created_by 
-    BEFORE INSERT ON public.meter_readings
     FOR EACH ROW 
     WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();

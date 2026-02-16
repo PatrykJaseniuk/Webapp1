@@ -5,27 +5,7 @@
 -- Simplifies complex queries for the application layer
 
 -- ================================================
--- VIEW 1: BILLING WITH PAYMENTS
--- ================================================
--- Shows billing items with payment status and balance
--- SECURITY INVOKER: Respects RLS policies of querying user
-
-CREATE VIEW public.billing_with_payments 
-WITH (security_invoker = true) AS
-SELECT 
-    bi.*,
-    COALESCE(SUM(p.amount), 0) as total_paid,
-    bi.amount - COALESCE(SUM(p.amount), 0) as balance,
-    CASE 
-        WHEN bi.amount - COALESCE(SUM(p.amount), 0) <= 0 THEN true
-        ELSE false
-    END as is_fully_paid
-FROM public.billing_items bi
-LEFT JOIN public.payments p ON p.billing_item_id = bi.id
-GROUP BY bi.id;
-
--- ================================================
--- VIEW 2: ACTIVE LEASES WITH DETAILS
+-- VIEW 1: ACTIVE LEASES WITH DETAILS
 -- ================================================
 -- Shows active leases with tenant and property information
 -- SECURITY INVOKER: Respects RLS policies of querying user
@@ -52,7 +32,7 @@ JOIN public.properties p ON la.property_id = p.id
 WHERE la.status = 'active';
 
 -- ================================================
--- VIEW 3: PROPERTY OCCUPANCY STATUS
+-- VIEW 2: PROPERTY OCCUPANCY STATUS
 -- ================================================
 -- Shows property status with current lease information
 -- SECURITY INVOKER: Respects RLS policies of querying user
@@ -72,12 +52,12 @@ LEFT JOIN public.lease_agreements la ON p.id = la.property_id AND la.status = 'a
 LEFT JOIN public.tenants t ON la.tenant_id = t.id;
 
 -- ================================================
--- VIEW 4: UNPAID BILLING SUMMARY
+-- VIEW 3: UNPAID TRANSACTIONS SUMMARY
 -- ================================================
--- Shows unpaid and overdue billing items per lease
+-- Shows unpaid and overdue transactions per lease
 -- SECURITY INVOKER: Respects RLS policies of querying user
 
-CREATE VIEW public.unpaid_billing_summary 
+CREATE VIEW public.unpaid_transactions_summary 
 WITH (security_invoker = true) AS
 SELECT 
     la.id as lease_id,
@@ -85,42 +65,22 @@ SELECT
     la.property_id,
     t.first_name || ' ' || t.last_name as tenant_name,
     p.name as property_name,
-    COUNT(bi.id) as unpaid_items_count,
-    SUM(bi.amount) as total_unpaid_amount,
-    MIN(bi.due_date) as earliest_due_date,
-    COUNT(CASE WHEN bi.status = 'overdue' THEN 1 END) as overdue_items_count,
-    SUM(CASE WHEN bi.status = 'overdue' THEN bi.amount ELSE 0 END) as total_overdue_amount
+    COUNT(tr.id) as unpaid_items_count,
+    SUM(tr.amount) as total_unpaid_amount,
+    MIN(tr.due_date) as earliest_due_date,
+    COUNT(CASE WHEN tr.status = 'overdue' THEN 1 END) as overdue_items_count,
+    SUM(CASE WHEN tr.status = 'overdue' THEN tr.amount ELSE 0 END) as total_overdue_amount
 FROM public.lease_agreements la
 JOIN public.tenants t ON la.tenant_id = t.id
 JOIN public.properties p ON la.property_id = p.id
-LEFT JOIN public.billing_items bi ON la.id = bi.lease_id AND bi.status IN ('pending', 'overdue')
+LEFT JOIN public.transactions tr ON la.id = tr.lease_id AND tr.status IN ('pending', 'overdue')
 WHERE la.status = 'active'
 GROUP BY la.id, la.tenant_id, la.property_id, t.first_name, t.last_name, p.name;
 
 -- ================================================
--- VIEW 5: LATEST METER READINGS
+-- VIEW 4: PROPERTY FINANCIAL SUMMARY
 -- ================================================
--- Shows the most recent meter reading for each meter
--- SECURITY INVOKER: Respects RLS policies of querying user
-
-CREATE VIEW public.latest_meter_readings 
-WITH (security_invoker = true) AS
-SELECT DISTINCT ON (mr.meter_id)
-    mr.*,
-    m.meter_type,
-    m.meter_number,
-    m.unit,
-    m.property_id,
-    p.name as property_name
-FROM public.meter_readings mr
-JOIN public.meters m ON mr.meter_id = m.id
-JOIN public.properties p ON m.property_id = p.id
-ORDER BY mr.meter_id, mr.reading_date DESC, mr.created_at DESC;
-
--- ================================================
--- VIEW 6: PROPERTY FINANCIAL SUMMARY
--- ================================================
--- Shows income and expenses per property
+-- Shows income and expenses per property using transactions
 -- SECURITY INVOKER: Respects RLS policies of querying user
 
 CREATE VIEW public.property_financial_summary 
@@ -129,18 +89,16 @@ SELECT
     p.id as property_id,
     p.name as property_name,
     p.address,
-    -- Income from rent
-    COALESCE(SUM(CASE WHEN py.payment_date IS NOT NULL THEN py.amount ELSE 0 END), 0) as total_income,
-    -- Expenses
-    COALESCE(SUM(pe.amount), 0) as total_expenses,
+    -- Income from rent, utilities, deposits, payments (must be paid)
+    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'deposit', 'payment') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) as total_income,
+    -- Expenses (property-level or lease-level)
+    COALESCE(SUM(CASE WHEN tr.type IN ('expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as total_expenses,
     -- Net profit/loss
-    COALESCE(SUM(CASE WHEN py.payment_date IS NOT NULL THEN py.amount ELSE 0 END), 0) - COALESCE(SUM(pe.amount), 0) as net_profit,
+    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'deposit', 'payment') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) - 
+    COALESCE(SUM(CASE WHEN tr.type IN ('expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as net_profit,
     -- Current lease status
     p.status,
     p.monthly_rent
 FROM public.properties p
-LEFT JOIN public.lease_agreements la ON p.id = la.property_id
-LEFT JOIN public.billing_items bi ON la.id = bi.lease_id
-LEFT JOIN public.payments py ON bi.id = py.billing_item_id
-LEFT JOIN public.property_expenses pe ON p.id = pe.property_id
+LEFT JOIN public.transactions tr ON p.id = tr.property_id
 GROUP BY p.id;

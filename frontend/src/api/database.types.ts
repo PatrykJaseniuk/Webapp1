@@ -37,6 +37,7 @@ export type Database = {
       attachments: {
         Row: {
           created_at: string | null
+          created_by: string | null
           description: string | null
           file_name: string
           file_size: number | null
@@ -45,10 +46,10 @@ export type Database = {
           id: string
           related_to_id: string
           related_to_type: string
-          uploaded_by: string | null
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           file_name: string
           file_size?: number | null
@@ -57,10 +58,10 @@ export type Database = {
           id?: string
           related_to_id: string
           related_to_type: string
-          uploaded_by?: string | null
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           file_name?: string
           file_size?: number | null
@@ -69,77 +70,8 @@ export type Database = {
           id?: string
           related_to_id?: string
           related_to_type?: string
-          uploaded_by?: string | null
         }
         Relationships: []
-      }
-      billing_items: {
-        Row: {
-          amount: number
-          created_at: string | null
-          created_by: string | null
-          description: string
-          due_date: string
-          id: string
-          item_type: string
-          lease_id: string
-          status: string
-          updated_at: string | null
-        }
-        Insert: {
-          amount: number
-          created_at?: string | null
-          created_by?: string | null
-          description: string
-          due_date: string
-          id?: string
-          item_type: string
-          lease_id: string
-          status?: string
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          created_by?: string | null
-          description?: string
-          due_date?: string
-          id?: string
-          item_type?: string
-          lease_id?: string
-          status?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "active_leases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "lease_agreements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["current_lease_id"]
-          },
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "unpaid_billing_summary"
-            referencedColumns: ["lease_id"]
-          },
-        ]
       }
       lease_agreements: {
         Row: {
@@ -215,150 +147,6 @@ export type Database = {
           },
         ]
       }
-      meter_readings: {
-        Row: {
-          created_at: string | null
-          id: string
-          meter_id: string
-          notes: string | null
-          reading_date: string
-          reading_value: number
-          recorded_by: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          meter_id: string
-          notes?: string | null
-          reading_date: string
-          reading_value: number
-          recorded_by?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          meter_id?: string
-          notes?: string | null
-          reading_date?: string
-          reading_value?: number
-          recorded_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meter_readings_meter_id_fkey"
-            columns: ["meter_id"]
-            isOneToOne: false
-            referencedRelation: "meters"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      meters: {
-        Row: {
-          active: boolean | null
-          created_at: string | null
-          id: string
-          meter_number: string
-          meter_type: string
-          property_id: string
-          unit: string
-          updated_at: string | null
-        }
-        Insert: {
-          active?: boolean | null
-          created_at?: string | null
-          id?: string
-          meter_number: string
-          meter_type: string
-          property_id: string
-          unit: string
-          updated_at?: string | null
-        }
-        Update: {
-          active?: boolean | null
-          created_at?: string | null
-          id?: string
-          meter_number?: string
-          meter_type?: string
-          property_id?: string
-          unit?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meters_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meters_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_financial_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
-            foreignKeyName: "meters_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      payments: {
-        Row: {
-          amount: number
-          billing_item_id: string
-          created_at: string | null
-          created_by: string | null
-          id: string
-          notes: string | null
-          payment_date: string
-          payment_method: string
-          updated_at: string | null
-        }
-        Insert: {
-          amount: number
-          billing_item_id: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          notes?: string | null
-          payment_date: string
-          payment_method: string
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number
-          billing_item_id?: string
-          created_at?: string | null
-          created_by?: string | null
-          id?: string
-          notes?: string | null
-          payment_date?: string
-          payment_method?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "payments_billing_item_id_fkey"
-            columns: ["billing_item_id"]
-            isOneToOne: false
-            referencedRelation: "billing_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "payments_billing_item_id_fkey"
-            columns: ["billing_item_id"]
-            isOneToOne: false
-            referencedRelation: "billing_with_payments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       properties: {
         Row: {
           address: string
@@ -406,64 +194,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
-      }
-      property_expenses: {
-        Row: {
-          amount: number
-          created_at: string | null
-          created_by: string | null
-          description: string
-          expense_date: string
-          expense_type: string
-          id: string
-          property_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          amount: number
-          created_at?: string | null
-          created_by?: string | null
-          description: string
-          expense_date: string
-          expense_type: string
-          id?: string
-          property_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          amount?: number
-          created_at?: string | null
-          created_by?: string | null
-          description?: string
-          expense_date?: string
-          expense_type?: string
-          id?: string
-          property_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "property_expenses_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "property_expenses_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_financial_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
-            foreignKeyName: "property_expenses_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       tenants: {
         Row: {
@@ -513,6 +243,98 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: string | null
+          description: string
+          due_date: string
+          id: string
+          lease_id: string | null
+          property_id: string | null
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          due_date: string
+          id?: string
+          lease_id?: string | null
+          property_id?: string | null
+          status?: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          due_date?: string
+          id?: string
+          lease_id?: string | null
+          property_id?: string | null
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "active_leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["current_lease_id"]
+          },
+          {
+            foreignKeyName: "transactions_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "unpaid_transactions_summary"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "transactions_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -531,156 +353,6 @@ export type Database = {
           role?: string
           updated_at?: string | null
           user_id?: string
-        }
-        Relationships: []
-      }
-      utility_bills: {
-        Row: {
-          billing_item_id: string | null
-          billing_period_end: string
-          billing_period_start: string
-          consumption: number
-          created_at: string | null
-          end_reading_id: string
-          id: string
-          lease_id: string
-          meter_id: string
-          start_reading_id: string
-          total_amount: number
-          unit_price: number
-        }
-        Insert: {
-          billing_item_id?: string | null
-          billing_period_end: string
-          billing_period_start: string
-          consumption: number
-          created_at?: string | null
-          end_reading_id: string
-          id?: string
-          lease_id: string
-          meter_id: string
-          start_reading_id: string
-          total_amount: number
-          unit_price: number
-        }
-        Update: {
-          billing_item_id?: string | null
-          billing_period_end?: string
-          billing_period_start?: string
-          consumption?: number
-          created_at?: string | null
-          end_reading_id?: string
-          id?: string
-          lease_id?: string
-          meter_id?: string
-          start_reading_id?: string
-          total_amount?: number
-          unit_price?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "utility_bills_billing_item_id_fkey"
-            columns: ["billing_item_id"]
-            isOneToOne: false
-            referencedRelation: "billing_items"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_billing_item_id_fkey"
-            columns: ["billing_item_id"]
-            isOneToOne: false
-            referencedRelation: "billing_with_payments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_end_reading_id_fkey"
-            columns: ["end_reading_id"]
-            isOneToOne: false
-            referencedRelation: "latest_meter_readings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_end_reading_id_fkey"
-            columns: ["end_reading_id"]
-            isOneToOne: false
-            referencedRelation: "meter_readings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "active_leases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "lease_agreements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["current_lease_id"]
-          },
-          {
-            foreignKeyName: "utility_bills_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "unpaid_billing_summary"
-            referencedColumns: ["lease_id"]
-          },
-          {
-            foreignKeyName: "utility_bills_meter_id_fkey"
-            columns: ["meter_id"]
-            isOneToOne: false
-            referencedRelation: "meters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_start_reading_id_fkey"
-            columns: ["start_reading_id"]
-            isOneToOne: false
-            referencedRelation: "latest_meter_readings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "utility_bills_start_reading_id_fkey"
-            columns: ["start_reading_id"]
-            isOneToOne: false
-            referencedRelation: "meter_readings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      utility_prices: {
-        Row: {
-          created_at: string | null
-          effective_date: string
-          id: string
-          price_per_unit: number
-          updated_at: string | null
-          utility_type: string
-        }
-        Insert: {
-          created_at?: string | null
-          effective_date: string
-          id?: string
-          price_per_unit: number
-          updated_at?: string | null
-          utility_type: string
-        }
-        Update: {
-          created_at?: string | null
-          effective_date?: string
-          id?: string
-          price_per_unit?: number
-          updated_at?: string | null
-          utility_type?: string
         }
         Relationships: []
       }
@@ -740,99 +412,6 @@ export type Database = {
           },
         ]
       }
-      billing_with_payments: {
-        Row: {
-          amount: number | null
-          balance: number | null
-          created_at: string | null
-          created_by: string | null
-          description: string | null
-          due_date: string | null
-          id: string | null
-          is_fully_paid: boolean | null
-          item_type: string | null
-          lease_id: string | null
-          status: string | null
-          total_paid: number | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "active_leases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "lease_agreements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["current_lease_id"]
-          },
-          {
-            foreignKeyName: "billing_items_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "unpaid_billing_summary"
-            referencedColumns: ["lease_id"]
-          },
-        ]
-      }
-      latest_meter_readings: {
-        Row: {
-          created_at: string | null
-          id: string | null
-          meter_id: string | null
-          meter_number: string | null
-          meter_type: string | null
-          notes: string | null
-          property_id: string | null
-          property_name: string | null
-          reading_date: string | null
-          reading_value: number | null
-          recorded_by: string | null
-          unit: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meter_readings_meter_id_fkey"
-            columns: ["meter_id"]
-            isOneToOne: false
-            referencedRelation: "meters"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meters_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meters_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_financial_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
-            foreignKeyName: "meters_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       property_financial_summary: {
         Row: {
           address: string | null
@@ -878,7 +457,7 @@ export type Database = {
           },
         ]
       }
-      unpaid_billing_summary: {
+      unpaid_transactions_summary: {
         Row: {
           earliest_due_date: string | null
           lease_id: string | null
