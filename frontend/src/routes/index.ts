@@ -4,17 +4,17 @@
 
 export type PropertyRouteParams = {
     id?: string;
-    action?: 'new' | 'edit';
+    action?: 'detail' | 'edit' | 'new';
 };
 
 export type TenantRouteParams = {
     id?: string;
-    action?: 'new' | 'edit';
+    action?: 'detail' | 'edit' | 'new';
 };
 
 export type LeaseRouteParams = {
     id?: string;
-    action?: 'new' | 'edit';
+    action?: 'detail' | 'edit' | 'new';
 };
 
 export type BillingRouteParams = {
@@ -24,7 +24,7 @@ export type BillingRouteParams = {
 
 export type TransactionRouteParams = {
     id?: string;
-    action?: 'new';
+    action?: 'detail' | 'edit' | 'new';
 };
 
 export type ExpenseRouteParams = {

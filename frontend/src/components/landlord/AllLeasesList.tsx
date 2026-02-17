@@ -10,18 +10,11 @@ import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { LEASE_STATUS_LABELS } from '@/constants/labels';
-import { formatCurrency } from '@/utils/formatCurrency';
+import { LeasesList } from '@/components/landlord/lists/LeasesList';
 
 import styles from './ListPage.module.css';
-import tableStyles from './tables/Tables.module.css';
 
-const getStatusClass = (status: string) =>
-    status === 'active' ? tableStyles.statusActive :
-        status === 'expired' ? tableStyles.statusExpired :
-            tableStyles.statusTerminated;
-
-export const LeasesList = () => {
+export const AllLeasesList = () => {
     const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const [filterStatus, setFilterStatus] = useState('');
@@ -78,42 +71,7 @@ export const LeasesList = () => {
                                 actionHref={routes.landlord.leases({ action: 'new' })}
                             />
                         ) : (
-                            <div className={tableStyles.section}>
-                                <table className={tableStyles.table}>
-                                    <thead>
-                                        <tr>
-                                            <th>Nieruchomosc</th>
-                                            <th>Najemca</th>
-                                            <th>Okres</th>
-                                            <th>Czynsz</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {leases.map(lease => (
-                                            <tr
-                                                key={lease.id}
-                                                className={tableStyles.clickableRow}
-                                                onClick={() => handleRowClick(lease.id)}
-                                            >
-                                                <td>{(lease as any).properties?.name ?? lease.property_id}</td>
-                                                <td>
-                                                    {(lease as any).tenants
-                                                        ? `${(lease as any).tenants.first_name} ${(lease as any).tenants.last_name}`
-                                                        : lease.tenant_id}
-                                                </td>
-                                                <td>{lease.start_date} — {lease.end_date ?? 'Bezterminowa'}</td>
-                                                <td>{formatCurrency(lease.monthly_rent)}</td>
-                                                <td>
-                                                    <span className={`${tableStyles.statusBadge} ${getStatusClass(lease.status)}`}>
-                                                        {LEASE_STATUS_LABELS[lease.status] ?? lease.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <LeasesList leases={leases} onRowClick={handleRowClick} />
                         )}
         </div>
     );

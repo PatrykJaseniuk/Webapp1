@@ -197,6 +197,16 @@
     color: var(--color-warning);
 }
 
+.statusPending {
+    background-color: var(--color-warning-light);
+    color: var(--color-warning);
+}
+
+.statusOverdue {
+    background-color: var(--color-error-light);
+    color: var(--color-error);
+}
+
 .leasesSection {
     background-color: var(--color-bg-white);
     padding: var(--spacing-lg);

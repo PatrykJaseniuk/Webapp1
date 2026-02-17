@@ -3,17 +3,15 @@
 import type { PropertyRouteParams } from '@/routes';
 import { useRouteParams } from '@/routes/useRouteParams';
 
-import { PropertiesList } from '@/components/landlord/PropertiesList';
-import { PropertyDetail } from '@/components/landlord/PropertyDetail';
-import { PropertyForm } from '@/components/landlord/PropertyForm';
+import { AllPropertiesList } from '@/components/landlord/AllPropertiesList';
+import { PropertySingle } from '@/components/landlord/PropertySingle';
 
 export default () => {
     const { id, action } = useRouteParams<PropertyRouteParams>();
 
     return (
-        action === 'new' ? <PropertyForm /> :
-            action === 'edit' && id ? <PropertyForm id={id} /> :
-                id ? <PropertyDetail id={id} /> :
-                    <PropertiesList />
+        action === 'new' ? <PropertySingle /> :
+            id ? <PropertySingle id={id} /> :
+                <AllPropertiesList />
     );
 };

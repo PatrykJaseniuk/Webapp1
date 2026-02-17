@@ -79,3 +79,20 @@ export const TENANT_STATUS_LABELS: Record<string, string> = {
     past: 'Były',
     applicant: 'Kandydat',
 };
+
+// Transaction labels
+export const TRANSACTION_TYPE_LABELS: Record<string, string> = {
+    rent: 'Czynsz',
+    utility: 'Media',
+    expense: 'Wydatek',
+    payment: 'Platnosc',
+    withdraw: 'Wyplata',
+    fee: 'Oplata',
+    other: 'Inne',
+};
+
+export const TRANSACTION_STATUS_LABELS: Record<string, string> = {
+    pending: 'Oczekujaca',
+    paid: 'Oplacona',
+    overdue: 'Przeterminowana',
+};

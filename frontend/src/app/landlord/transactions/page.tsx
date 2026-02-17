@@ -3,13 +3,15 @@
 import type { TransactionRouteParams } from '@/routes';
 import { useRouteParams } from '@/routes/useRouteParams';
 
-import { TransactionList } from '@/components/landlord/PaymentsList';
-import { TransactionForm } from '@/components/landlord/PaymentForm';
+import { AllTransactionsList } from '@/components/landlord/AllTransactionsList';
+import { TransactionSingle } from '@/components/landlord/TransactionSingle';
 
 export default () => {
-    const { action } = useRouteParams<TransactionRouteParams>();
+    const { action, id } = useRouteParams<TransactionRouteParams>();
 
     return (
-        action === 'new' ? <TransactionForm /> : <TransactionList />
+        action === 'new' ? <TransactionSingle /> :
+            id ? <TransactionSingle id={id} /> :
+                <AllTransactionsList />
     );
 };

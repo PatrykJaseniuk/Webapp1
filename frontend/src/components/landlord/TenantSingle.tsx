@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { useAsync } from 'react-use';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAsync, useAsyncFn } from 'react-use';
 
 import { routes } from '@/routes';
 import { database } from '@/api/database';
@@ -13,7 +15,8 @@ import { AttachmentsGrid } from './lists/AttachmentsGrid';
 import { formatCurrency } from '@/utils/formatCurrency';
 import { formatDate } from '@/utils/formatDate';
 
-import styles from './DetailPage.module.css';
+import detailStyles from './DetailPage.module.css';
+import formStyles from './FormPage.module.css';
 
 const STATUS_LABELS: Record<string, string> = {
     active: 'Aktywny',
@@ -21,82 +24,96 @@ const STATUS_LABELS: Record<string, string> = {
     applicant: 'Kandydat',
 };
 
-interface TenantDetailProps {
-    id: string;
+const styles = detailStyles;
+
+interface TenantSingleProps {
+    id?: string;
 }
 
-export const TenantDetail = ({ id }: TenantDetailProps) => {
+export const TenantSingle = ({ id }: TenantSingleProps) => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const action = searchParams.get('action') || 'detail';
+    const isEditMode = action === 'edit';
+    const isNewMode = action === 'new';
+
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
 
-    const state = useAsync(async () => {
-        const { data, error } = await database
-            .from('tenants')
-            .select('*')
-            .eq('id', id)
-            .single();
-        return { data, error };
-    }, [id, refreshKey]);
+    const navigateToEdit = () => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('action', 'edit');
+        router.push(`?${params.toString()}`);
+    };
 
+    const navigateToDetail = () => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('action', 'detail');
+        router.push(`?${params.toString()}`);
+    };
+
+    // Tenant query
+    const tenantState = useAsync(async () => {
+        const shouldFetch = !isNewMode && id;
+        return shouldFetch
+            ? database.from('tenants').select('*').eq('id', id).single().then(r => ({ data: r.data, error: r.error }))
+            : { data: null, error: null };
+    }, [id, refreshKey, isNewMode]);
+
+    // Leases query
     const leasesState = useAsync(async () => {
-        const { data, error } = await database
-            .from('lease_agreements')
-            .select('*, properties(name, address)')
-            .eq('tenant_id', id)
-            .order('start_date', { ascending: false });
-        return { data, error };
-    }, [id, refreshKey]);
+        const shouldFetch = !isNewMode && id;
+        return shouldFetch
+            ? database.from('lease_agreements').select('*, properties(name, address)').eq('tenant_id', id).order('start_date', { ascending: false }).then(r => ({ data: r.data ?? [], error: r.error }))
+            : { data: [], error: null };
+    }, [id, refreshKey, isNewMode]);
 
-    // Attachments for this tenant
+    // Attachments
     const attachmentsState = useAsync(async () => {
-        const { data, error } = await database
-            .from('attachments')
-            .select('*')
-            .eq('related_to_type', 'tenant')
-            .eq('related_to_id', id)
-            .order('created_at', { ascending: false });
-        return { data, error };
-    }, [id, refreshKey]);
+        const shouldFetch = !isNewMode && id;
+        return shouldFetch
+            ? database.from('attachments').select('*').eq('related_to_type', 'tenant').eq('related_to_id', id).order('created_at', { ascending: false }).then(r => ({ data: r.data ?? [], error: r.error }))
+            : { data: [], error: null };
+    }, [id, refreshKey, isNewMode]);
 
     // All transactions for all tenant's leases
     const allTransactionsState = useAsync(async () => {
-        const { data: leases } = await database
-            .from('lease_agreements')
-            .select('id, property_id')
-            .eq('tenant_id', id);
+        const shouldFetch = !isNewMode && id;
+        if (!shouldFetch) return { data: [], error: null };
 
+        const { data: leases } = await database.from('lease_agreements').select('id, property_id').eq('tenant_id', id);
         const leaseIds = (leases ?? []).map(l => l.id);
 
-        // Get transactions from leases
         return leaseIds.length > 0
-            ? await database.from('transactions').select('*').in('lease_id', leaseIds).order('due_date', { ascending: false })
+            ? database.from('transactions').select('*').in('lease_id', leaseIds).order('due_date', { ascending: false }).then(r => ({ data: r.data ?? [], error: r.error }))
             : { data: [], error: null };
-    }, [id, refreshKey]);
+    }, [id, refreshKey, isNewMode]);
 
-    const tenant = state.value?.data;
+    const tenant = tenantState.value?.data;
     const leases = leasesState.value?.data ?? [];
     const attachments = attachmentsState.value?.data ?? [];
     const allTransactions = allTransactionsState.value?.data ?? [];
-
-    // Separate billing and non-billing transactions
     const recentTransactions = allTransactions.slice(0, 10);
 
-    const error = state.error ?? state.value?.error;
+    const error = tenantState.error ?? tenantState.value?.error;
 
-    return (
+    // Render view mode
+    const renderViewMode = () => (
         <div className={styles.page}>
-            <Link href={routes.landlord.tenants()} className={styles.backLink}>← Powrót do listy</Link>
+            <Link href={routes.landlord.tenants()} className={styles.backLink}>← Powrot do listy</Link>
 
-            {error ? <ErrorBanner msg={error.message} retry={handleRefresh} /> :
-                state.loading ? <Spinner /> :
-                    !tenant ? <ErrorBanner msg="Nie znaleziono najemcy" /> :
-                        <>
+            {error
+                ? <ErrorBanner msg={error.message} retry={handleRefresh} />
+                : tenantState.loading
+                    ? <Spinner />
+                    : !tenant
+                        ? <ErrorBanner msg="Nie znaleziono najemcy" />
+                        : <>
                             <div className={styles.header}>
                                 <h1 className={styles.title}>{tenant.first_name} {tenant.last_name}</h1>
-                                <Link href={routes.landlord.tenants({ action: 'edit', id })}>
+                                <button onClick={navigateToEdit} className={styles.editButton}>
                                     Edytuj
-
-                                </Link>
+                                </button>
                             </div>
 
                             <div className={styles.content}>
@@ -115,9 +132,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                             <div className={styles.infoItem}>
                                                 <span className={styles.infoLabel}>Status</span>
                                                 <span className={`${styles.statusBadge} ${tenant.status === 'active' ? styles.statusActive :
-                                                    tenant.status === 'past' ? styles.statusPast :
-                                                        styles.statusApplicant
-                                                    }`}>
+                                                    tenant.status === 'past' ? styles.statusPast : styles.statusApplicant}`}>
                                                     {STATUS_LABELS[tenant.status] ?? tenant.status}
                                                 </span>
                                             </div>
@@ -167,14 +182,14 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                     </div>
                                     <div className={styles.section}>
                                         <h2 className={styles.sectionTitle}>Umowy najmu ({leases.length})</h2>
-                                        {leasesState.loading ? <Spinner /> :
-                                            leases.length === 0 ? (
-                                                <EmptyState message="Brak umów najmu dla tego najemcy" />
-                                            ) : (
-                                                <table className={styles.table}>
+                                        {leasesState.loading
+                                            ? <Spinner />
+                                            : leases.length === 0
+                                                ? <EmptyState message="Brak umow najmu dla tego najemcy" />
+                                                : <table className={styles.table}>
                                                     <thead>
                                                         <tr>
-                                                            <th>Nieruchomość</th>
+                                                            <th>Nieruchomosc</th>
                                                             <th>Okres</th>
                                                             <th>Czynsz</th>
                                                             <th>Status</th>
@@ -195,10 +210,8 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                                         ))}
                                                     </tbody>
                                                 </table>
-                                            )}
+                                        }
                                     </div>
-
-                                    {/* Recent Transactions */}
                                     {recentTransactions.length > 0 && (
                                         <div className={styles.section}>
                                             <h2 className={styles.sectionTitle}>Ostatnie transakcje</h2>
@@ -228,14 +241,10 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                             </table>
                                         </div>
                                     )}
-
-                                    {/* Attachments */}
                                     <AttachmentsGrid data={attachments} onRowClick={(attachmentId: string) => {
                                         const attachment = attachments.find(a => a.id === attachmentId);
                                         attachment && window.open(attachment.file_url, '_blank');
                                     }} />
-
-                                    {/* All Transactions */}
                                     {allTransactions.length > 0 && (
                                         <div className={styles.section}>
                                             <h2 className={styles.sectionTitle}>Wszystkie transakcje ({allTransactions.length})</h2>
@@ -266,15 +275,14 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                         </div>
                                     )}
                                 </div>
-
                                 <div className={styles.sidebar}>
                                     <div className={styles.leasesSection}>
                                         <h3 className={styles.leasesTitle}>Aktywne umowy</h3>
-                                        {leasesState.loading ? <Spinner /> :
-                                            leases.filter(l => l.status === 'active').length === 0 ? (
-                                                <div className={styles.noLeases}>Brak aktywnych umów</div>
-                                            ) : (
-                                                leases.filter(l => l.status === 'active').map(lease => (
+                                        {leasesState.loading
+                                            ? <Spinner />
+                                            : leases.filter(l => l.status === 'active').length === 0
+                                                ? <div className={styles.noLeases}>Brak aktywnych umow</div>
+                                                : leases.filter(l => l.status === 'active').map(lease => (
                                                     <div key={lease.id} className={styles.leaseItem}>
                                                         <div className={styles.leaseProperty}>
                                                             {(lease as any).properties?.name ?? lease.property_id}
@@ -284,7 +292,7 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
                                                         </div>
                                                     </div>
                                                 ))
-                                            )}
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -292,4 +300,184 @@ export const TenantDetail = ({ id }: TenantDetailProps) => {
             }
         </div>
     );
+
+    // Render edit mode
+    const renderEditMode = () => {
+        const [firstName, setFirstName] = useState('');
+        const [lastName, setLastName] = useState('');
+        const [email, setEmail] = useState('');
+        const [phone, setPhone] = useState('');
+        const [idDocumentNumber, setIdDocumentNumber] = useState('');
+        const [emergencyContactName, setEmergencyContactName] = useState('');
+        const [emergencyContactPhone, setEmergencyContactPhone] = useState('');
+        const [notes, setNotes] = useState('');
+        const [status, setStatus] = useState('active');
+
+        useEffect(() => {
+            tenant && (
+                setFirstName(tenant.first_name),
+                setLastName(tenant.last_name),
+                setEmail(tenant.email),
+                setPhone(tenant.phone),
+                setIdDocumentNumber(tenant.id_document_number ?? ''),
+                setEmergencyContactName(tenant.emergency_contact_name ?? ''),
+                setEmergencyContactPhone(tenant.emergency_contact_phone ?? ''),
+                setNotes(tenant.notes ?? ''),
+                setStatus(tenant.status)
+            );
+        }, [tenant]);
+
+        const [submitState, handleSubmit] = useAsyncFn(async () => {
+            const payload = {
+                first_name: firstName,
+                last_name: lastName,
+                email,
+                phone,
+                id_document_number: idDocumentNumber || null,
+                emergency_contact_name: emergencyContactName || null,
+                emergency_contact_phone: emergencyContactPhone || null,
+                notes: notes || null,
+                status,
+            };
+
+            const { error } = isNewMode
+                ? await database.from('tenants').insert(payload)
+                : await database.from('tenants').update(payload).eq('id', id!);
+
+            !error && (handleRefresh(), navigateToDetail());
+            return { error };
+        }, [firstName, lastName, email, phone, idDocumentNumber, emergencyContactName, emergencyContactPhone, notes, status, id, isNewMode]);
+
+        return (
+            <div className={formStyles.page}>
+                <button onClick={navigateToDetail} className={formStyles.backLink}>← Powrot do szczegolow</button>
+
+                <h1 className={formStyles.title}>{isNewMode ? 'Nowy najemca' : 'Edytuj najemce'}</h1>
+
+                {tenantState.loading
+                    ? <Spinner />
+                    : <form className={formStyles.form} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+                        {(submitState.error || submitState.value?.error) && (
+                            <div>
+                                {submitState.error && <ErrorBanner msg={submitState.error.message} />}
+                                {submitState.value?.error && <ErrorBanner msg={submitState.value.error.message} />}
+                            </div>
+                        )}
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="firstName">Imie</label>
+                            <input
+                                id="firstName"
+                                type="text"
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                required
+                                placeholder="Jan"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="lastName">Nazwisko</label>
+                            <input
+                                id="lastName"
+                                type="text"
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                required
+                                placeholder="Kowalski"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="email">Email</label>
+                            <input
+                                id="email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                placeholder="jan@example.com"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="phone">Telefon</label>
+                            <input
+                                id="phone"
+                                type="tel"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                                required
+                                placeholder="+48 123 456 789"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="idDocumentNumber">Nr dokumentu tozsamosci</label>
+                            <input
+                                id="idDocumentNumber"
+                                type="text"
+                                value={idDocumentNumber}
+                                onChange={(e) => setIdDocumentNumber(e.target.value)}
+                                placeholder="ABC123456"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="emergencyContactName">Kontakt awaryjny — imie i nazwisko</label>
+                            <input
+                                id="emergencyContactName"
+                                type="text"
+                                value={emergencyContactName}
+                                onChange={(e) => setEmergencyContactName(e.target.value)}
+                                placeholder="Anna Kowalska"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="emergencyContactPhone">Kontakt awaryjny — telefon</label>
+                            <input
+                                id="emergencyContactPhone"
+                                type="tel"
+                                value={emergencyContactPhone}
+                                onChange={(e) => setEmergencyContactPhone(e.target.value)}
+                                placeholder="+48 987 654 321"
+                            />
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="status">Status</label>
+                            <select
+                                id="status"
+                                value={status}
+                                onChange={(e) => setStatus(e.target.value)}
+                            >
+                                <option value="active">Aktywny</option>
+                                <option value="past">Byly</option>
+                                <option value="applicant">Kandydat</option>
+                            </select>
+                        </div>
+
+                        <div className={formStyles.formField}>
+                            <label htmlFor="notes">Notatki</label>
+                            <textarea
+                                id="notes"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                                placeholder="Dodatkowe informacje..."
+                            />
+                        </div>
+
+                        <button type="submit" className={formStyles.submitButton} disabled={submitState.loading}>
+                            {submitState.loading ? 'Zapisywanie...' : isNewMode ? 'Dodaj najemce' : 'Zapisz zmiany'}
+                        </button>
+                    </form>
+                }
+            </div>
+        );
+    };
+
+    return isEditMode || isNewMode
+        ? renderEditMode()
+        : renderViewMode();
 };
