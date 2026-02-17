@@ -51,3 +51,13 @@ ALTER TABLE public.transactions
 ALTER TABLE public.transactions 
     ADD CONSTRAINT check_transaction_due_date 
     CHECK (due_date >= '2020-01-01'::date);
+
+-- Amount sign must match transaction type
+-- Income types (payment, other) must have positive amounts
+-- Expense types (rent, utility, expense, withdraw, fee) must have negative amounts
+ALTER TABLE public.transactions 
+    ADD CONSTRAINT check_transaction_amount_sign 
+    CHECK (
+        (type IN ('payment', 'other') AND amount > 0) OR
+        (type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') AND amount < 0)
+    );

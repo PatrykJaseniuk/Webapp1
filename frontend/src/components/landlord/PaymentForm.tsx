@@ -13,7 +13,7 @@ import { formatCurrency } from '@/utils/formatCurrency';
 
 import styles from './FormPage.module.css';
 
-export const PaymentForm = () => {
+export const TransactionForm = () => {
     const router = useRouter();
 
     const [transactionId, setTransactionId] = useState('');

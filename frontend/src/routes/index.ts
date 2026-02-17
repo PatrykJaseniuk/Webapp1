@@ -22,7 +22,7 @@ export type BillingRouteParams = {
     action?: 'new';
 };
 
-export type PaymentRouteParams = {
+export type TransactionRouteParams = {
     id?: string;
     action?: 'new';
 };
@@ -57,12 +57,8 @@ export const routes = {
             buildUrl('/landlord/tenants', params),
         leases: (params?: LeaseRouteParams) =>
             buildUrl('/landlord/leases', params),
-        billing: (params?: BillingRouteParams) =>
-            buildUrl('/landlord/billing', params),
-        payments: (params?: PaymentRouteParams) =>
-            buildUrl('/landlord/payments', params),
-        expenses: (params?: ExpenseRouteParams) =>
-            buildUrl('/landlord/expenses', params),
+        payments: (params?: TransactionRouteParams) =>
+            buildUrl('/landlord/transactions', params),
     },
 
     tenant: {

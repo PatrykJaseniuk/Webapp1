@@ -16,7 +16,7 @@ import { formatDate } from '@/utils/formatDate';
 import styles from './ListPage.module.css';
 import tableStyles from './tables/Tables.module.css';
 
-export const PaymentsList = () => {
+export const TransactionList = () => {
     const router = useRouter();
     const [refreshKey, setRefreshKey] = useState(0);
     const handleRefresh = () => setRefreshKey(prev => prev + 1);
@@ -37,9 +37,9 @@ export const PaymentsList = () => {
     return (
         <div className={styles.page}>
             <div className={styles.header}>
-                <h1 className={styles.title}>Platnosci</h1>
+                <h1 className={styles.title}>Transakcje</h1>
                 <Link href={routes.landlord.payments({ action: 'new' })} className={styles.addButton}>
-                    Zarejestruj platnosc
+                    Zarejestruj transakcje
                 </Link>
             </div>
 
@@ -48,8 +48,8 @@ export const PaymentsList = () => {
                     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
                         payments.length === 0 ? (
                             <EmptyState
-                                message="Brak zarejestrowanych platnosci"
-                                actionLabel="Zarejestruj pierwsza platnosc"
+                                message="Brak zarejestrowanych transakcji"
+                                actionLabel="Zarejestruj pierwsza transakcje"
                                 actionHref={routes.landlord.payments({ action: 'new' })}
                             />
                         ) : (

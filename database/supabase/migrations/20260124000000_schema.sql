@@ -83,7 +83,10 @@ CREATE TABLE public.attachments (
 );
 
 -- 6. TRANSACTIONS TABLE
--- all kind of finans operations (incomes, outcomes) 
+-- all kind of finans operations (incomes, outcomes)
+-- filed 'amout' can have positive, or negative value:
+-- - Positive are all of this transactions that rise account balance (payment, other)
+-- - Negative are transaction that lower account balance (rent, utility, expense,withdraw,fee,other)
 -- Note: lease_id and property_id are nullable to allow flexible references:
 -- - A transaction can reference only a lease, only a property, or both
 -- - If both are set, they must be consistent (lease.property_id = transaction.property_id)
@@ -93,7 +96,7 @@ CREATE TABLE public.transactions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     lease_id uuid REFERENCES public.lease_agreements(id) ON DELETE CASCADE,
     property_id uuid REFERENCES public.properties(id) ON DELETE CASCADE,
-    type text NOT NULL CHECK (type IN ('rent', 'utility', 'deposit', 'expense','payment','withdraw', 'fee', 'other')),
+    type text NOT NULL CHECK (type IN ('rent', 'utility', 'expense', 'payment', 'withdraw', 'fee', 'other')),
     description text NOT NULL,
     amount decimal(10,2) NOT NULL,
     due_date date NOT NULL,
@@ -102,84 +105,3 @@ CREATE TABLE public.transactions (
     updated_at timestamptz DEFAULT now(),
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
-
--- -- 7. PAYMENTS TABLE
--- -- Records of payments made towards billing items
--- CREATE TABLE public.payments (
---     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
---     billing_item_id uuid NOT NULL REFERENCES public.billing_items(id) ON DELETE CASCADE,
---     amount decimal(10,2) NOT NULL,
---     payment_date date NOT NULL,
---     payment_method text NOT NULL CHECK (payment_method IN ('cash', 'bank_transfer', 'card', 'other')),
---     notes text,
---     created_at timestamptz DEFAULT now(),
---     updated_at timestamptz DEFAULT now(),
---     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
--- );
-
--- -- 8. METERS TABLE
--- -- Utility meters attached to properties
--- CREATE TABLE public.meters (
---     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
---     property_id uuid NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
---     meter_type text NOT NULL CHECK (meter_type IN ('electricity', 'water', 'gas', 'heating')),
---     meter_number text NOT NULL,
---     unit text NOT NULL CHECK (unit IN ('kwh', 'm3')),
---     active boolean DEFAULT true,
---     created_at timestamptz DEFAULT now(),
---     updated_at timestamptz DEFAULT now()
--- );
-
--- -- 9. METER READINGS TABLE
--- -- Historical meter reading values
--- CREATE TABLE public.meter_readings (
---     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
---     meter_id uuid NOT NULL REFERENCES public.meters(id) ON DELETE CASCADE,
---     reading_value decimal(10,2) NOT NULL,
---     reading_date date NOT NULL,
---     notes text,
---     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
---     created_at timestamptz DEFAULT now()
--- );
-
--- -- 10. UTILITY BILLS TABLE
--- -- Calculated utility bills based on meter readings
--- CREATE TABLE public.utility_bills (
---     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
---     lease_id uuid NOT NULL REFERENCES public.lease_agreements(id) ON DELETE CASCADE,
---     meter_id uuid NOT NULL REFERENCES public.meters(id) ON DELETE CASCADE,
---     billing_item_id uuid REFERENCES public.billing_items(id) ON DELETE SET NULL,
---     start_reading_id uuid NOT NULL REFERENCES public.meter_readings(id) ON DELETE CASCADE,
---     end_reading_id uuid NOT NULL REFERENCES public.meter_readings(id) ON DELETE CASCADE,
---     consumption decimal(10,2) NOT NULL,
---     unit_price decimal(10,2) NOT NULL,
---     total_amount decimal(10,2) NOT NULL,
---     billing_period_start date NOT NULL,
---     billing_period_end date NOT NULL,
---     created_at timestamptz DEFAULT now()
--- );
-
--- -- 11. UTILITY PRICES TABLE
--- -- Historical utility pricing for billing calculations
--- CREATE TABLE public.utility_prices (
---     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
---     utility_type text NOT NULL CHECK (utility_type IN ('electricity', 'water', 'gas', 'heating')),
---     price_per_unit decimal(10,4) NOT NULL,
---     effective_date date NOT NULL,
---     created_at timestamptz DEFAULT now(),
---     updated_at timestamptz DEFAULT now()
--- );
-
--- -- 12. PROPERTY EXPENSES TABLE
--- -- Track spending on property maintenance and operations
--- CREATE TABLE public.property_expenses (
---     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
---     property_id uuid NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
---     expense_type text NOT NULL CHECK (expense_type IN ('maintenance', 'tax', 'insurance', 'renovation', 'other')),
---     description text NOT NULL,
---     amount decimal(10,2) NOT NULL,
---     expense_date date NOT NULL,
---     created_at timestamptz DEFAULT now(),
---     updated_at timestamptz DEFAULT now(),
---     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
--- );

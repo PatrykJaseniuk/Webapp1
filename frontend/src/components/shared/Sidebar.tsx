@@ -20,9 +20,7 @@ const LANDLORD_NAV = [
     { href: routes.landlord.properties(), label: 'Nieruchomości' },
     { href: routes.landlord.tenants(), label: 'Najemcy' },
     { href: routes.landlord.leases(), label: 'Umowy najmu' },
-    { href: routes.landlord.billing(), label: 'Rozliczenia' },
-    { href: routes.landlord.payments(), label: 'Płatności' },
-    { href: routes.landlord.expenses(), label: 'Wydatki' },
+    { href: routes.landlord.payments(), label: 'Transakcje' },
 ];
 
 const ADMIN_NAV = [

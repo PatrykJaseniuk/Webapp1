@@ -82,6 +82,8 @@ GROUP BY la.id, la.tenant_id, la.property_id, t.first_name, t.last_name, p.name;
 -- ================================================
 -- Shows income and expenses per property using transactions
 -- SECURITY INVOKER: Respects RLS policies of querying user
+-- Note: Income types (payment, deposit, other) have positive amounts
+--       Expense types (rent, utility, expense, withdraw, fee) have negative amounts
 
 CREATE VIEW public.property_financial_summary 
 WITH (security_invoker = true) AS
@@ -89,13 +91,13 @@ SELECT
     p.id as property_id,
     p.name as property_name,
     p.address,
-    -- Income from rent, utilities, deposits, payments (must be paid)
-    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'deposit', 'payment') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) as total_income,
-    -- Expenses (property-level or lease-level)
-    COALESCE(SUM(CASE WHEN tr.type IN ('expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as total_expenses,
-    -- Net profit/loss
-    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'deposit', 'payment') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) - 
-    COALESCE(SUM(CASE WHEN tr.type IN ('expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as net_profit,
+    -- Income from payments (must be paid) - positive amounts
+    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) as total_income,
+    -- Expenses (property-level or lease-level) - already negative, use ABS for calculation
+    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') THEN ABS(tr.amount) ELSE 0 END), 0) as total_expenses,
+    -- Net profit/loss: income (positive) + expenses (negative) = net
+    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) + 
+    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as net_profit,
     -- Current lease status
     p.status,
     p.monthly_rent
