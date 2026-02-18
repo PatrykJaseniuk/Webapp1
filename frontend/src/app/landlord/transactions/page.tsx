@@ -3,8 +3,8 @@
 import type { TransactionRouteParams } from '@/routes';
 import { useRouteParams } from '@/routes/useRouteParams';
 
-import { AllTransactionsList } from '@/components/landlord/AllTransactionsList';
-import { TransactionSingle } from '@/components/landlord/TransactionSingle';
+import { ViewAllTransactions } from '@/components/landlord/ViewAllTransactions';
+import { TransactionSingle } from '@/components/landlord/ViewSingleTransaction';
 
 export default () => {
     const { action, id } = useRouteParams<TransactionRouteParams>();
@@ -12,6 +12,6 @@ export default () => {
     return (
         action === 'new' ? <TransactionSingle /> :
             id ? <TransactionSingle id={id} /> :
-                <AllTransactionsList />
+                <ViewAllTransactions />
     );
 };

@@ -3,8 +3,8 @@
 import type { TenantRouteParams } from '@/routes';
 import { useRouteParams } from '@/routes/useRouteParams';
 
-import { AllTenantsList } from '@/components/landlord/AllTenantsList';
-import { TenantSingle } from '@/components/landlord/TenantSingle';
+import { AllTenantsList } from '@/components/landlord/ViewAllTenants';
+import { TenantSingle } from '@/components/landlord/ViewSingleTenant';
 
 export default () => {
     const { id, action } = useRouteParams<TenantRouteParams>();
