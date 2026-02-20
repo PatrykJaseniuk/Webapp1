@@ -78,7 +78,7 @@ When generating code, apply rules in order: **Language → Library → Framework
 | F-005 | **Centralized routing** — `routes/index.ts`, no hardcoded paths | 🔴 Critical |
 | F-006 | **Pages are thin wrappers** — delegate to components, act as mini-routers | 🔴 Critical |
 | F-007 | **Role-based layouts** — `RoleGuard` in layout files per route group | 🔴 Critical |
-| F-008 | **CSS Modules only** — `.module.css`, no inline styles, no CSS-in-JS | 🟠 High |
+| F-008 | **Group-level CSS Modules** — one `.module.css` per component pattern, not per component | 🟠 High |
 | F-009 | **camelCase CSS classes** — `.cardHeader`, `.buttonPrimary` | 🟡 Recommended |
 | F-010 | **`NEXT_PUBLIC_`** prefix on all env vars | 🔴 Critical |
 | F-011 | **Security is UX only** — client validation for UX, real security via RLS | 🔴 Critical |

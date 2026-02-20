@@ -703,7 +703,7 @@ assigned_to UUID REFERENCES auth.users(id) ON DELETE SET NULL
 supabase gen types typescript --local > frontend/src/api/database.types.ts
 ```
 
-### Use in Frontend (see [Frontend Guide § Data Fetching](./FRONTEND_STYLE_GUIDE.md#data-fetching-patterns-f-008))
+### Use in Frontend (see [Frontend Library Guide § Data Fetching](./FRONTEND_STYLE_GUIDE_LIBRARY.md#23-data-fetching-patterns))
 ```typescript
 import { database } from '@/api/database';
 import type { Database } from '@/api/database.types';

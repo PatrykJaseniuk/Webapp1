@@ -242,7 +242,7 @@ const greeting = 'Hello ' + name;
 | Component files | PascalCase | `Button.tsx`, `ItemList.tsx` |
 | Hook files | camelCase with `use` prefix | `useAuth.ts`, `useItems.ts` |
 | Utility files | camelCase | `formatDate.ts`, `validators.ts` |
-| CSS Module files | PascalCase matching component | `Button.module.css` |
+| CSS Module files | camelCase matching pattern group | `form.module.css`, `shared.module.css` |
 | CSS class names | camelCase | `.cardHeader`, `.buttonPrimary` |
 | Env variables | UPPER_SNAKE_CASE with `NEXT_PUBLIC_` | `NEXT_PUBLIC_SUPABASE_URL` |
 

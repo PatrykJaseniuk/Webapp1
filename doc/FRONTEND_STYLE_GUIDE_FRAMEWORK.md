@@ -272,7 +272,7 @@ import { routes } from '@/routes';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/shared/Spinner';
-import styles from './RoleGuard.module.css';
+import styles from '@/components/styles/shared.module.css';
 
 interface RoleGuardProps {
   allowedRoles: string[];
@@ -304,23 +304,94 @@ export const RoleGuard = ({ allowedRoles, children }: RoleGuardProps) => {
 
 ---
 
-## 3.7 Styling — CSS Modules
+## 3.7 Styling — Group-Level CSS Modules
 
 | ID | Rule | Severity |
 |----|------|----------|
-| F-008 | **CSS Modules only** — `.module.css` files, no inline styles, no CSS-in-JS | 🟠 High |
+| F-008 | **Group-level CSS Modules** — one `.module.css` per component pattern, not per component | 🟠 High |
 | F-009 | **camelCase CSS classes** — `.cardHeader`, `.buttonPrimary` | 🟡 Recommended |
 
-```typescript
-// ✅ Correct — CSS Modules
-import styles from './Button.module.css';
+Styles are organized by **component pattern**, not per individual component. All components of the same type share one CSS Module file. Design tokens (colors, spacing, etc.) live in `globals.css`.
 
-export const Button = ({ label }: ButtonProps) => (
-  <button className={styles.button}>{label}</button>
+### Style file mapping
+
+| Component pattern | CSS Module file | Example components |
+|------------------|-----------------|-------------------|
+| `ViewAll*.tsx` | `styles/viewAll.module.css` | ViewAllProperties, ViewAllTenants |
+| `ViewSingle*.tsx` | `styles/viewSingle.module.css` | ViewSingleProperty, ViewSingleTenant |
+| `Form*.tsx` | `styles/form.module.css` | FormProperty, FormTenant |
+| `Many*.tsx` | `styles/many.module.css` | ManyProperties, ManyLeases |
+| `shared/*.tsx` | `styles/shared.module.css` | Spinner, ErrorBanner, AppLayout, RoleGuard |
+| `auth/*.tsx` | `styles/auth.module.css` | LoginForm, SignupForm |
+| Pages (`app/*/page.tsx`) | No styles | Thin wrappers only |
+
+### Design tokens in globals.css
+
+```css
+/* app/globals.css — design tokens + reset */
+:root {
+  --color-primary: #2563eb;
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-text: #1f2937;
+  --color-muted: #6b7280;
+  --color-border: #e5e7eb;
+  --color-bg: #ffffff;
+  --color-bg-subtle: #f9fafb;
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --radius: 0.375rem;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+```
+
+### Usage
+
+```typescript
+// FormProperty.tsx — imports group-level form styles
+'use client';
+import styles from '@/components/styles/form.module.css';
+
+export const FormProperty = ({ data, onSuccess }: FormPropertyProps) => (
+  <form className={styles.form}>
+    <div className={styles.field}>
+      <label className={styles.label}>Name</label>
+      <input className={styles.input} value={name} onChange={...} />
+    </div>
+    <button className={styles.submitButton}>Save</button>
+  </form>
 );
+
+// FormTenant.tsx — imports the SAME group-level form styles
+'use client';
+import styles from '@/components/styles/form.module.css';
+
+export const FormTenant = ({ data, onSuccess }: FormTenantProps) => (
+  <form className={styles.form}>
+    <div className={styles.field}>
+      <label className={styles.label}>Email</label>
+      <input className={styles.input} value={email} onChange={...} />
+    </div>
+    <button className={styles.submitButton}>Save</button>
+  </form>
+);
+```
+
+### Rules
+
+```typescript
+// ✅ Correct — group-level CSS Module
+import styles from '@/components/styles/form.module.css';
+import styles from '@/components/styles/shared.module.css';
 
 // ✅ Correct — combining classes
 <div className={`${styles.card} ${styles.active}`}>
+
+// ❌ Wrong — per-component CSS Module
+import styles from './Button.module.css';
 
 // ❌ Wrong — inline styles
 <div style={{ color: 'red' }}>
@@ -328,8 +399,6 @@ export const Button = ({ label }: ButtonProps) => (
 // ❌ Wrong — CSS-in-JS
 const StyledButton = styled.button`...`;
 ```
-
-**File naming:** CSS Module matches its component — `Button.tsx` → `Button.module.css`
 
 ---
 
@@ -387,6 +456,13 @@ frontend/src/
 │       ├── layout.tsx      # Role guard + app layout
 │       └── page.tsx        # Thin wrapper / mini-router
 ├── components/             # UI components (all have 'use client')
+│   ├── styles/             # Group-level CSS Modules (see §3.7)
+│   │   ├── shared.module.css    # Spinner, ErrorBanner, AppLayout, RoleGuard
+│   │   ├── auth.module.css      # LoginForm, SignupForm
+│   │   ├── viewAll.module.css   # All ViewAll* components
+│   │   ├── viewSingle.module.css # All ViewSingle* components
+│   │   ├── form.module.css      # All Form* components
+│   │   └── many.module.css      # All Many* components
 │   ├── shared/             # Shared components (ErrorBanner, Spinner, DataTable, etc.)
 │   ├── auth/               # Auth components (LoginForm, SignupForm)
 │   └── [feature]/          # Feature components (landlord/, tenant/)
@@ -407,7 +483,7 @@ frontend/src/
 
 - **`@/` alias** — maps to `frontend/src/`, always use for cross-directory imports
 - **Relative `./`** — only for same-directory imports (e.g., CSS modules)
-- **New component** → `components/[scope]/ComponentName.tsx` + `.module.css`
+- **New component** → `components/[scope]/ComponentName.tsx` (styles in `components/styles/`)
 - **New hook** → `hooks/use[Name].ts`
 - **New page** → `app/[route]/page.tsx` (thin wrapper only)
 - **Never put business logic in `app/` files**
@@ -450,8 +526,8 @@ import type { PropertyRouteParams } from '@/routes';
 // 8. Project: Constants
 import { PROPERTY_STATUS_LABELS } from '@/constants/labels';
 
-// 9. Styles (always last)
-import styles from './ComponentName.module.css';
+// 9. Styles (always last — group-level CSS Module)
+import styles from '@/components/styles/form.module.css';
 ```
 
 **Rules:**

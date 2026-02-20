@@ -1,37 +1,22 @@
 # System Architecture Guide
 
-**Purpose:** Guide for LLMs generating code for this full-stack web application.  
+**Purpose:** Cross-system overview — how frontend and backend connect. Guide for LLMs.  
 **Tech Stack:** Next.js 16.1.4 | React 19.2.3 | TypeScript 5.x | Supabase (PostgreSQL 15 + PostgREST + JWT Auth) | react-use 17.6.x  
 **Related:** [Frontend Style Guide](./FRONTEND_STYLE_GUIDE.md) · [Backend Style Guide](./BACKEND_STYLE_GUIDE.md)
 
----
-
-## Quick Reference (TL;DR)
-
-| Rule ID | Rule | Severity |
-|---------|------|----------|
-| A-001 | **Client-only architecture** — NO server components, NO SSR, NO middleware, NO API routes | 🔴 Critical |
-| A-002 | **RLS is the security layer** — all access control is enforced at database level, not app level | 🔴 Critical |
-| A-003 | **Static Export (SSG)** → GitHub Pages — frontend is pre-built HTML + JS | 🔴 Critical |
-| A-004 | **Browser → Supabase directly** — no backend server, no proxy, no BFF | 🔴 Critical |
-| A-005 | **JWT auth via Supabase SDK** — tokens stored in browser, validated by Supabase | 🟠 High |
-| A-006 | **Types generated from DB schema** — single source of truth is PostgreSQL | 🟠 High |
-| A-007 | **Environment promotion** — local → staging → production, migrations tested at each step | 🟠 High |
-| A-008 | **Role-separated routes** — `/tenant/*`, `/landlord/*`, `/admin/*` with `RoleGuard` protection | 🟠 High |
-| A-009 | **No dynamic routes** — use URL search params (`?id=xxx`) instead of `[id]` segments | 🔴 Critical |
+> **This guide covers only cross-system concerns.** For frontend rules see the [Frontend Style Guide](./FRONTEND_STYLE_GUIDE.md). For backend/database rules see the [Backend Style Guide](./BACKEND_STYLE_GUIDE.md).
 
 ---
 
-## System Components
+## 1. System Components
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │  FRONTEND (Next.js 16.1.4 + React 19.2.3 — CLIENT-ONLY)     │
 │  - Static Site Generation (SSG) with Full Client Rendering   │
 │  - NO Server Components or Server-Side Logic                 │
-│  - App Router, TypeScript, CSS Modules                       │
-│  - All auth/state managed client-side via localStorage       │
 │  - Deployment: GitHub Pages (Static Export)                  │
+│  Rules → Frontend Style Guide                                │
 └────────────────────┬─────────────────────────────────────────┘
                      │ (REST API via Supabase Client SDK)
                      │ (Browser → Supabase, No Server Involved)
@@ -41,166 +26,13 @@
 │  - PostgreSQL Database with Row Level Security (RLS)         │
 │  - Authentication (JWT-based via GoTrue)                     │
 │  - REST API via PostgREST (auto-generated from schema)       │
-│  - Real-time via WebSocket (optional)                        │
-│  - Deployment: Supabase Cloud                                │
+│  Rules → Backend Style Guide                                 │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Complete Project File Tree
-
-```
-Webapp1/
-├── database/                              # Backend: Supabase + PostgreSQL
-│   ├── readme.md                          # Database-specific docs
-│   └── supabase/
-│       ├── config.toml                    # Local Supabase configuration
-│       ├── migrations/                    # SQL migration files (ordered)
-│       │   ├── 20260124000000_schema.sql
-│       │   ├── 20260124000100_indexes.sql
-│       │   ├── 20260124000200_constraints.sql
-│       │   ├── 20260124000300_functions_triggers.sql
-│       │   ├── 20260124000400_security.sql
-│       │   ├── 20260124000500_views.sql
-│       │   └── 20260124000700_seed_data.sql
-│       └── snippets/                      # Reusable SQL (not auto-applied)
-├── doc/                                   # Documentation (style guides, ref docs)
-│   ├── FRONTEND_STYLE_GUIDE.md            # Frontend coding rules for LLMs
-│   ├── BACKEND_STYLE_GUIDE.md             # Backend/DB coding rules for LLMs
-│   ├── SYSTEM_ARCHITECTURE_GUIDE.md       # This file — system overview
-│   ├── IMPLEMENTATION_PLAN.md             # Step-by-step build plan for frontend
-│   └── readme.md                          # Doc index
-├── frontend/                              # Frontend: Next.js + React
-│   ├── next.config.ts                     # SSG + static export config
-│   ├── package.json                       # Dependencies & scripts
-│   ├── tsconfig.json                      # TypeScript config (paths: @/ → src/)
-│   ├── public/                            # Static assets (images, icons)
-│   └── src/
-│       ├── api/                           # Supabase client & auto-generated types
-│       │   ├── database.ts                # Supabase client instance
-│       │   └── database.types.ts          # Auto-generated from DB schema
-│       ├── app/                           # Next.js App Router — role-separated routes
-│       │   ├── layout.tsx                 # Root layout (HTML shell)
-│       │   ├── globals.css                # CSS reset + design tokens
-│       │   ├── page.tsx                   # Landing → redirect by role
-│       │   ├── login/page.tsx             # Public: login
-│       │   ├── signup/page.tsx            # Public: signup
-│       │   ├── tenant/                    # 🔒 Tenant routes (role: tenant)
-│       │   │   ├── dashboard/page.tsx
-│       │   │   ├── properties/page.tsx    # ?id=xxx → detail
-│       │   │   ├── leases/page.tsx        # ?id=xxx → detail
-│       │   │   ├── billing/page.tsx
-│       │   │   ├── meters/page.tsx
-│       │   │   └── profile/page.tsx
-│       │   ├── landlord/                  # 🔒 Landlord routes (roles: landlord, admin)
-│       │   │   ├── dashboard/page.tsx
-│       │   │   ├── properties/page.tsx    # ?id=xxx | ?action=new
-│       │   │   ├── tenants/page.tsx       # ?id=xxx | ?action=new
-│       │   │   ├── leases/page.tsx        # ?id=xxx | ?action=new
-│       │   │   ├── billing/page.tsx       # ?id=xxx | ?action=new
-│       │   │   ├── payments/page.tsx      # ?action=new
-│       │   │   ├── meters/page.tsx        # ?action=new
-│       │   │   ├── utility-prices/page.tsx
-│       │   │   └── expenses/page.tsx      # ?action=new
-│       │   └── admin/                     # 🔒 Admin routes (role: admin)
-│       │       └── users/page.tsx
-│       ├── components/                    # Domain-grouped flat components
-│       │   ├── shared/                    # Reusable across all roles
-│       │   │   ├── Spinner.tsx + .module.css
-│       │   │   ├── ErrorBanner.tsx + .module.css
-│       │   │   ├── EmptyState.tsx + .module.css
-│       │   │   ├── RoleGuard.tsx + .module.css
-│       │   │   ├── AppLayout.tsx + .module.css
-│       │   │   └── Sidebar.tsx + .module.css
-│       │   ├── auth/                      # Login/signup components
-│       │   │   ├── LoginForm.tsx + .module.css
-│       │   │   └── SignupForm.tsx + .module.css
-│       │   ├── tenant/                    # Tenant-specific views
-│       │   │   ├── TenantDashboard.tsx + .module.css
-│       │   │   ├── TenantProperties.tsx + .module.css
-│       │   │   ├── TenantLeases.tsx + .module.css
-│       │   │   ├── TenantBilling.tsx + .module.css
-│       │   │   ├── TenantMeters.tsx + .module.css
-│       │   │   └── TenantProfile.tsx + .module.css
-│       │   ├── landlord/                  # Landlord management views
-│       │   │   ├── LandlordDashboard.tsx + .module.css
-│       │   │   ├── PropertiesPage.tsx     # Mini-router (list/detail/form)
-│       │   │   ├── PropertiesList.tsx + .module.css
-│       │   │   ├── PropertyDetail.tsx + .module.css
-│       │   │   ├── PropertyForm.tsx + .module.css
-│       │   │   ├── TenantsPage.tsx
-│       │   │   ├── TenantsList.tsx + .module.css
-│       │   │   ├── TenantDetail.tsx + .module.css
-│       │   │   ├── TenantForm.tsx + .module.css
-│       │   │   ├── LeasesPage.tsx
-│       │   │   ├── LeasesList.tsx + .module.css
-│       │   │   ├── LeaseDetail.tsx + .module.css
-│       │   │   ├── LeaseForm.tsx + .module.css
-│       │   │   ├── BillingPage.tsx
-│       │   │   ├── BillingList.tsx + .module.css
-│       │   │   ├── BillingForm.tsx + .module.css
-│       │   │   ├── PaymentsPage.tsx
-│       │   │   ├── PaymentsList.tsx + .module.css
-│       │   │   ├── PaymentForm.tsx + .module.css
-│       │   │   ├── MetersPage.tsx
-│       │   │   ├── MetersList.tsx + .module.css
-│       │   │   ├── MeterForm.tsx + .module.css
-│       │   │   ├── ReadingForm.tsx + .module.css
-│       │   │   ├── ReadingsHistory.tsx + .module.css
-│       │   │   ├── UtilityPricesList.tsx + .module.css
-│       │   │   ├── UtilityPriceForm.tsx + .module.css
-│       │   │   ├── ExpensesList.tsx + .module.css
-│       │   │   └── ExpenseForm.tsx + .module.css
-│       │   └── admin/                     # Admin-specific views
-│       │       ├── UserRolesList.tsx + .module.css
-│       │       └── UserRoleForm.tsx + .module.css
-│       ├── hooks/                         # Custom React hooks
-│       │   ├── useAuth.ts                 # Auth state, login, signup, logout
-│       │   └── useUserRole.ts             # Fetch user role from user_roles table
-│       └── utils/                         # Pure utility functions
-│           ├── formatCurrency.ts          # PLN currency formatting
-│           └── formatDate.ts              # Date formatting helpers
-```
-
-### Where New Code Goes
-
-| What you're creating | Where to put it |
-|---------------------|-----------------|
-| New DB table | `database/supabase/migrations/YYYYMMDDHHMMSS_add_[table]_schema.sql` |
-| New RLS policy | `database/supabase/migrations/YYYYMMDDHHMMSS_add_[table]_policies.sql` |
-| New DB function | `database/supabase/migrations/YYYYMMDDHHMMSS_add_[name]_function.sql` |
-| New page route (tenant) | `frontend/src/app/tenant/[route]/page.tsx` (thin wrapper + `RoleGuard`) |
-| New page route (landlord) | `frontend/src/app/landlord/[route]/page.tsx` (thin wrapper + `RoleGuard`) |
-| New page route (admin) | `frontend/src/app/admin/[route]/page.tsx` (thin wrapper + `RoleGuard`) |
-| New shared component | `frontend/src/components/shared/[Name].tsx` + `.module.css` |
-| New tenant component | `frontend/src/components/tenant/[Name].tsx` + `.module.css` |
-| New landlord component | `frontend/src/components/landlord/[Name].tsx` + `.module.css` |
-| New admin component | `frontend/src/components/admin/[Name].tsx` + `.module.css` |
-| New custom hook | `frontend/src/hooks/use[Name].ts` |
-| New utility function | `frontend/src/utils/[name].ts` |
-| Updated DB types | `frontend/src/api/database.types.ts` (auto-generated, never edit manually) |
-
-### Routing Rules [A-008, A-009]
-
-- **No dynamic route segments** (`[id]`, `[slug]`) — use search params instead: `?id=xxx`, `?action=new`
-- **Role-separated routes** — each role has its own URL namespace:
-  - `/tenant/*` — protected by `RoleGuard allowedRoles={['tenant']}`
-  - `/landlord/*` — protected by `RoleGuard allowedRoles={['landlord', 'admin']}`
-  - `/admin/*` — protected by `RoleGuard allowedRoles={['admin']}`
-- **Page components are thin wrappers** — they import a `RoleGuard` + a domain component
-- **No conditional role rendering inside components** — each role gets its own dedicated components
-
----
-
-## Frontend-Backend Communication [A-004]
-
-### ⚠️ Client-Only Architecture
-
-- **NO server-side code** — All communication is browser → Supabase directly
-- **Frontend is static** — Served from GitHub Pages (CDN), just HTML + JS + CSS
-- **No server session management** — All state persisted in browser (localStorage)
-- **RLS is critical** — Database security depends entirely on RLS policies (see [Backend Guide § RLS](./BACKEND_STYLE_GUIDE.md#row-level-security-rls))
+## 2. API Contract & Communication Patterns
 
 ### API Contract
 
@@ -214,18 +46,8 @@ Webapp1/
 | Token storage | Browser localStorage (managed by Supabase SDK) |
 | Response format | `{ data: T \| null, error: PostgrestError \| null }` |
 
-### Communication Patterns
+### Authentication Flow
 
-**1. Data Fetching (Client-Side) — see [Frontend Guide § Data Fetching](./FRONTEND_STYLE_GUIDE.md#data-fetching-patterns-f-008)**
-```typescript
-// Browser sends HTTP GET to Supabase PostgREST
-const { data, error } = await database
-  .from('table_name')
-  .select('*')
-  .eq('id', id);
-```
-
-**2. Authentication Flow**
 ```
 User enters email/password in browser
   ↓
@@ -242,21 +64,7 @@ Supabase PostgREST extracts auth.uid() from JWT for RLS policy evaluation
 RLS policies determine which rows the user can access
 ```
 
-**3. Real-Time Updates (Optional)**
-```typescript
-database
-  .channel('table_changes')
-  .on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'items'
-  }, (payload) => {
-    // Handle new/updated/deleted rows
-  })
-  .subscribe();
-```
-
-### Response Format & Error Handling
+### Response Format
 
 ```typescript
 // Every Supabase call returns this shape:
@@ -271,13 +79,9 @@ database
 }
 ```
 
-**Error handling strategy (cross-reference):**
-- Frontend error handling: [Frontend Guide § Error Handling](./FRONTEND_STYLE_GUIDE.md#error-handling-strategy-f-003)
-- Backend error codes: [Backend Guide § Common Errors](./BACKEND_STYLE_GUIDE.md#common-errors)
-
 ---
 
-## Data Flow Examples
+## 3. Data Flow Examples
 
 ### User Creates an Item
 
@@ -344,9 +148,7 @@ database
 
 ---
 
-## Security Model [A-002]
-
-### Security Architecture
+## 4. Security Trust Boundary
 
 ```
                     TRUST BOUNDARY
@@ -364,20 +166,6 @@ database
   └──────────────────────┼──────────────────────────┘
 ```
 
-### Security Rules
-
-| # | Rule | Enforced By |
-|---|------|-------------|
-| 1 | All tables have RLS enabled | PostgreSQL ([B-001](./BACKEND_STYLE_GUIDE.md#quick-reference-tldr)) |
-| 2 | Users can only access their own data (unless admin) | RLS policies ([B-002](./BACKEND_STYLE_GUIDE.md#row-level-security-rls-b-001-b-002-b-003)) |
-| 3 | JWT identifies the user for every request | Supabase Auth + PostgREST |
-| 4 | Admin role assigned server-side only (never client) | DB trigger on signup |
-| 5 | `anon` key is public and safe to expose | Limited by RLS |
-| 6 | `service_role` key NEVER in frontend | Bypasses RLS — admin only |
-| 7 | Client-side checks are UX hints, not security | [F-009](./FRONTEND_STYLE_GUIDE.md#quick-reference-tldr) |
-
-### Environment Secrets
-
 | Secret | Safe in Frontend? | Where to Store |
 |--------|-------------------|----------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | ✅ Yes | `.env.local` / `.env.production` |
@@ -386,61 +174,28 @@ database
 | `SUPABASE_DB_PASSWORD` | ❌ NEVER | Supabase Dashboard only |
 | `JWT_SECRET` | ❌ NEVER | Supabase config only |
 
----
-
-## Type Safety Across Systems [A-006]
-
-### Single Source of Truth: PostgreSQL Schema
-
-```
-PostgreSQL Schema (migrations)
-  ↓ supabase gen types typescript --local
-TypeScript Types (frontend/src/api/database.types.ts)
-  ↓ imported in components/hooks
-Typed Supabase Client Calls
-```
-
-### Generate & Use Types
-```bash
-# After any schema change, regenerate types:
-supabase gen types typescript --local > frontend/src/api/database.types.ts
-```
-
-```typescript
-// frontend/src/api/database.types.ts — AUTO-GENERATED, NEVER EDIT
-import type { Database } from '@/api/database.types';
-
-// Extract specific types for convenience
-type Item = Database['public']['Tables']['items']['Row'];      // SELECT result
-type NewItem = Database['public']['Tables']['items']['Insert']; // INSERT payload
-type ItemUpdate = Database['public']['Tables']['items']['Update']; // UPDATE payload
-```
-
-**Cross-references:**
-- Frontend usage: [Frontend Guide § Import Conventions](./FRONTEND_STYLE_GUIDE.md#import-conventions)
-- Backend type generation: [Backend Guide § Type Safety](./BACKEND_STYLE_GUIDE.md#type-safety-typescript-integration)
+For detailed security rules see [Backend Style Guide § RLS](./BACKEND_STYLE_GUIDE.md#row-level-security-rls-b-001-b-002-b-003). For frontend UX-only security see [Frontend Framework Guide § Security Model](./FRONTEND_STYLE_GUIDE_FRAMEWORK.md#39-security-model).
 
 ---
 
-## Environment Variables
+## 5. Deployment & Environment Promotion
 
-### Frontend (.env.local / .env.production)
-```bash
-NEXT_PUBLIC_SUPABASE_URL=<url>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<key>
+### Environment Promotion Flow
+
 ```
-**Rule:** All frontend vars must be `NEXT_PUBLIC_*` — embedded in static HTML at build time. See [F-010](./FRONTEND_STYLE_GUIDE.md#environment-variables-f-010).
-
-### Backend (Supabase Dashboard / config.toml)
-- JWT Secret — managed by Supabase
-- Database Password — managed by Supabase
-- Service Role Key — admin operations only, NEVER in frontend
-
----
-
-## Deployment Architecture [A-003, A-007]
+Local Dev (Supabase local + Next.js dev)
+  ↓ supabase db reset (test all migrations)
+  ↓ npm run build (verify SSG works)
+Staging (Supabase staging project + staging GitHub Pages)
+  ↓ supabase db push (apply to staging)
+  ↓ Verify with production-like env vars
+Production (Supabase prod project + GitHub Pages)
+  ↓ supabase db push (apply to prod)
+  ↓ GitHub Actions deploys frontend
+```
 
 ### Local Development
+
 ```bash
 # Terminal 1: Backend
 cd database
@@ -455,89 +210,29 @@ npm run dev                 # Next.js dev server at localhost:3000
 
 ### Build & Deploy
 
-**Frontend (GitHub Pages):**
 ```bash
+# Frontend (GitHub Pages)
 cd frontend
 npm run build               # SSG build → outputs to ./out/ (static HTML/JS/CSS)
-# Deploy via GitHub Actions or manual push to gh-pages branch
-```
 
-**Backend (Supabase Cloud):**
-```bash
+# Backend (Supabase Cloud)
 supabase link --project-id <prod-id>
 supabase db push            # Applies all unapplied migrations to production
 ```
 
-### Environment Promotion Flow
+### Type Regeneration After Schema Changes
+
 ```
-Local Dev (Supabase local + Next.js dev)
-  ↓ supabase db reset (test all migrations)
-  ↓ npm run build (verify SSG works)
-Staging (Supabase staging project + staging GitHub Pages)
-  ↓ supabase db push (apply to staging)
-  ↓ Verify with production-like env vars
-Production (Supabase prod project + GitHub Pages)
-  ↓ supabase db push (apply to prod)
-  ↓ GitHub Actions deploys frontend
+PostgreSQL Schema (migrations)
+  ↓ supabase gen types typescript --local > frontend/src/api/database.types.ts
+TypeScript Types (frontend/src/api/database.types.ts)
+  ↓ imported in components/hooks
+Typed Supabase Client Calls
 ```
 
 ---
 
-## Development Workflow
-
-### Adding a New Feature (End-to-End)
-
-```
-Step 1: Database Schema
-  → Create migration: database/supabase/migrations/YYYYMMDDHHMMSS_add_[feature]_schema.sql
-  → Define table with RLS enabled
-  → See [Backend Guide § Table Structure](./BACKEND_STYLE_GUIDE.md#table-structure-b-006)
-
-Step 2: Indexes
-  → Create migration: YYYYMMDDHHMMSS_add_[feature]_indexes.sql
-  → Add indexes for filtered/sorted columns
-  → See [Backend Guide § Indexes](./BACKEND_STYLE_GUIDE.md#indexes)
-
-Step 3: RLS Policies
-  → Create migration: YYYYMMDDHHMMSS_add_[feature]_policies.sql
-  → ONE policy per action, consolidated with OR
-  → See [Backend Guide § RLS](./BACKEND_STYLE_GUIDE.md#row-level-security-rls-b-001-b-002-b-003)
-
-Step 4: Apply & Generate Types
-  → supabase db reset (test migrations)
-  → supabase gen types typescript --local > frontend/src/api/database.types.ts
-
-Step 5: Frontend Components
-  → Create component folder: frontend/src/components/[Feature]/
-  → Create page wrapper: frontend/src/app/[feature]/page.tsx
-  → Use useAsync/useAsyncFn for data fetching
-  → See [Frontend Guide § Complete Page Template](./FRONTEND_STYLE_GUIDE.md#complete-page-template)
-
-Step 6: Test
-  → Verify RLS policies with different user roles
-  → Test component loading/error/success states
-  → Run: npm run build (ensure SSG works)
-```
-
-### Quick Command Reference
-
-| Task | Command |
-|------|---------|
-| Start local Supabase | `supabase start` |
-| Stop local Supabase | `supabase stop` |
-| Reset DB (rerun all migrations) | `supabase db reset` |
-| Create new migration | `supabase migration new <name>` |
-| Apply pending migrations | `supabase migration up` |
-| Generate TypeScript types | `supabase gen types typescript --local > frontend/src/api/database.types.ts` |
-| Start frontend dev server | `cd frontend && npm run dev` |
-| Build frontend for production | `cd frontend && npm run build` |
-| Link to Supabase project | `supabase link --project-id <id>` |
-| Push migrations to production | `supabase db push` |
-| Check Supabase status | `supabase status` |
-
----
-
-## Common Integration Issues
+## 6. Common Integration Issues
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
@@ -547,37 +242,16 @@ Step 6: Test
 | CORS Error | Frontend domain not allowed | Check Supabase Dashboard → API → CORS settings |
 | Env vars undefined | `NEXT_PUBLIC_*` not set | Add to `.env.local`, restart dev server (`npm run dev`) |
 | Types out of date | Schema changed, types not regenerated | Run: `supabase gen types typescript --local > frontend/src/api/database.types.ts` |
-| Build fails | Server component used or dynamic feature | Ensure all interactive code uses `'use client'` directive. See [Frontend Guide § 'use client'](./FRONTEND_STYLE_GUIDE.md#use-client-directive-rule) |
+| Build fails | Server component used or dynamic feature | Ensure all interactive code uses `'use client'` directive. See [Frontend Framework Guide § 'use client'](./FRONTEND_STYLE_GUIDE_FRAMEWORK.md#32-use-client-directive) |
 | Data not loading | Supabase local not running | Run `supabase start`, verify with `supabase status` |
-| Auth not persisting | Page refresh loses session | Supabase SDK handles this via localStorage — check `database.auth.getSession()` on mount. See [Frontend Guide § Auth](./FRONTEND_STYLE_GUIDE.md#authentication-flow-patterns) |
+| Auth not persisting | Page refresh loses session | Supabase SDK handles this via localStorage — check `database.auth.getSession()` on mount. See [Frontend Library Guide § Auth](./FRONTEND_STYLE_GUIDE_LIBRARY.md#27-auth-hook-pattern) |
 
 ---
 
-## Cross-Reference Index
-
-For quick navigation between guides:
-
-| Topic | Frontend Guide | Backend Guide |
-|-------|---------------|---------------|
-| Data fetching | [§ Data Fetching Patterns](./FRONTEND_STYLE_GUIDE.md#data-fetching-patterns-f-008) | — |
-| Error handling | [§ Error Handling Strategy](./FRONTEND_STYLE_GUIDE.md#error-handling-strategy-f-003) | [§ Common Errors](./BACKEND_STYLE_GUIDE.md#common-errors) |
-| Authentication | [§ Auth Flow Patterns](./FRONTEND_STYLE_GUIDE.md#authentication-flow-patterns) | [§ Auth Context](./BACKEND_STYLE_GUIDE.md#authentication-context) |
-| RLS / Security | [§ Permission Checks (UX)](./FRONTEND_STYLE_GUIDE.md#permission-checks-ux-only--security-is-rls) | [§ RLS](./BACKEND_STYLE_GUIDE.md#row-level-security-rls-b-001-b-002-b-003) |
-| Type safety | [§ Import Conventions](./FRONTEND_STYLE_GUIDE.md#import-conventions) | [§ Type Safety](./BACKEND_STYLE_GUIDE.md#type-safety-typescript-integration) |
-| Component structure | [§ Component Structure](./FRONTEND_STYLE_GUIDE.md#component-structure) | — |
-| Table structure | — | [§ Table Structure](./BACKEND_STYLE_GUIDE.md#table-structure-b-006) |
-| Migrations | — | [§ Migrations](./BACKEND_STYLE_GUIDE.md#migrations-b-007-b-008) |
-| File paths | [§ File Tree](./FRONTEND_STYLE_GUIDE.md#project-file-tree--path-conventions) | [§ File Tree](./BACKEND_STYLE_GUIDE.md#project-file-tree--path-conventions) |
-| Naming | [§ Naming Conventions](./FRONTEND_STYLE_GUIDE.md#naming-conventions) | [§ Naming Conventions](./BACKEND_STYLE_GUIDE.md#naming-conventions-b-009) |
-| Environment vars | [§ Env Variables](./FRONTEND_STYLE_GUIDE.md#environment-variables-f-010) | [§ Env & Secrets](./BACKEND_STYLE_GUIDE.md#environment--secrets-b-010) |
-| Deployment | — | [§ Deployment](./BACKEND_STYLE_GUIDE.md#deployment) |
-| Common mistakes | [§ Common Mistakes](./FRONTEND_STYLE_GUIDE.md#common-mistakes) | [§ Common Mistakes](./BACKEND_STYLE_GUIDE.md#common-mistakes) |
-
----
-
-## Git Workflow Conventions
+## 7. Git Workflow Conventions
 
 ### Branch Naming
+
 ```
 main                    # Production-ready code
 feature/[feature-name]  # New feature development
@@ -586,6 +260,7 @@ db/[migration-name]     # Database schema changes
 ```
 
 ### Commit Message Format
+
 ```
 type(scope): description
 
@@ -602,7 +277,27 @@ docs: update style guides with decision trees
 **Scopes:** `frontend`, `db`, `docs`
 
 ### What Constitutes a Single PR
+
 - **Feature PR:** Schema migration(s) + types regeneration + frontend component(s)
 - **DB-only PR:** Migration(s) + types regeneration
 - **Frontend-only PR:** Component(s) / hook(s) / page(s) (no schema changes)
 - **Docs PR:** Style guide or documentation updates only
+
+---
+
+## 8. Cross-Reference Index
+
+| Topic | Guide |
+|-------|-------|
+| TypeScript rules | [Frontend Language Guide](./FRONTEND_STYLE_GUIDE_LANGUAGE.md) |
+| React & Supabase patterns | [Frontend Library Guide](./FRONTEND_STYLE_GUIDE_LIBRARY.md) |
+| Next.js, routing, styling | [Frontend Framework Guide](./FRONTEND_STYLE_GUIDE_FRAMEWORK.md) |
+| Component stratification (View*/Form*/Many*) | [Frontend Project Guide](./FRONTEND_STYLE_GUIDE_PROJECT.md) |
+| Database schema, RLS, migrations | [Backend Style Guide](./BACKEND_STYLE_GUIDE.md) |
+| Adding a new entity (checklist) | [Frontend Project Guide § 4.10](./FRONTEND_STYLE_GUIDE_PROJECT.md#410-adding-a-new-entity-checklist) |
+| File structure (frontend) | [Frontend Framework Guide § 3.10](./FRONTEND_STYLE_GUIDE_FRAMEWORK.md#310-file-structure) |
+| File structure (backend) | [Backend Style Guide § File Tree](./BACKEND_STYLE_GUIDE.md#project-file-tree--path-conventions) |
+| Error handling (frontend) | [Frontend Library Guide § 2.5](./FRONTEND_STYLE_GUIDE_LIBRARY.md#25-error-handling-in-components) |
+| Error handling (backend) | [Backend Style Guide § Common Errors](./BACKEND_STYLE_GUIDE.md#common-errors) |
+| Naming conventions (frontend) | [Frontend Language Guide § 1.6](./FRONTEND_STYLE_GUIDE_LANGUAGE.md#16-naming-conventions) |
+| Naming conventions (backend) | [Backend Style Guide § Naming](./BACKEND_STYLE_GUIDE.md#naming-conventions-b-009) |

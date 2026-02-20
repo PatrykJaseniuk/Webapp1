@@ -18,7 +18,7 @@
 ```typescript
 // components/shared/Button.tsx
 'use client';
-import styles from './Button.module.css';
+import styles from '@/components/styles/shared.module.css';
 
 interface ButtonProps {
   label: string;
@@ -44,7 +44,7 @@ export const Button = ({ label, onClick, disabled = false, variant = 'primary' }
 // components/Counter/Counter.tsx
 'use client';
 import { useState } from 'react';
-import styles from './Counter.module.css';
+import styles from '@/components/styles/shared.module.css';
 
 interface CounterProps {
   initialValue?: number;
@@ -126,7 +126,7 @@ import { useAsync } from 'react-use';
 import { database } from '@/api/database';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
-import styles from './ItemList.module.css';
+import styles from '@/components/styles/viewAll.module.css';
 
 export const ItemList = () => {
   const state = useAsync(async () => {
@@ -154,7 +154,7 @@ export const ItemList = () => {
 import { useState } from 'react';
 import { useAsyncFn } from 'react-use';
 import { database } from '@/api/database';
-import styles from './AddItemForm.module.css';
+import styles from '@/components/styles/form.module.css';
 
 interface AddItemFormProps {
   onSuccess: () => void;
@@ -325,7 +325,7 @@ return (
 ```typescript
 // components/shared/ErrorBanner.tsx
 'use client';
-import styles from './ErrorBanner.module.css';
+import styles from '@/components/styles/shared.module.css';
 
 interface ErrorBannerProps {
   msg: string;
