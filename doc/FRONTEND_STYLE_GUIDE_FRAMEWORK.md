@@ -320,8 +320,7 @@ Styles are organized by **component pattern**, not per individual component. All
 | `ViewAll*.tsx` | `styles/viewAll.module.css` | ViewAllProperties, ViewAllTenants |
 | `ViewSingle*.tsx` | `styles/viewSingle.module.css` | ViewSingleProperty, ViewSingleTenant |
 | `Form*.tsx` | `styles/form.module.css` | FormProperty, FormTenant |
-| `Many*.tsx` | `styles/many.module.css` | ManyProperties, ManyLeases |
-| `shared/*.tsx` | `styles/shared.module.css` | Spinner, ErrorBanner, AppLayout, RoleGuard |
+| `shared/*.tsx` | `styles/shared.module.css` | Spinner, ErrorBanner, DataTable, AppLayout, RoleGuard |
 | `auth/*.tsx` | `styles/auth.module.css` | LoginForm, SignupForm |
 | Pages (`app/*/page.tsx`) | No styles | Thin wrappers only |
 
@@ -457,12 +456,11 @@ frontend/src/
 │       └── page.tsx        # Thin wrapper / mini-router
 ├── components/             # UI components (all have 'use client')
 │   ├── styles/             # Group-level CSS Modules (see §3.7)
-│   │   ├── shared.module.css    # Spinner, ErrorBanner, AppLayout, RoleGuard
+│   │   ├── shared.module.css    # Spinner, ErrorBanner, DataTable, AppLayout, RoleGuard
 │   │   ├── auth.module.css      # LoginForm, SignupForm
 │   │   ├── viewAll.module.css   # All ViewAll* components
 │   │   ├── viewSingle.module.css # All ViewSingle* components
-│   │   ├── form.module.css      # All Form* components
-│   │   └── many.module.css      # All Many* components
+│   │   └── form.module.css      # All Form* components
 │   ├── shared/             # Shared components (ErrorBanner, Spinner, DataTable, etc.)
 │   ├── auth/               # Auth components (LoginForm, SignupForm)
 │   └── [feature]/          # Feature components (landlord/, tenant/)

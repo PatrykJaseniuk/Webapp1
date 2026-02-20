@@ -90,23 +90,23 @@ When generating code, apply rules in order: **Language → Library → Framework
 
 | ID | Rule | Severity |
 |----|------|----------|
-| P-001 | **View* = Smart** — only View* components fetch data via `useAsync`/`useAsyncFn` | 🔴 Critical |
-| P-002 | **Form*/Many* = Presentational** — receive all data via props, never fetch | 🔴 Critical |
-| P-003 | **Universal = Entity-agnostic** — shared components must not import domain code | 🔴 Critical |
-| P-004 | **Data flows down** — parent passes data to children via props only | 🔴 Critical |
+| P-001 | **View* = Smart** — orchestrates, fetches single records via `useAsync` | 🔴 Critical |
+| P-002 | **DataTable = Smart-Universal** — fetches lists via injected `query` prop, entity-agnostic | 🔴 Critical |
+| P-003 | **Form* = Presentational** — receives all data via props, never fetches | 🔴 Critical |
+| P-004 | **Data flows down** — parent passes data/queries to children | 🔴 Critical |
 | P-005 | **View* prefix = top-level** — components named `View*` are imported by pages | 🟠 High |
 | P-006 | **Form* data prop** — `data?: Entity` (undefined = create, defined = view/edit) | 🔴 Critical |
 | P-007 | **Form* never fetches** — all data comes from parent View* | 🔴 Critical |
 | P-008 | **Form* calls onSuccess** — mutation callback to parent for refresh | 🟠 High |
-| P-009 | **Many* data prop** — `data: Entity[]` received from parent | 🔴 Critical |
-| P-010 | **Many* never fetches** — all data from parent View* | 🔴 Critical |
-| P-011 | **Many* defines columns** — entity-specific `ColumnDef<T>[]` | 🟠 High |
-| P-012 | **Many* delegates to DataTable** — uses universal components for rendering | 🟠 High |
-| P-013 | **Universal uses generics** — `DataTable<T>`, `ColumnDef<T>` | 🔴 Critical |
-| P-014 | **Universal props-only config** — all data + config via props | 🔴 Critical |
-| P-015 | **Universal handles edge cases** — loading, empty, error states | 🟠 High |
-| P-016 | **Universal no domain imports** — no `@/api/`, `@/hooks/`, `@/constants/` | 🔴 Critical |
-| P-017 | **Universal in shared/** — all generic components in `components/shared/` | 🟠 High |
+| P-009 | **DataTable `query` prop** — function returning a fresh Supabase query builder | 🔴 Critical |
+| P-010 | **DataTable applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
+| P-011 | **DataTable applies `.range()` internally** — server-side pagination | 🟠 High |
+| P-012 | **DataTable auto-deduces columns** — from response keys, raw DB column names as headers | 🔴 Critical |
+| P-013 | **DataTable no domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
+| P-014 | **Generic universals props-only** — Spinner, ErrorBanner, EmptyState | 🔴 Critical |
+| P-015 | **Generic universals handle edge cases** — loading, empty, error states | 🟠 High |
+| P-016 | **Generic universals no domain imports** — no `@/api/`, `@/hooks/`, `@/constants/` | 🔴 Critical |
+| P-017 | **All universals in shared/** — all generic components in `components/shared/` | 🟠 High |
 | P-018 | **Label maps** — `Record<string, string>` in `constants/labels.ts` | 🟠 High |
 | P-019 | **Label naming** — `[ENTITY]_[FIELD]_LABELS` in UPPER_SNAKE_CASE | 🟠 High |
 | P-020 | **Locale pl-PL** — all UI labels in Polish | 🟠 High |

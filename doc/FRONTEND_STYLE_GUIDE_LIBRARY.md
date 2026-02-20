@@ -205,6 +205,35 @@ const state = useAsync(async () => {
 const handleRefresh = () => setRefreshKey(prev => prev + 1);
 ```
 
+### Pattern 4: DataTable Query Injection
+
+For list views, pass a **query factory** to DataTable instead of fetching manually. DataTable handles the full lifecycle (fetch, sort, paginate, error, loading):
+
+```typescript
+import { database } from '@/api/database';
+import { DataTable } from '@/components/shared/DataTable';
+
+// All records — DataTable fetches, sorts, paginates internally
+<DataTable
+  query={() => database.from('properties').select('*')}
+/>
+
+// Filtered records (related data in ViewSingle*)
+<DataTable
+  query={() => database.from('lease_agreements').select('*').eq('property_id', id)}
+  refreshKey={refreshKey}
+/>
+
+// With hidden columns and row click handler
+<DataTable
+  query={() => database.from('properties').select('*')}
+  hiddenColumns={['created_by', 'updated_at']}
+  onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
+/>
+```
+
+DataTable internally applies `.order()` for sorting and `.range()` for pagination on the query builder — the caller never adds these. See [Project Guide § 4.5](./FRONTEND_STYLE_GUIDE_PROJECT.md#45-datatable--smart-universal-component) for full details.
+
 ---
 
 ## 2.4 Supabase Database Client
@@ -432,11 +461,12 @@ export const useAuth = () => {
 
 ## Summary — Key Patterns
 
-| Pattern | When | Hook |
-|---------|------|------|
-| Data on mount | Page load, component appears | `useAsync(async () => ..., [])` |
+| Pattern | When | Mechanism |
+|---------|------|-----------|
+| Data on mount | Single record fetch, page load | `useAsync(async () => ..., [])` |
 | Data on action | Button click, form submit | `useAsyncFn(async () => ..., [deps])` |
 | Refetch | After mutation | `refreshKey` + `useAsync(... , [refreshKey])` |
+| **List data** | **Any table/list view** | **`<DataTable query={() => database.from(...).select(...)}>` — handles fetch, sort, pagination** |
 | Auth state | App-wide | `useAuth()` hook |
 | Error display | Always | 3-level: hook error → loading → data error → success |
 | State updates | Always | `prev =>` functional updaters |
