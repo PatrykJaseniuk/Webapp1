@@ -85,6 +85,7 @@ When generating code, apply rules in order: **Language → Library → Framework
 | F-012 | **`@/` import alias** — never relative paths for cross-directory imports | 🟠 High |
 | F-013 | **Import order** — React → Third-party → API → Hooks → Components → Utils → Routes → Constants → Styles | 🟠 High |
 | F-014 | **Semantic HTML** — use `role="alert"` on errors, proper `<form>`, `<button>`, etc. | 🟡 Recommended |
+| F-015 | **`useNavigate()`** for programmatic navigation — never `window.location.href` | 🔴 Critical |
 
 ### Layer 4: Project (CRUD Application Pattern)
 

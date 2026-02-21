@@ -472,6 +472,7 @@ frontend/src/
 │   └── useUserRole.ts
 ├── routes/                 # Centralized routing system
 │   ├── index.ts            # Route generators, param types, ROLE_REDIRECTS
+│   ├── useNavigate.ts      # Client-side navigation helper (wraps useRouter)
 │   └── useRouteParams.ts   # Type-safe search param reader
 └── utils/                  # Pure utility functions (no 'use client')
     ├── formatDate.ts
@@ -554,3 +555,72 @@ import styles from '@/components/styles/form.module.css';
 <div onClick={handleSubmit}>Save</div>
 <span className="error">Error message</span>
 ```
+
+---
+
+## 3.13 Programmatic Navigation
+
+| ID | Rule | Severity |
+|----|------|----------|
+| F-015 | **`useNavigate()`** for all programmatic navigation — never `window.location.href` | 🔴 Critical |
+
+`window.location.href` causes a **full page reload**, destroying all client state and defeating SPA navigation. Always use Next.js `useRouter().push()` for client-side transitions.
+
+### `useNavigate` Helper
+
+```typescript
+// routes/useNavigate.ts
+'use client';
+import { useRouter } from 'next/navigation';
+
+export const useNavigate = () => {
+  const router = useRouter();
+  return (path: string) => router.push(path);
+};
+```
+
+### Usage
+
+```typescript
+// ❌ Wrong — full page reload, destroys client state
+window.location.href = routes.landlord.properties({ id: '123' });
+
+// ✅ Correct — client-side navigation, preserves state
+import { useNavigate } from '@/routes/useNavigate';
+
+const navigate = useNavigate();
+navigate(routes.landlord.properties({ id: '123' }));
+```
+
+### Common Patterns
+
+```typescript
+// After create success → navigate to detail view
+handleSave().then(r => {
+  r?.data && navigate(routes.landlord.leases({ id: r.data.id }));
+});
+
+// After delete success → navigate to list
+handleDelete().then(() => {
+  navigate(routes.landlord.leases());
+});
+
+// Cancel in create mode → navigate back to list
+<button onClick={() => navigate(routes.landlord.leases())}>Anuluj</button>
+
+// Row click → navigate to detail
+onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
+
+// Add button → navigate to create
+onAdd={() => navigate(routes.landlord.properties({ action: 'new' }))}
+```
+
+### Why Not `window.location.href`?
+
+| | `useNavigate()` / `router.push()` | `window.location.href` |
+|---|:---:|:---:|
+| Client-side (no reload) | ✅ | ❌ |
+| Preserves React state | ✅ | ❌ |
+| Browser back/forward works | ✅ | ✅ |
+| Respects `basePath` config | ✅ | ❌ |
+| Triggers route transitions | ✅ | ❌ |

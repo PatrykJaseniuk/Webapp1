@@ -106,11 +106,45 @@ interface ColumnConfig {
 }
 ```
 
-### Registry Structure
+### Type-Safe Registry
+
+The registry leverages generated `Database` types to catch typos in table and column names at compile time:
 
 ```typescript
 // constants/columnRegistry.tsx
-export const COLUMN_REGISTRY: Record<string, Record<string, ColumnConfig>> = {
+import type { Database } from '@/api/database.types';
+
+// ── Type utilities ──────────────────────────────────────────────────
+
+// All public table names (e.g., 'properties', 'tenants', 'lease_agreements')
+type TableName = keyof Database['public']['Tables'];
+
+// All public view names (e.g., 'active_leases', 'property_financial_summary')
+type ViewName = keyof Database['public']['Views'];
+
+// Column names for a specific table (e.g., 'name' | 'address' | 'status' for 'properties')
+type ColumnName<T extends TableName> = keyof Database['public']['Tables'][T]['Row'] & string;
+
+// Table-specific registry: keys constrained to actual column names
+type TableColumnRegistry<T extends TableName> = Partial<
+  Record<ColumnName<T>, ColumnConfig>
+>;
+
+// Global registry: applies to common column names across any table
+type GlobalColumnRegistry = Record<string, ColumnConfig>;
+
+// Complete registry type — table entries are type-checked, views are looser
+type ColumnRegistryType = {
+  _global: GlobalColumnRegistry;
+} & {
+  [T in TableName]?: TableColumnRegistry<T>;
+} & {
+  [V in ViewName]?: Record<string, ColumnConfig>;  // Views may have computed/aliased columns
+};
+
+// ── Registry declaration ────────────────────────────────────────────
+
+export const COLUMN_REGISTRY: ColumnRegistryType = {
   _global: {
     id:          { label: 'ID', hidden: true, readonly: true },
     created_at:  { label: 'Utworzono', render: formatDateTime, readonly: true },
@@ -167,6 +201,33 @@ export const COLUMN_REGISTRY: Record<string, Record<string, ColumnConfig>> = {
   },
 };
 ```
+
+### What Type Safety Catches
+
+```typescript
+// ✅ Compiles — 'monthly_rent' exists on properties.Row
+properties: {
+  monthly_rent: { label: 'Czynsz', render: formatCurrency },
+}
+
+// ❌ Compile error — typo: 'montly_rent' does not exist on properties.Row
+properties: {
+  montly_rent: { label: 'Czynsz', render: formatCurrency },
+  // TS Error: Type '"montly_rent"' is not assignable to ...
+}
+
+// ❌ Compile error — 'propreties' is not a valid TableName
+propreties: {
+  // TS Error: Type '"propreties"' is not assignable to ...
+}
+
+// ✅ Views are looser — computed columns allowed
+active_leases: {
+  days_until_end: { label: 'Dni do końca' },  // computed column, OK
+}
+```
+
+**Rule:** After `supabase gen types typescript --local`, the registry types auto-update. New columns become valid keys; removed columns produce compile errors.
 
 ### Resolution Order (4 Levels)
 
@@ -233,40 +294,50 @@ ViewAll wraps ManyRecords with the entity's query and chosen display mode. Minim
 // components/landlord/ViewAllProperties.tsx
 'use client';
 import { database } from '@/api/database';
+import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
 import { ManyRecords } from '@/components/shared/ManyRecords';
 
-export const ViewAllProperties = () => (
-  <ManyRecords
-    tableName="properties"
-    query={() => database.from('properties').select('*')}
-    mode="cards"
-    hiddenColumns={['created_by', 'updated_at', 'notes']}
-    onRowClick={(row) => window.location.href = routes.landlord.properties({ id: row.id as string })}
-    onAdd={() => window.location.href = routes.landlord.properties({ action: 'new' })}
-  />
-);
+export const ViewAllProperties = () => {
+  const navigate = useNavigate();
+
+  return (
+    <ManyRecords
+      tableName="properties"
+      query={() => database.from('properties').select('*')}
+      mode="cards"
+      hiddenColumns={['created_by', 'updated_at', 'notes']}
+      onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
+      onAdd={() => navigate(routes.landlord.properties({ action: 'new' }))}
+    />
+  );
+};
 ```
 
 ```typescript
 // components/landlord/ViewAllTransactions.tsx
 'use client';
 import { database } from '@/api/database';
+import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
 import { ManyRecords } from '@/components/shared/ManyRecords';
 
-export const ViewAllTransactions = () => (
-  <ManyRecords
-    tableName="transactions"
-    query={() => database.from('transactions').select('*')}
-    mode="table"
-    hiddenColumns={['created_by', 'updated_at']}
-    defaultSortKey="due_date"
-    defaultSortDirection="desc"
-    onRowClick={(row) => window.location.href = routes.landlord.transactions({ id: row.id as string })}
-    onAdd={() => window.location.href = routes.landlord.transactions({ action: 'new' })}
-  />
-);
+export const ViewAllTransactions = () => {
+  const navigate = useNavigate();
+
+  return (
+    <ManyRecords
+      tableName="transactions"
+      query={() => database.from('transactions').select('*')}
+      mode="table"
+      hiddenColumns={['created_by', 'updated_at']}
+      defaultSortKey="due_date"
+      defaultSortDirection="desc"
+      onRowClick={(row) => navigate(routes.landlord.transactions({ id: row.id as string }))}
+      onAdd={() => navigate(routes.landlord.transactions({ action: 'new' }))}
+    />
+  );
+};
 ```
 
 **Rules:**
@@ -304,6 +375,7 @@ import { useState } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
 
 import { database } from '@/api/database';
+import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
@@ -318,6 +390,7 @@ interface ViewSingleLeaseProps {
 }
 
 export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
+  const navigate = useNavigate();
   const isCreateMode = !id;
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>(isCreateMode ? 'create' : 'view');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -374,13 +447,13 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
           <>
             <button onClick={() => handleSave().then(r => {
               r?.data && (isCreateMode
-                ? (window.location.href = routes.landlord.leases({ id: r.data.id }))
+                ? navigate(routes.landlord.leases({ id: r.data.id }))
                 : (setMode('view'), handleRefresh()));
             })} disabled={saveState.loading}>
               {saveState.loading ? 'Zapisuję...' : mode === 'create' ? 'Utwórz' : 'Zapisz'}
             </button>
             <button onClick={() => isCreateMode
-              ? (window.location.href = routes.landlord.leases())
+              ? navigate(routes.landlord.leases())
               : (setMode('view'), handleRefresh())
             }>Anuluj</button>
           </>
@@ -430,7 +503,7 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
         hiddenColumns={['id', 'lease_id', 'property_id']}
         defaultSortKey="due_date"
         defaultSortDirection="desc"
-        onRowClick={(row) => window.location.href = routes.landlord.transactions({ id: row.id as string })}
+        onRowClick={(row) => navigate(routes.landlord.transactions({ id: row.id as string }))}
         onAdd={() => { /* open RecordPicker modal for new transaction */ }}
         disabled={isCreateMode}
         disabledMessage="Zapisz rekord, aby dodać transakcje"
@@ -456,7 +529,7 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
         <ConfirmDialog
           message="Czy na pewno chcesz usunąć tę umowę najmu?"
           onConfirm={() => handleDelete().then(() =>
-            window.location.href = routes.landlord.leases()
+            navigate(routes.landlord.leases())
           )}
           onCancel={() => setShowDeleteConfirm(false)}
           loading={deleteState.loading}
@@ -480,7 +553,7 @@ const record = state.value?.data;
 **After create success → navigate to detail:**
 ```typescript
 handleSave().then(r => {
-  r?.data && (window.location.href = routes.landlord.leases({ id: r.data.id }));
+  r?.data && navigate(routes.landlord.leases({ id: r.data.id }));
 });
 ```
 
@@ -494,7 +567,7 @@ handleSave().then(r => {
 **After delete success → navigate to list:**
 ```typescript
 handleDelete().then(() => {
-  window.location.href = routes.landlord.leases();
+  navigate(routes.landlord.leases());
 });
 ```
 
@@ -916,7 +989,7 @@ ViewSingle[Parent] embeds ManyRecords instances with filtered queries:
   tableName="lease_agreements"
   query={() => database.from('lease_agreements').select('*').eq('property_id', id)}
   hiddenColumns={['id', 'property_id']}
-  onRowClick={(row) => window.location.href = routes.landlord.leases({ id: row.id as string })}
+  onRowClick={(row) => navigate(routes.landlord.leases({ id: row.id as string }))}
   onAdd={() => { /* open RecordPicker for new lease with property_id pre-filled */ }}
   refreshKey={refreshKey}
 />
