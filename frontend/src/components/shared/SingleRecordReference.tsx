@@ -16,7 +16,8 @@ interface SingleRecordReferenceProps {
     label: string;
     referenceId: string | null;
     onChange: (newId: string | null) => void;
-    query: (id: string) => Promise<{ data: Record<string, unknown> | null; error: { message: string } | null }>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: (id: string) => PromiseLike<{ data: Record<string, unknown> | null; error: { message: string } | null }> | any;
     summaryFields?: string[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pickerQuery: () => any;
