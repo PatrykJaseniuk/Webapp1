@@ -90,23 +90,33 @@ When generating code, apply rules in order: **Language → Library → Framework
 
 | ID | Rule | Severity |
 |----|------|----------|
-| P-001 | **View* = Smart** — orchestrates, fetches single records via `useAsync` | 🔴 Critical |
-| P-002 | **DataTable = Smart-Universal** — fetches lists via injected `query` prop, entity-agnostic | 🔴 Critical |
-| P-003 | **Form* = Presentational** — receives all data via props, never fetches | 🔴 Critical |
-| P-004 | **Data flows down** — parent passes data/queries to children | 🔴 Critical |
-| P-005 | **View* prefix = top-level** — components named `View*` are imported by pages | 🟠 High |
-| P-006 | **Form* data prop** — `data?: Entity` (undefined = create, defined = view/edit) | 🔴 Critical |
-| P-007 | **Form* never fetches** — all data comes from parent View* | 🔴 Critical |
-| P-008 | **Form* calls onSuccess** — mutation callback to parent for refresh | 🟠 High |
-| P-009 | **DataTable `query` prop** — function returning a fresh Supabase query builder | 🔴 Critical |
-| P-010 | **DataTable applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
-| P-011 | **DataTable applies `.range()` internally** — server-side pagination | 🟠 High |
-| P-012 | **DataTable auto-deduces columns** — from response keys, raw DB column names as headers | 🔴 Critical |
-| P-013 | **DataTable no domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
-| P-014 | **Generic universals props-only** — Spinner, ErrorBanner, EmptyState | 🔴 Critical |
-| P-015 | **Generic universals handle edge cases** — loading, empty, error states | 🟠 High |
-| P-016 | **Generic universals no domain imports** — no `@/api/`, `@/hooks/`, `@/constants/` | 🔴 Critical |
-| P-017 | **All universals in shared/** — all generic components in `components/shared/` | 🟠 High |
-| P-018 | **Label maps** — `Record<string, string>` in `constants/labels.ts` | 🟠 High |
-| P-019 | **Label naming** — `[ENTITY]_[FIELD]_LABELS` in UPPER_SNAKE_CASE | 🟠 High |
-| P-020 | **Locale pl-PL** — all UI labels in Polish | 🟠 High |
+| P-001 | **View* = Smart Orchestrator** — manages mode, formState, mutations; composes universal components | 🔴 Critical |
+| P-002 | **ManyRecords = Smart-Universal** — fetches list data via injected query, entity-agnostic | 🔴 Critical |
+| P-003 | **SingleRecordDetails = Controlled** — receives values + onChange, never fetches, never saves | 🔴 Critical |
+| P-004 | **SingleRecordReference = Controlled** — receives referenceId + onChange, fetches only referenced record | 🔴 Critical |
+| P-005 | **Data flows down** — parent passes data/queries/callbacks to children | 🔴 Critical |
+| P-006 | **View* prefix = top-level** — only View* components are imported by pages | 🟠 High |
+| P-007 | **Central column registry** — labels, renderers, inputs in `constants/columnRegistry.tsx` | 🔴 Critical |
+| P-008 | **4-level resolution** — per-usage → table-specific → global → auto-deduce | 🔴 Critical |
+| P-009 | **Locale pl-PL** — all UI labels in Polish | 🟠 High |
+| P-010 | **ViewSingle owns formState** — all scalar fields + FK values in one state object | 🔴 Critical |
+| P-011 | **ViewSingle controls mode** — `'view' \| 'edit' \| 'create'`, passed to children | 🔴 Critical |
+| P-012 | **ViewSingle handles mutations** — INSERT/UPDATE/DELETE, children only report changes | 🔴 Critical |
+| P-013 | **All 3 sections visible in every mode** — to-many sections disabled in create mode | 🟠 High |
+| P-014 | **ManyRecords `query` prop** — function returning a fresh Supabase query builder | 🔴 Critical |
+| P-015 | **ManyRecords applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
+| P-016 | **ManyRecords applies `.range()` internally** — server-side pagination | 🟠 High |
+| P-017 | **ManyRecords uses column registry** — `tableName` resolves labels + renderers | 🔴 Critical |
+| P-018 | **ManyRecords no domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
+| P-019 | **SingleRecordDetails is controlled** — values + onChange from parent, no internal state | 🔴 Critical |
+| P-020 | **Inline edit — no layout shift** — view↔edit transition keeps identical layout | 🔴 Critical |
+| P-021 | **SingleRecordDetails uses column registry** — `tableName` resolves labels, renderers, inputs | 🔴 Critical |
+| P-022 | **SingleRecordDetails no domain imports** — entity-agnostic | 🔴 Critical |
+| P-023 | **SingleRecordReference is controlled** — referenceId + onChange from parent | 🔴 Critical |
+| P-024 | **SingleRecordReference fetches only the referenced record** | 🔴 Critical |
+| P-025 | **SingleRecordReference no domain imports** — entity-agnostic | 🔴 Critical |
+| P-026 | **RecordPicker single-depth modal** — browse + create as internal tabs, no nesting | 🔴 Critical |
+| P-027 | **RecordPicker no domain imports** — entity-agnostic | 🔴 Critical |
+| P-028 | **Generic universals props-only** — Spinner, ErrorBanner, EmptyState, ConfirmDialog | 🔴 Critical |
+| P-029 | **Generic universals no domain imports** — no `@/api/`, `@/hooks/`, `@/constants/` | 🔴 Critical |
+| P-030 | **All universals in `components/shared/`** | 🟠 High |

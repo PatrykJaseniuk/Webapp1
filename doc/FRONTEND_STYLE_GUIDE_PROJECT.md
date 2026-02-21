@@ -10,370 +10,888 @@
 Components are organized in **3 levels** by responsibility. Data flows top-down only.
 
 ```
-Level 0: Page          (app/*/page.tsx)      — reads URL params, dispatches
+Level 0: Page          (app/*/page.tsx)      — reads URL params, dispatches to View* components
   ↓
-Level 1: View*         (View*.tsx)           — SMART: orchestrates, fetches single records
+Level 1: View*         (View*.tsx)           — SMART: orchestrates, manages mode & formState
   ↓
-Level 2: Form*         (Form*.tsx)           — PRESENTATIONAL: entity fields via props
-  ↓
-Universal: DataTable   (shared/DataTable)    — SMART-UNIVERSAL: receives query, fetches + renders lists
-Universal: Spinner, ErrorBanner, etc.        — GENERIC: entity-agnostic, props-only
+Universal Components   (shared/*.tsx)        — reusable building blocks:
+  ├── ManyRecords                            — SMART-UNIVERSAL: multi-record display (table/cards/list)
+  ├── SingleRecordDetails                    — CONTROLLED: single-record inline view/edit/create
+  ├── SingleRecordReference                  — CONTROLLED: to-one FK section (summary + picker)
+  ├── RecordPicker                           — MODAL: browse existing + create new record
+  ├── ConfirmDialog                          — MODAL: destructive action confirmation
+  └── Spinner, ErrorBanner, EmptyState       — GENERIC: edge-case handling
 ```
 
-| Level | Prefix | Fetches data? | Domain knowledge? | Example |
-|-------|--------|:---:|:---:|---------|
-| **0. Page** | `app/*/page.tsx` | ❌ | ❌ (only URL params) | mini-router |
-| **1. View*** | `View*.tsx` | ✅ single record only | ✅ knows entity | `ViewAllProperties`, `ViewSingleTenant` |
-| **2. Form*** | `Form*.tsx` | ❌ props only | ✅ knows entity fields | `FormProperty`, `FormTenant` |
-| **U. DataTable** | `shared/DataTable.tsx` | ✅ via injected query | ❌ entity-agnostic | auto-deduces columns, sorts, paginates |
-| **U. Generic** | `shared/*.tsx` | ❌ props only | ❌ entity-agnostic | `Spinner`, `ErrorBanner`, `EmptyState` |
+| Level | Component | Fetches data? | Domain knowledge? | State ownership |
+|-------|-----------|:---:|:---:|------|
+| **0. Page** | `app/*/page.tsx` | ❌ | ❌ (URL params only) | none |
+| **1. View*** | `ViewAll*.tsx`, `ViewSingle*.tsx` | ✅ single record | ✅ knows entity | owns formState + mode |
+| **U. ManyRecords** | `shared/ManyRecords.tsx` | ✅ via injected query | ❌ entity-agnostic | internal sort/page state |
+| **U. SingleRecordDetails** | `shared/SingleRecordDetails.tsx` | ❌ controlled | ❌ entity-agnostic | none (controlled by parent) |
+| **U. SingleRecordReference** | `shared/SingleRecordReference.tsx` | ✅ referenced record | ❌ entity-agnostic | none (controlled by parent) |
+| **U. RecordPicker** | `shared/RecordPicker.tsx` | ✅ via ManyRecords | ❌ entity-agnostic | internal modal state |
+| **U. Generic** | `shared/*.tsx` | ❌ props only | ❌ entity-agnostic | none |
 
 ### Rules
 
 | ID | Rule | Severity |
 |----|------|----------|
-| P-001 | **View* = Smart** — View* orchestrates; fetches single records via `useAsync` | 🔴 Critical |
-| P-002 | **DataTable = Smart-Universal** — fetches list data via injected query, entity-agnostic | 🔴 Critical |
-| P-003 | **Form* = Presentational** — receives all data via props, never fetches | 🔴 Critical |
-| P-004 | **Data flows down** — parent passes data/queries to children | 🔴 Critical |
-| P-005 | **View* prefix = top-level** — components named `View*` are imported by pages | 🟠 High |
+| P-001 | **View* = Smart Orchestrator** — manages mode, formState, mutations; composes universal components | 🔴 Critical |
+| P-002 | **ManyRecords = Smart-Universal** — fetches list data via injected query, entity-agnostic | 🔴 Critical |
+| P-003 | **SingleRecordDetails = Controlled** — receives values + onChange, never fetches, never saves | 🔴 Critical |
+| P-004 | **SingleRecordReference = Controlled** — receives referenceId + onChange, fetches only the referenced record | 🔴 Critical |
+| P-005 | **Data flows down** — parent passes data/queries/callbacks to children | 🔴 Critical |
+| P-006 | **View* prefix = top-level** — only View* components are imported by pages | 🟠 High |
 
 ---
 
 ## 4.2 Entity Component Set
 
-Each database entity gets **3 component files**:
+Each database entity gets **2 component files**:
 
 ```
 components/[role]/
-├── ViewAll[Entity].tsx      ← Level 1: wraps DataTable with a query
-├── ViewSingle[Entity].tsx   ← Level 1: fetches single record, composes Form* + DataTable for related
-└── Form[Entity].tsx         ← Level 2: entity's own fields (detail/edit/create)
+├── ViewAll[Entity].tsx      ← Level 1: configures ManyRecords with entity query + display mode
+└── ViewSingle[Entity].tsx   ← Level 1: orchestrates all 3 section types for one record
 ```
 
-### Composition diagram
+### Composition Diagram
 
 ```
-ViewAll[Entity] (wraps DataTable with entity query)
-  └── DataTable (fetches all records, auto-deduces columns, sorts, paginates)
+ViewAll[Entity]
+  └── ManyRecords (mode: table|cards|list — fetches all records, sorts, paginates)
 
-ViewSingle[Entity] (fetches single record + orchestrates)
-  ├── Form[Entity] (entity's own fields — view/edit/create)
-  ├── DataTable (related child records — fetches via query)
-  ├── DataTable (related child records — fetches via query)
-  └── DataTable (attachments — fetches via query)
+ViewSingle[Entity] (manages formState + mode: view|edit|create)
+  ├── Section 1 (Self):     SingleRecordDetails (entity's own scalar fields)
+  ├── Section 2 (To-One):   SingleRecordReference × N (one per FK out)
+  │                            └── RecordPicker modal (browse + create)
+  └── Section 3 (To-Many):  ManyRecords × N (one per FK in — related child records)
 ```
 
-**DataTable is reusable in both contexts:**
+**ManyRecords is reused in both contexts:**
 1. `ViewAll[Entity]` passes a full-table query
 2. `ViewSingle[Parent]` passes filtered queries (`.eq('parent_id', id)`) for related records
 
+**SingleRecordDetails is reused in multiple contexts:**
+1. `ViewSingle[Entity]` — main record fields (view/edit/create)
+2. `RecordPicker` — create tab (new related record)
+3. `SingleRecordReference` — preview modal (read-only)
+
 ---
 
-## 4.3 Level 1: View* Components (Smart)
+## 4.3 Central Column Registry
+
+One source of truth for how every DB column is labeled, displayed, and edited. Used by **both** ManyRecords and SingleRecordDetails.
+
+| ID | Rule | Severity |
+|----|------|----------|
+| P-007 | **Central column registry** — all column labels, renderers, inputs defined in `constants/columnRegistry.tsx` | 🔴 Critical |
+| P-008 | **4-level resolution** — per-usage props → table-specific → global → auto-deduce | 🔴 Critical |
+| P-009 | **Locale pl-PL** — all UI labels in Polish | 🟠 High |
+
+**Location:** `constants/columnRegistry.tsx`
+
+### ColumnConfig Interface
+
+```typescript
+interface ColumnConfig {
+  label?: string;                                                        // Polish UI name
+  render?: (value: unknown) => React.ReactNode;                          // display renderer (view mode)
+  input?: (value: unknown, onChange: (v: unknown) => void) => React.ReactNode; // edit renderer
+  hidden?: boolean;                                                       // hide by default
+  readonly?: boolean;                                                     // never editable
+  required?: boolean;                                                     // validation: must have value
+  validate?: (value: unknown) => string | null;                           // custom validation (null = valid)
+}
+```
+
+### Registry Structure
+
+```typescript
+// constants/columnRegistry.tsx
+export const COLUMN_REGISTRY: Record<string, Record<string, ColumnConfig>> = {
+  _global: {
+    id:          { label: 'ID', hidden: true, readonly: true },
+    created_at:  { label: 'Utworzono', render: formatDateTime, readonly: true },
+    updated_at:  { label: 'Zaktualizowano', render: formatDateTime, readonly: true },
+    created_by:  { label: 'Utworzył', hidden: true, readonly: true },
+    notes:       { label: 'Notatki', input: textareaInput },
+    email:       { label: 'Email', validate: validateEmail },
+    phone:       { label: 'Telefon' },
+  },
+
+  properties: {
+    name:          { label: 'Nazwa', required: true },
+    address:       { label: 'Adres', required: true },
+    property_type: { label: 'Typ nieruchomości', render: renderPropertyType, input: selectPropertyType },
+    monthly_rent:  { label: 'Czynsz miesięczny', render: formatCurrency, input: currencyInput, required: true },
+    deposit_amount:{ label: 'Kaucja', render: formatCurrency, input: currencyInput },
+    status:        { label: 'Status', render: renderPropertyStatus, input: selectPropertyStatus },
+    size_sqm:      { label: 'Powierzchnia (m²)' },
+    bedrooms:      { label: 'Sypialnie' },
+  },
+
+  tenants: {
+    first_name:    { label: 'Imię', required: true },
+    last_name:     { label: 'Nazwisko', required: true },
+    status:        { label: 'Status', render: renderTenantStatus, input: selectTenantStatus },
+  },
+
+  lease_agreements: {
+    start_date:    { label: 'Data rozpoczęcia', render: formatDate, input: dateInput, required: true },
+    end_date:      { label: 'Data zakończenia', render: formatDate, input: dateInput },
+    monthly_rent:  { label: 'Czynsz', render: formatCurrency, input: currencyInput },
+    deposit_amount:{ label: 'Kaucja', render: formatCurrency, input: currencyInput },
+    status:        { label: 'Status', render: renderLeaseStatus, input: selectLeaseStatus },
+    tenant_id:     { label: 'Najemca', hidden: true },    // handled by SingleRecordReference
+    property_id:   { label: 'Nieruchomość', hidden: true },
+  },
+
+  transactions: {
+    type:        { label: 'Typ', render: renderTransactionType, input: selectTransactionType },
+    description: { label: 'Opis', required: true },
+    amount:      { label: 'Kwota', render: formatCurrency, input: currencyInput, required: true },
+    due_date:    { label: 'Termin', render: formatDate, input: dateInput, required: true },
+    status:      { label: 'Status', render: renderTransactionStatus, input: selectTransactionStatus },
+    lease_id:    { label: 'Umowa', hidden: true },
+    property_id: { label: 'Nieruchomość', hidden: true },
+  },
+
+  attachments: {
+    file_name:   { label: 'Nazwa pliku', required: true },
+    file_url:    { label: 'URL', readonly: true },
+    file_type:   { label: 'Typ pliku', render: renderFileType },
+    file_size:   { label: 'Rozmiar', render: formatFileSize, readonly: true },
+    description: { label: 'Opis' },
+  },
+};
+```
+
+### Resolution Order (4 Levels)
+
+```
+Priority 1: Per-usage props (component-level override)
+   └── ManyRecords: hiddenColumns, columns prop
+   └── SingleRecordDetails: fieldOverrides prop
+
+Priority 2: Table-specific registry
+   └── COLUMN_REGISTRY['properties']['status']
+   └── COLUMN_REGISTRY['transactions']['status']  (different renderers!)
+
+Priority 3: Global registry defaults
+   └── COLUMN_REGISTRY['_global']['created_at']
+   └── COLUMN_REGISTRY['_global']['email']
+
+Priority 4: Auto-deduction (fallback)
+   └── Label: raw column name
+   └── Input: typeof value → text/number/checkbox
+   └── Name convention: *_at → datetime, *_date → date, *_id → hidden, is_* → checkbox
+```
+
+### Helper: Resolve Column Config
+
+```typescript
+// Utility used by ManyRecords and SingleRecordDetails
+const resolveColumnConfig = (
+  tableName: string,
+  columnKey: string,
+  perUsageOverride?: Partial<ColumnConfig>,
+): ColumnConfig => ({
+  ...autoDeduceFromKey(columnKey),                    // Priority 4
+  ...(COLUMN_REGISTRY._global?.[columnKey] ?? {}),    // Priority 3
+  ...(COLUMN_REGISTRY[tableName]?.[columnKey] ?? {}), // Priority 2
+  ...(perUsageOverride ?? {}),                        // Priority 1
+});
+```
+
+### Formatting Helpers
+
+- **Currency:** `Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' })`
+- **Dates:** `new Date(date).toLocaleDateString('pl-PL')`
+- **DateTime:** `new Date(date).toLocaleString('pl-PL')`
+- **File size:** bytes → KB/MB with `Intl.NumberFormat`
+- All formatting functions live in `utils/` as pure functions, referenced by the registry
+
+---
+
+## 4.4 Level 1: ViewAll* Components
+
+ViewAll wraps ManyRecords with the entity's query and chosen display mode. Minimal code — ManyRecords handles fetching, sorting, pagination, loading, error, and empty states.
+
+### Display Mode Decision
+
+| Mode | When to Use | Example Entities |
+|------|-------------|-----------------|
+| `'table'` | Data-dense, many columns, sortable | Transactions, Lease Agreements |
+| `'cards'` | Visual/entity-centric, summary info | Properties, Tenants |
+| `'list'` | Simple/compact, 1-2 lines per item | Attachments, Logs |
 
 ### ViewAll Pattern
 
-ViewAll wraps DataTable with the entity's query. Minimal code:
-
 ```typescript
-// components/[role]/ViewAllProperties.tsx
+// components/landlord/ViewAllProperties.tsx
 'use client';
 import { database } from '@/api/database';
 import { routes } from '@/routes';
-import { DataTable } from '@/components/shared/DataTable';
+import { ManyRecords } from '@/components/shared/ManyRecords';
 
 export const ViewAllProperties = () => (
-  <DataTable
+  <ManyRecords
+    tableName="properties"
     query={() => database.from('properties').select('*')}
+    mode="cards"
     hiddenColumns={['created_by', 'updated_at', 'notes']}
     onRowClick={(row) => window.location.href = routes.landlord.properties({ id: row.id as string })}
+    onAdd={() => window.location.href = routes.landlord.properties({ action: 'new' })}
   />
 );
 ```
 
-That's it. DataTable handles:
-- Fetching data from Supabase
-- Auto-deducing columns from the query response
-- Column headers = raw database column names
-- Sorting (click header → server-side `.order()`)
-- Pagination (server-side `.range()`)
-- Loading, error, empty states
-- Retry on error
+```typescript
+// components/landlord/ViewAllTransactions.tsx
+'use client';
+import { database } from '@/api/database';
+import { routes } from '@/routes';
+import { ManyRecords } from '@/components/shared/ManyRecords';
+
+export const ViewAllTransactions = () => (
+  <ManyRecords
+    tableName="transactions"
+    query={() => database.from('transactions').select('*')}
+    mode="table"
+    hiddenColumns={['created_by', 'updated_at']}
+    defaultSortKey="due_date"
+    defaultSortDirection="desc"
+    onRowClick={(row) => window.location.href = routes.landlord.transactions({ id: row.id as string })}
+    onAdd={() => window.location.href = routes.landlord.transactions({ action: 'new' })}
+  />
+);
+```
+
+**Rules:**
+- ViewAll is a thin wrapper — all logic lives in ManyRecords
+- `onAdd` navigates to `?action=new` → page mini-router renders ViewSingle in create mode
+- `tableName` enables ManyRecords to resolve column configs from the registry
+
+---
+
+## 4.5 Level 1: ViewSingle* Components (Smart Orchestrator)
+
+ViewSingle is the **most complex** component. It manages mode, formState, mutations, and composes all 3 section types.
+
+| ID | Rule | Severity |
+|----|------|----------|
+| P-010 | **ViewSingle owns formState** — all scalar fields + FK values in one state object | 🔴 Critical |
+| P-011 | **ViewSingle controls mode** — `'view' \| 'edit' \| 'create'`, passed to children | 🔴 Critical |
+| P-012 | **ViewSingle handles mutations** — INSERT/UPDATE/DELETE, children only report changes | 🔴 Critical |
+| P-013 | **All 3 sections visible in every mode** — to-many sections show disabled hint in create mode | 🟠 High |
+
+### ViewSingle Mode Behavior
+
+| Mode | SingleRecordDetails | SingleRecordReference | ManyRecords (to-many) | Actions |
+|------|--------------------|-----------------------|----------------------|---------|
+| **view** | Read-only display | Shows summary, nav only | Active — fetches + displays | [Edytuj] [Usuń] |
+| **edit** | Inline edit (inputs) | Can change reference | Active — fetches + displays | [Zapisz] [Anuluj] |
+| **create** | Empty inputs | Must select required FKs | Disabled — "Zapisz rekord, aby dodać" | [Utwórz] [Anuluj] |
 
 ### ViewSingle Pattern
 
-ViewSingle fetches **only the single record** for the form. Related lists are handled by embedded DataTable instances, each with their own query:
-
 ```typescript
-// components/[role]/ViewSingleProperty.tsx
+// components/landlord/ViewSingleLease.tsx
 'use client';
 import { useState } from 'react';
-import { useAsync } from 'react-use';
+import { useAsync, useAsyncFn } from 'react-use';
+
 import { database } from '@/api/database';
 import { routes } from '@/routes';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
-import { FormProperty } from '@/components/[role]/FormProperty';
-import { DataTable } from '@/components/shared/DataTable';
+import { SingleRecordDetails } from '@/components/shared/SingleRecordDetails';
+import { SingleRecordReference } from '@/components/shared/SingleRecordReference';
+import { ManyRecords } from '@/components/shared/ManyRecords';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import styles from '@/components/styles/viewSingle.module.css';
 
-interface ViewSinglePropertyProps {
+interface ViewSingleLeaseProps {
   id?: string;  // undefined = create mode
 }
 
-export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
-  const [refreshKey, setRefreshKey] = useState(0);
+export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
   const isCreateMode = !id;
+  const [mode, setMode] = useState<'view' | 'edit' | 'create'>(isCreateMode ? 'create' : 'view');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Fetch ONLY the single record for the form
+  // --- Form state (owns all fields + FKs) ---
+  const [formState, setFormState] = useState<Record<string, unknown>>({});
+
+  const updateField = (key: string, value: unknown) =>
+    setFormState(prev => ({ ...prev, [key]: value }));
+
+  // --- Fetch single record ---
   const state = useAsync(async () => {
     return isCreateMode
       ? { data: null, error: null }
-      : await database.from('properties').select('*').eq('id', id).single();
+      : await database.from('lease_agreements').select('*').eq('id', id).single();
   }, [id, refreshKey]);
+
+  // Initialize formState from fetched data
+  const record = state.value?.data;
+  // (useEffect to sync formState when record changes — omitted for brevity)
+
+  // --- Mutations ---
+  const [saveState, handleSave] = useAsyncFn(async () => {
+    const { tenant_id, property_id, ...fields } = formState;
+    const payload = { ...fields, tenant_id, property_id };
+    return isCreateMode
+      ? await database.from('lease_agreements').insert(payload).select().single()
+      : await database.from('lease_agreements').update(payload).eq('id', id).select().single();
+  }, [formState, id]);
+
+  const [deleteState, handleDelete] = useAsyncFn(async () =>
+    await database.from('lease_agreements').delete().eq('id', id)
+  , [id]);
 
   const handleRefresh = () => setRefreshKey(p => p + 1);
 
+  // --- Render ---
   return (
     state.error ? <ErrorBanner msg={state.error.message} retry={handleRefresh} /> :
     state.loading ? <Spinner /> :
     state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
-    <>
-      {/* Entity's own fields */}
-      <FormProperty
-        data={state.value?.data ?? undefined}
-        onSuccess={handleRefresh}
+    <div className={styles.container}>
+
+      {/* Mode actions */}
+      <div className={styles.actions}>
+        {mode === 'view' && (
+          <>
+            <button onClick={() => setMode('edit')}>Edytuj</button>
+            <button onClick={() => setShowDeleteConfirm(true)}>Usuń</button>
+          </>
+        )}
+        {(mode === 'edit' || mode === 'create') && (
+          <>
+            <button onClick={() => handleSave().then(r => {
+              r?.data && (isCreateMode
+                ? (window.location.href = routes.landlord.leases({ id: r.data.id }))
+                : (setMode('view'), handleRefresh()));
+            })} disabled={saveState.loading}>
+              {saveState.loading ? 'Zapisuję...' : mode === 'create' ? 'Utwórz' : 'Zapisz'}
+            </button>
+            <button onClick={() => isCreateMode
+              ? (window.location.href = routes.landlord.leases())
+              : (setMode('view'), handleRefresh())
+            }>Anuluj</button>
+          </>
+        )}
+      </div>
+
+      {/* Section 1: Self — entity's own scalar fields */}
+      <SingleRecordDetails
+        tableName="lease_agreements"
+        values={formState}
+        onChange={updateField}
+        mode={mode}
       />
 
-      {/* Related data — each DataTable fetches its own data */}
-      {!isCreateMode && (
-        <>
-          <h3>Lease Agreements</h3>
-          <DataTable
-            query={() => database
-              .from('lease_agreements')
-              .select('id, tenant_id, monthly_rent, start_date, end_date, status')
-              .eq('property_id', id)}
-            hiddenColumns={['id']}
-            onRowClick={(row) => window.location.href = routes.landlord.leases({ id: row.id as string })}
-            refreshKey={refreshKey}
-          />
+      {/* Section 2: To-One FK — tenant reference */}
+      <SingleRecordReference
+        label="Najemca"
+        referenceId={formState.tenant_id as string ?? null}
+        onChange={(newId) => updateField('tenant_id', newId)}
+        query={(refId) => database.from('tenants').select('*').eq('id', refId).single()}
+        pickerQuery={() => database.from('tenants').select('*')}
+        pickerTableName="tenants"
+        navigateTo={(refId) => routes.landlord.tenants({ id: refId })}
+        nullable={false}
+        mode={mode}
+      />
 
-          <h3>Transactions</h3>
-          <DataTable
-            query={() => database
-              .from('transactions')
-              .select('id, type, description, amount, due_date, status')
-              .eq('property_id', id)}
-            hiddenColumns={['id']}
-            defaultSortKey="due_date"
-            defaultSortDirection="desc"
-            refreshKey={refreshKey}
-          />
+      {/* Section 2: To-One FK — property reference */}
+      <SingleRecordReference
+        label="Nieruchomość"
+        referenceId={formState.property_id as string ?? null}
+        onChange={(newId) => updateField('property_id', newId)}
+        query={(refId) => database.from('properties').select('*').eq('id', refId).single()}
+        pickerQuery={() => database.from('properties').select('*')}
+        pickerTableName="properties"
+        navigateTo={(refId) => routes.landlord.properties({ id: refId })}
+        nullable={false}
+        mode={mode}
+      />
 
-          <h3>Attachments</h3>
-          <DataTable
-            query={() => database
-              .from('attachments')
-              .select('id, file_name, file_type, file_size, created_at')
-              .eq('related_to_id', id)
-              .eq('related_to_type', 'property')}
-            hiddenColumns={['id']}
-            refreshKey={refreshKey}
-          />
-        </>
+      {/* Section 3: To-Many — transactions */}
+      <ManyRecords
+        label="Transakcje"
+        tableName="transactions"
+        query={() => database.from('transactions').select('*').eq('lease_id', id)}
+        mode="table"
+        hiddenColumns={['id', 'lease_id', 'property_id']}
+        defaultSortKey="due_date"
+        defaultSortDirection="desc"
+        onRowClick={(row) => window.location.href = routes.landlord.transactions({ id: row.id as string })}
+        onAdd={() => { /* open RecordPicker modal for new transaction */ }}
+        disabled={isCreateMode}
+        disabledMessage="Zapisz rekord, aby dodać transakcje"
+        refreshKey={refreshKey}
+      />
+
+      {/* Section 3: To-Many — attachments */}
+      <ManyRecords
+        label="Załączniki"
+        tableName="attachments"
+        query={() => database.from('attachments').select('*')
+          .eq('related_to_id', id).eq('related_to_type', 'lease')}
+        mode="list"
+        hiddenColumns={['id', 'related_to_id', 'related_to_type']}
+        onAdd={() => { /* open RecordPicker modal for new attachment */ }}
+        disabled={isCreateMode}
+        disabledMessage="Zapisz rekord, aby dodać załączniki"
+        refreshKey={refreshKey}
+      />
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          message="Czy na pewno chcesz usunąć tę umowę najmu?"
+          onConfirm={() => handleDelete().then(() =>
+            window.location.href = routes.landlord.leases()
+          )}
+          onCancel={() => setShowDeleteConfirm(false)}
+          loading={deleteState.loading}
+        />
       )}
-    </>
+    </div>
   );
 };
 ```
 
-**Key change from old pattern:** ViewSingle no longer fetches related data itself. Each embedded DataTable independently fetches its own data via injected query.
+### Key Patterns
 
----
-
-## 4.4 Level 2: Form* Components (Presentational)
-
-Form* renders **only** the entity's own fields. Handles view, edit, and create modes.
-
-| ID | Rule | Severity |
-|----|------|----------|
-| P-006 | **Form* receives data via props** — `data?: Entity` (undefined = create, defined = view/edit) | 🔴 Critical |
-| P-007 | **Form* never fetches** — all data comes from parent View* | 🔴 Critical |
-| P-008 | **Form* calls onSuccess** — mutation callback to parent for refresh | 🟠 High |
-
-### Form Pattern
-
+**State initialization from fetched data:**
 ```typescript
-// components/[role]/FormProperty.tsx
-'use client';
-import { useState } from 'react';
-import { useAsyncFn } from 'react-use';
-import { database } from '@/api/database';
-import type { Database } from '@/api/database.types';
+// When record loads, populate formState
+// Use useEffect or derive from state.value?.data
+const record = state.value?.data;
+// formState is initialized from record, then managed independently for edits
+```
 
-type Property = Database['public']['Tables']['properties']['Row'];
+**After create success → navigate to detail:**
+```typescript
+handleSave().then(r => {
+  r?.data && (window.location.href = routes.landlord.leases({ id: r.data.id }));
+});
+```
 
-interface FormPropertyProps {
-  data?: Property;          // undefined = create, defined = view/edit
-  onSuccess: () => void;    // called after successful mutation
-}
+**After edit success → refresh + return to view mode:**
+```typescript
+handleSave().then(r => {
+  !r?.error && (setMode('view'), handleRefresh());
+});
+```
 
-export const FormProperty = ({ data, onSuccess }: FormPropertyProps) => {
-  const isCreate = !data;
-  const [name, setName] = useState(data?.name ?? '');
-  const [address, setAddress] = useState(data?.address ?? '');
-
-  const [submitState, handleSubmit] = useAsyncFn(async () => {
-    const payload = { name, address };
-    const { error } = isCreate
-      ? await database.from('properties').insert(payload)
-      : await database.from('properties').update(payload).eq('id', data.id);
-    return { error };
-  }, [name, address, data?.id]);
-
-  return (
-    <form onSubmit={(e) => {
-      e.preventDefault();
-      handleSubmit().then(r => !r?.error && onSuccess());
-    }}>
-      <label htmlFor="name">Name</label>
-      <input id="name" value={name} onChange={e => setName(e.target.value)} />
-
-      <label htmlFor="address">Address</label>
-      <input id="address" value={address} onChange={e => setAddress(e.target.value)} />
-
-      <button type="submit" disabled={submitState.loading}>
-        {submitState.loading ? 'Saving...' : isCreate ? 'Create' : 'Update'}
-      </button>
-      {submitState.error && <div role="alert">{submitState.error.message}</div>}
-    </form>
-  );
-};
+**After delete success → navigate to list:**
+```typescript
+handleDelete().then(() => {
+  window.location.href = routes.landlord.leases();
+});
 ```
 
 ---
 
-## 4.5 DataTable — Smart-Universal Component
+## 4.6 ManyRecords — Smart-Universal Multi-Record Display
 
-DataTable is the **core list rendering component**. It receives a Supabase query factory, applies sorting and pagination server-side, auto-deduces columns, and renders a fully interactive table.
+ManyRecords is the **core list rendering component**. It receives a Supabase query factory, applies sorting and pagination server-side, auto-deduces columns via the column registry, and renders in one of 3 display modes.
 
 | ID | Rule | Severity |
 |----|------|----------|
-| P-009 | **DataTable receives `query` prop** — a function returning a fresh Supabase query builder | 🔴 Critical |
-| P-010 | **DataTable applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
-| P-011 | **DataTable applies `.range()` internally** — server-side pagination | 🟠 High |
-| P-012 | **DataTable auto-deduces columns** — from `Object.keys(data[0])`, headers = raw DB column names | 🔴 Critical |
-| P-013 | **DataTable no domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
+| P-014 | **ManyRecords receives `query` prop** — function returning a fresh Supabase query builder | 🔴 Critical |
+| P-015 | **ManyRecords applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
+| P-016 | **ManyRecords applies `.range()` internally** — server-side pagination | 🟠 High |
+| P-017 | **ManyRecords uses column registry** — `tableName` prop resolves labels + renderers | 🔴 Critical |
+| P-018 | **ManyRecords no domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
 
 ### Props
 
 ```typescript
-interface DataTableProps {
-  query: () => SupabaseQueryLike;     // query factory — DataTable adds .order() + .range()
-  hiddenColumns?: string[];           // columns to hide from auto-deduction
-  columns?: ColumnOverride[];         // optional label/render overrides for specific columns
+interface ManyRecordsProps {
+  tableName: string;                         // resolves column config from COLUMN_REGISTRY
+  query: () => SupabaseQueryLike;            // query factory — ManyRecords adds .order() + .range()
+  mode?: 'table' | 'cards' | 'list';        // display mode (default: 'table')
+  hiddenColumns?: string[];                  // columns to hide (per-usage override)
+  columns?: ColumnOverride[];                // label/render overrides (per-usage override)
   onRowClick?: (row: Record<string, unknown>) => void;
+  onAdd?: () => void;                        // shows "Add" button, calls handler
+  onRowDelete?: (row: Record<string, unknown>) => Promise<{ error?: unknown }>;
   defaultSortKey?: string;
   defaultSortDirection?: 'asc' | 'desc';
-  pageSize?: number;                  // default: 25, 0 = no pagination
-  refreshKey?: number;                // parent triggers refetch (e.g., after mutation)
-  emptyMessage?: string;              // default: "Brak danych"
+  pageSize?: number;                         // default: 25, 0 = no pagination
+  refreshKey?: number;                       // parent triggers refetch
+  emptyMessage?: string;                     // default: "Brak danych"
+  label?: string;                            // section header (used in ViewSingle context)
+  disabled?: boolean;                        // disabled state (create mode)
+  disabledMessage?: string;                  // hint when disabled
 }
 
 interface ColumnOverride {
   key: string;
-  label?: string;                     // override auto-deduced header
+  label?: string;
   render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
 }
 ```
 
-### How DataTable Works Internally
+### Internal Architecture (Strategy Pattern)
 
 ```
-1. Caller passes: query={() => database.from('properties').select('*')}
-2. DataTable holds state: sortKey, sortDirection, page
-3. On mount / sort change / page change / refreshKey change:
-   a. Calls query() → gets fresh Supabase query builder
-   b. Applies .order(sortKey, { ascending }) if sorting
-   c. Applies .range(from, to) if pagination enabled
-   d. Awaits the query → { data, error }
-4. Auto-deduces columns from Object.keys(data[0])
-5. Filters out hiddenColumns
-6. Merges with ColumnOverride[] for custom labels/renderers
-7. Renders <table> with sortable headers and paginated data
+ManyRecords (orchestrator)
+  ├── Manages: query execution, sort state, page state, loading/error
+  ├── Resolves columns: COLUMN_REGISTRY[tableName] + hiddenColumns + columns override
+  ├── Delegates rendering by mode:
+  │   ├── TableRenderer — <table>, sortable <th>, rows with column cells
+  │   ├── CardsRenderer — responsive grid, each card shows key-value fields
+  │   └── ListRenderer  — single-column, compact stacked items
+  └── All renderers receive: { rows, columns, sortState, handlers }
 ```
 
-### Internal state flow
+### Internal State Flow
 
 ```
 sort state:     sortKey: string | null, sortDirection: 'asc' | 'desc'
 page state:     page: number (0-based)
 deps:           [sortKey, sortDirection, page, refreshKey]
 
-Click column header →
-  same column: toggle direction (asc → desc → no sort)
-  new column: set as sortKey, direction = 'asc'
-  → useAsync re-runs → fresh query with .order() → new data
+Mode: table
+  Click column header → toggle sort → useAsync re-runs → .order() → new data
+
+Mode: cards | list
+  Optional dropdown sort control → same mechanism
 
 Click next/prev page →
-  page += 1 or page -= 1
-  → useAsync re-runs → fresh query with .range() → new data
+  page += 1 or page -= 1 → useAsync re-runs → .range() → new data
 ```
 
-### Column deduction
+### Column Resolution Flow
 
 ```
-Supabase response:  [{ id: "abc", name: "Apt 1", status: "active", monthly_rent: 2500 }, ...]
-                          ↓
-Object.keys(data[0]):  ["id", "name", "status", "monthly_rent"]
-                          ↓
-Filter hiddenColumns:  ["name", "status", "monthly_rent"]  (if hiddenColumns=['id'])
-                          ↓
-Table headers:         name | status | monthly_rent         (raw DB column names)
+1. Supabase response: [{ id: "abc", name: "Apt 1", status: "active", monthly_rent: 2500 }, ...]
+2. Object.keys(data[0]): ["id", "name", "status", "monthly_rent"]
+3. Resolve each via resolveColumnConfig(tableName, key, perUsageOverride)
+4. Filter out hidden columns
+5. Result: ordered column configs with labels + renderers
+   → name: { label: "Nazwa" }
+   → status: { label: "Status", render: renderPropertyStatus }
+   → monthly_rent: { label: "Czynsz miesięczny", render: formatCurrency }
 ```
 
-### Accessibility
+### Display Modes
 
-- `<th scope="col">` on all header cells
-- `aria-sort="ascending"` / `"descending"` / `"none"` on sorted column
-- `role="button"` + `tabIndex={0}` on clickable rows
-- `role="alert"` on error messages
+**Table mode** (`mode="table"`):
+- `<table>` with `<th scope="col">` headers
+- Click header → server-side sort toggle
+- `aria-sort` on sorted column
+- Rows render column values using `config.render(value)` or raw value
 
-### Built-in features
+**Cards mode** (`mode="cards"`):
+- Responsive CSS grid of cards
+- Each card shows field label + value pairs
+- Optional sort via dropdown control
+- Clickable cards (if `onRowClick` provided)
+
+**List mode** (`mode="list"`):
+- Single-column stacked items
+- Compact: 1-2 lines per item (first few visible columns)
+- Best for simple entities (attachments, logs)
+
+### Built-in Features
 
 | Feature | Implementation |
 |---------|---------------|
 | **Server-side sort** | `.order(column, { ascending })` on Supabase query |
 | **Server-side pagination** | `.range(from, to)` on Supabase query |
-| **Auto columns** | `Object.keys(data[0])` — no manual column definitions needed |
-| **Column headers** | Raw database column names (e.g., `monthly_rent`) |
-| **Hidden columns** | `hiddenColumns` prop filters out unwanted columns |
-| **Column overrides** | `columns` prop for custom labels or render functions |
+| **Column registry integration** | `tableName` → `COLUMN_REGISTRY` → labels + renderers |
+| **Hidden columns** | `hiddenColumns` prop + registry `hidden: true` |
+| **Column overrides** | `columns` prop for per-usage custom labels/renderers |
 | **Loading state** | Shows `<Spinner />` during fetch |
-| **Error state** | Shows `<ErrorBanner />` with retry button |
-| **Empty state** | Shows configurable message when no data |
+| **Error state** | Shows `<ErrorBanner />` with retry |
+| **Empty state** | Configurable message (default: "Brak danych") |
+| **Add button** | `onAdd` prop → renders "Dodaj" button |
+| **Row delete** | `onRowDelete` prop → per-row delete action with ConfirmDialog |
 | **Clickable rows** | `onRowClick` prop for navigation |
 | **Refresh** | `refreshKey` prop — parent increments to trigger refetch |
+| **Disabled mode** | `disabled` prop — shows `disabledMessage` instead of data |
+
+### Accessibility
+
+- `<th scope="col">` on all header cells (table mode)
+- `aria-sort="ascending"` / `"descending"` / `"none"` on sorted column
+- `role="button"` + `tabIndex={0}` on clickable rows/cards
+- `role="alert"` on error messages
 
 ---
 
-## 4.6 Other Universal Components (Generic)
+## 4.7 SingleRecordDetails — Controlled Inline View/Edit/Create
+
+SingleRecordDetails renders **one record's scalar fields** in a consistent layout. It is a **controlled component** — it receives values and reports changes, never fetches or saves.
+
+| ID | Rule | Severity |
+|----|------|----------|
+| P-019 | **SingleRecordDetails is controlled** — `values` + `onChange` from parent, no internal state | 🔴 Critical |
+| P-020 | **Inline edit — no layout shift** — view↔edit transition keeps identical layout | 🔴 Critical |
+| P-021 | **Uses column registry** — `tableName` resolves labels, renderers, inputs, validation | 🔴 Critical |
+| P-022 | **No domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
+
+### Props
+
+```typescript
+interface SingleRecordDetailsProps {
+  tableName: string;                          // resolves config from COLUMN_REGISTRY
+  values: Record<string, unknown>;            // current field values (controlled by parent)
+  onChange: (key: string, value: unknown) => void;  // report field change to parent
+  mode: 'view' | 'edit' | 'create';          // controlled by parent (ViewSingle)
+  fieldOverrides?: FieldOverride[];           // per-usage overrides (Priority 1)
+  hiddenFields?: string[];                    // additional fields to hide
+}
+
+interface FieldOverride {
+  key: string;
+  label?: string;
+  render?: (value: unknown) => React.ReactNode;
+  input?: (value: unknown, onChange: (v: unknown) => void) => React.ReactNode;
+  hidden?: boolean;
+  readonly?: boolean;
+  required?: boolean;
+  validate?: (value: unknown) => string | null;
+}
+```
+
+### Inline Edit — No Layout Shift
+
+The **key design principle**: view and edit modes render the **same layout**. Only the value rendering changes:
+
+```
+View mode:  <label>Czynsz</label>    <span>2 500,00 PLN</span>
+Edit mode:  <label>Czynsz</label>    <input value="2500" type="number" />
+            ─────────────────────────────────────────────────
+            Same label position, same value slot size, same spacing.
+```
+
+For each visible field, SingleRecordDetails:
+1. Resolves `ColumnConfig` via `resolveColumnConfig(tableName, key, perUsageOverride)`
+2. Skips if `config.hidden === true`
+3. Renders label from `config.label`
+4. **View mode:** renders `config.render(value)` or raw value as `<span>`
+5. **Edit/Create mode:** renders `config.input(value, onChange)` or auto-deduced input
+6. If `config.readonly`, always renders as view (even in edit mode)
+7. If `config.required` and mode is edit/create, shows required indicator
+
+### Field Type Auto-Deduction (Priority 4)
+
+When no `render` or `input` is defined in the registry or overrides:
+
+| Value Type | View Render | Edit Input |
+|-----------|------------|------------|
+| `string` | `<span>{value}</span>` | `<input type="text" />` |
+| `number` | `<span>{value}</span>` | `<input type="number" />` |
+| `boolean` | `<span>Tak/Nie</span>` | `<input type="checkbox" />` |
+| Column ending `_at` | `formatDateTime(value)` | `<input type="datetime-local" />` |
+| Column ending `_date` | `formatDate(value)` | `<input type="date" />` |
+| Column ending `_id` | hidden by default | hidden |
+| Column starting `is_` | boolean display | checkbox |
+| `null` / `undefined` | `<span>—</span>` | `<input type="text" />` |
+
+### Validation
+
+```
+For each field where mode === 'edit' || mode === 'create':
+  1. If config.required && (value === null || value === undefined || value === '') → "Pole wymagane"
+  2. If config.validate → config.validate(value) → error string or null
+  3. Validation errors shown inline below the field
+  4. Parent (ViewSingle) can check validation state before submitting
+```
+
+### Accessibility
+
+- `<label htmlFor={key}>` linked to each input via `id={key}`
+- `aria-required="true"` on required fields
+- `aria-invalid="true"` + `role="alert"` on validation errors
+- Semantic `<fieldset>` wrapper
+
+---
+
+## 4.8 SingleRecordReference — To-One FK Section
+
+SingleRecordReference displays and manages a **to-one FK relationship** — a reference from the current record to a single other record (e.g., `lease.tenant_id → tenant`).
+
+| ID | Rule | Severity |
+|----|------|----------|
+| P-023 | **SingleRecordReference is controlled** — `referenceId` + `onChange` from parent | 🔴 Critical |
+| P-024 | **SingleRecordReference fetches only the referenced record** — via `query` prop | 🔴 Critical |
+| P-025 | **No domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
+
+### Props
+
+```typescript
+interface SingleRecordReferenceProps {
+  label: string;                              // Section header (e.g., "Najemca", "Nieruchomość")
+  referenceId: string | null;                 // Current FK value (controlled by parent)
+  onChange: (newId: string | null) => void;    // Report FK change to parent
+  query: (id: string) => SupabaseQuerySingle; // Fetch the referenced record by ID
+  summaryFields?: string[];                   // Which fields to show in summary (default: first 3 visible)
+  pickerQuery: () => SupabaseQueryLike;       // Query for RecordPicker (all available records)
+  pickerTableName: string;                    // For column registry in RecordPicker
+  navigateTo?: (id: string) => string;        // URL for full navigation to ViewSingle of referenced entity
+  nullable?: boolean;                         // Can the FK be set to null? (default: false)
+  mode: 'view' | 'edit' | 'create';          // From parent ViewSingle
+}
+```
+
+### Mode Behavior
+
+| Mode | Reference Set | Reference Not Set |
+|------|:---:|:---:|
+| **view** | Summary + [Podgląd] + [Otwórz] | "Brak" (no actions) |
+| **edit** | Summary + [Podgląd] + [Zmień] + [Usuń]* | [Wybierz] button |
+| **create** | Summary + [Zmień] | [Wybierz] button (required indicator if `!nullable`) |
+
+*[Usuń] only shown when `nullable === true`
+
+### Visual Layout
+
+```
+┌──────────────────────────────────────────────────┐
+│ Najemca                                          │
+│──────────────────────────────────────────────────│
+│ Jan Kowalski · jan@email.com · +48 600 123 456   │  ← summary (first N visible fields)
+│                                                  │
+│ [Podgląd]  [Otwórz ↗]  [Zmień]  [Usuń]          │  ← actions (vary by mode)
+└──────────────────────────────────────────────────┘
+
+When referenceId is null:
+┌──────────────────────────────────────────────────┐
+│ Najemca *                                        │  ← * = required (when !nullable)
+│──────────────────────────────────────────────────│
+│ Nie wybrano                                      │
+│                                                  │
+│ [Wybierz]                                        │
+└──────────────────────────────────────────────────┘
+```
+
+### Actions
+
+| Action | What Happens |
+|--------|-------------|
+| **Podgląd** (Preview) | Opens modal with SingleRecordDetails in `view` mode (read-only). Modal includes [Otwórz ↗] link to navigate to full ViewSingle page. |
+| **Otwórz ↗** (Open) | Navigates to ViewSingle page of the referenced entity (via `navigateTo` prop) |
+| **Zmień** (Change) | Opens RecordPicker modal → user selects existing or creates new → `onChange(newId)` |
+| **Usuń** (Remove) | ConfirmDialog → `onChange(null)` (only when `nullable === true`) |
+| **Wybierz** (Select) | Opens RecordPicker modal → same as Zmień |
+
+### Data Fetching
+
+SingleRecordReference fetches **only the referenced record** using the `query` prop:
+
+```typescript
+// Internal: fetch referenced record when referenceId changes
+const refState = useAsync(async () => {
+  return referenceId
+    ? await query(referenceId)
+    : { data: null, error: null };
+}, [referenceId]);
+```
+
+The summary display uses `refState.data` — showing the first N visible fields (or `summaryFields` if specified).
+
+---
+
+## 4.9 RecordPicker — Selection/Creation Modal
+
+RecordPicker is a **modal dialog** for selecting an existing record or creating a new one. It is used by SingleRecordReference (change/select) and ManyRecords (add related).
+
+| ID | Rule | Severity |
+|----|------|----------|
+| P-026 | **Single-depth modal** — browse + create as internal tabs, never nested modals | 🔴 Critical |
+| P-027 | **RecordPicker no domain imports** — entity-agnostic, lives in `components/shared/` | 🔴 Critical |
+
+### Props
+
+```typescript
+interface RecordPickerProps {
+  title: string;                              // Modal title (e.g., "Wybierz najemcę")
+  query: () => SupabaseQueryLike;             // Query for browsing existing records
+  tableName: string;                          // For column registry in ManyRecords + SingleRecordDetails
+  onSelect: (id: string) => void;             // Called when user selects/creates a record
+  onClose: () => void;                        // Close the modal
+  hiddenColumns?: string[];                   // Columns to hide in browse view
+  defaultValues?: Record<string, unknown>;    // Pre-filled values for create tab (e.g., { property_id: parentId })
+}
+```
+
+### Internal Structure
+
+```
+RecordPicker Modal
+├── Tab: "Wybierz istniejący" (Browse)
+│   └── ManyRecords (mode: 'table', query from props)
+│       └── Click row → onSelect(row.id) → modal closes
+│
+├── Tab: "Utwórz nowy" (Create)
+│   └── SingleRecordDetails (mode: 'create', with defaultValues)
+│       └── Submit → INSERT → onSelect(newRecord.id) → modal closes
+│
+└── [Zamknij] → onClose
+```
+
+**No nested modals.** The browse tab uses ManyRecords inline (not in another modal). The create tab uses SingleRecordDetails inline. Tab switching happens within the same modal.
+
+### Usage from SingleRecordReference
+
+```typescript
+// When user clicks [Zmień] or [Wybierz]:
+<RecordPicker
+  title="Wybierz najemcę"
+  query={() => database.from('tenants').select('*')}
+  tableName="tenants"
+  onSelect={(id) => onChange(id)}  // updates parent formState
+  onClose={() => setShowPicker(false)}
+/>
+```
+
+### Usage from ManyRecords (add related)
+
+```typescript
+// When user clicks [Dodaj] on a to-many section:
+<RecordPicker
+  title="Dodaj transakcję"
+  query={() => database.from('transactions').select('*')}
+  tableName="transactions"
+  onSelect={(id) => handleRefresh()}  // refresh the ManyRecords list
+  onClose={() => setShowPicker(false)}
+  defaultValues={{ lease_id: parentId, property_id: parentPropertyId }}
+/>
+```
+
+---
+
+## 4.10 Other Universal Components
 
 These components are **entity-agnostic** and **do not fetch data**. They are purely props-driven.
 
 | ID | Rule | Severity |
 |----|------|----------|
-| P-014 | **Generic universals accept all config via props** | 🔴 Critical |
-| P-015 | **Generic universals handle edge cases** — loading, empty, error states | 🟠 High |
-| P-016 | **Generic universals no domain imports** — no `@/api/`, `@/hooks/`, `@/constants/` | 🔴 Critical |
-| P-017 | **All universals live in `components/shared/`** | 🟠 High |
+| P-028 | **Generic universals accept all config via props** | 🔴 Critical |
+| P-029 | **Generic universals no domain imports** — no `@/api/`, `@/hooks/`, `@/constants/` | 🔴 Critical |
+| P-030 | **All universals live in `components/shared/`** | 🟠 High |
 
 ### Catalog
 
 | Component | Purpose | Key Props |
 |-----------|---------|-----------|
-| `DataTable` | List rendering with query-based fetch, sort, pagination | `query`, `hiddenColumns?`, `columns?`, `onRowClick?`, `pageSize?`, `refreshKey?` |
+| `ManyRecords` | Multi-record display (table/cards/list) | `tableName`, `query`, `mode?`, `hiddenColumns?`, `onRowClick?`, `onAdd?`, `refreshKey?` |
+| `SingleRecordDetails` | Single record inline view/edit/create | `tableName`, `values`, `onChange`, `mode` |
+| `SingleRecordReference` | To-one FK section | `label`, `referenceId`, `onChange`, `query`, `pickerQuery`, `mode` |
+| `RecordPicker` | Selection/creation modal | `title`, `query`, `tableName`, `onSelect`, `onClose` |
+| `ConfirmDialog` | Destructive action confirmation | `message: string`, `onConfirm: () => void`, `onCancel: () => void`, `loading?: boolean` |
 | `Spinner` | Loading indicator | none |
 | `ErrorBanner` | Error message with retry | `msg: string`, `retry?: () => void` |
 | `EmptyState` | No-data placeholder | `message: string`, `actionLabel?`, `actionHref?` |
@@ -383,73 +901,71 @@ These components are **entity-agnostic** and **do not fetch data**. They are pur
 
 ---
 
-## 4.7 Relationship Rendering
+## 4.11 Relationship Rendering
 
-How to present database relationships in the UI:
+How to present database relationships using the 3 section types:
 
 ### One-to-Many (parent → children)
 
-```
-ViewSingle[Parent] embeds DataTable instances with filtered queries
-Example: ViewSingleProperty shows leases via DataTable query .eq('property_id', id)
-```
-
-Each related list is an independent DataTable with its own query, sort, and pagination:
+ViewSingle[Parent] embeds ManyRecords instances with filtered queries:
 
 ```typescript
-// Inside ViewSingleProperty
-<h3>Lease Agreements</h3>
-<DataTable
+// Inside ViewSingleProperty → shows leases for this property
+<ManyRecords
+  label="Umowy najmu"
+  tableName="lease_agreements"
   query={() => database.from('lease_agreements').select('*').eq('property_id', id)}
   hiddenColumns={['id', 'property_id']}
   onRowClick={(row) => window.location.href = routes.landlord.leases({ id: row.id as string })}
+  onAdd={() => { /* open RecordPicker for new lease with property_id pre-filled */ }}
   refreshKey={refreshKey}
+/>
+```
+
+### Many-to-One (child → parent via FK)
+
+ViewSingle[Child] uses SingleRecordReference for each FK out:
+
+```typescript
+// Inside ViewSingleLease → shows the referenced tenant
+<SingleRecordReference
+  label="Najemca"
+  referenceId={formState.tenant_id as string}
+  onChange={(newId) => updateField('tenant_id', newId)}
+  query={(refId) => database.from('tenants').select('*').eq('id', refId).single()}
+  pickerQuery={() => database.from('tenants').select('*')}
+  pickerTableName="tenants"
+  navigateTo={(refId) => routes.landlord.tenants({ id: refId })}
+  mode={mode}
 />
 ```
 
 ### Many-to-Many (through junction table)
 
+Rendered as one-to-many from each side:
+
 ```
-Rendered same as one-to-many from each side
-Example: tenants ↔ properties via lease_agreements junction:
-  ViewSingleProperty → DataTable query: leases.eq('property_id', id)
-  ViewSingleTenant → DataTable query: leases.eq('tenant_id', id)
-```
-
-### FK Reference Navigation
-
-When a field references another entity (FK), use a `ColumnOverride` to render it as a clickable link:
-
-```typescript
-<DataTable
-  query={() => database.from('lease_agreements').select('*')}
-  columns={[
-    {
-      key: 'tenant_id',
-      label: 'Tenant',
-      render: (val) => (
-        <a href={routes.landlord.tenants({ id: val as string })}>{val}</a>
-      ),
-    },
-  ]}
-/>
+tenants ↔ properties via lease_agreements:
+  ViewSingleProperty → ManyRecords: leases.eq('property_id', id)
+  ViewSingleTenant   → ManyRecords: leases.eq('tenant_id', id)
 ```
 
 ### Database Views
 
-DataTable works seamlessly with Supabase views (denormalized data):
+ManyRecords works with Supabase views (denormalized data):
 
 ```typescript
-// active_leases view has joined columns: property_name, tenant_name, etc.
-<DataTable
+<ManyRecords
+  tableName="active_leases"  // view name — needs its own COLUMN_REGISTRY entry
   query={() => database.from('active_leases').select('*')}
+  mode="table"
   hiddenColumns={['created_at', 'created_by', 'updated_at', 'notes']}
 />
 ```
 
 ---
 
-## 4.8 CRUD URL State Machine
+## 4.12 CRUD URL State Machine
 
 URL search params define the current mode. The page mini-router dispatches:
 
@@ -483,63 +999,33 @@ export default () => {
 };
 ```
 
-### After mutation navigation
+### After Mutation Navigation
 
 ```
-Create success → navigate to detail (?id=newId)
-Update success → refresh current detail (refreshKey)
+Create success → navigate to ?id={newId} (view created record)
+Update success → refresh current detail (refreshKey + setMode('view'))
 Delete success → navigate to list (no params)
 ```
 
 ---
 
-## 4.9 Labels & Enum Display
-
-Database status/type fields are displayed using label lookup maps.
-
-| ID | Rule | Severity |
-|----|------|----------|
-| P-018 | **Label maps** — `Record<string, string>` in `constants/labels.ts` | 🟠 High |
-| P-019 | **Naming** — `[ENTITY]_[FIELD]_LABELS` in UPPER_SNAKE_CASE | 🟠 High |
-| P-020 | **Locale** — all UI labels in Polish (pl-PL) | 🟠 High |
-
-```typescript
-// constants/labels.ts
-export const PROPERTY_STATUS_LABELS: Record<string, string> = {
-  available: 'Wolna',
-  occupied: 'Zajęta',
-  inactive: 'Nieaktywna',
-};
-
-// Usage in DataTable ColumnOverride render
-columns={[
-  { key: 'status', render: (val) => PROPERTY_STATUS_LABELS[val as string] ?? val },
-]}
-```
-
-### Formatting
-
-- **Currency:** `Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' })`
-- **Dates:** `new Date(date).toLocaleDateString('pl-PL')`
-- **Formatting functions** live in `utils/` as pure functions
-
----
-
-## 4.10 Adding a New Entity (Checklist)
+## 4.13 Adding a New Entity (Checklist)
 
 When adding a new database entity to the frontend:
 
 ```
 1. □ DB migration created & applied (supabase db reset)
 2. □ Types regenerated (supabase gen types typescript)
-3. □ Route param type added to routes/index.ts
-4. □ Route generator added to routes object
-5. □ Page mini-router created: app/[role]/[entity]/page.tsx
-6. □ ViewAll[Entity].tsx — wraps DataTable with entity query
-7. □ ViewSingle[Entity].tsx — fetches single record, embeds Form* + DataTable for related
-8. □ Form[Entity].tsx — entity fields (create/edit)
-9. □ Label maps added to constants/labels.ts (if entity has status/type fields)
-10. □ Sidebar nav item added (if top-level entity)
+3. □ Column registry entry added to constants/columnRegistry.tsx
+4. □ Route param type added to routes/index.ts
+5. □ Route generator added to routes object
+6. □ Page mini-router created: app/[role]/[entity]/page.tsx
+7. □ ViewAll[Entity].tsx — configures ManyRecords with query + display mode
+8. □ ViewSingle[Entity].tsx — composes all 3 section types:
+     □ SingleRecordDetails for own fields
+     □ SingleRecordReference for each FK out
+     □ ManyRecords for each FK in (related child records)
+9. □ Sidebar nav item added (if top-level entity)
 ```
 
 ---
@@ -548,23 +1034,33 @@ When adding a new database entity to the frontend:
 
 | ID | Rule | Severity |
 |----|------|----------|
-| P-001 | **View* = Smart** — orchestrates, fetches single records | 🔴 Critical |
-| P-002 | **DataTable = Smart-Universal** — fetches lists via injected query | 🔴 Critical |
-| P-003 | **Form* = Presentational** — props only, never fetches | 🔴 Critical |
-| P-004 | **Data flows down** — parent → child via props/queries | 🔴 Critical |
-| P-005 | **View* prefix = top-level** — imported by pages | 🟠 High |
-| P-006 | **Form* data prop** — undefined = create, defined = view/edit | 🔴 Critical |
-| P-007 | **Form* never fetches** | 🔴 Critical |
-| P-008 | **Form* calls onSuccess** — parent refreshes | 🟠 High |
-| P-009 | **DataTable `query` prop** — function returning fresh Supabase query builder | 🔴 Critical |
-| P-010 | **DataTable applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
-| P-011 | **DataTable applies `.range()` internally** — server-side pagination | 🟠 High |
-| P-012 | **DataTable auto-deduces columns** — from response keys, raw DB column names | 🔴 Critical |
-| P-013 | **DataTable no domain imports** — entity-agnostic | 🔴 Critical |
-| P-014 | **Generic universals props-only** — Spinner, ErrorBanner, EmptyState | 🔴 Critical |
-| P-015 | **Generic universals handle edge cases** | 🟠 High |
-| P-016 | **Generic universals no domain imports** | 🔴 Critical |
-| P-017 | **All universals in shared/** | 🟠 High |
-| P-018 | **Label maps** in constants/ | 🟠 High |
-| P-019 | **Label naming** — `[ENTITY]_[FIELD]_LABELS` | 🟠 High |
-| P-020 | **Locale** — pl-PL | 🟠 High |
+| P-001 | **View* = Smart Orchestrator** — manages mode, formState, mutations | 🔴 Critical |
+| P-002 | **ManyRecords = Smart-Universal** — fetches lists via injected query | 🔴 Critical |
+| P-003 | **SingleRecordDetails = Controlled** — values + onChange, never fetches | 🔴 Critical |
+| P-004 | **SingleRecordReference = Controlled** — referenceId + onChange, fetches ref only | 🔴 Critical |
+| P-005 | **Data flows down** — parent → child via props/queries/callbacks | 🔴 Critical |
+| P-006 | **View* prefix = top-level** — imported by pages only | 🟠 High |
+| P-007 | **Central column registry** — labels, renderers, inputs in `constants/columnRegistry.tsx` | 🔴 Critical |
+| P-008 | **4-level resolution** — per-usage → table-specific → global → auto-deduce | 🔴 Critical |
+| P-009 | **Locale pl-PL** — all UI labels in Polish | 🟠 High |
+| P-010 | **ViewSingle owns formState** — scalar fields + FK values | 🔴 Critical |
+| P-011 | **ViewSingle controls mode** — view / edit / create | 🔴 Critical |
+| P-012 | **ViewSingle handles mutations** — INSERT/UPDATE/DELETE | 🔴 Critical |
+| P-013 | **All 3 sections visible in every mode** — to-many disabled in create mode | 🟠 High |
+| P-014 | **ManyRecords `query` prop** — function returning fresh Supabase query builder | 🔴 Critical |
+| P-015 | **ManyRecords applies `.order()` internally** — caller never adds sorting | 🔴 Critical |
+| P-016 | **ManyRecords applies `.range()` internally** — server-side pagination | 🟠 High |
+| P-017 | **ManyRecords uses column registry** — `tableName` resolves labels + renderers | 🔴 Critical |
+| P-018 | **ManyRecords no domain imports** — entity-agnostic | 🔴 Critical |
+| P-019 | **SingleRecordDetails is controlled** — values + onChange from parent | 🔴 Critical |
+| P-020 | **Inline edit — no layout shift** — view↔edit keeps identical layout | 🔴 Critical |
+| P-021 | **SingleRecordDetails uses column registry** | 🔴 Critical |
+| P-022 | **SingleRecordDetails no domain imports** | 🔴 Critical |
+| P-023 | **SingleRecordReference is controlled** — referenceId + onChange from parent | 🔴 Critical |
+| P-024 | **SingleRecordReference fetches only the referenced record** | 🔴 Critical |
+| P-025 | **SingleRecordReference no domain imports** | 🔴 Critical |
+| P-026 | **RecordPicker single-depth modal** — browse + create as tabs, no nesting | 🔴 Critical |
+| P-027 | **RecordPicker no domain imports** | 🔴 Critical |
+| P-028 | **Generic universals props-only** — Spinner, ErrorBanner, EmptyState, ConfirmDialog | 🔴 Critical |
+| P-029 | **Generic universals no domain imports** | 🔴 Critical |
+| P-030 | **All universals in `components/shared/`** | 🟠 High |

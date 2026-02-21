@@ -318,9 +318,8 @@ Styles are organized by **component pattern**, not per individual component. All
 | Component pattern | CSS Module file | Example components |
 |------------------|-----------------|-------------------|
 | `ViewAll*.tsx` | `styles/viewAll.module.css` | ViewAllProperties, ViewAllTenants |
-| `ViewSingle*.tsx` | `styles/viewSingle.module.css` | ViewSingleProperty, ViewSingleTenant |
-| `Form*.tsx` | `styles/form.module.css` | FormProperty, FormTenant |
-| `shared/*.tsx` | `styles/shared.module.css` | Spinner, ErrorBanner, DataTable, AppLayout, RoleGuard |
+| `ViewSingle*.tsx` | `styles/viewSingle.module.css` | ViewSingleProperty, ViewSingleLease |
+| `shared/*.tsx` | `styles/shared.module.css` | Spinner, ErrorBanner, ManyRecords, SingleRecordDetails, SingleRecordReference, RecordPicker, ConfirmDialog, AppLayout, RoleGuard |
 | `auth/*.tsx` | `styles/auth.module.css` | LoginForm, SignupForm |
 | Pages (`app/*/page.tsx`) | No styles | Thin wrappers only |
 
@@ -456,16 +455,18 @@ frontend/src/
 │       └── page.tsx        # Thin wrapper / mini-router
 ├── components/             # UI components (all have 'use client')
 │   ├── styles/             # Group-level CSS Modules (see §3.7)
-│   │   ├── shared.module.css    # Spinner, ErrorBanner, DataTable, AppLayout, RoleGuard
+│   │   ├── shared.module.css    # ManyRecords, SingleRecordDetails, SingleRecordReference,
+│   │   │                        # RecordPicker, ConfirmDialog, Spinner, ErrorBanner, AppLayout, RoleGuard
 │   │   ├── auth.module.css      # LoginForm, SignupForm
 │   │   ├── viewAll.module.css   # All ViewAll* components
-│   │   ├── viewSingle.module.css # All ViewSingle* components
-│   │   └── form.module.css      # All Form* components
-│   ├── shared/             # Shared components (ErrorBanner, Spinner, DataTable, etc.)
+│   │   └── viewSingle.module.css # All ViewSingle* components
+│   ├── shared/             # Universal components (ManyRecords, SingleRecordDetails,
+│   │                       # SingleRecordReference, RecordPicker, ConfirmDialog,
+│   │                       # Spinner, ErrorBanner, EmptyState, AppLayout, RoleGuard, Sidebar)
 │   ├── auth/               # Auth components (LoginForm, SignupForm)
-│   └── [feature]/          # Feature components (landlord/, tenant/)
-├── constants/              # Static data, label maps
-│   └── labels.ts           # Record<string, string> lookup maps
+│   └── [feature]/          # Feature View* components (landlord/, tenant/)
+├── constants/              # Static data, column registry
+│   └── columnRegistry.tsx  # Central column config: labels, renderers, inputs, validation
 ├── hooks/                  # Custom React hooks (all have 'use client')
 │   ├── useAuth.ts
 │   └── useUserRole.ts

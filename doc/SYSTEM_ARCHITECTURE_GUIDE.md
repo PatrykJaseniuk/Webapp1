@@ -292,9 +292,9 @@ docs: update style guides with decision trees
 | TypeScript rules | [Frontend Language Guide](./FRONTEND_STYLE_GUIDE_LANGUAGE.md) |
 | React & Supabase patterns | [Frontend Library Guide](./FRONTEND_STYLE_GUIDE_LIBRARY.md) |
 | Next.js, routing, styling | [Frontend Framework Guide](./FRONTEND_STYLE_GUIDE_FRAMEWORK.md) |
-| Component stratification (View*/Form*/Many*) | [Frontend Project Guide](./FRONTEND_STYLE_GUIDE_PROJECT.md) |
+| Component stratification (View*/ManyRecords/SingleRecordDetails/SingleRecordReference) | [Frontend Project Guide](./FRONTEND_STYLE_GUIDE_PROJECT.md) |
 | Database schema, RLS, migrations | [Backend Style Guide](./BACKEND_STYLE_GUIDE.md) |
-| Adding a new entity (checklist) | [Frontend Project Guide § 4.10](./FRONTEND_STYLE_GUIDE_PROJECT.md#410-adding-a-new-entity-checklist) |
+| Adding a new entity (checklist) | [Frontend Project Guide § 4.13](./FRONTEND_STYLE_GUIDE_PROJECT.md#413-adding-a-new-entity-checklist) |
 | File structure (frontend) | [Frontend Framework Guide § 3.10](./FRONTEND_STYLE_GUIDE_FRAMEWORK.md#310-file-structure) |
 | File structure (backend) | [Backend Style Guide § File Tree](./BACKEND_STYLE_GUIDE.md#project-file-tree--path-conventions) |
 | Error handling (frontend) | [Frontend Library Guide § 2.5](./FRONTEND_STYLE_GUIDE_LIBRARY.md#25-error-handling-in-components) |

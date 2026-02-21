@@ -205,34 +205,38 @@ const state = useAsync(async () => {
 const handleRefresh = () => setRefreshKey(prev => prev + 1);
 ```
 
-### Pattern 4: DataTable Query Injection
+### Pattern 4: ManyRecords Query Injection
 
-For list views, pass a **query factory** to DataTable instead of fetching manually. DataTable handles the full lifecycle (fetch, sort, paginate, error, loading):
+For list views, pass a **query factory** to ManyRecords instead of fetching manually. ManyRecords handles the full lifecycle (fetch, sort, paginate, error, loading) and resolves column labels/renderers from the central column registry:
 
 ```typescript
 import { database } from '@/api/database';
-import { DataTable } from '@/components/shared/DataTable';
+import { ManyRecords } from '@/components/shared/ManyRecords';
 
-// All records — DataTable fetches, sorts, paginates internally
-<DataTable
+// All records — ManyRecords fetches, sorts, paginates internally
+<ManyRecords
+  tableName="properties"
   query={() => database.from('properties').select('*')}
+  mode="cards"
 />
 
 // Filtered records (related data in ViewSingle*)
-<DataTable
+<ManyRecords
+  tableName="lease_agreements"
   query={() => database.from('lease_agreements').select('*').eq('property_id', id)}
   refreshKey={refreshKey}
 />
 
 // With hidden columns and row click handler
-<DataTable
+<ManyRecords
+  tableName="properties"
   query={() => database.from('properties').select('*')}
   hiddenColumns={['created_by', 'updated_at']}
   onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
 />
 ```
 
-DataTable internally applies `.order()` for sorting and `.range()` for pagination on the query builder — the caller never adds these. See [Project Guide § 4.5](./FRONTEND_STYLE_GUIDE_PROJECT.md#45-datatable--smart-universal-component) for full details.
+ManyRecords internally applies `.order()` for sorting and `.range()` for pagination on the query builder — the caller never adds these. The `tableName` prop resolves column labels and renderers from the central column registry (`constants/columnRegistry.tsx`). See [Project Guide § 4.6](./FRONTEND_STYLE_GUIDE_PROJECT.md#46-manyrecords--smart-universal-multi-record-display) for full details.
 
 ---
 
@@ -466,7 +470,7 @@ export const useAuth = () => {
 | Data on mount | Single record fetch, page load | `useAsync(async () => ..., [])` |
 | Data on action | Button click, form submit | `useAsyncFn(async () => ..., [deps])` |
 | Refetch | After mutation | `refreshKey` + `useAsync(... , [refreshKey])` |
-| **List data** | **Any table/list view** | **`<DataTable query={() => database.from(...).select(...)}>` — handles fetch, sort, pagination** |
+| **List data** | **Any table/list/card view** | **`<ManyRecords tableName="x" query={() => database.from(...).select(...)} mode="table">` — handles fetch, sort, pagination, column registry** |
 | Auth state | App-wide | `useAuth()` hook |
 | Error display | Always | 3-level: hook error → loading → data error → success |
 | State updates | Always | `prev =>` functional updaters |
