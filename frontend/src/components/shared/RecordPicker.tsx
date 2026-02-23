@@ -84,7 +84,6 @@ export const RecordPicker = ({
                         <ManyRecords
                             tableName={tableName}
                             query={query}
-                            mode="table"
                             hiddenColumns={hiddenColumns}
                             onRowClick={(row) => onSelect(row.id as string)}
                             pageSize={10}

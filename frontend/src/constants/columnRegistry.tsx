@@ -1,8 +1,12 @@
 'use client';
-import React from 'react';
+import React, { use } from 'react';
 import type { Database } from '@/api/database.types';
 import { formatDate, formatDateTime } from '@/utils/formatDate';
 import { formatCurrency } from '@/utils/formatCurrency';
+import { database } from '@/api/database';
+import { useAsync } from 'react-use';
+import Link from 'next/link';
+import { routes } from '@/routes';
 
 // ── Type utilities ──────────────────────────────────────────────────
 
@@ -56,7 +60,9 @@ const PROPERTY_STATUS_LABELS: Record<string, string> = {
 };
 
 const renderPropertyStatus = (value: unknown): React.ReactNode =>
-    typeof value === 'string' ? (PROPERTY_STATUS_LABELS[value] ?? value) : '—';
+    typeof value === 'string' ?
+        (PROPERTY_STATUS_LABELS[value] ?? value)
+        : '—';
 
 const TENANT_STATUS_LABELS: Record<string, string> = {
     active: 'Aktywny',
@@ -120,6 +126,21 @@ const formatFileSize = (value: unknown): React.ReactNode => {
                 : `${(num / (1024 * 1024)).toFixed(1)} MB`;
 };
 
+const renderLeaseProperty = (value: unknown): React.ReactNode =>
+    typeof value === 'string' ? <Reference id={value} /> : '—';
+
+const Reference: React.FC<{ id: string }> = ({ id }) => {
+    const state = useAsync(async () => {
+        return await database.from('properties').select('name, id').eq('id', id).single();
+    }, [id]);
+
+
+    return <span>{
+        <Link href={routes.landlord.properties({ id: state.value?.data?.id })} className="text-blue-600 hover:underline">
+            {state.value?.data?.name ?? 'Ładowanie...'}
+        </Link>
+    }</span>;
+};
 // ── Input helpers ───────────────────────────────────────────────────
 
 const textareaInput = (value: unknown, onChange: (v: unknown) => void): React.ReactNode => (
@@ -231,7 +252,7 @@ export const COLUMN_REGISTRY: ColumnRegistryType = {
         deposit_amount: { label: 'Kaucja', render: formatCurrency, input: currencyInput, required: true },
         status: { label: 'Status', render: renderLeaseStatus, input: selectLeaseStatus },
         tenant_id: { label: 'Najemca', hidden: true },
-        property_id: { label: 'Nieruchomość', hidden: true },
+        property_id: { label: 'Nieruchomość', hidden: false, render: renderLeaseProperty },
     },
 
     transactions: {

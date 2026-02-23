@@ -11,7 +11,6 @@ export const ViewAllLeases = () => {
         <ManyRecords
             tableName="lease_agreements"
             query={() => database.from('lease_agreements').select('*')}
-            mode="table"
             hiddenColumns={['created_by', 'updated_at', 'notes', 'tenant_id', 'property_id']}
             defaultSortKey="start_date"
             defaultSortDirection="desc"

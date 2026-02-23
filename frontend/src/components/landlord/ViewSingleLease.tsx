@@ -96,7 +96,7 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
                         />
 
                         <SingleRecordReference
-                            label="Najemca"
+                            label="Najemcaaa"
                             referenceId={(formState.tenant_id as string) ?? null}
                             onChange={(newId) => updateField('tenant_id', newId)}
                             query={(refId) => database.from('tenants').select('*').eq('id', refId).single()}
@@ -123,7 +123,6 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
                             label="Transakcje"
                             tableName="lol"
                             query={() => database.from('transactions').select('*').eq('lease_id', id!)}
-                            mode="table"
                             // hiddenColumns={['id', 'lease_id', 'property_id', 'created_by', 'updated_at']}
                             defaultSortKey="due_date"
                             defaultSortDirection="desc"

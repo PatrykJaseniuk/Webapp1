@@ -98,7 +98,6 @@ export const ViewSingleTenant = ({ id }: ViewSingleTenantProps) => {
                             label="Umowy najmu"
                             tableName="lease_agreements"
                             query={() => database.from('lease_agreements').select('*').eq('tenant_id', id!)}
-                            mode="table"
                             hiddenColumns={['id', 'tenant_id', 'created_by', 'updated_at', 'notes']}
                             onRowClick={(row) => navigate(routes.landlord.leases({ id: row.id as string }))}
                             disabled={isCreateMode}

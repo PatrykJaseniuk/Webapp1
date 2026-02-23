@@ -98,7 +98,6 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                 label="Umowy najmu"
                 tableName="lease_agreements"
                 query={() => database.from('lease_agreements').select('*').eq('property_id', id!)}
-                mode="table"
                 hiddenColumns={['id', 'property_id', 'created_by', 'updated_at', 'notes']}
                 onRowClick={(row) => navigate(routes.landlord.leases({ id: row.id as string }))}
                 disabled={isCreateMode}
@@ -110,7 +109,6 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                 label="Transakcje"
                 tableName="transactions"
                 query={() => database.from('transactions').select('*').eq('property_id', id!)}
-                mode="table"
                 hiddenColumns={['id', 'property_id', 'lease_id', 'created_by', 'updated_at']}
                 defaultSortKey="due_date"
                 defaultSortDirection="desc"

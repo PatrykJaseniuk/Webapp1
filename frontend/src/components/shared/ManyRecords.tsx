@@ -21,7 +21,7 @@ interface ManyRecordsProps {
     tableName: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: () => any;
-    mode?: 'table' | 'cards' | 'list';
+    // mode?: 'table' | 'cards' | 'list';
     hiddenColumns?: string[];
     columns?: ColumnOverride[];
     onRowClick?: (row: Record<string, unknown>) => void;
@@ -70,12 +70,12 @@ const resolveColumns = (
 };
 
 const renderCellValue = (col: ResolvedColumn, value: unknown, row: Record<string, unknown>): React.ReactNode =>
-    col.overrideRender
-        ? col.overrideRender(value, row)
-        : col.config.render
-            ? col.config.render(value)
-            : value === null || value === undefined
-                ? '—'
+    col.overrideRender ?
+        col.overrideRender(value, row)
+        : col.config.render ?
+            col.config.render(value)
+            : value === null || value === undefined ?
+                '—'
                 : String(value);
 
 // ── Table Renderer ──────────────────────────────────────────────────
@@ -134,96 +134,7 @@ const TableRenderer = ({ rows, columns, sortKey, sortDirection, onSort, onRowCli
     </table>
 );
 
-// ── Cards Renderer ──────────────────────────────────────────────────
 
-const CardsRenderer = ({ rows, columns, onRowClick }: RendererProps) => (
-    <div className={styles.cardsGrid}>
-        {rows.map((row) => (
-            <div
-                key={row.id as string ?? JSON.stringify(row)}
-                className={`${styles.card} ${onRowClick ? styles.cardClickable : ''}`}
-                onClick={onRowClick ? () => onRowClick(row) : undefined}
-                role={onRowClick ? 'button' : undefined}
-                tabIndex={onRowClick ? 0 : undefined}
-                onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
-            >
-                {columns.map((col) => (
-                    <div key={col.key} className={styles.cardField}>
-                        <span className={styles.cardFieldLabel}>{col.config.label ?? col.key}</span>
-                        <span className={styles.cardFieldValue}>
-                            {renderCellValue(col, row[col.key], row)}
-                        </span>
-                    </div>
-                ))}
-            </div>
-        ))}
-    </div>
-);
-
-// ── List Renderer ───────────────────────────────────────────────────
-
-const ListRenderer = ({ rows, columns, onRowClick }: RendererProps) => (
-    <div className={styles.listContainer}>
-        {rows.map((row) => {
-            const primaryCol = columns[0];
-            const secondaryCol = columns[1];
-            return (
-                <div
-                    key={row.id as string ?? JSON.stringify(row)}
-                    className={`${styles.listItem} ${onRowClick ? styles.listItemClickable : ''}`}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    role={onRowClick ? 'button' : undefined}
-                    tabIndex={onRowClick ? 0 : undefined}
-                    onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
-                >
-                    <span className={styles.listItemPrimary}>
-                        {primaryCol ? renderCellValue(primaryCol, row[primaryCol.key], row) : '—'}
-                    </span>
-                    {secondaryCol && (
-                        <span className={styles.listItemSecondary}>
-                            {renderCellValue(secondaryCol, row[secondaryCol.key], row)}
-                        </span>
-                    )}
-                </div>
-            );
-        })}
-    </div>
-);
-
-// ── Sort Control for cards/list ─────────────────────────────────────
-
-interface SortControlProps {
-    columns: ResolvedColumn[];
-    sortKey: string | null;
-    sortDirection: 'asc' | 'desc';
-    onSort: (key: string) => void;
-}
-
-const SortControl = ({ columns, sortKey, sortDirection, onSort }: SortControlProps) => (
-    <div className={styles.manyRecordsSortControl}>
-        <span>Sortuj:</span>
-        <select
-            value={sortKey ?? ''}
-            onChange={(e) => e.target.value && onSort(e.target.value)}
-        >
-            <option value="">—</option>
-            {columns.map((col) => (
-                <option key={col.key} value={col.key}>
-                    {col.config.label ?? col.key}
-                </option>
-            ))}
-        </select>
-        {sortKey && (
-            <button
-                className={styles.buttonSecondary}
-                onClick={() => onSort(sortKey)}
-                style={{ padding: '0.125rem 0.5rem', fontSize: '0.75rem' }}
-            >
-                {sortDirection === 'asc' ? '↑ Rosnąco' : '↓ Malejąco'}
-            </button>
-        )}
-    </div>
-);
 
 // ── Pagination ──────────────────────────────────────────────────────
 
@@ -264,7 +175,6 @@ const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProp
 export const ManyRecords = ({
     tableName,
     query,
-    mode = 'table',
     hiddenColumns = [],
     columns: columnOverrides = [],
     onRowClick,
@@ -290,8 +200,8 @@ export const ManyRecords = ({
 
     const state = useAsync(async () => {
         const builder = query();
-        const ordered = sortKey
-            ? builder.order(sortKey, { ascending: sortDirection === 'asc' })
+        const ordered = sortKey ?
+            builder.order(sortKey, { ascending: sortDirection === 'asc' })
             : builder.order('created_at', { ascending: false });
 
         const from = page * (pageSize || 1000);
@@ -347,26 +257,7 @@ export const ManyRecords = ({
                                 <EmptyState message={emptyMessage} />
                             ) : (
                                 <>
-                                    {/* Sort control for non-table modes */}
-                                    {mode !== 'table' && (
-                                        <div className={styles.manyRecordsToolbar}>
-                                            <SortControl
-                                                columns={resolvedColumns}
-                                                sortKey={sortKey}
-                                                sortDirection={sortDirection}
-                                                onSort={handleSort}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Render mode */}
-                                    {mode === 'table' ? (
-                                        <TableRenderer {...rendererProps} />
-                                    ) : mode === 'cards' ? (
-                                        <CardsRenderer {...rendererProps} />
-                                    ) : (
-                                        <ListRenderer {...rendererProps} />
-                                    )}
+                                    <TableRenderer {...rendererProps} />
 
                                     {/* Pagination */}
                                     {pageSize > 0 && (
