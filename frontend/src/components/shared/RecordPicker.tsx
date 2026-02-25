@@ -82,7 +82,6 @@ export const RecordPicker = ({
                 <div className={styles.pickerBody}>
                     {activeTab === 'browse' ? (
                         <ManyRecords
-                            tableName={tableName}
                             query={query}
                             hiddenColumns={hiddenColumns}
                             onRowClick={(row) => onSelect(row.id as string)}
@@ -91,7 +90,6 @@ export const RecordPicker = ({
                     ) : (
                         <>
                             <SingleRecordDetails
-                                tableName={tableName}
                                 values={createValues}
                                 onChange={updateCreateField}
                                 mode="create"

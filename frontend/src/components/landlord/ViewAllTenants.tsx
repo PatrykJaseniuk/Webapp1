@@ -9,7 +9,6 @@ export const ViewAllTenants = () => {
 
     return (
         <ManyRecords
-            tableName="tenants"
             query={() => database.from('tenants').select('*')}
             hiddenColumns={['created_by', 'updated_at', 'notes']}
             onRowClick={(row) => navigate(routes.landlord.tenants({ id: row.id as string }))}

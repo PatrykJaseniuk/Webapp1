@@ -31,12 +31,11 @@ interface SingleRecordReferenceProps {
 
 const buildSummary = (
     data: Record<string, unknown>,
-    tableName: string,
     summaryFields?: string[],
 ): string => {
     const keys = summaryFields ?? Object.keys(data).filter((key) => {
-        const config = resolveColumnConfig(tableName, key);
-        return !config.hidden && !config.readonly && key !== 'id';
+        const config = resolveColumnConfig(key);
+        return !config.hidden && key !== 'id';
     }).slice(0, 3);
 
     return keys
@@ -99,7 +98,7 @@ export const SingleRecordReference = ({
                 <>
                     {/* Summary */}
                     <p className={styles.referenceSummary}>
-                        {buildSummary(refData, pickerTableName, summaryFields)}
+                        {buildSummary(refData, summaryFields)}
                     </p>
 
                     {/* Actions */}
@@ -173,7 +172,6 @@ export const SingleRecordReference = ({
                             </button>
                         </div>
                         <SingleRecordDetails
-                            tableName={pickerTableName}
                             values={refData}
                             onChange={() => { }}
                             mode="view"

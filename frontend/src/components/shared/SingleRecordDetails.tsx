@@ -7,19 +7,11 @@ import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-interface FieldOverride {
+interface FieldOverride extends Partial<ColumnConfig> {
     key: string;
-    label?: string;
-    render?: (value: unknown) => React.ReactNode;
-    input?: (value: unknown, onChange: (v: unknown) => void) => React.ReactNode;
-    hidden?: boolean;
-    readonly?: boolean;
-    required?: boolean;
-    validate?: (value: unknown) => string | null;
 }
 
 interface SingleRecordDetailsProps {
-    tableName: string;
     values: Record<string, unknown>;
     onChange: (key: string, value: unknown) => void;
     mode: 'view' | 'edit' | 'create';
@@ -35,7 +27,6 @@ interface ResolvedField {
 // ── Helpers ─────────────────────────────────────────────────────────
 
 const resolveFields = (
-    tableName: string,
     keys: string[],
     hiddenFields: string[],
     fieldOverrides: FieldOverride[],
@@ -47,24 +38,19 @@ const resolveFields = (
     return keys
         .map((key) => {
             const override = overrideMap[key];
-            const config = resolveColumnConfig(tableName, key, override ?? {});
+            const { key: _, ...overrideConfig } = override ?? { key };
+            const config = resolveColumnConfig(key, overrideConfig);
             return { key, config };
         })
-        .filter(
-            (field) =>
-                !field.config.hidden && !hiddenFields.includes(field.key),
-        );
+        .filter((field) => !field.config.hidden && !hiddenFields.includes(field.key));
 };
 
-const validateField = (config: ColumnConfig, value: unknown, mode: string): string | null =>
-    (mode === 'edit' || mode === 'create') && config.required &&
-    (value === null || value === undefined || value === '')
-        ? 'Pole wymagane'
-        : config.validate
-            ? config.validate(value)
-            : null;
+const getFieldLabel = (field: ResolvedField): string =>
+    field.config.labelRender
+        ? field.config.labelRender()
+        : field.key;
 
-// ── Auto-deduced inputs ─────────────────────────────────────────────
+// ── Auto-deduced inputs (fallback when no inputRender provided) ─────
 
 const autoInput = (
     key: string,
@@ -74,65 +60,67 @@ const autoInput = (
     const strValue = value === null || value === undefined ? '' : String(value);
 
     return typeof value === 'boolean' ? (
-        <input
-            id={key}
-            type="checkbox"
-            checked={value}
-            onChange={(e) => onChange(e.target.checked)}
-            className={styles.detailsCheckbox}
-        />
+        <label className="inputCheckboxLabel">
+            <input
+                type="checkbox"
+                checked={value}
+                onChange={(e) => onChange(e.target.checked)}
+                className="inputCheckbox"
+            />
+            <span className="inputCheckboxText">{value ? 'Tak' : 'Nie'}</span>
+        </label>
     ) : typeof value === 'number' ? (
         <input
-            id={key}
             type="number"
             value={strValue}
             onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
-            className={styles.detailsInput}
+            className="inputNumber"
+            placeholder="0"
         />
     ) : key.endsWith('_date') ? (
         <input
-            id={key}
             type="date"
             value={strValue}
             onChange={(e) => onChange(e.target.value || null)}
-            className={styles.detailsInput}
+            className="inputDate"
         />
     ) : key.endsWith('_at') ? (
         <input
-            id={key}
             type="datetime-local"
             value={strValue}
             onChange={(e) => onChange(e.target.value || null)}
-            className={styles.detailsInput}
+            className="inputDateTime"
         />
     ) : key === 'notes' || key === 'description' ? (
         <textarea
-            id={key}
             value={strValue}
             onChange={(e) => onChange(e.target.value)}
-            className={`${styles.detailsInput} ${styles.detailsTextarea}`}
+            className="inputTextarea"
             rows={3}
+            placeholder="Wprowadź tekst..."
         />
     ) : (
         <input
-            id={key}
             type="text"
             value={strValue}
-            onChange={(e) => onChange(e.target.value)}
-            className={styles.detailsInput}
+            onChange={(e) => onChange(e.target.value || null)}
+            className="inputText"
+            placeholder="Wprowadź wartość"
         />
     );
 };
 
 // ── View mode value renderer ────────────────────────────────────────
 
-const renderViewValue = (config: ColumnConfig, value: unknown): React.ReactNode =>
-    config.render
-        ? config.render(value)
+const renderViewValue = (config: ColumnConfig, value: unknown, row: Record<string, unknown>): React.ReactNode =>
+    config.cellRender
+        ? config.cellRender(value, row)
         : value === null || value === undefined
-            ? '—'
+            ? <span className="cellNull">—</span>
             : typeof value === 'boolean'
-                ? (value ? 'Tak' : 'Nie')
+                ? <span className={`cellBoolean ${value ? 'cellBooleanTrue' : 'cellBooleanFalse'}`}>
+                    {value ? '✓ Tak' : '✗ Nie'}
+                </span>
                 : String(value);
 
 // ── Field Component ─────────────────────────────────────────────────
@@ -142,41 +130,28 @@ interface FieldProps {
     value: unknown;
     onChange: (v: unknown) => void;
     mode: 'view' | 'edit' | 'create';
+    row: Record<string, unknown>;
 }
 
-const Field = ({ field, value, onChange, mode }: FieldProps) => {
+const Field = ({ field, value, onChange, mode, row }: FieldProps) => {
     const { key, config } = field;
-    const isEditable = (mode === 'edit' || mode === 'create') && !config.readonly;
-    const error = isEditable ? validateField(config, value, mode) : null;
-
-    const labelClassName = `${styles.detailsLabel}${
-        isEditable && config.required ? ` ${styles.detailsLabelRequired}` : ''
-    }`;
+    const isEditable = (mode === 'edit' || mode === 'create') && config.inputRender;
 
     return (
         <div className={styles.detailsField}>
-            <label htmlFor={key} className={labelClassName}>
-                {config.label ?? key}
+            <label htmlFor={key} className={styles.detailsLabel}>
+                {getFieldLabel(field)}
             </label>
 
             {isEditable ? (
-                <>
-                    {config.input ? (
-                        <div className={styles.detailsInput}>
-                            {config.input(value, onChange)}
-                        </div>
-                    ) : (
-                        autoInput(key, value, onChange)
-                    )}
-                    {error && (
-                        <span className={styles.detailsError} role="alert">
-                            {error}
-                        </span>
-                    )}
-                </>
+                config.inputRender ? (
+                    config.inputRender(value, onChange)
+                ) : (
+                    autoInput(key, value, onChange)
+                )
             ) : (
                 <span className={styles.detailsValue}>
-                    {renderViewValue(config, value)}
+                    {renderViewValue(config, value, row)}
                 </span>
             )}
         </div>
@@ -186,7 +161,6 @@ const Field = ({ field, value, onChange, mode }: FieldProps) => {
 // ── SingleRecordDetails Component ───────────────────────────────────
 
 export const SingleRecordDetails = ({
-    tableName,
     values,
     onChange,
     mode,
@@ -194,7 +168,7 @@ export const SingleRecordDetails = ({
     hiddenFields = [],
 }: SingleRecordDetailsProps) => {
     const keys = Object.keys(values);
-    const fields = resolveFields(tableName, keys, hiddenFields, fieldOverrides);
+    const fields = resolveFields(keys, hiddenFields, fieldOverrides);
 
     return (
         <fieldset className={styles.detailsFieldset}>
@@ -206,6 +180,7 @@ export const SingleRecordDetails = ({
                         value={values[field.key]}
                         onChange={(v) => onChange(field.key, v)}
                         mode={mode}
+                        row={values}
                     />
                 ))}
             </div>

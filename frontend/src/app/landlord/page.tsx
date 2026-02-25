@@ -14,9 +14,7 @@ export default function LandlordDashboard() {
 
             <ManyRecords
                 label="Nieruchomości"
-                tableName="properties"
                 query={() => database.from('properties').select('*')}
-                mode="cards"
                 hiddenColumns={['created_by', 'updated_at', 'notes', 'created_at']}
                 onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
                 pageSize={6}
@@ -24,9 +22,7 @@ export default function LandlordDashboard() {
 
             <ManyRecords
                 label="Ostatnie umowy"
-                tableName="lease_agreements"
                 query={() => database.from('lease_agreements').select('*')}
-                mode="table"
                 hiddenColumns={['created_by', 'updated_at', 'notes', 'id', 'tenant_id', 'property_id']}
                 defaultSortKey="created_at"
                 defaultSortDirection="desc"

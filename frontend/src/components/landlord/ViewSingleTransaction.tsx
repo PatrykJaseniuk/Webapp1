@@ -88,7 +88,6 @@ export const ViewSingleTransaction = ({ id }: ViewSingleTransactionProps) => {
                         {saveState.error && <ErrorBanner msg={saveState.error.message} />}
 
                         <SingleRecordDetails
-                            tableName="transactions"
                             values={formState}
                             onChange={updateField}
                             mode={mode}

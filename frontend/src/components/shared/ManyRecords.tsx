@@ -4,29 +4,43 @@ import { useAsync } from 'react-use';
 
 import { resolveColumnConfig } from '@/constants/columnRegistry';
 import type { ColumnConfig } from '@/constants/columnRegistry';
-import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import styles from '@/components/styles/shared.module.css';
+import type { Database } from '@/api/database.types';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-interface ColumnOverride {
-    key: string;
-    label?: string;
-    render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
+interface ColumnOverrides {
+    [key: string]: Partial<ColumnConfig>
 }
 
-interface ManyRecordsProps {
-    tableName: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    query: () => any;
-    // mode?: 'table' | 'cards' | 'list';
+// Query result type from Supabase
+interface QueryResult<T> {
+    data: T[] | null;
+    error: { message: string } | null;
+    count?: number | null;
+}
+
+// Type for the query builder that ManyRecords expects
+// This is a minimal interface that captures the methods we need from the Supabase query builder
+// The Supabase builder is "thenable" - it has a then method and can be awaited
+interface ManyRecordsQueryBuilder<T = Record<string, unknown>> extends PromiseLike<QueryResult<T>> {
+    order: (column: string, options?: { ascending?: boolean }) => ManyRecordsQueryBuilder<T>;
+    range: (from: number, to: number) => ManyRecordsQueryBuilder<T>;
+}
+
+// Helper type to extract row type from table/view name (exported for consumers)
+type TableName = keyof (Database['public']['Tables'] & Database['public']['Views']);
+type TableRow<TName extends TableName> = (Database['public']['Tables'] & Database['public']['Views'])[TName] extends { Row: infer R } ? R : never;
+
+interface ManyRecordsProps<T extends Record<string, unknown> = Record<string, unknown>> {
+    query: () => ManyRecordsQueryBuilder<T>;
     hiddenColumns?: string[];
-    columns?: ColumnOverride[];
-    onRowClick?: (row: Record<string, unknown>) => void;
+    columns?: ColumnOverrides;
+    onRowClick?: (row: T) => void;
     onAdd?: () => void;
-    onRowDelete?: (row: Record<string, unknown>) => Promise<{ error?: unknown }>;
+    onRowDelete?: (row: T) => Promise<{ error?: unknown }>;
     defaultSortKey?: string;
     defaultSortDirection?: 'asc' | 'desc';
     pageSize?: number;
@@ -35,106 +49,92 @@ interface ManyRecordsProps {
     label?: string;
     disabled?: boolean;
     disabledMessage?: string;
+    totalCount?: number;
 }
 
 interface ResolvedColumn {
     key: string;
     config: ColumnConfig;
-    overrideRender?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
 const resolveColumns = (
-    tableName: string,
     keys: string[],
     hiddenColumns: string[],
-    columnOverrides: ColumnOverride[],
+    columnOverrides: ColumnOverrides,
 ): ResolvedColumn[] => {
-    const overrideMap = Object.fromEntries(
-        columnOverrides.map((c) => [c.key, c]),
-    );
-
     return keys
         .map((key) => {
-            const override = overrideMap[key];
-            const config = resolveColumnConfig(tableName, key, {
-                ...(override?.label ? { label: override.label } : {}),
-            });
-            return { key, config, overrideRender: override?.render };
+            const config = resolveColumnConfig(key, columnOverrides[key]);
+            return { key, config };
         })
-        .filter(
-            (col) =>
-                !col.config.hidden && !hiddenColumns.includes(col.key),
-        );
+        .filter((col) => !col.config.hidden && !hiddenColumns.includes(col.key));
 };
 
 const renderCellValue = (col: ResolvedColumn, value: unknown, row: Record<string, unknown>): React.ReactNode =>
-    col.overrideRender ?
-        col.overrideRender(value, row)
-        : col.config.render ?
-            col.config.render(value)
-            : value === null || value === undefined ?
-                '—'
-                : String(value);
+    col.config.cellRender
+        ? col.config.cellRender(value, row)
+        : value == null
+            ? <span className="cellNull">—</span>
+            : String(value);
 
-// ── Table Renderer ──────────────────────────────────────────────────
+const getColumnLabel = (col: ResolvedColumn): string =>
+    col.config.labelRender
+        ? col.config.labelRender()
+        : col.key;
 
-interface RendererProps {
-    rows: Record<string, unknown>[];
+// ── Table Skeleton ──────────────────────────────────────────────────
+
+interface TableSkeletonProps {
     columns: ResolvedColumn[];
+    rowCount: number;
     sortKey: string | null;
     sortDirection: 'asc' | 'desc';
     onSort: (key: string) => void;
-    onRowClick?: (row: Record<string, unknown>) => void;
 }
 
-const TableRenderer = ({ rows, columns, sortKey, sortDirection, onSort, onRowClick }: RendererProps) => (
-    <table className={styles.table}>
-        <thead className={styles.tableHeader}>
-            <tr>
-                {columns.map((col) => (
-                    <th
-                        key={col.key}
-                        scope="col"
-                        className={`${styles.tableHeaderCell} ${styles.tableHeaderCellSortable}`}
-                        onClick={() => onSort(col.key)}
-                        aria-sort={
-                            sortKey === col.key
-                                ? sortDirection === 'asc'
-                                    ? 'ascending'
-                                    : 'descending'
-                                : 'none'
-                        }
-                    >
-                        {col.config.label ?? col.key}
-                        {sortKey === col.key ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
-                    </th>
-                ))}
-            </tr>
-        </thead>
-        <tbody>
-            {rows.map((row) => (
-                <tr
-                    key={row.id as string ?? JSON.stringify(row)}
-                    className={`${styles.tableRow} ${onRowClick ? styles.tableRowClickable : ''}`}
-                    onClick={onRowClick ? () => onRowClick(row) : undefined}
-                    role={onRowClick ? 'button' : undefined}
-                    tabIndex={onRowClick ? 0 : undefined}
-                    onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
-                >
+const TableSkeleton = ({ columns, rowCount, sortKey, sortDirection, onSort }: TableSkeletonProps) => (
+    <div className={styles.tableWrapper}>
+        <table className={styles.table}>
+            <thead className={styles.tableHeader}>
+                <tr>
                     {columns.map((col) => (
-                        <td key={col.key} className={styles.tableCell}>
-                            {renderCellValue(col, row[col.key], row)}
-                        </td>
+                        <th
+                            key={col.key}
+                            scope="col"
+                            className={`${styles.tableHeaderCell} ${styles.tableHeaderCellSortable}`}
+                            onClick={() => onSort(col.key)}
+                            aria-sort={
+                                sortKey === col.key
+                                    ? sortDirection === 'asc'
+                                        ? 'ascending'
+                                        : 'descending'
+                                    : 'none'
+                            }
+                        >
+                            {getColumnLabel(col)}
+                            <span className={styles.sortIndicator}>
+                                {sortKey === col.key ? (sortDirection === 'asc' ? '↑' : '↓') : '⇅'}
+                            </span>
+                        </th>
                     ))}
                 </tr>
-            ))}
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                {Array.from({ length: rowCount }).map((_, index) => (
+                    <tr key={index} className={styles.tableSkeletonRow}>
+                        {columns.map((col) => (
+                            <td key={col.key} className={styles.tableSkeletonCell}>
+                                <div className={styles.tableSkeletonContent} />
+                            </td>
+                        ))}
+                    </tr>
+                ))}
+            </tbody>
+        </table>
+    </div>
 );
-
-
 
 // ── Pagination ──────────────────────────────────────────────────────
 
@@ -173,24 +173,29 @@ const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProp
 // ── ManyRecords Component ───────────────────────────────────────────
 
 export const ManyRecords = ({
-    tableName,
     query,
     hiddenColumns = [],
-    columns: columnOverrides = [],
+    columns: columnOverrides = {},
     onRowClick,
     onAdd,
     defaultSortKey,
     defaultSortDirection = 'asc',
-    pageSize = 25,
+    pageSize = 10,
     refreshKey = 0,
     emptyMessage = 'Brak danych',
     label,
     disabled = false,
     disabledMessage = 'Zapisz rekord, aby dodać powiązane dane',
+    totalCount: totalCountProp = 0,
 }: ManyRecordsProps) => {
     const [sortKey, setSortKey] = useState<string | null>(defaultSortKey ?? null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(defaultSortDirection);
     const [page, setPage] = useState(0);
+
+    // Track previous data for display during refetch
+    // const previousDataRef = useRef<Record<string, unknown>[]>([]);
+    // const previousColumnsRef = useRef<ResolvedColumn[]>([]);
+    // const previousTotalCountRef = useRef<number>(0);
 
     const handleSort = (key: string) => {
         setSortKey(key);
@@ -206,25 +211,35 @@ export const ManyRecords = ({
 
         const from = page * (pageSize || 1000);
         const to = from + (pageSize || 1000) - 1;
-        const result = await (ordered.range(from, to) as unknown as Promise<{ data: Record<string, unknown>[] | null; error: { message: string } | null; count?: number | null }>);
-        return result;
+        const result = await ordered.range(from, to);
+        return result as unknown as { data: Record<string, unknown>[] | null; error: { message: string } | null };
     }, [sortKey, sortDirection, page, refreshKey]);
 
     const rows = (state.value?.data ?? []) as Record<string, unknown>[];
     const dataError = state.value?.error;
-    const columnKeys = rows.length > 0 ? Object.keys(rows[0]) : [];
-    const resolvedColumns = resolveColumns(tableName, columnKeys, hiddenColumns, columnOverrides);
+    const count = (state.value as any)?.count as number
 
-    const rendererProps: RendererProps = {
-        rows,
-        columns: resolvedColumns,
-        sortKey,
-        sortDirection,
-        onSort: handleSort,
-        onRowClick,
-    };
+    // Determine columns (ternary chain - no if/else per style guide)
+    const resolvedColumns = rows.length > 0 ?
+        resolveColumns(Object.keys(rows[0]), hiddenColumns, columnOverrides)
+        : [];
 
-    const totalCount = (state.value as unknown as { count?: number })?.count ?? rows.length;
+    // // Update refs when we have data (immutable pattern)
+    // useEffect(() => {
+    //     previousDataRef.current = rows.length > 0 ? rows : previousDataRef.current;
+    //     previousColumnsRef.current = rows.length > 0 ? resolvedColumns : previousColumnsRef.current;
+    //     previousTotalCountRef.current = totalCountProp > 0 ? totalCountProp : previousTotalCountRef.current;
+    // }, [rows, resolvedColumns, totalCountProp]);
+
+    // // Determine display data - always show pageSize rows
+    const isInitialLoad = state.loading
+    // const displayRows = isInitialLoad ? [] : (rows.length > 0 ? rows : previousDataRef.current);
+    // const displayTotalCount = totalCountProp > 0 ? totalCountProp : previousTotalCountRef.current;
+    // const showEmptyState = !state.loading && !state.error && !dataError && displayRows.length === 0;
+
+    // Calculate empty rows for padding
+    // const emptyRowsCount = Math.max(0, pageSize - displayRows.length);
+    // const emptyRows = Array.from({ length: emptyRowsCount });
 
     return (
         <div className={styles.manyRecordsWrapper}>
@@ -240,36 +255,100 @@ export const ManyRecords = ({
                 </div>
             )}
 
-            {/* Disabled state */}
-            {disabled ? (
-                <div className={styles.manyRecordsDisabled}>{disabledMessage}</div>
-            ) : /* Hook-level error */
-                state.error ? (
+            {/* Content */}
+            <div
+                className={styles.manyRecordsContent}
+                style={{ '--page-size': pageSize } as React.CSSProperties}
+            >
+                {disabled ? (
+                    <div className={styles.manyRecordsDisabled}>{disabledMessage}</div>
+                ) : state.loading && rows.length == 0 ? (
+                    resolvedColumns.length > 0 ? (
+                        <TableSkeleton
+                            columns={resolvedColumns}
+                            rowCount={pageSize}
+                            sortKey={sortKey}
+                            sortDirection={sortDirection}
+                            onSort={handleSort}
+                        />
+                    ) : (
+                        <TableSkeleton
+                            columns={[{ key: 'placeholder', config: { labelRender: () => 'Ładowanie...' } }]}
+                            rowCount={pageSize}
+                            sortKey={null}
+                            sortDirection="asc"
+                            onSort={() => { }}
+                        />
+                    )
+                ) : state.error ? (
                     <ErrorBanner msg={state.error.message} />
-                ) : /* Loading */
-                    state.loading ? (
-                        <Spinner />
-                    ) : /* Data-level error */
-                        dataError ? (
-                            <ErrorBanner msg={dataError.message} />
-                        ) : /* Empty */
-                            rows.length === 0 ? (
-                                <EmptyState message={emptyMessage} />
-                            ) : (
-                                <>
-                                    <TableRenderer {...rendererProps} />
+                ) : dataError ? (
+                    <ErrorBanner msg={dataError.message} />
+                ) : rows.length < 1 ? (
+                    <EmptyState message={emptyMessage} />
+                ) :
+                    (
+                        <>
+                            {/* Table Rendered Inline */}
+                            <div className={styles.tableWrapper}>
+                                <table className={styles.table}>
+                                    <thead className={styles.tableHeader}>
+                                        <tr>
+                                            {resolvedColumns.map((col) => (
+                                                <th
+                                                    key={col.key}
+                                                    scope="col"
+                                                    className={`${styles.tableHeaderCell} ${styles.tableHeaderCellSortable}`}
+                                                    onClick={() => handleSort(col.key)}
+                                                    aria-sort={
+                                                        sortKey === col.key
+                                                            ? sortDirection === 'asc'
+                                                                ? 'ascending'
+                                                                : 'descending'
+                                                            : 'none'
+                                                    }
+                                                >
+                                                    {getColumnLabel(col)}
+                                                    <span className={styles.sortIndicator}>
+                                                        {sortKey === col.key ? (sortDirection === 'asc' ? '↑' : '↓') : '⇅'}
+                                                    </span>
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rows.map((row) => (
+                                            <tr
+                                                key={row.id as string ?? JSON.stringify(row)}
+                                                className={`${styles.tableRow} ${onRowClick ? styles.tableRowClickable : ''}`}
+                                                onClick={onRowClick ? () => onRowClick(row) : undefined}
+                                                role={onRowClick ? 'button' : undefined}
+                                                tabIndex={onRowClick ? 0 : undefined}
+                                                onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
+                                            >
+                                                {resolvedColumns.map((col) => (
+                                                    <td key={col.key} className={styles.tableCell}>
+                                                        {renderCellValue(col, row[col.key], row)}
+                                                    </td>
+                                                ))}
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                                    {/* Pagination */}
-                                    {pageSize > 0 && (
-                                        <Pagination
-                                            page={page}
-                                            pageSize={pageSize}
-                                            totalCount={totalCount}
-                                            onPageChange={setPage}
-                                        />
-                                    )}
-                                </>
+                            {/* Pagination */}
+                            {pageSize > 0 && (
+                                <Pagination
+                                    page={page}
+                                    pageSize={pageSize}
+                                    totalCount={count}
+                                    onPageChange={setPage}
+                                />
                             )}
+                        </>
+                    )}
+            </div>
         </div>
     );
 };

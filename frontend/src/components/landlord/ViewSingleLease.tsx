@@ -89,7 +89,6 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
                         {saveState.error && <ErrorBanner msg={saveState.error.message} />}
 
                         <SingleRecordDetails
-                            tableName="lease_agreements"
                             values={formState}
                             onChange={updateField}
                             mode={mode}
@@ -121,7 +120,6 @@ export const ViewSingleLease = ({ id }: ViewSingleLeaseProps) => {
 
                         <ManyRecords
                             label="Transakcje"
-                            tableName="lol"
                             query={() => database.from('transactions').select('*').eq('lease_id', id!)}
                             // hiddenColumns={['id', 'lease_id', 'property_id', 'created_by', 'updated_at']}
                             defaultSortKey="due_date"

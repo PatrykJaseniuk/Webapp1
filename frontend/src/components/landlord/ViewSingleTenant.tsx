@@ -88,7 +88,6 @@ export const ViewSingleTenant = ({ id }: ViewSingleTenantProps) => {
                         {saveState.error && <ErrorBanner msg={saveState.error.message} />}
 
                         <SingleRecordDetails
-                            tableName="tenants"
                             values={formState}
                             onChange={updateField}
                             mode={mode}
@@ -96,7 +95,6 @@ export const ViewSingleTenant = ({ id }: ViewSingleTenantProps) => {
 
                         <ManyRecords
                             label="Umowy najmu"
-                            tableName="lease_agreements"
                             query={() => database.from('lease_agreements').select('*').eq('tenant_id', id!)}
                             hiddenColumns={['id', 'tenant_id', 'created_by', 'updated_at', 'notes']}
                             onRowClick={(row) => navigate(routes.landlord.leases({ id: row.id as string }))}
