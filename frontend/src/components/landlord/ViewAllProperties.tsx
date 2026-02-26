@@ -13,13 +13,13 @@ export const ViewAllProperties = () => {
                 'name': {
                     hidden: false,
                     // label: 'marian'
-                    cellRender(value, row) {
+                    fieldOutput(value, row) {
                         return <div> witam {value as string}</div>
                     },
 
                 },
             }}
-            query={() => database.from('properties').select('id,  address, name, status')}
+            query={() => database.from('properties').select('id,  address, name, status, lease_agreements(*)')}
             // hiddenColumns={['created_by', 'updated_at', 'notes']}
             onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
             onAdd={() => navigate(routes.landlord.properties({ action: 'new' }))}

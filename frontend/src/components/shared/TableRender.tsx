@@ -1,24 +1,24 @@
 'use client';
-import { resolveColumnConfig, type ColumnConfig } from '@/constants/columnRegistry';
+import { resolveFieldConfig, type FieldConfig } from '@/fieldRegistry';
 import { EmptyState } from '@/components/shared/EmptyState';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-interface ColumnOverride extends Partial<ColumnConfig> {
+interface FieldOverride extends Partial<FieldConfig> {
     key: string;
 }
 
 interface TableRenderProps {
-    /** Table name for column config resolution (deprecated, kept for backwards compatibility) */
+    /** Table name for field config resolution (deprecated, kept for backwards compatibility) */
     tableName?: string;
     /** Pre-loaded data rows */
     rows: Record<string, unknown>[];
-    /** Column customization */
-    columns?: ColumnOverride[];
-    /** Columns to hide */
+    /** Field customization */
+    columns?: FieldOverride[];
+    /** Fields to hide */
     hiddenColumns?: string[];
-    /** Current sort column */
+    /** Current sort field */
     sortKey?: string | null;
     /** Sort direction */
     sortDirection?: 'asc' | 'desc';
@@ -30,50 +30,50 @@ interface TableRenderProps {
     emptyMessage?: string;
 }
 
-interface ResolvedColumn {
+interface ResolvedField {
     key: string;
-    config: ColumnConfig;
+    config: FieldConfig;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-const resolveColumns = (
+const resolveFields = (
     keys: string[],
     hiddenColumns: string[],
-    columnOverrides: ColumnOverride[],
-): ResolvedColumn[] => {
+    fieldOverrides: FieldOverride[],
+): ResolvedField[] => {
     const overrideMap = Object.fromEntries(
-        columnOverrides.map((c) => [c.key, c]),
+        fieldOverrides.map((f) => [f.key, f]),
     );
 
     return keys
         .map((key) => {
             const override = overrideMap[key];
             const { key: _, ...overrideConfig } = override ?? { key };
-            const config = resolveColumnConfig(key, overrideConfig);
+            const config = resolveFieldConfig(key, overrideConfig);
             return { key, config };
         })
-        .filter((col) => !col.config.hidden && !hiddenColumns.includes(col.key));
+        .filter((field) => !field.config.hidden && !hiddenColumns.includes(field.key));
 };
 
-const renderCellValue = (col: ResolvedColumn, value: unknown, row: Record<string, unknown>): React.ReactNode =>
-    col.config.cellRender
-        ? col.config.cellRender(value, row)
+const renderCellValue = (field: ResolvedField, value: unknown, row: Record<string, unknown>): React.ReactNode =>
+    field.config.fieldOutput
+        ? field.config.fieldOutput(value, row)
         : value == null
             ? '—'
             : String(value);
 
-const getColumnLabel = (col: ResolvedColumn): string =>
-    col.config.labelRender
-        ? col.config.labelRender()
-        : col.key;
+const getFieldLabel = (field: ResolvedField): string =>
+    field.config.label
+        ? field.config.label()
+        : field.key;
 
 // ── TableRender Component ───────────────────────────────────────────
 
 export const TableRender = ({
     tableName: _tableName,
     rows,
-    columns: columnOverrides = [],
+    columns: fieldOverrides = [],
     hiddenColumns = [],
     sortKey = null,
     sortDirection = 'asc',
@@ -86,9 +86,9 @@ export const TableRender = ({
         return <EmptyState message={emptyMessage} />;
     }
 
-    // Resolve columns from data keys
-    const columnKeys = Object.keys(rows[0]);
-    const resolvedColumns = resolveColumns(columnKeys, hiddenColumns, columnOverrides);
+    // Resolve fields from data keys
+    const fieldKeys = Object.keys(rows[0]);
+    const resolvedFields = resolveFields(fieldKeys, hiddenColumns, fieldOverrides);
 
     const handleHeaderClick = (key: string) => {
         if (onSort) {
@@ -100,22 +100,22 @@ export const TableRender = ({
         <table className={styles.table}>
             <thead className={styles.tableHeader}>
                 <tr>
-                    {resolvedColumns.map((col) => (
+                    {resolvedFields.map((field) => (
                         <th
-                            key={col.key}
+                            key={field.key}
                             scope="col"
                             className={`${styles.tableHeaderCell} ${onSort ? styles.tableHeaderCellSortable : ''}`}
-                            onClick={() => handleHeaderClick(col.key)}
+                            onClick={() => handleHeaderClick(field.key)}
                             aria-sort={
-                                sortKey === col.key
+                                sortKey === field.key
                                     ? sortDirection === 'asc'
                                         ? 'ascending'
                                         : 'descending'
                                     : 'none'
                             }
                         >
-                            {getColumnLabel(col)}
-                            {sortKey === col.key ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
+                            {getFieldLabel(field)}
+                            {sortKey === field.key ? (sortDirection === 'asc' ? ' ↑' : ' ↓') : ''}
                         </th>
                     ))}
                 </tr>
@@ -130,9 +130,9 @@ export const TableRender = ({
                         tabIndex={onRowClick ? 0 : undefined}
                         onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
                     >
-                        {resolvedColumns.map((col) => (
-                            <td key={col.key} className={styles.tableCell}>
-                                {renderCellValue(col, row[col.key], row)}
+                        {resolvedFields.map((field) => (
+                            <td key={field.key} className={styles.tableCell}>
+                                {renderCellValue(field, row[field.key], row)}
                             </td>
                         ))}
                     </tr>

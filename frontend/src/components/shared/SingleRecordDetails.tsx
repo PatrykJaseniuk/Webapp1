@@ -1,13 +1,13 @@
 'use client';
 import React from 'react';
 
-import { resolveColumnConfig } from '@/constants/columnRegistry';
-import type { ColumnConfig } from '@/constants/columnRegistry';
+import { resolveFieldConfig } from '@/fieldRegistry';
+import type { FieldConfig } from '@/fieldRegistry';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-interface FieldOverride extends Partial<ColumnConfig> {
+interface FieldOverride extends Partial<FieldConfig> {
     key: string;
 }
 
@@ -21,7 +21,7 @@ interface SingleRecordDetailsProps {
 
 interface ResolvedField {
     key: string;
-    config: ColumnConfig;
+    config: FieldConfig;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -39,18 +39,18 @@ const resolveFields = (
         .map((key) => {
             const override = overrideMap[key];
             const { key: _, ...overrideConfig } = override ?? { key };
-            const config = resolveColumnConfig(key, overrideConfig);
+            const config = resolveFieldConfig(key, overrideConfig);
             return { key, config };
         })
         .filter((field) => !field.config.hidden && !hiddenFields.includes(field.key));
 };
 
 const getFieldLabel = (field: ResolvedField): string =>
-    field.config.labelRender
-        ? field.config.labelRender()
+    field.config.label
+        ? field.config.label()
         : field.key;
 
-// ── Auto-deduced inputs (fallback when no inputRender provided) ─────
+// ── Auto-deduced inputs (fallback when no fieldInput provided) ──────
 
 const autoInput = (
     key: string,
@@ -112,9 +112,9 @@ const autoInput = (
 
 // ── View mode value renderer ────────────────────────────────────────
 
-const renderViewValue = (config: ColumnConfig, value: unknown, row: Record<string, unknown>): React.ReactNode =>
-    config.cellRender
-        ? config.cellRender(value, row)
+const renderViewValue = (config: FieldConfig, value: unknown, row: Record<string, unknown>): React.ReactNode =>
+    config.fieldOutput
+        ? config.fieldOutput(value, row)
         : value === null || value === undefined
             ? <span className="cellNull">—</span>
             : typeof value === 'boolean'
@@ -135,7 +135,7 @@ interface FieldProps {
 
 const Field = ({ field, value, onChange, mode, row }: FieldProps) => {
     const { key, config } = field;
-    const isEditable = (mode === 'edit' || mode === 'create') && config.inputRender;
+    const isEditable = (mode === 'edit' || mode === 'create') && config.fieldInput;
 
     return (
         <div className={styles.detailsField}>
@@ -144,8 +144,8 @@ const Field = ({ field, value, onChange, mode, row }: FieldProps) => {
             </label>
 
             {isEditable ? (
-                config.inputRender ? (
-                    config.inputRender(value, onChange)
+                config.fieldInput ? (
+                    config.fieldInput(value, onChange)
                 ) : (
                     autoInput(key, value, onChange)
                 )

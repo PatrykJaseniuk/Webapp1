@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 
-import { resolveColumnConfig } from '@/constants/columnRegistry';
-import type { ColumnConfig } from '@/constants/columnRegistry';
+import { resolveFieldConfig } from '@/fieldRegistry';
+import type { FieldConfig } from '@/fieldRegistry';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { EmptyState } from '@/components/shared/EmptyState';
 import styles from '@/components/styles/shared.module.css';
@@ -11,8 +11,8 @@ import type { Database } from '@/api/database.types';
 
 // ── Types ───────────────────────────────────────────────────────────
 
-interface ColumnOverrides {
-    [key: string]: Partial<ColumnConfig>
+interface FieldOverrides {
+    [key: string]: Partial<FieldConfig>
 }
 
 // Query result type from Supabase
@@ -37,7 +37,7 @@ type TableRow<TName extends TableName> = (Database['public']['Tables'] & Databas
 interface ManyRecordsProps<T extends Record<string, unknown> = Record<string, unknown>> {
     query: () => ManyRecordsQueryBuilder<T>;
     hiddenColumns?: string[];
-    columns?: ColumnOverrides;
+    columns?: FieldOverrides;
     onRowClick?: (row: T) => void;
     onAdd?: () => void;
     onRowDelete?: (row: T) => Promise<{ error?: unknown }>;
@@ -52,80 +52,85 @@ interface ManyRecordsProps<T extends Record<string, unknown> = Record<string, un
     totalCount?: number;
 }
 
-interface ResolvedColumn {
+interface ResolvedField {
     key: string;
-    config: ColumnConfig;
+    config: FieldConfig;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-const resolveColumns = (
+const resolveFields = (
     keys: string[],
     hiddenColumns: string[],
-    columnOverrides: ColumnOverrides,
-): ResolvedColumn[] => {
+    fieldOverrides: FieldOverrides,
+): ResolvedField[] => {
     return keys
         .map((key) => {
-            const config = resolveColumnConfig(key, columnOverrides[key]);
+            const config = resolveFieldConfig(key, fieldOverrides[key]);
             return { key, config };
         })
-        .filter((col) => !col.config.hidden && !hiddenColumns.includes(col.key));
+        .filter((field) => !field.config.hidden && !hiddenColumns.includes(field.key));
 };
 
-const renderCellValue = (col: ResolvedColumn, value: unknown, row: Record<string, unknown>): React.ReactNode =>
-    col.config.cellRender
-        ? col.config.cellRender(value, row)
+const renderCellValue = (field: ResolvedField, value: unknown, row: Record<string, unknown>): React.ReactNode =>
+    field.config.fieldOutput
+        ? field.config.fieldOutput(value, row)
         : value == null
             ? <span className="cellNull">—</span>
             : String(value);
 
-const getColumnLabel = (col: ResolvedColumn): string =>
-    col.config.labelRender
-        ? col.config.labelRender()
-        : col.key;
+const getFieldLabel = (field: ResolvedField): string =>
+    field.config.label
+        ? field.config.label()
+        : field.key;
 
 // ── Table Skeleton ──────────────────────────────────────────────────
 
 interface TableSkeletonProps {
-    columns: ResolvedColumn[];
+    fields: ResolvedField[];
     rowCount: number;
     sortKey: string | null;
     sortDirection: 'asc' | 'desc';
     onSort: (key: string) => void;
 }
 
-const TableSkeleton = ({ columns, rowCount, sortKey, sortDirection, onSort }: TableSkeletonProps) => (
+const TableSkeleton = ({ fields, rowCount, sortKey, sortDirection, onSort }: TableSkeletonProps) => (
     <div className={styles.tableWrapper}>
         <table className={styles.table}>
             <thead className={styles.tableHeader}>
                 <tr>
-                    {columns.map((col) => (
-                        <th
-                            key={col.key}
-                            scope="col"
-                            className={`${styles.tableHeaderCell} ${styles.tableHeaderCellSortable}`}
-                            onClick={() => onSort(col.key)}
-                            aria-sort={
-                                sortKey === col.key
-                                    ? sortDirection === 'asc'
-                                        ? 'ascending'
-                                        : 'descending'
-                                    : 'none'
-                            }
-                        >
-                            {getColumnLabel(col)}
-                            <span className={styles.sortIndicator}>
-                                {sortKey === col.key ? (sortDirection === 'asc' ? '↑' : '↓') : '⇅'}
-                            </span>
-                        </th>
-                    ))}
+                    {fields.map((field) => {
+                        const isSortable = field.config.sortable !== false;
+                        return (
+                            <th
+                                key={field.key}
+                                scope="col"
+                                className={`${styles.tableHeaderCell} ${isSortable ? styles.tableHeaderCellSortable : ''}`}
+                                onClick={isSortable ? () => onSort(field.key) : undefined}
+                                aria-sort={
+                                    isSortable && sortKey === field.key
+                                        ? sortDirection === 'asc'
+                                            ? 'ascending'
+                                            : 'descending'
+                                        : 'none'
+                                }
+                            >
+                                {getFieldLabel(field)}
+                                {isSortable && (
+                                    <span className={styles.sortIndicator}>
+                                        {sortKey === field.key ? (sortDirection === 'asc' ? '↑' : '↓') : '⇅'}
+                                    </span>
+                                )}
+                            </th>
+                        );
+                    })}
                 </tr>
             </thead>
             <tbody>
                 {Array.from({ length: rowCount }).map((_, index) => (
                     <tr key={index} className={styles.tableSkeletonRow}>
-                        {columns.map((col) => (
-                            <td key={col.key} className={styles.tableSkeletonCell}>
+                        {fields.map((field) => (
+                            <td key={field.key} className={styles.tableSkeletonCell}>
                                 <div className={styles.tableSkeletonContent} />
                             </td>
                         ))}
@@ -175,7 +180,7 @@ const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProp
 export const ManyRecords = ({
     query,
     hiddenColumns = [],
-    columns: columnOverrides = {},
+    columns: fieldOverrides = {},
     onRowClick,
     onAdd,
     defaultSortKey,
@@ -191,11 +196,6 @@ export const ManyRecords = ({
     const [sortKey, setSortKey] = useState<string | null>(defaultSortKey ?? null);
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>(defaultSortDirection);
     const [page, setPage] = useState(0);
-
-    // Track previous data for display during refetch
-    // const previousDataRef = useRef<Record<string, unknown>[]>([]);
-    // const previousColumnsRef = useRef<ResolvedColumn[]>([]);
-    // const previousTotalCountRef = useRef<number>(0);
 
     const handleSort = (key: string) => {
         setSortKey(key);
@@ -219,27 +219,12 @@ export const ManyRecords = ({
     const dataError = state.value?.error;
     const count = (state.value as any)?.count as number
 
-    // Determine columns (ternary chain - no if/else per style guide)
-    const resolvedColumns = rows.length > 0 ?
-        resolveColumns(Object.keys(rows[0]), hiddenColumns, columnOverrides)
+    // Determine fields (ternary chain - no if/else per style guide)
+    const resolvedFields = rows.length > 0 ?
+        resolveFields(Object.keys(rows[0]), hiddenColumns, fieldOverrides)
         : [];
 
-    // // Update refs when we have data (immutable pattern)
-    // useEffect(() => {
-    //     previousDataRef.current = rows.length > 0 ? rows : previousDataRef.current;
-    //     previousColumnsRef.current = rows.length > 0 ? resolvedColumns : previousColumnsRef.current;
-    //     previousTotalCountRef.current = totalCountProp > 0 ? totalCountProp : previousTotalCountRef.current;
-    // }, [rows, resolvedColumns, totalCountProp]);
-
-    // // Determine display data - always show pageSize rows
     const isInitialLoad = state.loading
-    // const displayRows = isInitialLoad ? [] : (rows.length > 0 ? rows : previousDataRef.current);
-    // const displayTotalCount = totalCountProp > 0 ? totalCountProp : previousTotalCountRef.current;
-    // const showEmptyState = !state.loading && !state.error && !dataError && displayRows.length === 0;
-
-    // Calculate empty rows for padding
-    // const emptyRowsCount = Math.max(0, pageSize - displayRows.length);
-    // const emptyRows = Array.from({ length: emptyRowsCount });
 
     return (
         <div className={styles.manyRecordsWrapper}>
@@ -263,9 +248,9 @@ export const ManyRecords = ({
                 {disabled ? (
                     <div className={styles.manyRecordsDisabled}>{disabledMessage}</div>
                 ) : state.loading && rows.length == 0 ? (
-                    resolvedColumns.length > 0 ? (
+                    resolvedFields.length > 0 ? (
                         <TableSkeleton
-                            columns={resolvedColumns}
+                            fields={resolvedFields}
                             rowCount={pageSize}
                             sortKey={sortKey}
                             sortDirection={sortDirection}
@@ -273,7 +258,7 @@ export const ManyRecords = ({
                         />
                     ) : (
                         <TableSkeleton
-                            columns={[{ key: 'placeholder', config: { labelRender: () => 'Ładowanie...' } }]}
+                            fields={[{ key: 'placeholder', config: { label: () => 'Ładowanie...' } }]}
                             rowCount={pageSize}
                             sortKey={null}
                             sortDirection="asc"
@@ -294,26 +279,31 @@ export const ManyRecords = ({
                                 <table className={styles.table}>
                                     <thead className={styles.tableHeader}>
                                         <tr>
-                                            {resolvedColumns.map((col) => (
-                                                <th
-                                                    key={col.key}
-                                                    scope="col"
-                                                    className={`${styles.tableHeaderCell} ${styles.tableHeaderCellSortable}`}
-                                                    onClick={() => handleSort(col.key)}
-                                                    aria-sort={
-                                                        sortKey === col.key
-                                                            ? sortDirection === 'asc'
-                                                                ? 'ascending'
-                                                                : 'descending'
-                                                            : 'none'
-                                                    }
-                                                >
-                                                    {getColumnLabel(col)}
-                                                    <span className={styles.sortIndicator}>
-                                                        {sortKey === col.key ? (sortDirection === 'asc' ? '↑' : '↓') : '⇅'}
-                                                    </span>
-                                                </th>
-                                            ))}
+                                            {resolvedFields.map((field) => {
+                                                const isSortable = field.config.sortable !== false;
+                                                return (
+                                                    <th
+                                                        key={field.key}
+                                                        scope="col"
+                                                        className={`${styles.tableHeaderCell} ${isSortable ? styles.tableHeaderCellSortable : ''}`}
+                                                        onClick={isSortable ? () => handleSort(field.key) : undefined}
+                                                        aria-sort={
+                                                            isSortable && sortKey === field.key
+                                                                ? sortDirection === 'asc'
+                                                                    ? 'ascending'
+                                                                    : 'descending'
+                                                                : 'none'
+                                                        }
+                                                    >
+                                                        {getFieldLabel(field)}
+                                                        {isSortable && (
+                                                            <span className={styles.sortIndicator}>
+                                                                {sortKey === field.key ? (sortDirection === 'asc' ? '↑' : '↓') : '⇅'}
+                                                            </span>
+                                                        )}
+                                                    </th>
+                                                );
+                                            })}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -326,9 +316,9 @@ export const ManyRecords = ({
                                                 tabIndex={onRowClick ? 0 : undefined}
                                                 onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
                                             >
-                                                {resolvedColumns.map((col) => (
-                                                    <td key={col.key} className={styles.tableCell}>
-                                                        {renderCellValue(col, row[col.key], row)}
+                                                {resolvedFields.map((field) => (
+                                                    <td key={field.key} className={styles.tableCell}>
+                                                        {renderCellValue(field, row[field.key], row)}
                                                     </td>
                                                 ))}
                                             </tr>

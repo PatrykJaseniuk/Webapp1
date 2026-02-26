@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 
-import { resolveColumnConfig } from '@/constants/columnRegistry';
+import { resolveFieldConfig } from '@/fieldRegistry';
 import { Spinner } from '@/components/shared/Spinner';
 import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import { SingleRecordDetails } from '@/components/shared/SingleRecordDetails';
@@ -34,7 +34,7 @@ const buildSummary = (
     summaryFields?: string[],
 ): string => {
     const keys = summaryFields ?? Object.keys(data).filter((key) => {
-        const config = resolveColumnConfig(key);
+        const config = resolveFieldConfig(key);
         return !config.hidden && key !== 'id';
     }).slice(0, 3);
 

@@ -14,7 +14,7 @@ export const ViewAllTransactions = () => {
 
     return (
         <ManyRecords
-            query={() => database.from('transactions').select('*', { count: 'exact' })}
+            query={() => database.from('transactions').select('*,properties(*)', { count: 'exact' })}
             hiddenColumns={['created_by', 'updated_at', 'lease_id', 'property_id']}
             defaultSortKey="due_date"
             defaultSortDirection="desc"

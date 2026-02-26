@@ -384,3 +384,173 @@ ol {
   background-size: 1.25rem;
   padding-right: 2.5rem;
 }
+
+/* ── Relation Cell Renderers (for nested Supabase queries) ─────── */
+
+/* Single object variant */
+.cellRelationSingle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.cellRelationName {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.cellRelationSub {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+/* Array variant - badges */
+.cellRelationBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.cellRelationBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  background-color: var(--color-bg-subtle);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+}
+
+.cellRelationBadgeMore {
+  background-color: var(--color-border);
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.cellRelationBadge--type {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.cellRelationBadge--error {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+.cellRelationBadge--warning {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+/* Lease relation specific */
+.cellLeaseStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.cellLeaseStatus--active {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.cellLeaseStatus--expired {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
+}
+
+.cellLeaseStatus--terminated {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.cellLeaseStatus--draft {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.cellLeaseStatus--default {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.cellLeaseRent {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--color-success);
+  font-size: 0.875rem;
+}
+
+.cellLeasesCount {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.cellLeasesActive {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+}
+
+.cellLeasesHint {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* Transaction relation specific */
+.cellTransactionStatus {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+.cellTransactionStatus--paid {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.cellTransactionStatus--pending {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.cellTransactionStatus--overdue {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.cellTransactionStatus--cancelled {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
+}
+
+.cellTransactionStatus--default {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.cellTransactionAmount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.cellTransactionsCount {
+  font-weight: 500;
+  color: var(--color-text);
+}
