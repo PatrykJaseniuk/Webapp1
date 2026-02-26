@@ -1,12 +1,12 @@
 'use client';
 import { database } from '@/api/database';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
-import { ManyRecords } from '@/components/shared/ManyRecords';
+import { ManyRecords } from '@/components/coreComponents/ManyRecords';
 import styles from '@/components/styles/viewAll.module.css';
+import { useRouter } from 'next/navigation';
 
 export default function LandlordDashboard() {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     return (
         <div className={styles.viewAllContainer}>
@@ -16,7 +16,7 @@ export default function LandlordDashboard() {
                 label="Nieruchomości"
                 query={() => database.from('properties').select('*')}
                 hiddenColumns={['created_by', 'updated_at', 'notes', 'created_at']}
-                onRowClick={(row) => navigate(routes.landlord.properties({ id: row.id as string }))}
+                onRowClick={(row) => router.push(routes.landlord.properties({ id: row.id as string }))}
                 pageSize={6}
             />
 
@@ -26,7 +26,7 @@ export default function LandlordDashboard() {
                 hiddenColumns={['created_by', 'updated_at', 'notes', 'id', 'tenant_id', 'property_id']}
                 defaultSortKey="created_at"
                 defaultSortDirection="desc"
-                onRowClick={(row) => navigate(routes.landlord.leases({ id: row.id as string }))}
+                onRowClick={(row) => router.push(routes.landlord.leases({ id: row.id as string }))}
                 pageSize={5}
             />
         </div>

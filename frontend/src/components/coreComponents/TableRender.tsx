@@ -1,6 +1,6 @@
 'use client';
-import { resolveFieldConfig, type FieldConfig } from '@/fieldRegistry';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { resolveFieldConfig, type FieldConfig } from '@/components/fieldRegistry';
+import { EmptyState } from '@/components/coreComponents/EmptyState';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────

@@ -1,12 +1,12 @@
 'use client';
 import { database } from '@/api/database';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
-import { ManyRecords } from '@/components/shared/ManyRecords';
+import { ManyRecords } from '@/components/coreComponents/ManyRecords';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export const ViewAllTransactions = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     useEffect(() => {
         const res = database.from('transactions').select('*', { count: 'exact' })
@@ -18,8 +18,8 @@ export const ViewAllTransactions = () => {
             hiddenColumns={['created_by', 'updated_at', 'lease_id', 'property_id']}
             defaultSortKey="due_date"
             defaultSortDirection="desc"
-            onRowClick={(row) => navigate(routes.landlord.transactions({ id: row.id as string }))}
-            onAdd={() => navigate(routes.landlord.transactions({ action: 'new' }))}
+            onRowClick={(row) => router.push(routes.landlord.transactions({ id: row.id as string }))}
+            onAdd={() => router.push(routes.landlord.transactions({ action: 'new' }))}
         />
     );
 };

@@ -1,18 +1,18 @@
 'use client';
 import { database } from '@/api/database';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
-import { ManyRecords } from '@/components/shared/ManyRecords';
+import { ManyRecords } from '@/components/coreComponents/ManyRecords';
+import { useRouter } from 'next/navigation';
 
 export const ViewAllTenants = () => {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     return (
         <ManyRecords
             query={() => database.from('tenants').select('*')}
             hiddenColumns={['created_by', 'updated_at', 'notes']}
-            onRowClick={(row) => navigate(routes.landlord.tenants({ id: row.id as string }))}
-            onAdd={() => navigate(routes.landlord.tenants({ action: 'new' }))}
+            onRowClick={(row) => router.push(routes.landlord.tenants({ id: row.id as string }))}
+            onAdd={() => router.push(routes.landlord.tenants({ action: 'new' }))}
         />
     );
 };

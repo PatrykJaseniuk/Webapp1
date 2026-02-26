@@ -2,10 +2,10 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 
-import { resolveFieldConfig } from '@/fieldRegistry';
-import type { FieldConfig } from '@/fieldRegistry';
-import { ErrorBanner } from '@/components/shared/ErrorBanner';
-import { EmptyState } from '@/components/shared/EmptyState';
+import { resolveFieldConfig } from '@/components/fieldRegistry';
+import type { FieldConfig } from '@/components/fieldRegistry';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { EmptyState } from '@/components/coreComponents/EmptyState';
 import styles from '@/components/styles/shared.module.css';
 import type { Database } from '@/api/database.types';
 

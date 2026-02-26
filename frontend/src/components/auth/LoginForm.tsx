@@ -6,8 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from '@/routes/useNavigate';
 import { routes, ROLE_REDIRECTS } from '@/routes';
 import { useUserRole } from '@/hooks/useUserRole';
-import { Spinner } from '@/components/shared/Spinner';
-import { ErrorBanner } from '@/components/shared/ErrorBanner';
+import { Spinner } from '@/components/coreComponents/Spinner';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/auth.module.css';
 
 export const LoginForm = () => {

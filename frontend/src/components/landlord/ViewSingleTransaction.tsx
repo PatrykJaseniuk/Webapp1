@@ -3,21 +3,21 @@ import { useState, useEffect } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
 
 import { database } from '@/api/database';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
-import { Spinner } from '@/components/shared/Spinner';
-import { ErrorBanner } from '@/components/shared/ErrorBanner';
-import { SingleRecordDetails } from '@/components/shared/SingleRecordDetails';
-import { SingleRecordReference } from '@/components/shared/SingleRecordReference';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { Spinner } from '@/components/coreComponents/Spinner';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
+import { SingleRecordReference } from '@/components/coreComponents/SingleRecordReference';
+import { ConfirmDialog } from '@/components/coreComponents/ConfirmDialog';
 import styles from '@/components/styles/viewSingle.module.css';
+import { useRouter } from 'next/navigation';
 
 interface ViewSingleTransactionProps {
     id?: string;
 }
 
 export const ViewSingleTransaction = ({ id }: ViewSingleTransactionProps) => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const isCreateMode = !id;
     const [mode, setMode] = useState<'view' | 'edit' | 'create'>(isCreateMode ? 'create' : 'view');
     const [refreshKey, setRefreshKey] = useState(0);
@@ -69,7 +69,7 @@ export const ViewSingleTransaction = ({ id }: ViewSingleTransactionProps) => {
                                         disabled={saveState.loading}
                                         onClick={() => handleSave().then((r) => {
                                             r?.data && (isCreateMode
-                                                ? navigate(routes.landlord.transactions({ id: (r.data as Record<string, unknown>).id as string }))
+                                                ? router.push(routes.landlord.transactions({ id: (r.data as Record<string, unknown>).id as string }))
                                                 : (setMode('view'), handleRefresh()));
                                         })}
                                     >
@@ -77,7 +77,7 @@ export const ViewSingleTransaction = ({ id }: ViewSingleTransactionProps) => {
                                     </button>
                                     <button
                                         className={styles.viewSingleButtonSecondary}
-                                        onClick={() => isCreateMode ? navigate(routes.landlord.transactions()) : (setMode('view'), handleRefresh())}
+                                        onClick={() => isCreateMode ? router.push(routes.landlord.transactions()) : (setMode('view'), handleRefresh())}
                                     >
                                         Anuluj
                                     </button>
@@ -120,7 +120,7 @@ export const ViewSingleTransaction = ({ id }: ViewSingleTransactionProps) => {
                         {showDeleteConfirm && (
                             <ConfirmDialog
                                 message="Czy na pewno chcesz usunąć tę transakcję?"
-                                onConfirm={() => handleDelete().then(() => navigate(routes.landlord.transactions()))}
+                                onConfirm={() => handleDelete().then(() => router.push(routes.landlord.transactions()))}
                                 onCancel={() => setShowDeleteConfirm(false)}
                                 loading={deleteState.loading}
                             />

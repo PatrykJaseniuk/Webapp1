@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { useAsyncFn } from 'react-use';
 
 import { database } from '@/api/database';
-import { ManyRecords } from '@/components/shared/ManyRecords';
-import { SingleRecordDetails } from '@/components/shared/SingleRecordDetails';
-import { ErrorBanner } from '@/components/shared/ErrorBanner';
+import { ManyRecords } from '@/components/coreComponents/ManyRecords';
+import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────

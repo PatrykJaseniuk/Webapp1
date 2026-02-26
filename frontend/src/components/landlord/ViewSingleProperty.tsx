@@ -3,21 +3,21 @@ import { useState, useEffect } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
 
 import { database } from '@/api/database';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
-import { Spinner } from '@/components/shared/Spinner';
-import { ErrorBanner } from '@/components/shared/ErrorBanner';
-import { SingleRecordDetails } from '@/components/shared/SingleRecordDetails';
-import { ManyRecords } from '@/components/shared/ManyRecords';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { Spinner } from '@/components/coreComponents/Spinner';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
+import { ManyRecords } from '@/components/coreComponents/ManyRecords';
+import { ConfirmDialog } from '@/components/coreComponents/ConfirmDialog';
 import styles from '@/components/styles/viewSingle.module.css';
+import { useRouter } from 'next/navigation';
 
 interface ViewSinglePropertyProps {
     id?: string;
 }
 
 export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const isCreateMode = !id;
     const [mode, setMode] = useState<'view' | 'edit' | 'create'>(isCreateMode ? 'create' : 'view');
     const [refreshKey, setRefreshKey] = useState(0);
@@ -69,7 +69,7 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                                         disabled={saveState.loading}
                                         onClick={() => handleSave().then((r) => {
                                             r?.data && (isCreateMode
-                                                ? navigate(routes.landlord.properties({ id: (r.data as Record<string, unknown>).id as string }))
+                                                ? router.push(routes.landlord.properties({ id: (r.data as Record<string, unknown>).id as string }))
                                                 : (setMode('view'), handleRefresh()));
                                         })}
                                     >
@@ -77,7 +77,7 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                                     </button>
                                     <button
                                         className={styles.viewSingleButtonSecondary}
-                                        onClick={() => isCreateMode ? navigate(routes.landlord.properties()) : (setMode('view'), handleRefresh())}
+                                        onClick={() => isCreateMode ? router.push(routes.landlord.properties()) : (setMode('view'), handleRefresh())}
                                     >
                                         Anuluj
                                     </button>
@@ -97,7 +97,7 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                             label="Umowy najmu"
                             query={() => database.from('lease_agreements').select('*').eq('property_id', id!)}
                             hiddenColumns={['id', 'property_id', 'created_by', 'updated_at', 'notes']}
-                            onRowClick={(row) => navigate(routes.landlord.leases({ id: row.id as string }))}
+                            onRowClick={(row) => router.push(routes.landlord.leases({ id: row.id as string }))}
                             disabled={isCreateMode}
                             disabledMessage="Zapisz nieruchomość, aby dodać umowy"
                             refreshKey={refreshKey}
@@ -109,7 +109,7 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                             hiddenColumns={['id', 'property_id', 'lease_id', 'created_by', 'updated_at']}
                             defaultSortKey="due_date"
                             defaultSortDirection="desc"
-                            onRowClick={(row) => navigate(routes.landlord.transactions({ id: row.id as string }))}
+                            onRowClick={(row) => router.push(routes.landlord.transactions({ id: row.id as string }))}
                             disabled={isCreateMode}
                             disabledMessage="Zapisz nieruchomość, aby dodać transakcje"
                             refreshKey={refreshKey}
@@ -118,7 +118,7 @@ export const ViewSingleProperty = ({ id }: ViewSinglePropertyProps) => {
                         {showDeleteConfirm && (
                             <ConfirmDialog
                                 message="Czy na pewno chcesz usunąć tę nieruchomość?"
-                                onConfirm={() => handleDelete().then(() => navigate(routes.landlord.properties()))}
+                                onConfirm={() => handleDelete().then(() => router.push(routes.landlord.properties()))}
                                 onCancel={() => setShowDeleteConfirm(false)}
                                 loading={deleteState.loading}
                             />

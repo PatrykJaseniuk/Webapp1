@@ -3,18 +3,18 @@ import Link from 'next/link';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes, ROLE_REDIRECTS } from '@/routes';
-import { Spinner } from '@/components/shared/Spinner';
+import { Spinner } from '@/components/coreComponents/Spinner';
+import { useRouter } from 'next/navigation';
 
 export default function HomePage() {
     const { isAuthenticated, loading: authLoading } = useAuth();
     const { role, loading: roleLoading } = useUserRole();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     // Redirect authenticated users to their dashboard
     const redirectPath = role ? ROLE_REDIRECTS[role] : undefined;
-    isAuthenticated && !roleLoading && redirectPath && navigate(redirectPath);
+    isAuthenticated && !roleLoading && redirectPath && router.push(redirectPath);
 
     return (
         authLoading || roleLoading ? <Spinner /> :

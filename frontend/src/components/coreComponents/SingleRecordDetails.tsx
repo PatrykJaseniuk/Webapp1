@@ -1,8 +1,8 @@
 'use client';
 import React from 'react';
 
-import { resolveFieldConfig } from '@/fieldRegistry';
-import type { FieldConfig } from '@/fieldRegistry';
+import { resolveFieldConfig } from '@/components/fieldRegistry';
+import type { FieldConfig } from '@/components/fieldRegistry';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────

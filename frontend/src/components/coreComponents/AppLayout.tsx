@@ -1,9 +1,9 @@
 'use client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
-import { Sidebar } from '@/components/shared/Sidebar';
+import { Sidebar } from '@/components/coreComponents/Sidebar';
 import styles from '@/components/styles/shared.module.css';
+import { useRouter } from 'next/navigation';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -11,7 +11,7 @@ interface AppLayoutProps {
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     return (
         <div className={styles.appLayout}>
@@ -21,7 +21,7 @@ export const AppLayout = ({ children }: AppLayoutProps) => {
                     <span className={styles.appHeaderUser}>{user?.email ?? ''}</span>
                     <button
                         className={styles.buttonSecondary}
-                        onClick={() => logout().then(() => navigate(routes.login()))}
+                        onClick={() => logout().then(() => router.push(routes.login()))}
                     >
                         Wyloguj
                     </button>

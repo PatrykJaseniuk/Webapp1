@@ -2,12 +2,12 @@
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 
-import { resolveFieldConfig } from '@/fieldRegistry';
-import { Spinner } from '@/components/shared/Spinner';
-import { ErrorBanner } from '@/components/shared/ErrorBanner';
-import { SingleRecordDetails } from '@/components/shared/SingleRecordDetails';
-import { RecordPicker } from '@/components/shared/RecordPicker';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { resolveFieldConfig } from '@/components/fieldRegistry';
+import { Spinner } from '@/components/coreComponents/Spinner';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
+import { RecordPicker } from '@/components/coreComponents/RecordPicker';
+import { ConfirmDialog } from '@/components/coreComponents/ConfirmDialog';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────

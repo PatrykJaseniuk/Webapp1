@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { routes } from '@/routes';
-import { Spinner } from '@/components/shared/Spinner';
+import { Spinner } from '@/components/coreComponents/Spinner';
 import styles from '@/components/styles/shared.module.css';
 
 interface RoleGuardProps {
