@@ -172,9 +172,9 @@ export const SingleRecordReference = ({
                             </button>
                         </div>
                         <SingleRecordDetails
-                            values={refData}
-                            onChange={() => { }}
-                            mode="view"
+                            id={referenceId}
+                            tableName={pickerTableName as 'properties' | 'tenants' | 'lease_agreements' | 'transactions' | 'attachments' | 'user_roles'}
+                            label=""
                         />
                         {navigateTo && referenceId && (
                             <div style={{ marginTop: '1rem', textAlign: 'right' }}>

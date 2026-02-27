@@ -80,9 +80,7 @@ const renderCellValue = (field: ResolvedField, value: unknown, row: Record<strin
             : String(value);
 
 const getFieldLabel = (field: ResolvedField): string =>
-    field.config.label
-        ? field.config.label()
-        : field.key;
+    field.config.label ?? field.key;
 
 // ── Table Skeleton ──────────────────────────────────────────────────
 
@@ -258,7 +256,7 @@ export const ManyRecords = ({
                         />
                     ) : (
                         <TableSkeleton
-                            fields={[{ key: 'placeholder', config: { label: () => 'Ładowanie...' } }]}
+                            fields={[{ key: 'placeholder', config: { label: 'Ładowanie...' } }]}
                             rowCount={pageSize}
                             sortKey={null}
                             sortDirection="asc"

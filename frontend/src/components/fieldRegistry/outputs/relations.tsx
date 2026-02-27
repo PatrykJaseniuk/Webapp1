@@ -1,9 +1,12 @@
 'use client';
 import React from 'react';
+import Link from 'next/link';
 import type { FieldOutputFn } from '../types';
 import { outputNull } from './common';
 import { formatCurrency } from '../formatters';
 import { LEASE_STATUS_LABELS, TRANSACTION_STATUS_LABELS } from '../enumLabels';
+import { routes } from '@/routes';
+import styles from '@/components/styles/cellRenderers.module.css';
 
 // ── Helper Functions ──────────────────────────────────────────────────
 
@@ -14,6 +17,38 @@ const extractArray = <T,>(value: unknown): T[] =>
         : Array.isArray(value)
             ? value
             : [value as T];
+
+/** Helper: Get lease status class */
+const getLeaseStatusClass = (status?: string): string => {
+    const statusMap: Record<string, string> = {
+        active: styles.cellLeaseStatusActive,
+        expired: styles.cellLeaseStatusExpired,
+        terminated: styles.cellLeaseStatusTerminated,
+        draft: styles.cellLeaseStatusDraft,
+    };
+    return statusMap[status ?? ''] ?? styles.cellLeaseStatusDefault;
+};
+
+/** Helper: Get transaction status class */
+const getTransactionStatusClass = (status?: string): string => {
+    const statusMap: Record<string, string> = {
+        paid: styles.cellTransactionStatusPaid,
+        pending: styles.cellTransactionStatusPending,
+        overdue: styles.cellTransactionStatusOverdue,
+        cancelled: styles.cellTransactionStatusCancelled,
+    };
+    return statusMap[status ?? ''] ?? styles.cellTransactionStatusDefault;
+};
+
+/** Helper: Get relation badge class */
+const getRelationBadgeClass = (type?: 'error' | 'warning' | 'type'): string => {
+    const typeMap: Record<string, string> = {
+        error: styles.cellRelationBadgeError,
+        warning: styles.cellRelationBadgeWarning,
+        type: styles.cellRelationBadgeType,
+    };
+    return type ? (typeMap[type] ?? '') : '';
+};
 
 // ── Tenant Relation Output ────────────────────────────────────────────
 
@@ -27,17 +62,25 @@ export const outputTenantsRelation: FieldOutputFn<unknown> = (value) => {
     }>(value);
 
     const renderSingle = (t: typeof tenants[0]) =>
-        <span className="cellRelationName">{t?.first_name} {t?.last_name}</span>;
+        t?.id
+            ? <Link
+                href={routes.landlord.tenants({ id: t.id })}
+                onClick={(e) => e.stopPropagation()}
+                className={styles.cellRelationLink}
+            >
+                {t.first_name} {t.last_name}
+            </Link>
+            : <span className={styles.cellRelationName}>{t?.first_name} {t?.last_name}</span>;
 
     const renderArray = () =>
-        <div className="cellRelationBadges">
+        <div className={styles.cellRelationBadges}>
             {tenants.slice(0, 3).map((t, i) =>
-                <span key={t?.id ?? i} className="cellRelationBadge">
+                <span key={t?.id ?? i} className={styles.cellRelationBadge}>
                     {t?.first_name} {t?.last_name}
                 </span>
             )}
             {tenants.length > 3
-                ? <span className="cellRelationBadge cellRelationBadgeMore">+{tenants.length - 3}</span>
+                ? <span className={`${styles.cellRelationBadge} ${styles.cellRelationBadgeMore}`}>+{tenants.length - 3}</span>
                 : null}
         </div>;
 
@@ -64,23 +107,34 @@ export const outputLeaseAgreementsRelation: FieldOutputFn<unknown> = (value) => 
     const active = leases.find(l => l?.status === 'active');
 
     const renderSingle = (lease: typeof leases[0]) =>
-        <div className="cellRelationSingle">
-            <span className={`cellLeaseStatus cellLeaseStatus--${lease?.status ?? 'default'}`}>
-                {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
-            </span>
-            <span className="cellLeaseRent">{formatCurrency(lease?.monthly_rent ?? 0)}</span>
-        </div>;
+        lease?.id
+            ? <Link
+                href={routes.landlord.leases({ id: lease.id })}
+                onClick={(e) => e.stopPropagation()}
+                className={styles.cellRelationLink}
+            >
+                <span className={`${styles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
+                    {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
+                </span>
+                <span className={styles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
+            </Link>
+            : <div className={styles.cellRelationSingle}>
+                <span className={`${styles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
+                    {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
+                </span>
+                <span className={styles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
+            </div>;
 
     const renderArray = () =>
-        <div className="cellRelationSingle">
-            <span className="cellLeasesCount">{leases.length} umów</span>
+        <div className={styles.cellRelationSingle}>
+            <span className={styles.cellLeasesCount}>{leases.length} umów</span>
             {active
-                ? <span className="cellLeasesActive">{formatCurrency(active.monthly_rent ?? 0)}/mies</span>
-                : <span className="cellLeasesHint">brak aktywnych</span>}
+                ? <span className={styles.cellLeasesActive}>{formatCurrency(active.monthly_rent ?? 0)}/mies</span>
+                : <span className={styles.cellLeasesHint}>brak aktywnych</span>}
         </div>;
 
     return leases.length === 0
-        ? <span className="cellNull">Brak umów</span>
+        ? <span className={styles.cellNull}>Brak umów</span>
         : Array.isArray(value)
             ? renderArray()
             : renderSingle(leases[0]);
@@ -99,16 +153,27 @@ export const outputPropertiesRelation: FieldOutputFn<unknown> = (value) => {
     }>(value);
 
     const renderSingle = (p: typeof properties[0]) =>
-        <div className="cellRelationSingle">
-            <span className="cellRelationName">{p?.name}</span>
-            <span className="cellRelationSub">{p?.address}</span>
-        </div>;
+        p?.id
+            ? <div className={styles.cellRelationSingle}>
+                <Link
+                    href={routes.landlord.properties({ id: p.id })}
+                    onClick={(e) => e.stopPropagation()}
+                    className={styles.cellRelationLink}
+                >
+                    {p.name}
+                </Link>
+                <span className={styles.cellRelationSub}>{p?.address}</span>
+            </div>
+            : <div className={styles.cellRelationSingle}>
+                <span className={styles.cellRelationName}>{p?.name}</span>
+                <span className={styles.cellRelationSub}>{p?.address}</span>
+            </div>;
 
     const renderArray = () =>
-        <div className="cellRelationBadges">
-            <span className="cellRelationBadge">{properties.length} nieruchomości</span>
+        <div className={styles.cellRelationBadges}>
+            <span className={styles.cellRelationBadge}>{properties.length} nieruchomości</span>
             {properties.slice(0, 2).map((p, i) =>
-                <span key={p?.id ?? i} className="cellRelationBadge cellRelationBadge--type">
+                <span key={p?.id ?? i} className={`${styles.cellRelationBadge} ${getRelationBadgeClass('type')}`}>
                     {p?.name}
                 </span>
             )}
@@ -137,20 +202,31 @@ export const outputTransactionsRelation: FieldOutputFn<unknown> = (value) => {
     const pending = transactions.filter(t => t?.status === 'pending');
 
     const renderSingle = (t: typeof transactions[0]) =>
-        <div className="cellRelationSingle">
-            <span className={`cellTransactionStatus cellTransactionStatus--${t?.status ?? 'default'}`}>
-                {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
-            </span>
-            <span className="cellTransactionAmount">{formatCurrency(t?.amount ?? 0)}</span>
-        </div>;
+        t?.id
+            ? <Link
+                href={routes.landlord.transactions({ id: t.id })}
+                onClick={(e) => e.stopPropagation()}
+                className={styles.cellRelationLink}
+            >
+                <span className={`${styles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
+                    {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
+                </span>
+                <span className={styles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
+            </Link>
+            : <div className={styles.cellRelationSingle}>
+                <span className={`${styles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
+                    {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
+                </span>
+                <span className={styles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
+            </div>;
 
     const renderArray = () =>
-        <div className="cellRelationSingle">
-            <span className="cellTransactionsCount">{transactions.length} transakcji</span>
+        <div className={styles.cellRelationSingle}>
+            <span className={styles.cellTransactionsCount}>{transactions.length} transakcji</span>
             {overdue.length > 0
-                ? <span className="cellRelationBadge cellRelationBadge--error">{overdue.length} zaległych</span>
+                ? <span className={`${styles.cellRelationBadge} ${getRelationBadgeClass('error')}`}>{overdue.length} zaległych</span>
                 : pending.length > 0
-                    ? <span className="cellRelationBadge cellRelationBadge--warning">{pending.length} oczekujących</span>
+                    ? <span className={`${styles.cellRelationBadge} ${getRelationBadgeClass('warning')}`}>{pending.length} oczekujących</span>
                     : null}
         </div>;
 
@@ -174,5 +250,5 @@ export const outputAttachmentsRelation: FieldOutputFn<unknown> = (value) => {
 
     return attachments.length === 0
         ? outputNull()
-        : <span className="cellRelationBadge">{attachments.length} plików</span>;
+        : <span className={styles.cellRelationBadge}>{attachments.length} plików</span>;
 };

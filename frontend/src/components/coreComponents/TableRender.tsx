@@ -64,9 +64,7 @@ const renderCellValue = (field: ResolvedField, value: unknown, row: Record<strin
             : String(value);
 
 const getFieldLabel = (field: ResolvedField): string =>
-    field.config.label
-        ? field.config.label()
-        : field.key;
+    field.config.label ?? field.key;
 
 // ── TableRender Component ───────────────────────────────────────────
 

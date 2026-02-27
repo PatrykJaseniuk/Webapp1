@@ -1,11 +1,8 @@
 'use client';
 import { useState } from 'react';
-import { useAsyncFn } from 'react-use';
 
-import { database } from '@/api/database';
 import { ManyRecords } from '@/components/coreComponents/ManyRecords';
 import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
-import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────
@@ -35,21 +32,6 @@ export const RecordPicker = ({
     defaultValues = {},
 }: RecordPickerProps) => {
     const [activeTab, setActiveTab] = useState<'browse' | 'create'>('browse');
-    const [createValues, setCreateValues] = useState<Record<string, unknown>>(defaultValues);
-
-    const updateCreateField = (key: string, value: unknown) =>
-        setCreateValues((prev) => ({ ...prev, [key]: value }));
-
-    // Create mutation
-    const [createState, handleCreate] = useAsyncFn(async () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { data, error } = await (database as any)
-            .from(tableName)
-            .insert(createValues)
-            .select()
-            .single();
-        return { data: data as Record<string, unknown> | null, error };
-    }, [createValues, tableName]);
 
     return (
         <div className={styles.pickerOverlay} onClick={onClose}>
@@ -80,49 +62,24 @@ export const RecordPicker = ({
 
                 {/* Body */}
                 <div className={styles.pickerBody}>
-                    {activeTab === 'browse' ? (
-                        <ManyRecords
-                            query={query}
-                            hiddenColumns={hiddenColumns}
-                            onRowClick={(row) => onSelect(row.id as string)}
-                            pageSize={10}
-                        />
-                    ) : (
-                        <>
-                            <SingleRecordDetails
-                                values={createValues}
-                                onChange={updateCreateField}
-                                mode="create"
+                    {activeTab === 'browse'
+                        ? (
+                            <ManyRecords
+                                query={query}
+                                hiddenColumns={hiddenColumns}
+                                onRowClick={(row) => onSelect(row.id as string)}
+                                pageSize={10}
                             />
-
-                            {createState.error && (
-                                <ErrorBanner msg={createState.error.message} />
-                            )}
-                            {createState.value?.error && (
-                                <ErrorBanner msg={createState.value.error.message} />
-                            )}
-
-                            <div className={styles.pickerCreateActions}>
-                                <button
-                                    className={styles.buttonSecondary}
-                                    onClick={onClose}
-                                >
-                                    Anuluj
-                                </button>
-                                <button
-                                    className={styles.buttonPrimary}
-                                    disabled={createState.loading}
-                                    onClick={() =>
-                                        handleCreate().then((result) => {
-                                            result?.data && onSelect((result.data as Record<string, unknown>).id as string);
-                                        })
-                                    }
-                                >
-                                    {createState.loading ? 'Tworzenie...' : 'Utwórz i wybierz'}
-                                </button>
-                            </div>
-                        </>
-                    )}
+                        )
+                        : (
+                            <SingleRecordDetails
+                                id={null}
+                                tableName={tableName as 'properties' | 'tenants' | 'lease_agreements' | 'transactions' | 'attachments' | 'user_roles'}
+                                hiddenColumns={hiddenColumns}
+                                onSave={(record) => onSelect(record.id as string)}
+                                onDelete={onClose}
+                            />
+                        )}
                 </div>
             </div>
         </div>

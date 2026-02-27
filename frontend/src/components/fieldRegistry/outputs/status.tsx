@@ -11,6 +11,7 @@ import {
     TRANSACTION_STATUS_LABELS,
     FILE_TYPE_LABELS,
 } from '../enumLabels';
+import styles from '@/components/styles/cellRenderers.module.css';
 
 // ── Status Color Mappings ─────────────────────────────────────────────
 
@@ -41,6 +42,20 @@ const TRANSACTION_STATUS_COLORS: Record<string, string> = {
     cancelled: 'muted',
 };
 
+// ── Helper Functions ──────────────────────────────────────────────────
+
+/** Get status class from color name */
+const getStatusClass = (colorName: string): string => {
+    const colorMap: Record<string, string> = {
+        success: styles.cellStatusSuccess,
+        warning: styles.cellStatusWarning,
+        error: styles.cellStatusError,
+        info: styles.cellStatusInfo,
+        muted: styles.cellStatusMuted,
+    };
+    return colorMap[colorName] ?? styles.cellStatusDefault;
+};
+
 // ── Factory Functions ─────────────────────────────────────────────────
 
 /** Creates enum label output */
@@ -48,14 +63,14 @@ const createEnumOutput = (labels: Record<string, string>): FieldOutputFn<unknown
     (value) =>
         value === null || value === undefined
             ? outputNull()
-            : <span className="cellEnum">{labels[value as string] ?? String(value)}</span>;
+            : <span className={styles.cellEnum}>{labels[value as string] ?? String(value)}</span>;
 
 /** Creates status badge output with color coding */
 const createStatusOutput = (labels: Record<string, string>, statusColors: Record<string, string>): FieldOutputFn<unknown> =>
     (value) =>
         value === null || value === undefined
             ? outputNull()
-            : <span className={`cellStatus cellStatus--${statusColors[value as string] ?? 'default'}`}>
+            : <span className={`${styles.cellStatus} ${getStatusClass(statusColors[value as string] ?? 'default')}`}>
                 {labels[value as string] ?? String(value)}
             </span>;
 

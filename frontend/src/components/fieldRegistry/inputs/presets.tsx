@@ -1,5 +1,6 @@
 'use client';
 import type { FieldInputFn } from '../types';
+import styles from '@/components/styles/inputRenderers.module.css';
 import {
     PROPERTY_TYPE_LABELS,
     PROPERTY_STATUS_LABELS,
@@ -15,7 +16,7 @@ import {
 const createSelectInput = (options: Record<string, string>, placeholder = '— Wybierz —'): FieldInputFn =>
     (value, onChange) => (
         <select
-            className="inputSelect"
+            className={styles.inputSelect}
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value || null)}
         >

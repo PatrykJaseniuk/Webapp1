@@ -1,130 +1,88 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useAsync, useAsyncFn } from 'react-use';
+import { useAsync } from 'react-use';
 
 import { database } from '@/api/database';
 import { routes } from '@/routes';
-import { Spinner } from '@/components/coreComponents/Spinner';
-import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { useNavigate } from '@/routes/useNavigate';
 import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
 import { SingleRecordReference } from '@/components/coreComponents/SingleRecordReference';
-import { ConfirmDialog } from '@/components/coreComponents/ConfirmDialog';
+import { Spinner } from '@/components/coreComponents/Spinner';
+import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/viewSingle.module.css';
-import { useRouter } from 'next/navigation';
 
 interface ViewSingleTransactionProps {
     id?: string;
 }
 
 export const ViewSingleTransaction = ({ id }: ViewSingleTransactionProps) => {
-    const router = useRouter();
+    const navigate = useNavigate();
     const isCreateMode = !id;
-    const [mode, setMode] = useState<'view' | 'edit' | 'create'>(isCreateMode ? 'create' : 'view');
     const [refreshKey, setRefreshKey] = useState(0);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [formState, setFormState] = useState<Record<string, unknown>>({});
+    const [fkState, setFkState] = useState<{ lease_id: string | null; property_id: string | null }>({
+        lease_id: null,
+        property_id: null,
+    });
 
-    const updateField = (key: string, value: unknown) =>
-        setFormState((prev) => ({ ...prev, [key]: value }));
-
+    // Fetch transaction with relations
     const state = useAsync(async () =>
         isCreateMode
             ? { data: null, error: null }
             : await database.from('transactions').select('*').eq('id', id).single()
-        , [id, refreshKey]);
+    , [id, refreshKey]);
 
+    // Initialize FK state when data loads
     useEffect(() => {
-        state.value?.data && setFormState(state.value.data as Record<string, unknown>);
+        const data = state.value?.data as Record<string, unknown> | null;
+        data && setFkState({
+            lease_id: data.lease_id as string | null,
+            property_id: data.property_id as string | null,
+        });
     }, [state.value?.data]);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [saveState, handleSave] = useAsyncFn(async () =>
-        isCreateMode
-            ? await (database as any).from('transactions').insert(formState).select().single()
-            : await (database as any).from('transactions').update(formState).eq('id', id).select().single()
-        , [formState, id]);
-
-    const [deleteState, handleDelete] = useAsyncFn(async () =>
-        await database.from('transactions').delete().eq('id', id!)
-        , [id]);
 
     const handleRefresh = () => setRefreshKey((p) => p + 1);
 
     return (
-        state.error ? <ErrorBanner msg={state.error.message} retry={handleRefresh} /> :
-            state.loading ? <Spinner /> :
-                state.value?.error ? <ErrorBanner msg={state.value.error.message} /> :
-                    <div className={styles.viewSingleContainer}>
-                        <div className={styles.viewSingleActions}>
-                            {mode === 'view' && (
-                                <>
-                                    <button className={styles.viewSingleButton} onClick={() => setMode('edit')}>Edytuj</button>
-                                    <button className={styles.viewSingleButtonDanger} onClick={() => setShowDeleteConfirm(true)}>Usuń</button>
-                                </>
-                            )}
-                            {(mode === 'edit' || mode === 'create') && (
-                                <>
-                                    <button
-                                        className={styles.viewSingleButton}
-                                        disabled={saveState.loading}
-                                        onClick={() => handleSave().then((r) => {
-                                            r?.data && (isCreateMode
-                                                ? router.push(routes.landlord.transactions({ id: (r.data as Record<string, unknown>).id as string }))
-                                                : (setMode('view'), handleRefresh()));
-                                        })}
-                                    >
-                                        {saveState.loading ? 'Zapisuję...' : mode === 'create' ? 'Utwórz' : 'Zapisz'}
-                                    </button>
-                                    <button
-                                        className={styles.viewSingleButtonSecondary}
-                                        onClick={() => isCreateMode ? router.push(routes.landlord.transactions()) : (setMode('view'), handleRefresh())}
-                                    >
-                                        Anuluj
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        {saveState.error && <ErrorBanner msg={saveState.error.message} />}
-
+        state.error
+            ? <ErrorBanner msg={state.error.message} retry={handleRefresh} />
+            : state.loading
+                ? <Spinner />
+                : state.value?.error
+                    ? <ErrorBanner msg={state.value.error.message} />
+                    : <div className={styles.viewSingleContainer}>
                         <SingleRecordDetails
-                            values={formState}
-                            onChange={updateField}
-                            mode={mode}
+                            id={id}
+                            tableName="transactions"
+                            hiddenColumns={['id', 'lease_id', 'property_id', 'created_by', 'updated_at']}
+                            label="Transakcja"
+                            onSave={(record) => navigate(routes.landlord.transactions({ id: record.id as string }))}
+                            onDelete={() => navigate(routes.landlord.transactions())}
+                            refreshKey={refreshKey}
                         />
 
                         <SingleRecordReference
                             label="Umowa najmu"
-                            referenceId={(formState.lease_id as string) ?? null}
-                            onChange={(newId) => updateField('lease_id', newId)}
+                            referenceId={fkState.lease_id}
+                            onChange={(newId) => setFkState((prev) => ({ ...prev, lease_id: newId }))}
                             query={(refId) => database.from('lease_agreements').select('*').eq('id', refId).single()}
                             pickerQuery={() => database.from('lease_agreements').select('*')}
                             pickerTableName="lease_agreements"
                             navigateTo={(refId) => routes.landlord.leases({ id: refId })}
                             nullable={true}
-                            mode={mode}
+                            mode={id ? 'view' : 'create'}
                         />
 
                         <SingleRecordReference
                             label="Nieruchomość"
-                            referenceId={(formState.property_id as string) ?? null}
-                            onChange={(newId) => updateField('property_id', newId)}
+                            referenceId={fkState.property_id}
+                            onChange={(newId) => setFkState((prev) => ({ ...prev, property_id: newId }))}
                             query={(refId) => database.from('properties').select('*').eq('id', refId).single()}
                             pickerQuery={() => database.from('properties').select('*')}
                             pickerTableName="properties"
                             navigateTo={(refId) => routes.landlord.properties({ id: refId })}
                             nullable={true}
-                            mode={mode}
+                            mode={id ? 'view' : 'create'}
                         />
-
-                        {showDeleteConfirm && (
-                            <ConfirmDialog
-                                message="Czy na pewno chcesz usunąć tę transakcję?"
-                                onConfirm={() => handleDelete().then(() => router.push(routes.landlord.transactions()))}
-                                onCancel={() => setShowDeleteConfirm(false)}
-                                loading={deleteState.loading}
-                            />
-                        )}
                     </div>
     );
 };

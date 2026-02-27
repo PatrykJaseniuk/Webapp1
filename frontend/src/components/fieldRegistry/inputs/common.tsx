@@ -1,5 +1,6 @@
 'use client';
 import type { FieldInputFn } from '../types';
+import styles from '@/components/styles/inputRenderers.module.css';
 
 // ── Text Inputs ───────────────────────────────────────────────────────
 
@@ -7,7 +8,7 @@ import type { FieldInputFn } from '../types';
 export const inputText: FieldInputFn = (value, onChange) => (
     <input
         type="text"
-        className="inputText"
+        className={styles.inputText}
         value={(value as string) ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
         placeholder="Wprowadź wartość"
@@ -18,15 +19,15 @@ export const inputText: FieldInputFn = (value, onChange) => (
 export const inputTextRequired: FieldInputFn = (value, onChange) => {
     const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
     return (
-        <div className="inputWrapper">
+        <div className={styles.inputWrapper}>
             <input
                 type="text"
-                className={`inputText ${!hasValue ? 'inputError' : ''}`}
+                className={`${styles.inputText} ${!hasValue ? styles.inputError : ''}`}
                 value={(value as string) ?? ''}
                 onChange={(e) => onChange(e.target.value || null)}
                 placeholder="Wymagane"
             />
-            {!hasValue && <span className="inputErrorMsg">Pole wymagane</span>}
+            {!hasValue && <span className={styles.inputErrorMsg}>Pole wymagane</span>}
         </div>
     );
 };
@@ -37,15 +38,15 @@ export const inputEmail: FieldInputFn = (value, onChange) => {
     const strValue = (value as string) ?? '';
     const isValid = strValue === '' || emailRegex.test(strValue);
     return (
-        <div className="inputWrapper">
+        <div className={styles.inputWrapper}>
             <input
                 type="email"
-                className={`inputText ${!isValid ? 'inputError' : ''}`}
+                className={`${styles.inputText} ${!isValid ? styles.inputError : ''}`}
                 value={strValue}
                 onChange={(e) => onChange(e.target.value || null)}
                 placeholder="email@przyklad.pl"
             />
-            {!isValid && <span className="inputErrorMsg">Nieprawidłowy adres email</span>}
+            {!isValid && <span className={styles.inputErrorMsg}>Nieprawidłowy adres email</span>}
         </div>
     );
 };
@@ -53,7 +54,7 @@ export const inputEmail: FieldInputFn = (value, onChange) => {
 /** Textarea input */
 export const inputTextarea: FieldInputFn = (value, onChange) => (
     <textarea
-        className="inputTextarea"
+        className={styles.inputTextarea}
         value={(value as string) ?? ''}
         onChange={(e) => onChange(e.target.value)}
         rows={3}
@@ -67,7 +68,7 @@ export const inputTextarea: FieldInputFn = (value, onChange) => (
 export const inputNumber: FieldInputFn = (value, onChange) => (
     <input
         type="number"
-        className="inputNumber"
+        className={styles.inputNumber}
         value={(value as number) ?? ''}
         onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
         placeholder="0"
@@ -76,17 +77,17 @@ export const inputNumber: FieldInputFn = (value, onChange) => (
 
 /** Currency input with suffix */
 export const inputCurrency: FieldInputFn = (value, onChange) => (
-    <div className="inputCurrencyWrapper">
+    <div className={styles.inputCurrencyWrapper}>
         <input
             type="number"
-            className="inputCurrency"
+            className={styles.inputCurrency}
             step="0.01"
             min="0"
             value={(value as number) ?? ''}
             onChange={(e) => onChange(e.target.value === '' ? null : Number(e.target.value))}
             placeholder="0.00"
         />
-        <span className="inputCurrencySuffix">zł</span>
+        <span className={styles.inputCurrencySuffix}>zł</span>
     </div>
 );
 
@@ -96,7 +97,7 @@ export const inputCurrency: FieldInputFn = (value, onChange) => (
 export const inputDate: FieldInputFn = (value, onChange) => (
     <input
         type="date"
-        className="inputDate"
+        className={styles.inputDate}
         value={(value as string) ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
     />
@@ -106,7 +107,7 @@ export const inputDate: FieldInputFn = (value, onChange) => (
 export const inputDateTime: FieldInputFn = (value, onChange) => (
     <input
         type="datetime-local"
-        className="inputDateTime"
+        className={styles.inputDateTime}
         value={(value as string) ?? ''}
         onChange={(e) => onChange(e.target.value || null)}
     />
@@ -116,13 +117,13 @@ export const inputDateTime: FieldInputFn = (value, onChange) => (
 
 /** Boolean checkbox input */
 export const inputBoolean: FieldInputFn = (value, onChange) => (
-    <label className="inputCheckboxLabel">
+    <label className={styles.inputCheckboxLabel}>
         <input
             type="checkbox"
-            className="inputCheckbox"
+            className={styles.inputCheckbox}
             checked={value === true}
             onChange={(e) => onChange(e.target.checked)}
         />
-        <span className="inputCheckboxText">{value === true ? 'Tak' : 'Nie'}</span>
+        <span className={styles.inputCheckboxText}>{value === true ? 'Tak' : 'Nie'}</span>
     </label>
 );

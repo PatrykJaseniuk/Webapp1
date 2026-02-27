@@ -2,11 +2,12 @@
 import React from 'react';
 import { formatDate, formatDateTime, formatCurrency } from '../formatters';
 import type { FieldOutputFn } from '../types';
+import styles from '@/components/styles/cellRenderers.module.css';
 
 // ── Null Placeholder ──────────────────────────────────────────────────
 
 /** Null value placeholder */
-export const outputNull = (): React.ReactNode => <span className="cellNull">—</span>;
+export const outputNull = (): React.ReactNode => <span className={styles.cellNull}>—</span>;
 
 // ── Primitive Outputs ─────────────────────────────────────────────────
 
@@ -14,7 +15,7 @@ export const outputNull = (): React.ReactNode => <span className="cellNull">—<
 export const outputText: FieldOutputFn<unknown> = (value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className="cellText">{String(value)}</span>;
+        : <span className={styles.cellText}>{String(value)}</span>;
 
 /** Number output with sign-based colors */
 export const outputNumber: FieldOutputFn<unknown> = (value) => {
@@ -22,13 +23,14 @@ export const outputNumber: FieldOutputFn<unknown> = (value) => {
     const colorClass = isNaN(numValue)
         ? ''
         : numValue > 0
-            ? ' cellNumberPositive'
+            ? styles.cellNumberPositive
             : numValue < 0
-                ? ' cellNumberNegative'
-                : ' cellNumberZero';
+                ? styles.cellNumberNegative
+                : styles.cellNumberZero;
+    const className = colorClass ? styles.cellNumber + ' ' + colorClass : styles.cellNumber;
     return value === null || value === undefined
         ? outputNull()
-        : <span className={`cellNumber${colorClass}`}>{String(value)}</span>;
+        : <span className={className}>{String(value)}</span>;
 };
 
 /** Boolean output with check/cross icons */
@@ -36,8 +38,8 @@ export const outputBoolean: FieldOutputFn<unknown> = (value) =>
     value === null || value === undefined
         ? outputNull()
         : value === true
-            ? <span className="cellBoolean cellBooleanTrue">✓ Tak</span>
-            : <span className="cellBoolean cellBooleanFalse">✗ Nie</span>;
+            ? <span className={styles.cellBoolean + ' ' + styles.cellBooleanTrue}>✓ Tak</span>
+            : <span className={styles.cellBoolean + ' ' + styles.cellBooleanFalse}>✗ Nie</span>;
 
 // ── Currency Output ───────────────────────────────────────────────────
 
@@ -45,9 +47,12 @@ export const outputBoolean: FieldOutputFn<unknown> = (value) =>
 export const outputCurrency: FieldOutputFn<unknown> = (value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const isNegative = !isNaN(numValue) && numValue < 0;
+    const className = isNegative 
+        ? styles.cellCurrency + ' ' + styles.cellCurrencyNegative 
+        : styles.cellCurrency;
     return value === null || value === undefined
         ? outputNull()
-        : <span className={`cellCurrency${isNegative ? ' cellCurrencyNegative' : ''}`}>{formatCurrency(value)}</span>;
+        : <span className={className}>{formatCurrency(value)}</span>;
 };
 
 // ── Date Outputs ──────────────────────────────────────────────────────
@@ -56,13 +61,13 @@ export const outputCurrency: FieldOutputFn<unknown> = (value) => {
 export const outputDate: FieldOutputFn<unknown> = (value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className="cellDate">{formatDate(value)}</span>;
+        : <span className={styles.cellDate}>{formatDate(value)}</span>;
 
 /** DateTime output with formatting */
 export const outputDateTime: FieldOutputFn<unknown> = (value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className="cellDateTime">{formatDateTime(value)}</span>;
+        : <span className={styles.cellDateTime}>{formatDateTime(value)}</span>;
 
 // ── Specialized Number Outputs ────────────────────────────────────────
 
@@ -72,15 +77,16 @@ export const outputDaysCount: FieldOutputFn<unknown> = (value) => {
     const colorClass = isNaN(numValue)
         ? ''
         : numValue < 0
-            ? ' cellDaysOverdue'
+            ? styles.cellDaysOverdue
             : numValue <= 7
-                ? ' cellDaysWarning'
+                ? styles.cellDaysWarning
                 : numValue <= 30
-                    ? ' cellDaysNormal'
-                    : ' cellDaysSafe';
+                    ? styles.cellDaysNormal
+                    : styles.cellDaysSafe;
+    const className = colorClass ? styles.cellNumber + ' ' + colorClass : styles.cellNumber;
     return value === null || value === undefined
         ? outputNull()
-        : <span className={`cellNumber${colorClass}`}>{String(value)}</span>;
+        : <span className={className}>{String(value)}</span>;
 };
 
 /** Item count output with severity colors (for unpaid_items_count, overdue_items_count) */
@@ -89,13 +95,14 @@ export const outputItemCount: FieldOutputFn<unknown> = (value) => {
     const colorClass = isNaN(numValue)
         ? ''
         : numValue === 0
-            ? ' cellCountGood'
+            ? styles.cellCountGood
             : numValue <= 3
-                ? ' cellCountWarning'
-                : ' cellCountCritical';
+                ? styles.cellCountWarning
+                : styles.cellCountCritical;
+    const className = colorClass ? styles.cellNumber + ' ' + colorClass : styles.cellNumber;
     return value === null || value === undefined
         ? outputNull()
-        : <span className={`cellNumber${colorClass}`}>{String(value)}</span>;
+        : <span className={className}>{String(value)}</span>;
 };
 
 // ── File Size Output ──────────────────────────────────────────────────
@@ -105,11 +112,11 @@ export const outputFileSize: FieldOutputFn<unknown> = (value) => {
     const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     return isNaN(num) || num === null
         ? outputNull()
-        : <span className="cellFileSize">
+        : <span className={styles.cellFileSize}>
             {num < 1024
-                ? `${num} B`
+                ? num + ' B'
                 : num < 1024 * 1024
-                    ? `${(num / 1024).toFixed(1)} KB`
-                    : `${(num / (1024 * 1024)).toFixed(1)} MB`}
+                    ? (num / 1024).toFixed(1) + ' KB'
+                    : (num / (1024 * 1024)).toFixed(1) + ' MB'}
         </span>;
 };

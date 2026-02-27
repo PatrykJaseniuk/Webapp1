@@ -19,8 +19,8 @@ export type FieldInputFn = (
 
 /** Field configuration */
 export interface FieldConfig<TValue = unknown> {
-    /** Returns Polish display label for field */
-    label?: () => string;
+    /** Polish display label for field */
+    label?: string;
     /** Output formatter for displaying field value (tables, details) */
     fieldOutput?: FieldOutputFn<TValue>;
     /** Input component for editing field value (undefined = readonly) */
