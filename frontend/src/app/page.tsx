@@ -1,4 +1,5 @@
 'use client';
+import { useEffect } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -13,8 +14,10 @@ export default function HomePage() {
     const router = useRouter();
 
     // Redirect authenticated users to their dashboard
-    const redirectPath = role ? ROLE_REDIRECTS[role] : undefined;
-    isAuthenticated && !roleLoading && redirectPath && router.push(redirectPath);
+    useEffect(() => {
+        const redirectPath = role ? ROLE_REDIRECTS[role] : undefined;
+        isAuthenticated && !roleLoading && redirectPath && router.push(redirectPath);
+    }, [isAuthenticated, roleLoading, role, router]);
 
     return (
         authLoading || roleLoading ? <Spinner /> :

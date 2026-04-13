@@ -1,16 +1,20 @@
 'use client';
+
 import { useState } from 'react';
 import { useAsync } from 'react-use';
 
+import type { Database } from '@/api/database.types';
 import { resolveFieldConfig } from '@/components/fieldRegistry';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
-import { SingleRecordDetails } from '@/components/coreComponents/SingleRecordDetails';
+import { SingleRecordRead } from '@/components/coreComponents/SingleRecordRead';
 import { RecordPicker } from '@/components/coreComponents/RecordPicker';
 import { ConfirmDialog } from '@/components/coreComponents/ConfirmDialog';
 import styles from '@/components/styles/shared.module.css';
 
 // ── Types ───────────────────────────────────────────────────────────
+
+type TableName = keyof Database['public']['Tables'];
 
 interface SingleRecordReferenceProps {
     label: string;
@@ -21,7 +25,7 @@ interface SingleRecordReferenceProps {
     summaryFields?: string[];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pickerQuery: () => any;
-    pickerTableName: string;
+    pickerTableName: TableName;
     navigateTo?: (id: string) => string;
     nullable?: boolean;
     mode: 'view' | 'edit' | 'create';
@@ -77,8 +81,7 @@ export const SingleRecordReference = ({
     const isEditable = mode === 'edit' || mode === 'create';
     const hasReference = !!referenceId && !!refData;
 
-    const labelClassName = `${styles.referenceLabel}${!nullable && isEditable ? ` ${styles.referenceLabelRequired}` : ''
-        }`;
+    const labelClassName = `${styles.referenceLabel}${!nullable && isEditable ? ` ${styles.referenceLabelRequired}` : ''}`;
 
     return (
         <div className={styles.referenceSection}>
@@ -171,10 +174,8 @@ export const SingleRecordReference = ({
                                 Zamknij
                             </button>
                         </div>
-                        <SingleRecordDetails
-                            id={referenceId}
-                            tableName={pickerTableName as 'properties' | 'tenants' | 'lease_agreements' | 'transactions' | 'attachments' | 'user_roles'}
-                            label=""
+                        <SingleRecordRead
+                            values={refData}
                         />
                         {navigateTo && referenceId && (
                             <div style={{ marginTop: '1rem', textAlign: 'right' }}>

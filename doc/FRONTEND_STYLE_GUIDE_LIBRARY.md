@@ -395,8 +395,8 @@ All rendering follows ternary chains — no `if` in JSX (same as [Language Rule 
 {data?.items?.length ?? 'No items'}
 
 // List with empty state
-{items.length > 0
-  ? items.map(item => <Item key={item.id} {...item} />)
+{items.length > 0 ? 
+   items.map(item => <Item key={item.id} {...item} />)
   : <EmptyState message="No items found" />}
 ```
 

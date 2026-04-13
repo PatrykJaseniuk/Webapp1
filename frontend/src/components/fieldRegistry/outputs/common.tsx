@@ -12,13 +12,13 @@ export const outputNull = (): React.ReactNode => <span className={styles.cellNul
 // ── Primitive Outputs ─────────────────────────────────────────────────
 
 /** Text output */
-export const outputText: FieldOutputFn<unknown> = (value) =>
+export const outputText: FieldOutputFn = (value) =>
     value === null || value === undefined
         ? outputNull()
         : <span className={styles.cellText}>{String(value)}</span>;
 
 /** Number output with sign-based colors */
-export const outputNumber: FieldOutputFn<unknown> = (value) => {
+export const outputNumber: FieldOutputFn = (value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const colorClass = isNaN(numValue)
         ? ''
@@ -34,7 +34,7 @@ export const outputNumber: FieldOutputFn<unknown> = (value) => {
 };
 
 /** Boolean output with check/cross icons */
-export const outputBoolean: FieldOutputFn<unknown> = (value) =>
+export const outputBoolean: FieldOutputFn = (value) =>
     value === null || value === undefined
         ? outputNull()
         : value === true
@@ -44,11 +44,11 @@ export const outputBoolean: FieldOutputFn<unknown> = (value) =>
 // ── Currency Output ───────────────────────────────────────────────────
 
 /** Currency output with styling - negative values shown in red */
-export const outputCurrency: FieldOutputFn<unknown> = (value) => {
+export const outputCurrency: FieldOutputFn = (value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const isNegative = !isNaN(numValue) && numValue < 0;
-    const className = isNegative 
-        ? styles.cellCurrency + ' ' + styles.cellCurrencyNegative 
+    const className = isNegative
+        ? styles.cellCurrency + ' ' + styles.cellCurrencyNegative
         : styles.cellCurrency;
     return value === null || value === undefined
         ? outputNull()
@@ -58,13 +58,13 @@ export const outputCurrency: FieldOutputFn<unknown> = (value) => {
 // ── Date Outputs ──────────────────────────────────────────────────────
 
 /** Date output with formatting */
-export const outputDate: FieldOutputFn<unknown> = (value) =>
+export const outputDate: FieldOutputFn = (value) =>
     value === null || value === undefined
         ? outputNull()
         : <span className={styles.cellDate}>{formatDate(value)}</span>;
 
 /** DateTime output with formatting */
-export const outputDateTime: FieldOutputFn<unknown> = (value) =>
+export const outputDateTime: FieldOutputFn = (value) =>
     value === null || value === undefined
         ? outputNull()
         : <span className={styles.cellDateTime}>{formatDateTime(value)}</span>;
@@ -72,7 +72,7 @@ export const outputDateTime: FieldOutputFn<unknown> = (value) =>
 // ── Specialized Number Outputs ────────────────────────────────────────
 
 /** Days count output with urgency colors (for days_until_end, days_active) */
-export const outputDaysCount: FieldOutputFn<unknown> = (value) => {
+export const outputDaysCount: FieldOutputFn = (value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const colorClass = isNaN(numValue)
         ? ''
@@ -90,7 +90,7 @@ export const outputDaysCount: FieldOutputFn<unknown> = (value) => {
 };
 
 /** Item count output with severity colors (for unpaid_items_count, overdue_items_count) */
-export const outputItemCount: FieldOutputFn<unknown> = (value) => {
+export const outputItemCount: FieldOutputFn = (value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const colorClass = isNaN(numValue)
         ? ''
@@ -108,7 +108,7 @@ export const outputItemCount: FieldOutputFn<unknown> = (value) => {
 // ── File Size Output ──────────────────────────────────────────────────
 
 /** File size formatter */
-export const outputFileSize: FieldOutputFn<unknown> = (value) => {
+export const outputFileSize: FieldOutputFn = (value) => {
     const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     return isNaN(num) || num === null
         ? outputNull()

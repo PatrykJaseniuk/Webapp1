@@ -53,7 +53,7 @@ const getRelationBadgeClass = (type?: 'error' | 'warning' | 'type'): string => {
 // ── Tenant Relation Output ────────────────────────────────────────────
 
 /** Tenant relation output - handles object or array */
-export const outputTenantsRelation: FieldOutputFn<unknown> = (value) => {
+export const outputTenantsRelation: FieldOutputFn = (value) => {
     const tenants = extractArray<{
         id?: string;
         first_name?: string;
@@ -94,7 +94,7 @@ export const outputTenantsRelation: FieldOutputFn<unknown> = (value) => {
 // ── Lease Agreements Relation Output ──────────────────────────────────
 
 /** Lease agreements relation output - handles object or array */
-export const outputLeaseAgreementsRelation: FieldOutputFn<unknown> = (value) => {
+export const outputLeaseAgreementsRelation: FieldOutputFn = (value) => {
     const leases = extractArray<{
         id?: string;
         status?: string;
@@ -143,7 +143,7 @@ export const outputLeaseAgreementsRelation: FieldOutputFn<unknown> = (value) => 
 // ── Properties Relation Output ───────────────────────────────────────
 
 /** Properties relation output - handles object or array */
-export const outputPropertiesRelation: FieldOutputFn<unknown> = (value) => {
+export const outputPropertiesRelation: FieldOutputFn = (value) => {
     const properties = extractArray<{
         id?: string;
         name?: string;
@@ -189,7 +189,7 @@ export const outputPropertiesRelation: FieldOutputFn<unknown> = (value) => {
 // ── Transactions Relation Output ──────────────────────────────────────
 
 /** Transactions relation output - handles object or array */
-export const outputTransactionsRelation: FieldOutputFn<unknown> = (value) => {
+export const outputTransactionsRelation: FieldOutputFn = (value) => {
     const transactions = extractArray<{
         id?: string;
         status?: string;
@@ -240,7 +240,7 @@ export const outputTransactionsRelation: FieldOutputFn<unknown> = (value) => {
 // ── Attachments Relation Output ───────────────────────────────────────
 
 /** Attachments relation output - handles object or array */
-export const outputAttachmentsRelation: FieldOutputFn<unknown> = (value) => {
+export const outputAttachmentsRelation: FieldOutputFn = (value) => {
     const attachments = extractArray<{
         id?: string;
         file_name?: string;

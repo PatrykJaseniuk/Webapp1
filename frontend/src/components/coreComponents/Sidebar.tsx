@@ -29,7 +29,7 @@ export const Sidebar = () => {
 
     return (
         <nav className={styles.sidebar}>
-            <div className={styles.sidebarBrand}>Webapp1</div>
+            <div className={styles.sidebarBrand}>Rent Manager</div>
             <ul className={styles.sidebarNav}>
                 {links.map((link) => (
                     <li key={link.href}>
