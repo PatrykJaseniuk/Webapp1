@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 
+
 // ── Function Types ───────────────────────────────────────────────────
 
 /** Field output function - formats value for display */
@@ -21,16 +22,11 @@ export interface FieldConfig {
     /** Polish display label for field */
     label: string;
     /** Output formatter for displaying field value (tables, details) */
-    fieldOutput: FieldOutputFn
+    fieldOutput?: FieldOutputFn
     /** Input component for editing field value (undefined = readonly) */
-    fieldInput: FieldInputFn
+    fieldInput?: FieldInputFn
     /** Hide from tables/forms */
-    hidden: boolean;
+    isHidden?: boolean;
     /** Allow sorting by this field (default: true, false for relation fields) */
-    sortable: boolean;
+    isSortable?: boolean;
 }
-
-/** Generic field registry type */
-export type FieldRegistry<TRow = Record<string, unknown>> = {
-    [K in keyof TRow]?: FieldConfig;
-};

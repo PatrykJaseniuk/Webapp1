@@ -12,7 +12,7 @@ export const ViewAllTenants = () => {
             query={() => database.from('tenants').select('*')}
             hiddenColumns={['created_by', 'updated_at', 'notes']}
             onRowClick={(row) => router.push(routes.landlord.tenants({ id: row.id as string }))}
-            onAdd={() => router.push(routes.landlord.tenants({ action: 'new' }))}
+        // onAdd={() => router.push(routes.landlord.tenants({ action: 'new' }))}
         />
     );
 };

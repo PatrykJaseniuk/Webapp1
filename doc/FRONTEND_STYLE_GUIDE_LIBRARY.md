@@ -129,10 +129,8 @@ import { ErrorBanner } from '@/components/shared/ErrorBanner';
 import styles from '@/components/styles/viewAll.module.css';
 
 export const ItemList = () => {
-  const state = useAsync(async () => {
-    const { data, error } = await database.from('items').select('*');
-    return { data, error };
-  }, []);
+  const state = useAsync(async () => await database.from('items').select('*');
+  , []);
 
   return (
     state.loading ? <Spinner /> :

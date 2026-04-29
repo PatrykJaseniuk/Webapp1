@@ -22,7 +22,7 @@ export default function LandlordDashboard() {
 
             <ManyRecords
                 label="Ostatnie umowy"
-                query={() => database.from('lease_agreements').select('*')}
+                query={() => database.from('lease_agreements').select('tenants(*), properties(*), *')}
                 hiddenColumns={['created_by', 'updated_at', 'notes', 'id', 'tenant_id', 'property_id']}
                 defaultSortKey="created_at"
                 defaultSortDirection="desc"

@@ -180,26 +180,9 @@ const getValue = (input: string | null) => {
 
 | ID | Rule | Severity |
 |----|------|----------|
-| L-016 | **No `try-catch`** — use `{ data, error }` result pattern or `.catch()` | 🔴 Critical |
+| L-016 | **No `try-catch`**  | 🔴 Critical |
 | L-017 | **Result pattern** — functions return `{ data, error }` not throw | 🔴 Critical |
 
-```typescript
-// ✅ Correct — { data, error } pattern
-const fetchItems = async () => {
-  const { data, error } = await database.from('items').select('*');
-  return { data, error };
-};
-
-// ✅ Correct — .catch() for promises
-const result = await somePromise().catch(err => ({ data: null, error: err }));
-
-// ❌ Wrong — try-catch
-try {
-  const data = await fetch(...);
-} catch (err) { ... }
-```
-
-> **Exception:** `api/database.ts` may use `throw` for fatal startup errors (missing env vars).
 
 ---
 

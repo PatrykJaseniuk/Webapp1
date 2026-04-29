@@ -14,7 +14,7 @@ export const ViewAllLeases = () => {
             defaultSortKey="start_date"
             defaultSortDirection="desc"
             onRowClick={(row) => router.push(routes.landlord.leases({ id: row.id as string }))}
-            onAdd={() => router.push(routes.landlord.leases({ action: 'new' }))}
+        // onAdd={() => router.push(routes.landlord.leases({ action: 'new' }))}
         />
     );
 };

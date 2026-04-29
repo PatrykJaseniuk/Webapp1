@@ -1,5 +1,5 @@
 'use client';
-import type { FieldInputFn } from '../types';
+import type { FieldInputFn } from './types';
 import styles from '@/components/styles/inputRenderers.module.css';
 
 // ── Text Inputs ───────────────────────────────────────────────────────
@@ -126,4 +126,59 @@ export const inputBoolean: FieldInputFn = (value, onChange) => (
         />
         <span className={styles.inputCheckboxText}>{value === true ? 'Tak' : 'Nie'}</span>
     </label>
+);
+
+// ── Enum / Select Inputs ──────────────────────────────────────────────
+
+/** Generic select input from options map */
+const inputSelect = (
+    options: Record<string, string>,
+    placeholder: string,
+): FieldInputFn => (value, onChange) => (
+    <select
+        className={styles.inputSelect}
+        value={(value as string) ?? ''}
+        onChange={(e) => onChange(e.target.value || null)}
+    >
+        <option value="">{placeholder}</option>
+        {Object.entries(options).map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+        ))}
+    </select>
+);
+
+/** Property type select */
+export const inputPropertyType = inputSelect(
+    { apartment: '🏠 Mieszkanie', house: '🏡 Dom', commercial: '🏢 Lokal usługowy', room: '🛏️ Pokój' },
+    'Wybierz typ...',
+);
+
+/** Property status select */
+export const inputPropertyStatus = inputSelect(
+    { available: 'Dostępna', occupied: 'Zajęta', inactive: 'Nieaktywna' },
+    'Wybierz status...',
+);
+
+/** Tenant status select */
+export const inputTenantStatus = inputSelect(
+    { active: 'Aktywny', past: 'Były', applicant: 'Kandydat' },
+    'Wybierz status...',
+);
+
+/** Lease status select */
+export const inputLeaseStatus = inputSelect(
+    { active: 'Aktywna', expired: 'Wygasła', terminated: 'Rozwiązana' },
+    'Wybierz status...',
+);
+
+/** Transaction type select */
+export const inputTransactionType = inputSelect(
+    { rent: '💰 Czynsz', utility: '💡 Media', expense: '📤 Wydatek', payment: '💳 Wpłata', withdraw: '🏧 Wypłata', fee: '📋 Opłata', other: '📎 Inne' },
+    'Wybierz typ...',
+);
+
+/** Transaction status select */
+export const inputTransactionStatus = inputSelect(
+    { pending: 'Oczekująca', paid: 'Opłacona', overdue: 'Zaległa' },
+    'Wybierz status...',
 );

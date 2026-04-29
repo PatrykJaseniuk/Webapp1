@@ -7,11 +7,7 @@ import { useRouter } from 'next/navigation';
 
 export const ViewAllTransactions = () => {
     const router = useRouter();
-
-    useEffect(() => {
-        const res = database.from('transactions').select('*', { count: 'exact' })
-    })
-
+  
     return (
         <ManyRecords
             query={() => database.from('transactions').select('*,properties(*)', { count: 'exact' })}
@@ -19,7 +15,7 @@ export const ViewAllTransactions = () => {
             defaultSortKey="due_date"
             defaultSortDirection="desc"
             onRowClick={(row) => router.push(routes.landlord.transactions({ id: row.id as string }))}
-            onAdd={() => router.push(routes.landlord.transactions({ action: 'new' }))}
+        // onAdd={() => router.push(routes.landlord.transactions({ action: 'new' }))}
         />
     );
 };

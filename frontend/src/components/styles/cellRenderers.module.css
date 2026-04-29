@@ -95,12 +95,51 @@
 }
 
 .cellEnum {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
   padding: var(--spacing-xs) var(--spacing-sm);
   background-color: var(--color-bg-subtle);
   border-radius: var(--radius);
   font-size: 0.8125rem;
   color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* Enum badge color variants */
+.cellEnumBlue {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.cellEnumGreen {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.cellEnumPurple {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
+.cellEnumOrange {
+  background-color: #fff7ed;
+  color: #c2410c;
+}
+
+.cellEnumRed {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.cellEnumYellow {
+  background-color: var(--color-warning-light);
+  color: #b45309;
+}
+
+.cellEnumGray {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
 }
 
 .cellStatus {
