@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/api/useAuth';
 import { routes } from '@/routes';
 import styles from '@/components/styles/shared.module.css';
 
@@ -24,7 +24,7 @@ const ROLE_LINKS: Record<string, readonly { label: string; href: string }[]> = {
 };
 
 export const Sidebar = () => {
-    const { role } = useUserRole();
+    const { role } = useAuth();
     const links = ROLE_LINKS[role ?? ''] ?? [];
 
     return (

@@ -2,10 +2,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/api/useAuth';
 import { useNavigate } from '@/routes/useNavigate';
 import { routes, ROLE_REDIRECTS } from '@/routes';
-import { useUserRole } from '@/hooks/useUserRole';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/auth.module.css';
@@ -13,13 +12,12 @@ import styles from '@/components/styles/auth.module.css';
 export const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { login, loginState, isAuthenticated } = useAuth();
-    const { role, loading: roleLoading } = useUserRole();
+    const { login, loginState, isAuthenticated, role, loading } = useAuth();
     const navigate = useNavigate();
 
     // Redirect if already authenticated
     const shouldRedirect = isAuthenticated && role && ROLE_REDIRECTS[role];
-    shouldRedirect && navigate(ROLE_REDIRECTS[role]);
+    shouldRedirect && !loading && navigate(ROLE_REDIRECTS[role]);
 
     return (
         <div className={styles.authContainer}>
@@ -27,9 +25,7 @@ export const LoginForm = () => {
                 className={styles.authForm}
                 onSubmit={(e) => {
                     e.preventDefault();
-                    login(email, password).then((result) => {
-                        !result?.error && roleLoading;
-                    });
+                    login(email, password);
                 }}
             >
                 <h1 className={styles.authTitle}>Logowanie</h1>

@@ -1,8 +1,7 @@
 'use client';
 import Link from 'next/link';
 
-import { useAuth } from '@/hooks/useAuth';
-import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/api/useAuth';
 import { routes } from '@/routes';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import styles from '@/components/styles/shared.module.css';
@@ -13,11 +12,10 @@ interface RoleGuardProps {
 }
 
 export const RoleGuard = ({ allowedRoles, children }: RoleGuardProps) => {
-    const { isAuthenticated, loading: authLoading } = useAuth();
-    const { role, loading: roleLoading } = useUserRole();
+    const { isAuthenticated, role, loading } = useAuth();
 
     return (
-        authLoading || roleLoading ? <Spinner /> :
+        loading ? <Spinner /> :
             !isAuthenticated ? (
                 <div className={styles.guardContainer}>
                     <h2>Wymagane logowanie</h2>

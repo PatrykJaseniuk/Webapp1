@@ -1,5 +1,5 @@
 'use client';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/api/useAuth';
 import { routes } from '@/routes';
 import { Sidebar } from '@/components/coreComponents/Sidebar';
 import styles from '@/components/styles/shared.module.css';

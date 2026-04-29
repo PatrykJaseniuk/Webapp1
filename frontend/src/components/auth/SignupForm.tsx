@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/api/useAuth';
 import { useNavigate } from '@/routes/useNavigate';
 import { routes } from '@/routes';
 import { Spinner } from '@/components/coreComponents/Spinner';

@@ -6,7 +6,6 @@ import { EmptyState } from '@/components/coreComponents/EmptyState';
 import styles from '@/components/styles/shared.module.css';
 import { getFieldConfig } from '../fieldRegistry/registry';
 import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
-import { Database } from '@/api/database.types';
 import { database } from '@/api/database';
 
 // ── Types ───────────────────────────────────────────────────────────
