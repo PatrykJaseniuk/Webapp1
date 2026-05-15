@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
 import { routes } from '@/api/routes/appRoutes';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/appShell.module.css';
 
 const LANDLORD_LINKS = [
     { label: 'Panel', href: routes.landlord.dashboard() },

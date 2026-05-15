@@ -2,7 +2,7 @@
 import { useAuth } from '@/api/useAuth';
 import { routes } from '@/api/routes/appRoutes';
 import { Sidebar } from '@/components/coreComponents/Sidebar';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/appShell.module.css';
 import { useRouter } from 'next/navigation';
 
 interface AppLayoutProps {

@@ -1,0 +1,301 @@
+/* ── ManyRecords wrapper ───────────────────────────────────── */
+.manyRecordsWrapper {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.manyRecordsContent {
+  min-height: calc(var(--page-size, 5) * var(--table-row-height, 2.5rem) + var(--table-header-height, 2.5rem));
+}
+
+.manyRecordsDisabled {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--color-muted);
+  font-style: italic;
+  background-color: var(--color-bg-subtle);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius);
+}
+
+.manyRecordsToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.manyRecordsSortControl {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.manyRecordsSortControl select {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background-color: var(--color-bg);
+  font-size: 0.8125rem;
+}
+
+/* ── Table mode ────────────────────────────────────────────── */
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  min-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  table-layout: auto;
+}
+
+.tableHeader {
+  background-color: var(--color-bg-subtle);
+}
+
+.tableHeaderCell {
+  padding: var(--spacing-sm) var(--spacing-md);
+  text-align: left;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border-bottom: 1px solid var(--color-border);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.tableHeaderCellSortable {
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.tableHeaderCellSortable:hover {
+  color: var(--color-primary);
+}
+
+.sortIndicator {
+  display: inline-block;
+  width: 1.2em;
+  text-align: center;
+  margin-left: var(--spacing-xs);
+  opacity: 0.5;
+}
+
+.tableHeaderCellSortable:hover .sortIndicator {
+  opacity: 1;
+}
+
+.tableRow {
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--transition);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRowClickable {
+  cursor: pointer;
+}
+
+.tableRowClickable:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.tableCell {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.875rem;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 20rem;
+}
+
+.tableCellActions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.deleteRowButton {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  color: var(--color-error);
+  font-size: 0.8125rem;
+  border-radius: var(--radius);
+  transition: background-color var(--transition);
+}
+
+.deleteRowButton:hover {
+  background-color: var(--color-error-light);
+}
+
+/* ── Table skeleton ────────────────────────────────────────── */
+.tableSkeletonRow {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tableSkeletonRow:last-child {
+  border-bottom: none;
+}
+
+.tableSkeletonCell {
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.tableSkeletonContent {
+  height: 1rem;
+  background: linear-gradient(90deg,
+      var(--color-bg-subtle) 25%,
+      var(--color-bg-hover) 50%,
+      var(--color-bg-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: var(--radius-sm);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ── Cards mode ────────────────────────────────────────────── */
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--spacing-md);
+}
+
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg);
+  box-shadow: var(--shadow);
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+
+.cardClickable {
+  cursor: pointer;
+}
+
+.cardClickable:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-primary);
+}
+
+.cardField {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: var(--spacing-xs) 0;
+  font-size: 0.875rem;
+}
+
+.cardField:not(:last-child) {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cardFieldLabel {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  flex-shrink: 0;
+  margin-right: var(--spacing-sm);
+}
+
+.cardFieldValue {
+  color: var(--color-text);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── List mode ─────────────────────────────────────────────── */
+.listContainer {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 0.875rem;
+  border-bottom: 1px solid var(--color-border);
+  transition: background-color var(--transition);
+}
+
+.listItem:last-child {
+  border-bottom: none;
+}
+
+.listItemClickable {
+  cursor: pointer;
+}
+
+.listItemClickable:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.listItemPrimary {
+  flex: 1;
+  color: var(--color-text);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.listItemSecondary {
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+}
+
+/* ── Pagination ────────────────────────────────────────────── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+}
+
+.paginationInfo {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.paginationButton {
+  padding: var(--spacing-xs) var(--spacing-md);
+  font-size: 0.8125rem;
+  color: var(--color-primary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: background-color var(--transition);
+}
+
+.paginationButton:hover:not(:disabled) {
+  background-color: var(--color-bg-hover);
+}
+
+.paginationButton:disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+}

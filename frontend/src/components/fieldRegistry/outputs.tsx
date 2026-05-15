@@ -2,7 +2,8 @@
 import React from 'react';
 import { formatDate, formatDateTime, formatCurrency } from './formatters';
 import type { FieldRendererFn } from './types';
-import styles from '@/components/styles/cellRenderers.module.css';
+import cellStyles from '@/components/styles/cellRenderers.module.css';
+import relationStyles from '@/components/styles/relationCells.module.css';
 import { routes } from '@/api/routes/appRoutes';
 import Link from 'next/link';
 
@@ -60,58 +61,58 @@ const FILE_TYPE_LABELS: Record<string, string> = {
 // ── Enum Color Maps ────────────────────────────────────────────────────
 
 const PROPERTY_TYPE_COLORS: Record<string, string> = {
-    apartment: styles.cellEnumBlue,
-    house: styles.cellEnumGreen,
-    commercial: styles.cellEnumPurple,
-    room: styles.cellEnumOrange,
+    apartment: cellStyles.cellEnumBlue,
+    house: cellStyles.cellEnumGreen,
+    commercial: cellStyles.cellEnumPurple,
+    room: cellStyles.cellEnumOrange,
 };
 
 const PROPERTY_STATUS_COLORS: Record<string, string> = {
-    available: styles.cellStatusSuccess,
-    occupied: styles.cellStatusWarning,
-    inactive: styles.cellStatusMuted,
+    available: cellStyles.cellStatusSuccess,
+    occupied: cellStyles.cellStatusWarning,
+    inactive: cellStyles.cellStatusMuted,
 };
 
 const TENANT_STATUS_COLORS: Record<string, string> = {
-    active: styles.cellStatusSuccess,
-    past: styles.cellStatusMuted,
-    applicant: styles.cellStatusInfo,
+    active: cellStyles.cellStatusSuccess,
+    past: cellStyles.cellStatusMuted,
+    applicant: cellStyles.cellStatusInfo,
 };
 
 const LEASE_STATUS_COLORS: Record<string, string> = {
-    active: styles.cellStatusSuccess,
-    expired: styles.cellStatusMuted,
-    terminated: styles.cellStatusError,
+    active: cellStyles.cellStatusSuccess,
+    expired: cellStyles.cellStatusMuted,
+    terminated: cellStyles.cellStatusError,
 };
 
 const TRANSACTION_TYPE_COLORS: Record<string, string> = {
-    rent: styles.cellEnumBlue,
-    utility: styles.cellEnumYellow,
-    expense: styles.cellEnumRed,
-    payment: styles.cellEnumGreen,
-    withdraw: styles.cellEnumOrange,
-    fee: styles.cellEnumPurple,
-    other: styles.cellEnumGray,
+    rent: cellStyles.cellEnumBlue,
+    utility: cellStyles.cellEnumYellow,
+    expense: cellStyles.cellEnumRed,
+    payment: cellStyles.cellEnumGreen,
+    withdraw: cellStyles.cellEnumOrange,
+    fee: cellStyles.cellEnumPurple,
+    other: cellStyles.cellEnumGray,
 };
 
 const TRANSACTION_STATUS_COLORS: Record<string, string> = {
-    paid: styles.cellStatusSuccess,
-    pending: styles.cellStatusWarning,
-    overdue: styles.cellStatusError,
+    paid: cellStyles.cellStatusSuccess,
+    pending: cellStyles.cellStatusWarning,
+    overdue: cellStyles.cellStatusError,
 };
 
 const FILE_TYPE_COLORS: Record<string, string> = {
-    image: styles.cellEnumBlue,
-    video: styles.cellEnumPurple,
-    pdf: styles.cellEnumRed,
-    document: styles.cellEnumGreen,
-    other: styles.cellEnumGray,
+    image: cellStyles.cellEnumBlue,
+    video: cellStyles.cellEnumPurple,
+    pdf: cellStyles.cellEnumRed,
+    document: cellStyles.cellEnumGreen,
+    other: cellStyles.cellEnumGray,
 };
 
 // ── Null Placeholder ──────────────────────────────────────────────────
 
 /** Null value placeholder */
-export const outputNull = (): React.ReactNode => <span className={styles.cellNull}>—</span>;
+export const outputNull = (): React.ReactNode => <span className={cellStyles.cellNull}>—</span>;
 
 const createReadOnlyRenderer = (render: (value: unknown) => React.ReactNode): FieldRendererFn =>
     ({ value }) => render(value);
@@ -122,7 +123,7 @@ const createReadOnlyRenderer = (render: (value: unknown) => React.ReactNode): Fi
 export const outputText = createReadOnlyRenderer((value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className={styles.cellText}>{String(value)}</span>);
+        : <span className={cellStyles.cellText}>{String(value)}</span>);
 
 /** Number output with sign-based colors */
 export const outputNumber = createReadOnlyRenderer((value) => {
@@ -130,11 +131,11 @@ export const outputNumber = createReadOnlyRenderer((value) => {
     const colorClass = isNaN(numValue)
         ? ''
         : numValue > 0
-            ? styles.cellNumberPositive
+            ? cellStyles.cellNumberPositive
             : numValue < 0
-                ? styles.cellNumberNegative
-                : styles.cellNumberZero;
-    const className = colorClass ? styles.cellNumber + ' ' + colorClass : styles.cellNumber;
+                ? cellStyles.cellNumberNegative
+                : cellStyles.cellNumberZero;
+    const className = colorClass ? cellStyles.cellNumber + ' ' + colorClass : cellStyles.cellNumber;
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{String(value)}</span>;
@@ -145,8 +146,8 @@ export const outputBoolean = createReadOnlyRenderer((value) =>
     value === null ?
         outputNull() :
         value === true ?
-            <span className={styles.cellBoolean + ' ' + styles.cellBooleanTrue}>✓ Tak</span> :
-            <span className={styles.cellBoolean + ' ' + styles.cellBooleanFalse}>✗ Nie</span>);
+            <span className={cellStyles.cellBoolean + ' ' + cellStyles.cellBooleanTrue}>✓ Tak</span> :
+            <span className={cellStyles.cellBoolean + ' ' + cellStyles.cellBooleanFalse}>✗ Nie</span>);
 
 // ── Currency Output ───────────────────────────────────────────────────
 
@@ -155,8 +156,8 @@ export const outputCurrency = createReadOnlyRenderer((value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const isNegative = !isNaN(numValue) && numValue < 0;
     const className = isNegative
-        ? styles.cellCurrency + ' ' + styles.cellCurrencyNegative
-        : styles.cellCurrency;
+        ? cellStyles.cellCurrency + ' ' + cellStyles.cellCurrencyNegative
+        : cellStyles.cellCurrency;
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{formatCurrency(value)}</span>;
@@ -168,13 +169,13 @@ export const outputCurrency = createReadOnlyRenderer((value) => {
 export const outputDate = createReadOnlyRenderer((value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className={styles.cellDate}>{formatDate(value)}</span>);
+        : <span className={cellStyles.cellDate}>{formatDate(value)}</span>);
 
 /** DateTime output with formatting */
 export const outputDateTime = createReadOnlyRenderer((value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className={styles.cellDateTime}>{formatDateTime(value)}</span>);
+        : <span className={cellStyles.cellDateTime}>{formatDateTime(value)}</span>);
 
 // ── Specialized Number Outputs ────────────────────────────────────────
 
@@ -184,13 +185,13 @@ export const outputDaysCount = createReadOnlyRenderer((value) => {
     const colorClass = isNaN(numValue)
         ? ''
         : numValue < 0
-            ? styles.cellDaysOverdue
+            ? cellStyles.cellDaysOverdue
             : numValue <= 7
-                ? styles.cellDaysWarning
+                ? cellStyles.cellDaysWarning
                 : numValue <= 30
-                    ? styles.cellDaysNormal
-                    : styles.cellDaysSafe;
-    const className = colorClass ? styles.cellNumber + ' ' + colorClass : styles.cellNumber;
+                    ? cellStyles.cellDaysNormal
+                    : cellStyles.cellDaysSafe;
+    const className = colorClass ? cellStyles.cellNumber + ' ' + colorClass : cellStyles.cellNumber;
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{String(value)}</span>;
@@ -202,11 +203,11 @@ export const outputItemCount = createReadOnlyRenderer((value) => {
     const colorClass = isNaN(numValue)
         ? ''
         : numValue === 0
-            ? styles.cellCountGood
+            ? cellStyles.cellCountGood
             : numValue <= 3
-                ? styles.cellCountWarning
-                : styles.cellCountCritical;
-    const className = colorClass ? styles.cellNumber + ' ' + colorClass : styles.cellNumber;
+                ? cellStyles.cellCountWarning
+                : cellStyles.cellCountCritical;
+    const className = colorClass ? cellStyles.cellNumber + ' ' + colorClass : cellStyles.cellNumber;
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{String(value)}</span>;
@@ -219,7 +220,7 @@ export const outputFileSize = createReadOnlyRenderer((value) => {
     const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     return isNaN(num) || num === null
         ? outputNull()
-        : <span className={styles.cellFileSize}>
+        : <span className={cellStyles.cellFileSize}>
             {num < 1024
                 ? num + ' B'
                 : num < 1024 * 1024
@@ -227,8 +228,6 @@ export const outputFileSize = createReadOnlyRenderer((value) => {
                     : (num / (1024 * 1024)).toFixed(1) + ' MB'}
         </span>;
 });
-
-
 
 // ── Enum Output Functions ─────────────────────────────────────────────
 
@@ -249,31 +248,31 @@ const outputEnumBadge = (
 
 /** Property type output - colored badge with emoji */
 export const outputPropertyType = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, PROPERTY_TYPE_LABELS, PROPERTY_TYPE_COLORS, styles.cellEnum));
+    outputEnumBadge(value, PROPERTY_TYPE_LABELS, PROPERTY_TYPE_COLORS, cellStyles.cellEnum));
 
 /** Property status output - colored status pill */
 export const outputPropertyStatus = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, PROPERTY_STATUS_LABELS, PROPERTY_STATUS_COLORS, styles.cellStatus));
+    outputEnumBadge(value, PROPERTY_STATUS_LABELS, PROPERTY_STATUS_COLORS, cellStyles.cellStatus));
 
 /** Tenant status output - colored status pill */
 export const outputTenantStatus = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, TENANT_STATUS_LABELS, TENANT_STATUS_COLORS, styles.cellStatus));
+    outputEnumBadge(value, TENANT_STATUS_LABELS, TENANT_STATUS_COLORS, cellStyles.cellStatus));
 
 /** Lease status output - colored status pill */
 export const outputLeaseStatus = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, LEASE_STATUS_LABELS, LEASE_STATUS_COLORS, styles.cellStatus));
+    outputEnumBadge(value, LEASE_STATUS_LABELS, LEASE_STATUS_COLORS, cellStyles.cellStatus));
 
 /** Transaction type output - colored badge with emoji */
 export const outputTransactionType = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS, styles.cellEnum));
+    outputEnumBadge(value, TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS, cellStyles.cellEnum));
 
 /** Transaction status output - colored status pill */
 export const outputTransactionStatus = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, TRANSACTION_STATUS_LABELS, TRANSACTION_STATUS_COLORS, styles.cellStatus));
+    outputEnumBadge(value, TRANSACTION_STATUS_LABELS, TRANSACTION_STATUS_COLORS, cellStyles.cellStatus));
 
 /** File type output - colored badge with emoji */
 export const outputFileType = createReadOnlyRenderer((value) =>
-    outputEnumBadge(value, FILE_TYPE_LABELS, FILE_TYPE_COLORS, styles.cellEnum));
+    outputEnumBadge(value, FILE_TYPE_LABELS, FILE_TYPE_COLORS, cellStyles.cellEnum));
 
 // ── Helper Functions ──────────────────────────────────────────────────
 
@@ -288,31 +287,31 @@ const extractArray = <T,>(value: unknown): T[] =>
 /** Helper: Get lease status class */
 const getLeaseStatusClass = (status?: string): string => {
     const statusMap: Record<string, string> = {
-        active: styles.cellLeaseStatusActive,
-        expired: styles.cellLeaseStatusExpired,
-        terminated: styles.cellLeaseStatusTerminated,
-        draft: styles.cellLeaseStatusDraft,
+        active: relationStyles.cellLeaseStatusActive,
+        expired: relationStyles.cellLeaseStatusExpired,
+        terminated: relationStyles.cellLeaseStatusTerminated,
+        draft: relationStyles.cellLeaseStatusDraft,
     };
-    return statusMap[status ?? ''] ?? styles.cellLeaseStatusDefault;
+    return statusMap[status ?? ''] ?? relationStyles.cellLeaseStatusDefault;
 };
 
 /** Helper: Get transaction status class */
 const getTransactionStatusClass = (status?: string): string => {
     const statusMap: Record<string, string> = {
-        paid: styles.cellTransactionStatusPaid,
-        pending: styles.cellTransactionStatusPending,
-        overdue: styles.cellTransactionStatusOverdue,
-        cancelled: styles.cellTransactionStatusCancelled,
+        paid: relationStyles.cellTransactionStatusPaid,
+        pending: relationStyles.cellTransactionStatusPending,
+        overdue: relationStyles.cellTransactionStatusOverdue,
+        cancelled: relationStyles.cellTransactionStatusCancelled,
     };
-    return statusMap[status ?? ''] ?? styles.cellTransactionStatusDefault;
+    return statusMap[status ?? ''] ?? relationStyles.cellTransactionStatusDefault;
 };
 
 /** Helper: Get relation badge class */
 const getRelationBadgeClass = (type?: 'error' | 'warning' | 'type'): string => {
     const typeMap: Record<string, string> = {
-        error: styles.cellRelationBadgeError,
-        warning: styles.cellRelationBadgeWarning,
-        type: styles.cellRelationBadgeType,
+        error: relationStyles.cellRelationBadgeError,
+        warning: relationStyles.cellRelationBadgeWarning,
+        type: relationStyles.cellRelationBadgeType,
     };
     return type ? (typeMap[type] ?? '') : '';
 };
@@ -333,21 +332,21 @@ export const outputTenantsRelation = createReadOnlyRenderer((value) => {
             <Link
                 href={routes.landlord.tenants({ id: t.id })}
                 onClick={(e) => e.stopPropagation()}
-                className={styles.cellRelationLink}
+                className={relationStyles.cellRelationLink}
             >
                 {t.first_name} {t.last_name}
             </Link> :
-            <span className={styles.cellRelationName}>{t?.first_name} {t?.last_name}</span>;
+            <span className={relationStyles.cellRelationName}>{t?.first_name} {t?.last_name}</span>;
 
     const renderArray = () =>
-        <div className={styles.cellRelationBadges}>
+        <div className={relationStyles.cellRelationBadges}>
             {tenants.slice(0, 3).map((t, i) =>
-                <span key={t?.id ?? i} className={styles.cellRelationBadge}>
+                <span key={t?.id ?? i} className={relationStyles.cellRelationBadge}>
                     {t?.first_name} {t?.last_name}
                 </span>
             )}
             {tenants.length > 3 ?
-                <span className={`${styles.cellRelationBadge} ${styles.cellRelationBadgeMore}`}>+{tenants.length - 3}</span> :
+                <span className={`${relationStyles.cellRelationBadge} ${relationStyles.cellRelationBadgeMore}`}>+{tenants.length - 3}</span> :
                 null}
         </div>;
 
@@ -378,31 +377,31 @@ export const outputLeaseAgreementsRelation = createReadOnlyRenderer((value) => {
             ? <Link
                 href={routes.landlord.leases({ id: lease.id })}
                 onClick={(e) => e.stopPropagation()}
-                className={styles.cellRelationLink}
+                className={relationStyles.cellRelationLink}
             >
-                <span className={`${styles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
+                <span className={`${relationStyles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
                     {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
                 </span>
-                <span className={styles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
+                <span className={relationStyles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
             </Link>
-            : <div className={styles.cellRelationSingle}>
-                <span className={`${styles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
+            : <div className={relationStyles.cellRelationSingle}>
+                <span className={`${relationStyles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
                     {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
                 </span>
-                <span className={styles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
+                <span className={relationStyles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
             </div>;
 
     const renderArray = () =>
-        <div className={styles.cellRelationSingle}>
-            <span className={styles.cellLeasesCount}>{leases.length} umów</span>
+        <div className={relationStyles.cellRelationSingle}>
+            <span className={relationStyles.cellLeasesCount}>{leases.length} umów</span>
             {active
-                ? <span className={styles.cellLeasesActive}>{formatCurrency(active.monthly_rent ?? 0)}/mies</span>
-                : <span className={styles.cellLeasesHint}>brak aktywnych</span>}
+                ? <span className={relationStyles.cellLeasesActive}>{formatCurrency(active.monthly_rent ?? 0)}/mies</span>
+                : <span className={relationStyles.cellLeasesHint}>brak aktywnych</span>}
         </div>;
 
 
     return leases.length === 0 ?
-        <span className={styles.cellNull}>Brak umów</span> :
+        <span className={cellStyles.cellNull}>Brak umów</span> :
         Array.isArray(value) ?
             renderArray() :
             renderSingle(leases[0]);
@@ -422,26 +421,26 @@ export const outputPropertiesRelation = createReadOnlyRenderer((value) => {
 
     const renderSingle = (p: typeof properties[0]) =>
         p?.id ?
-            <div className={styles.cellRelationSingle}>
+            <div className={relationStyles.cellRelationSingle}>
                 <Link
                     href={routes.landlord.properties({ id: p.id })}
                     onClick={(e) => e.stopPropagation()}
-                    className={styles.cellRelationLink}
+                    className={relationStyles.cellRelationLink}
                 >
                     {p.name}
                 </Link>
-                <span className={styles.cellRelationSub}>{p?.address}</span>
+                <span className={relationStyles.cellRelationSub}>{p?.address}</span>
             </div> :
-            <div className={styles.cellRelationSingle}>
-                <span className={styles.cellRelationName}>{p?.name}</span>
-                <span className={styles.cellRelationSub}>{p?.address}</span>
+            <div className={relationStyles.cellRelationSingle}>
+                <span className={relationStyles.cellRelationName}>{p?.name}</span>
+                <span className={relationStyles.cellRelationSub}>{p?.address}</span>
             </div>;
 
     const renderArray = () =>
-        <div className={styles.cellRelationBadges}>
-            <span className={styles.cellRelationBadge}>{properties.length} nieruchomości</span>
+        <div className={relationStyles.cellRelationBadges}>
+            <span className={relationStyles.cellRelationBadge}>{properties.length} nieruchomości</span>
             {properties.slice(0, 2).map((p, i) =>
-                <span key={p?.id ?? i} className={`${styles.cellRelationBadge} ${getRelationBadgeClass('type')}`}>
+                <span key={p?.id ?? i} className={`${relationStyles.cellRelationBadge} ${getRelationBadgeClass('type')}`}>
                     {p?.name}
                 </span>
             )}
@@ -474,27 +473,27 @@ export const outputTransactionsRelation = createReadOnlyRenderer((value) => {
             <Link
                 href={routes.landlord.transactions({ id: t.id })}
                 onClick={(e) => e.stopPropagation()}
-                className={styles.cellRelationLink}
+                className={relationStyles.cellRelationLink}
             >
-                <span className={`${styles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
+                <span className={`${relationStyles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
                     {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
                 </span>
-                <span className={styles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
+                <span className={relationStyles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
             </Link> :
-            <div className={styles.cellRelationSingle}>
-                <span className={`${styles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
+            <div className={relationStyles.cellRelationSingle}>
+                <span className={`${relationStyles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
                     {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
                 </span>
-                <span className={styles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
+                <span className={relationStyles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
             </div>;
 
     const renderArray = () =>
-        <div className={styles.cellRelationSingle}>
-            <span className={styles.cellTransactionsCount}>{transactions.length} transakcji</span>
+        <div className={relationStyles.cellRelationSingle}>
+            <span className={relationStyles.cellTransactionsCount}>{transactions.length} transakcji</span>
             {overdue.length > 0
-                ? <span className={`${styles.cellRelationBadge} ${getRelationBadgeClass('error')}`}>{overdue.length} zaległych</span>
+                ? <span className={`${relationStyles.cellRelationBadge} ${getRelationBadgeClass('error')}`}>{overdue.length} zaległych</span>
                 : pending.length > 0
-                    ? <span className={`${styles.cellRelationBadge} ${getRelationBadgeClass('warning')}`}>{pending.length} oczekujących</span>
+                    ? <span className={`${relationStyles.cellRelationBadge} ${getRelationBadgeClass('warning')}`}>{pending.length} oczekujących</span>
                     : null}
         </div>;
 
@@ -518,5 +517,5 @@ export const outputAttachmentsRelation = createReadOnlyRenderer((value) => {
 
     return attachments.length === 0
         ? outputNull()
-        : <span className={styles.cellRelationBadge}>{attachments.length} plików</span>;
+        : <span className={relationStyles.cellRelationBadge}>{attachments.length} plików</span>;
 });

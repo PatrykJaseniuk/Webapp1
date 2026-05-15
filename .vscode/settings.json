@@ -1,20 +1,20 @@
 {
     "files.exclude": {
-        "**/.git": true,
-        "**/.svn": true,
-        "**/.hg": true,
-        "**/.DS_Store": true,
-        "**/Thumbs.db": true,
-        "**/CVS": true,
-        "**/next-env.d.ts": true,
-        "**/package-lock.json": true,
-        "**/package.json": true,
-        "**/tsconfig.json": true,
-        "**/node_modules": true,
-        "**/.*": true,
-        "**/yarn.lock": true,
-        "**/contributing.md": true,
-        "**LICENSE": true
+        "**/.git": false,
+        "**/.svn": false,
+        "**/.hg": false,
+        "**/.DS_Store": false,
+        "**/Thumbs.db": false,
+        "**/CVS": false,
+        "**/next-env.d.ts": false,
+        "**/package-lock.json": false,
+        "**/package.json": false,
+        "**/tsconfig.json": false,
+        "**/node_modules": false,
+        "**/.*": false,
+        "**/yarn.lock": false,
+        "**/contributing.md": false,
+        "**LICENSE": false
     },
     "explorerExclude.backup": {}
 }

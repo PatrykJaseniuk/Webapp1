@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/feedback.module.css';
 
 interface EmptyStateProps {
     message: string;

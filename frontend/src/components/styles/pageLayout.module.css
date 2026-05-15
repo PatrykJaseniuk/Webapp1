@@ -1,4 +1,14 @@
-/* ── ViewSingle* Components ─────────────────────────────────── */
+/* ── Page Layout (viewAll + viewSingle shared) ──────────────── */
+.viewAllContainer {
+    width: 100%;
+}
+
+.viewAllTitle {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-text);
+}
+
 .viewSingleContainer {
     display: flex;
     flex-direction: column;
@@ -38,4 +48,19 @@
 
 .viewSingleError {
     margin-top: var(--spacing-sm);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--spacing-md);
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
 }

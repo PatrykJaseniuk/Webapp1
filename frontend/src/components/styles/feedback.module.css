@@ -1,0 +1,152 @@
+/* ── Spinner ────────────────────────────────────────────────── */
+.spinnerContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+}
+
+.spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── ErrorBanner ───────────────────────────────────────────── */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--color-error-light);
+  border: 1px solid var(--color-error);
+  border-radius: var(--radius);
+  color: var(--color-error);
+}
+
+.bannerMessage {
+  flex: 1;
+  font-size: 0.875rem;
+}
+
+.retryButton {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-error);
+  color: white;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition);
+}
+
+.retryButton:hover {
+  background-color: #b91c1c;
+}
+
+/* ── EmptyState ────────────────────────────────────────────── */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-2xl);
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.emptyStateMessage {
+  font-size: 0.9375rem;
+}
+
+.emptyStateAction {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--transition);
+}
+
+.emptyStateAction:hover {
+  background-color: var(--color-primary-hover);
+  text-decoration: none;
+}
+
+/* ── ConfirmDialog ─────────────────────────────────────────── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-overlay);
+  z-index: 1000;
+}
+
+.dialog {
+  background-color: var(--color-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-xl);
+  max-width: 28rem;
+  width: 90%;
+}
+
+.dialogMessage {
+  font-size: 0.9375rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.dialogActions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: flex-end;
+}
+
+.dialogConfirm {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-error);
+  color: white;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition);
+}
+
+.dialogConfirm:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.dialogConfirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.dialogCancel {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color var(--transition);
+}
+
+.dialogCancel:hover {
+  background-color: var(--color-bg-hover);
+}

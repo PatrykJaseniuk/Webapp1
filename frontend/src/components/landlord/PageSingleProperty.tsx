@@ -10,7 +10,7 @@ import { SingleRecord } from '@/components/coreComponents/SingleRecord';
 import { ManyRecords } from '@/components/coreComponents/ManyRecords';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
-import styles from '@/components/styles/viewSingle.module.css';
+import styles from '@/components/styles/pageLayout.module.css';
 
 type PageSingleRecordProps =
     { id: string }

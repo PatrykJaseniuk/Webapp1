@@ -1,5 +1,5 @@
 'use client';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/feedback.module.css';
 
 interface ErrorBannerProps {
     msg: string;

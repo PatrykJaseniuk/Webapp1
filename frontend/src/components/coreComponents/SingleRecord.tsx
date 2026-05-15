@@ -1,7 +1,7 @@
 'use client';
 
-import styles from '@/components/styles/shared.module.css';
-import viewSingleStyles from '@/components/styles/viewSingle.module.css';
+import styles from '@/components/styles/singleRecord.module.css';
+import viewSingleStyles from '@/components/styles/pageLayout.module.css';
 import { getFieldConfig } from '../fieldRegistry/registry';
 import { useState } from 'react';
 

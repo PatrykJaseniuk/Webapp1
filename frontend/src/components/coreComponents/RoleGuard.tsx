@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/api/useAuth';
 import { routes } from '@/api/routes/appRoutes';
 import { Spinner } from '@/components/coreComponents/Spinner';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/appShell.module.css';
 
 interface RoleGuardProps {
     allowedRoles: string[];

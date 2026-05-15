@@ -1,5 +1,5 @@
 'use client';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/feedback.module.css';
 
 export const Spinner = () => (
     <div className={styles.spinnerContainer}>

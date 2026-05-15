@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { useAsync } from 'react-use';
 import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import { EmptyState } from '@/components/coreComponents/EmptyState';
-import styles from '@/components/styles/shared.module.css';
+import styles from '@/components/styles/manyRecords.module.css';
+import pageStyles from '@/components/styles/pageLayout.module.css';
 import { getFieldConfig } from '../fieldRegistry/registry';
 import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 import { database } from '@/api/database';
@@ -135,8 +136,8 @@ export const ManyRecords = ({
     return (
         <div className={styles.manyRecordsWrapper}>
             {/* Header */}
-            <div className={styles.sectionHeader}>
-                {label && <h3 className={styles.sectionTitle}>{label}</h3>}
+            <div className={pageStyles.sectionHeader}>
+                {label && <h3 className={pageStyles.sectionTitle}>{label}</h3>}
             </div>
 
 

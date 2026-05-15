@@ -265,10 +265,51 @@ export const RoleGuard = ({ allowedRoles, children }: RoleGuardProps) => {
 
 | ID | Rule | Severity |
 |----|------|----------|
-| F-008 | **Group-level CSS Modules** — one `.module.css` per component pattern, not per component | 🟠 High |
-| F-009 | **camelCase CSS classes** — `.cardHeader`, `.buttonPrimary` | 🟡 Recommended |
+| F-008 | **All `.module.css` files in `components/styles/`** — never co-located with component | 🔴 Critical |
+| F-009 | **Group by pattern, not by component** — one file per logical concern (forms, buttons, feedback, table, …) | 🔴 Critical |
+| F-010 | **Shareable classes** — components import whichever style file matches the pattern they use; classes are reused across components | 🟠 High |
+| F-011 | **File size budget** — keep each module under ~300 lines; split into a sibling file when growing past it | 🟠 High |
+| F-012 | **camelCase class names** — `.cardHeader`, `.buttonPrimary` | 🟡 Recommended |
+| F-013 | **Design tokens in `globals.css`** — colors, spacing, radii, shadows, transitions; never hard-code in module files | 🔴 Critical |
+| F-014 | **No inline `style={...}`** except for dynamic CSS variables (e.g., `--page-size`) | 🟠 High |
 
 Styles are organized by **component pattern**, not per individual component. All components of the same type share one CSS Module file. Design tokens (colors, spacing, etc.) live in `globals.css`.
+
+### Directory layout
+
+```
+frontend/src/components/styles/
+├── appShell.module.css        ← AppLayout, Sidebar, RoleGuard, Container
+├── buttons.module.css         ← .buttonPrimary, .buttonSecondary, .buttonDanger
+├── cellRenderers.module.css   ← basic cells: null, text, number, currency, date, boolean, enum, status
+├── forms.module.css           ← auth forms, generic form layout (used by login, signup, future forms)
+├── feedback.module.css        ← Spinner, ErrorBanner, EmptyState, ConfirmDialog
+├── inputRenderers.module.css  ← form inputs, textareas, selects, currency input
+├── manyRecords.module.css     ← table mode, cards mode, list mode, pagination, skeleton, toolbar
+├── relationCells.module.css   ← nested-relation cells: cellRelation*, cellLease*, cellTransaction*
+├── singleRecord.module.css    ← details, reference, recordPicker
+└── pageLayout.module.css      ← page headers, titles, actions (shared by viewAll* and viewSingle* components)
+```
+
+### When to split a CSS Module file
+
+| Guideline | Action |
+|-----------|--------|
+| File exceeds **~300 lines** | Split into a logical sibling file |
+| A file contains **3+ unrelated component patterns** | Separate each pattern into its own file |
+| A pattern is used by **components in different subdirectories** | Ensure it lives in a shared file (not component-specific) |
+
+### Importing styles
+
+```typescript
+// Single import — one pattern group
+import styles from '@/components/styles/feedback.module.css';
+
+// Multiple imports — different pattern groups
+import styles from '@/components/styles/singleRecord.module.css';
+import pageStyles from '@/components/styles/pageLayout.module.css';
+import btnStyles from '@/components/styles/buttons.module.css';
+```
 
 
 
