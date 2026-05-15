@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
 
-import { routes } from '@/routes';
+import { routes } from '@/api/routes/appRoutes';
 import { useRouter } from 'next/navigation';
 import { database } from '@/api/database';
 import { SingleRecord } from '@/components/coreComponents/SingleRecord';

@@ -2,7 +2,7 @@
 import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
-import { routes } from '@/routes';
+import { routes } from '@/api/routes/appRoutes';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import styles from '@/components/styles/shared.module.css';
 

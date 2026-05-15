@@ -1,6 +1,6 @@
 'use client';
 import { database } from '@/api/database';
-import { routes } from '@/routes';
+import { routes } from '@/api/routes/appRoutes';
 import { ManyRecords } from '@/components/coreComponents/ManyRecords';
 import styles from '@/components/styles/viewAll.module.css';
 import { useRouter } from 'next/navigation';

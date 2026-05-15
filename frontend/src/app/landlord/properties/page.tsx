@@ -1,6 +1,6 @@
 'use client';
-import type { PropertyRouteParams } from '@/routes';
-import { useRouteParams } from '@/routes/useRouteParams';
+import type { PropertyRouteParams } from '@/api/routes/appRoutes';
+import { useRouteParams } from '@/api/routes/useRouteParams';
 import { ViewAllProperties } from '@/components/landlord/PageAllProperties';
 import { PageSingleProperty } from '@/components/landlord/PageSingleProperty';
 import { PageCreateProperty } from '@/components/landlord/PageCreateProperty';

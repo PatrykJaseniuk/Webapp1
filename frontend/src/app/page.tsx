@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
-import { routes, ROLE_REDIRECTS } from '@/routes';
+import { routes, ROLE_REDIRECTS } from '@/api/routes/appRoutes';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import { useRouter } from 'next/navigation';
 

@@ -3,18 +3,19 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
-import { useNavigate } from '@/routes/useNavigate';
-import { routes } from '@/routes';
+// import { useNavigate } from '@/routes/useNavigate';
+import { routes } from '@/api/routes/appRoutes';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/auth.module.css';
+import { useRouter } from 'next/navigation';
 
 export const SignupForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const { signup, signupState } = useAuth();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const passwordMismatch = confirmPassword.length > 0 && password !== confirmPassword;
 
@@ -25,7 +26,7 @@ export const SignupForm = () => {
                 onSubmit={(e) => {
                     e.preventDefault();
                     !passwordMismatch && signup(email, password).then((result) => {
-                        !result?.error && navigate(routes.login());
+                        !result?.error && router.push(routes.login());
                     });
                 }}
             >

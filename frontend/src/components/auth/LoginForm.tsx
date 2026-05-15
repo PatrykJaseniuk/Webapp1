@@ -3,21 +3,22 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
-import { useNavigate } from '@/routes/useNavigate';
-import { routes, ROLE_REDIRECTS } from '@/routes';
+// import { useNavigate } from '@/routes/useNavigate';
+import { routes, ROLE_REDIRECTS } from '@/api/routes/appRoutes';
 import { Spinner } from '@/components/coreComponents/Spinner';
 import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
 import styles from '@/components/styles/auth.module.css';
+import { useRouter } from 'next/navigation';
 
 export const LoginForm = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { login, loginState, isAuthenticated, role, loading } = useAuth();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     // Redirect if already authenticated
     const shouldRedirect = isAuthenticated && role && ROLE_REDIRECTS[role];
-    shouldRedirect && !loading && navigate(ROLE_REDIRECTS[role]);
+    shouldRedirect && !loading && router.push(ROLE_REDIRECTS[role]);
 
     return (
         <div className={styles.authContainer}>

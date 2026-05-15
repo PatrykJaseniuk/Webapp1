@@ -3,7 +3,7 @@ import React from 'react';
 import { formatDate, formatDateTime, formatCurrency } from './formatters';
 import type { FieldRendererFn } from './types';
 import styles from '@/components/styles/cellRenderers.module.css';
-import { routes } from '@/routes';
+import { routes } from '@/api/routes/appRoutes';
 import Link from 'next/link';
 
 // ── Enum Labels (matching DB CHECK constraints) ────────────────────────

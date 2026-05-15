@@ -6,4 +6,5 @@ export const useRouteParams = <T extends Record<string, string | undefined>>(): 
     return new Proxy({} as T, {
         get: (_, prop: string) => searchParams.get(prop) ?? undefined,
     });
+
 };
