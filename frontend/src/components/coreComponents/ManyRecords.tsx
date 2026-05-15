@@ -89,6 +89,7 @@ const Pagination = ({ page, pageSize, totalCount, onPageChange }: PaginationProp
     );
 };
 
+
 // ── ManyRecords Component ───────────────────────────────────────────
 
 export const ManyRecords = ({
@@ -201,7 +202,12 @@ export const ManyRecords = ({
                                                     return (
                                                         fieldConfig.isHidden ||
                                                         <td key={fieldKey} className={styles.tableCell}>
-                                                            {fieldConfig.fieldOutput(row[fieldKey])}
+                                                            {fieldConfig.fieldRenderer({
+                                                                value: row[fieldKey],
+                                                                mode: 'read',
+                                                                context: 'table',
+                                                                fieldKey,
+                                                            })}
                                                         </td>)
                                                 }
 

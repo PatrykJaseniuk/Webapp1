@@ -4,7 +4,6 @@ import styles from '@/components/styles/shared.module.css';
 import viewSingleStyles from '@/components/styles/viewSingle.module.css';
 import { getFieldConfig } from '../fieldRegistry/registry';
 import { useState } from 'react';
-import type { FieldInputFn } from '../fieldRegistry/types';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -77,18 +76,15 @@ export const SingleRecord = ({
                                 <label htmlFor={fieldKey} className={styles.detailsLabel}>
                                     {config.label}
                                 </label>
-                                <span className={styles.detailsValue}>
-                                    {mode === 'read' ? (
-                                        config.fieldOutput(currentValue)
-                                    ) : (
-                                        config.fieldInput
-                                            ? config.fieldInput(
-                                                  currentValue,
-                                                  (value: unknown) => handleChange(fieldKey, value)
-                                              )
-                                            : config.fieldOutput(currentValue)
-                                    )}
-                                </span>
+                                <div className={styles.detailsValue}>
+                                    {config.fieldRenderer({
+                                        value: currentValue,
+                                        mode,
+                                        context: 'details',
+                                        fieldKey,
+                                        onChange: (value: unknown) => handleChange(fieldKey, value),
+                                    })}
+                                </div>
                             </div>
                         );
                     })}

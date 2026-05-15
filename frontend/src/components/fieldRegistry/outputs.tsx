@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { formatDate, formatDateTime, formatCurrency } from './formatters';
-import type { FieldOutputFn } from './types';
+import type { FieldRendererFn } from './types';
 import styles from '@/components/styles/cellRenderers.module.css';
 import { routes } from '@/routes';
 import Link from 'next/link';
@@ -113,16 +113,19 @@ const FILE_TYPE_COLORS: Record<string, string> = {
 /** Null value placeholder */
 export const outputNull = (): React.ReactNode => <span className={styles.cellNull}>—</span>;
 
+const createReadOnlyRenderer = (render: (value: unknown) => React.ReactNode): FieldRendererFn =>
+    ({ value }) => render(value);
+
 // ── Primitive Outputs ─────────────────────────────────────────────────
 
 /** Text output */
-export const outputText: FieldOutputFn = (value) =>
+export const outputText = createReadOnlyRenderer((value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className={styles.cellText}>{String(value)}</span>;
+        : <span className={styles.cellText}>{String(value)}</span>);
 
 /** Number output with sign-based colors */
-export const outputNumber: FieldOutputFn = (value) => {
+export const outputNumber = createReadOnlyRenderer((value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const colorClass = isNaN(numValue)
         ? ''
@@ -135,20 +138,20 @@ export const outputNumber: FieldOutputFn = (value) => {
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{String(value)}</span>;
-};
+});
 
 /** Boolean output with check/cross icons */
-export const outputBoolean: FieldOutputFn = (value) =>
+export const outputBoolean = createReadOnlyRenderer((value) =>
     value === null ?
         outputNull() :
         value === true ?
             <span className={styles.cellBoolean + ' ' + styles.cellBooleanTrue}>✓ Tak</span> :
-            <span className={styles.cellBoolean + ' ' + styles.cellBooleanFalse}>✗ Nie</span>;
+            <span className={styles.cellBoolean + ' ' + styles.cellBooleanFalse}>✗ Nie</span>);
 
 // ── Currency Output ───────────────────────────────────────────────────
 
 /** Currency output with styling - negative values shown in red */
-export const outputCurrency: FieldOutputFn = (value) => {
+export const outputCurrency = createReadOnlyRenderer((value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const isNegative = !isNaN(numValue) && numValue < 0;
     const className = isNegative
@@ -157,26 +160,26 @@ export const outputCurrency: FieldOutputFn = (value) => {
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{formatCurrency(value)}</span>;
-};
+});
 
 // ── Date Outputs ──────────────────────────────────────────────────────
 
 /** Date output with formatting */
-export const outputDate: FieldOutputFn = (value) =>
+export const outputDate = createReadOnlyRenderer((value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className={styles.cellDate}>{formatDate(value)}</span>;
+        : <span className={styles.cellDate}>{formatDate(value)}</span>);
 
 /** DateTime output with formatting */
-export const outputDateTime: FieldOutputFn = (value) =>
+export const outputDateTime = createReadOnlyRenderer((value) =>
     value === null || value === undefined
         ? outputNull()
-        : <span className={styles.cellDateTime}>{formatDateTime(value)}</span>;
+        : <span className={styles.cellDateTime}>{formatDateTime(value)}</span>);
 
 // ── Specialized Number Outputs ────────────────────────────────────────
 
 /** Days count output with urgency colors (for days_until_end, days_active) */
-export const outputDaysCount: FieldOutputFn = (value) => {
+export const outputDaysCount = createReadOnlyRenderer((value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const colorClass = isNaN(numValue)
         ? ''
@@ -191,10 +194,10 @@ export const outputDaysCount: FieldOutputFn = (value) => {
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{String(value)}</span>;
-};
+});
 
 /** Item count output with severity colors (for unpaid_items_count, overdue_items_count) */
-export const outputItemCount: FieldOutputFn = (value) => {
+export const outputItemCount = createReadOnlyRenderer((value) => {
     const numValue = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     const colorClass = isNaN(numValue)
         ? ''
@@ -207,12 +210,12 @@ export const outputItemCount: FieldOutputFn = (value) => {
     return value === null || value === undefined
         ? outputNull()
         : <span className={className}>{String(value)}</span>;
-};
+});
 
 // ── File Size Output ──────────────────────────────────────────────────
 
 /** File size formatter */
-export const outputFileSize: FieldOutputFn = (value) => {
+export const outputFileSize = createReadOnlyRenderer((value) => {
     const num = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
     return isNaN(num) || num === null
         ? outputNull()
@@ -223,7 +226,7 @@ export const outputFileSize: FieldOutputFn = (value) => {
                     ? (num / 1024).toFixed(1) + ' KB'
                     : (num / (1024 * 1024)).toFixed(1) + ' MB'}
         </span>;
-};
+});
 
 
 
@@ -245,32 +248,32 @@ const outputEnumBadge = (
 };
 
 /** Property type output - colored badge with emoji */
-export const outputPropertyType: FieldOutputFn = (value) =>
-    outputEnumBadge(value, PROPERTY_TYPE_LABELS, PROPERTY_TYPE_COLORS, styles.cellEnum);
+export const outputPropertyType = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, PROPERTY_TYPE_LABELS, PROPERTY_TYPE_COLORS, styles.cellEnum));
 
 /** Property status output - colored status pill */
-export const outputPropertyStatus: FieldOutputFn = (value) =>
-    outputEnumBadge(value, PROPERTY_STATUS_LABELS, PROPERTY_STATUS_COLORS, styles.cellStatus);
+export const outputPropertyStatus = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, PROPERTY_STATUS_LABELS, PROPERTY_STATUS_COLORS, styles.cellStatus));
 
 /** Tenant status output - colored status pill */
-export const outputTenantStatus: FieldOutputFn = (value) =>
-    outputEnumBadge(value, TENANT_STATUS_LABELS, TENANT_STATUS_COLORS, styles.cellStatus);
+export const outputTenantStatus = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, TENANT_STATUS_LABELS, TENANT_STATUS_COLORS, styles.cellStatus));
 
 /** Lease status output - colored status pill */
-export const outputLeaseStatus: FieldOutputFn = (value) =>
-    outputEnumBadge(value, LEASE_STATUS_LABELS, LEASE_STATUS_COLORS, styles.cellStatus);
+export const outputLeaseStatus = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, LEASE_STATUS_LABELS, LEASE_STATUS_COLORS, styles.cellStatus));
 
 /** Transaction type output - colored badge with emoji */
-export const outputTransactionType: FieldOutputFn = (value) =>
-    outputEnumBadge(value, TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS, styles.cellEnum);
+export const outputTransactionType = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, TRANSACTION_TYPE_LABELS, TRANSACTION_TYPE_COLORS, styles.cellEnum));
 
 /** Transaction status output - colored status pill */
-export const outputTransactionStatus: FieldOutputFn = (value) =>
-    outputEnumBadge(value, TRANSACTION_STATUS_LABELS, TRANSACTION_STATUS_COLORS, styles.cellStatus);
+export const outputTransactionStatus = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, TRANSACTION_STATUS_LABELS, TRANSACTION_STATUS_COLORS, styles.cellStatus));
 
 /** File type output - colored badge with emoji */
-export const outputFileType: FieldOutputFn = (value) =>
-    outputEnumBadge(value, FILE_TYPE_LABELS, FILE_TYPE_COLORS, styles.cellEnum);
+export const outputFileType = createReadOnlyRenderer((value) =>
+    outputEnumBadge(value, FILE_TYPE_LABELS, FILE_TYPE_COLORS, styles.cellEnum));
 
 // ── Helper Functions ──────────────────────────────────────────────────
 
@@ -317,7 +320,7 @@ const getRelationBadgeClass = (type?: 'error' | 'warning' | 'type'): string => {
 // ── Tenant Relation Output ────────────────────────────────────────────
 
 /** Tenant relation output - handles object or array */
-export const outputTenantsRelation: FieldOutputFn = (value) => {
+export const outputTenantsRelation = createReadOnlyRenderer((value) => {
     const tenants = extractArray<{
         id?: string;
         first_name?: string;
@@ -353,12 +356,12 @@ export const outputTenantsRelation: FieldOutputFn = (value) => {
         Array.isArray(value) ?
             renderArray() :
             renderSingle(tenants[0]);
-};
+});
 
 // ── Lease Agreements Relation Output ──────────────────────────────────
 
 /** Lease agreements relation output - handles object or array */
-export const outputLeaseAgreementsRelation: FieldOutputFn = (value) => {
+export const outputLeaseAgreementsRelation = createReadOnlyRenderer((value) => {
     const leases = extractArray<{
         id?: string;
         status?: string;
@@ -403,12 +406,12 @@ export const outputLeaseAgreementsRelation: FieldOutputFn = (value) => {
         Array.isArray(value) ?
             renderArray() :
             renderSingle(leases[0]);
-};
+});
 
 // ── Properties Relation Output ───────────────────────────────────────
 
 /** Properties relation output - handles object or array */
-export const outputPropertiesRelation: FieldOutputFn = (value) => {
+export const outputPropertiesRelation = createReadOnlyRenderer((value) => {
     const properties = extractArray<{
         id?: string;
         name?: string;
@@ -449,12 +452,12 @@ export const outputPropertiesRelation: FieldOutputFn = (value) => {
         Array.isArray(value) ?
             renderArray() :
             renderSingle(properties[0]);
-};
+});
 
 // ── Transactions Relation Output ──────────────────────────────────────
 
 /** Transactions relation output - handles object or array */
-export const outputTransactionsRelation: FieldOutputFn = (value) => {
+export const outputTransactionsRelation = createReadOnlyRenderer((value) => {
     const transactions = extractArray<{
         id?: string;
         status?: string;
@@ -500,12 +503,12 @@ export const outputTransactionsRelation: FieldOutputFn = (value) => {
         : Array.isArray(value)
             ? renderArray()
             : renderSingle(transactions[0]);
-};
+});
 
 // ── Attachments Relation Output ───────────────────────────────────────
 
 /** Attachments relation output - handles object or array */
-export const outputAttachmentsRelation: FieldOutputFn = (value) => {
+export const outputAttachmentsRelation = createReadOnlyRenderer((value) => {
     const attachments = extractArray<{
         id?: string;
         file_name?: string;
@@ -516,4 +519,4 @@ export const outputAttachmentsRelation: FieldOutputFn = (value) => {
     return attachments.length === 0
         ? outputNull()
         : <span className={styles.cellRelationBadge}>{attachments.length} plików</span>;
-};
+});

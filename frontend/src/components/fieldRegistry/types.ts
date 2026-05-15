@@ -1,32 +1,25 @@
 'use client';
-import React from 'react';
+import type React from 'react';
 
+export type FieldRenderMode = 'read' | 'edit';
 
-// ── Function Types ───────────────────────────────────────────────────
+export type FieldRenderContext = 'details' | 'table';
 
-/** Field output function - formats value for display */
-export type FieldOutputFn = (
-    value: unknown,
+export interface FieldRendererProps {
+    value: unknown;
+    mode: FieldRenderMode;
+    context: FieldRenderContext;
+    fieldKey: string;
+    onChange?: (value: unknown) => void;
+}
+
+export type FieldRendererFn = (
+    props: Readonly<FieldRendererProps>,
 ) => React.ReactNode;
 
-/** Field input function - renders input component for editing */
-export type FieldInputFn = (
-    value: unknown,
-    onChange: (value: unknown) => void
-) => React.ReactNode;
-
-// ── Configuration Types ──────────────────────────────────────────────
-
-/** Field configuration */
 export interface FieldConfig {
-    /** Polish display label for field */
     label: string;
-    /** Output formatter for displaying field value (tables, details) */
-    fieldOutput?: FieldOutputFn
-    /** Input component for editing field value (undefined = readonly) */
-    fieldInput?: FieldInputFn
-    /** Hide from tables/forms */
+    fieldRenderer?: FieldRendererFn;
     isHidden?: boolean;
-    /** Allow sorting by this field (default: true, false for relation fields) */
     isSortable?: boolean;
 }
