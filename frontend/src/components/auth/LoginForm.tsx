@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
@@ -17,8 +17,11 @@ export const LoginForm = () => {
     const router = useRouter();
 
     // Redirect if already authenticated
-    const shouldRedirect = isAuthenticated && role && ROLE_REDIRECTS[role];
-    shouldRedirect && !loading && router.push(ROLE_REDIRECTS[role]);
+    useEffect(() => {
+        const shouldRedirect = isAuthenticated && role && ROLE_REDIRECTS[role];
+        shouldRedirect && !loading && router.push(ROLE_REDIRECTS[role]);
+    })
+
 
     return (
         <div className={styles.authContainer}>

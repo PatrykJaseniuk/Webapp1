@@ -9,7 +9,7 @@
 -- ================================================
 -- Tenant profiles with contact information
 
-INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id_document_number, emergency_contact_name, emergency_contact_phone, notes, status, created_at, updated_at) VALUES
+INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id_document_number, emergency_contact_name, emergency_contact_phone, notes, tenant_status, created_at, updated_at) VALUES
     -- Tenant 1: Jan Kowalski (active, Warsaw apartment)
     ('b0000000-0000-0000-0000-000000000001', 
      '00000000-0000-0000-0000-000000000010', 
@@ -21,9 +21,9 @@ INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id
      'Maria Kowalska', 
      '+48 600 100 300', 
      'Reliable tenant. Always pays on time. Works as software developer.', 
-     'active', 
-     '2025-05-15 10:00:00+00', 
-     '2025-06-01 10:00:00+00'),
+      'active', 
+      '2025-05-15 10:00:00+00', 
+      '2025-06-01 10:00:00+00'),
     
     -- Tenant 2: Anna Nowak (active, Kraków apartment)
     ('b0000000-0000-0000-0000-000000000002', 
@@ -36,9 +36,9 @@ INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id
      'Piotr Nowak', 
      '+48 601 200 400', 
      'Graduate student at Jagiellonian University. Quiet and responsible.', 
-     'active', 
-     '2025-02-20 14:30:00+00', 
-     '2025-03-01 14:30:00+00'),
+      'active', 
+      '2025-02-20 14:30:00+00', 
+      '2025-03-01 14:30:00+00'),
     
     -- Tenant 3: Piotr Wiśniewski (active, Gdańsk house)
     ('b0000000-0000-0000-0000-000000000003', 
@@ -51,9 +51,9 @@ INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id
      'Katarzyna Wiśniewska', 
      '+48 602 300 500', 
      'Family of 4. Two children. Father works at port authority.', 
-     'active', 
-     '2023-12-01 09:00:00+00', 
-     '2024-01-01 09:00:00+00'),
+      'active', 
+      '2023-12-01 09:00:00+00', 
+      '2024-01-01 09:00:00+00'),
     
     -- Tenant 4: Maria Lewandowska (past, was in Łódź apartment)
     ('b0000000-0000-0000-0000-000000000004', 
@@ -66,9 +66,9 @@ INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id
      'Tomasz Lewandowski', 
      '+48 603 400 600', 
      'Previous tenant. Left on good terms. Relocated for work.', 
-     'past', 
-     '2023-11-15 11:00:00+00', 
-     '2025-01-01 11:00:00+00'),
+      'past', 
+      '2023-11-15 11:00:00+00', 
+      '2025-01-01 11:00:00+00'),
     
     -- Tenant 5: Tomasz Zieliński (applicant)
     ('b0000000-0000-0000-0000-000000000005', 
@@ -81,16 +81,17 @@ INSERT INTO public.tenants (id, user_id, first_name, last_name, email, phone, id
      'Ewa Zielińska', 
      '+48 604 500 700', 
      'Applicant interested in Wrocław room. Student at Wrocław University.', 
-     'applicant', 
-     '2026-01-10 16:00:00+00', 
-     '2026-01-10 16:00:00+00');
+      'applicant', 
+      '2026-01-10 16:00:00+00', 
+      '2026-01-10 16:00:00+00');
+
 
 -- ================================================
 -- SECTION 6: LEASE AGREEMENTS
 -- ================================================
 -- Active and historical lease agreements
 
-INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end_date, monthly_rent, deposit_amount, status, notes, created_at, updated_at, created_by) VALUES
+INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end_date, monthly_rent, deposit_amount, lease_status, notes, created_at, updated_at, created_by) VALUES
     -- Lease 1: Jan Kowalski - Warsaw apartment (active)
     ('c0000000-0000-0000-0000-000000000001', 
      'b0000000-0000-0000-0000-000000000001', 
@@ -99,11 +100,11 @@ INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end
      '2026-05-31', 
      3500.00, 
      3500.00, 
-     'active', 
-     '12-month lease. Standard terms. Pet-friendly.', 
-     '2025-05-20 10:00:00+00', 
-     '2025-06-01 10:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
+      'active', 
+      '12-month lease. Standard terms. Pet-friendly.', 
+      '2025-05-20 10:00:00+00', 
+      '2025-06-01 10:00:00+00', 
+      '00000000-0000-0000-0000-000000000002'),
     
     -- Lease 2: Anna Nowak - Kraków apartment (active, ending soon)
     ('c0000000-0000-0000-0000-000000000002', 
@@ -113,11 +114,11 @@ INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end
      '2026-02-28', 
      4200.00, 
      4200.00, 
-     'active', 
-     '12-month lease. Tenant considering renewal.', 
-     '2025-02-25 14:00:00+00', 
-     '2025-03-01 14:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
+      'active', 
+      '12-month lease. Tenant considering renewal.', 
+      '2025-02-25 14:00:00+00', 
+      '2025-03-01 14:00:00+00', 
+      '00000000-0000-0000-0000-000000000002'),
     
     -- Lease 3: Piotr Wiśniewski - Gdańsk house (active, long-term)
     ('c0000000-0000-0000-0000-000000000003', 
@@ -127,11 +128,11 @@ INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end
      '2026-12-31', 
      6500.00, 
      6500.00, 
-     'active', 
-     '3-year lease. Family with children. Garden maintenance included.', 
-     '2023-12-15 09:00:00+00', 
-     '2024-01-01 09:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
+      'active', 
+      '3-year lease. Family with children. Garden maintenance included.', 
+      '2023-12-15 09:00:00+00', 
+      '2024-01-01 09:00:00+00', 
+      '00000000-0000-0000-0000-000000000002'),
     
     -- Lease 4: Maria Lewandowska - Łódź apartment (expired)
     ('c0000000-0000-0000-0000-000000000004', 
@@ -141,11 +142,12 @@ INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end
      '2024-12-31', 
      2800.00, 
      2800.00, 
-     'expired', 
-     '12-month lease completed. Tenant relocated to Berlin for work.', 
-     '2023-12-20 11:00:00+00', 
-     '2025-01-01 11:00:00+00', 
-     '00000000-0000-0000-0000-000000000002');
+      'expired', 
+      '12-month lease completed. Tenant relocated to Berlin for work.', 
+      '2023-12-20 11:00:00+00', 
+      '2025-01-01 11:00:00+00', 
+      '00000000-0000-0000-0000-000000000002');
+
 
 -- ================================================
 -- SECTION 7: TRANSACTIONS
@@ -153,7 +155,7 @@ INSERT INTO public.lease_agreements (id, tenant_id, property_id, start_date, end
 -- Financial transactions replacing billing_items, payments, and property_expenses
 -- Types: rent, utility, deposit, expense, payment, withdraw, fee, other
 
-INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, status, created_at, updated_at, created_by) VALUES
+INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, transaction_status, created_at, updated_at, created_by) VALUES
     -- ===== LEASE 1: Warsaw Apartment (Jan Kowalski) =====
     -- Deposit (positive - income)
     ('d0000000-0000-0000-0000-000000000001', 

@@ -29,7 +29,7 @@ SELECT
 FROM public.lease_agreements la
 JOIN public.tenants t ON la.tenant_id = t.id
 JOIN public.properties p ON la.property_id = p.id
-WHERE la.status = 'active';
+WHERE la.lease_status = 'active';
 
 -- ================================================
 -- VIEW 2: PROPERTY OCCUPANCY STATUS
@@ -48,7 +48,7 @@ SELECT
     la.end_date as lease_end,
     la.monthly_rent as current_rent
 FROM public.properties p
-LEFT JOIN public.lease_agreements la ON p.id = la.property_id AND la.status = 'active'
+LEFT JOIN public.lease_agreements la ON p.id = la.property_id AND la.lease_status = 'active'
 LEFT JOIN public.tenants t ON la.tenant_id = t.id;
 
 -- ================================================
@@ -68,13 +68,13 @@ SELECT
     COUNT(tr.id) as unpaid_items_count,
     SUM(tr.amount) as total_unpaid_amount,
     MIN(tr.due_date) as earliest_due_date,
-    COUNT(CASE WHEN tr.status = 'overdue' THEN 1 END) as overdue_items_count,
-    SUM(CASE WHEN tr.status = 'overdue' THEN tr.amount ELSE 0 END) as total_overdue_amount
+    COUNT(CASE WHEN tr.transaction_status = 'overdue' THEN 1 END) as overdue_items_count,
+    SUM(CASE WHEN tr.transaction_status = 'overdue' THEN tr.amount ELSE 0 END) as total_overdue_amount
 FROM public.lease_agreements la
 JOIN public.tenants t ON la.tenant_id = t.id
 JOIN public.properties p ON la.property_id = p.id
-LEFT JOIN public.transactions tr ON la.id = tr.lease_id AND tr.status IN ('pending', 'overdue')
-WHERE la.status = 'active'
+LEFT JOIN public.transactions tr ON la.id = tr.lease_id AND tr.transaction_status IN ('pending', 'overdue')
+WHERE la.lease_status = 'active'
 GROUP BY la.id, la.tenant_id, la.property_id, t.first_name, t.last_name, p.name;
 
 -- ================================================
@@ -92,14 +92,14 @@ SELECT
     p.name as property_name,
     p.address,
     -- Income from payments (must be paid) - positive amounts
-    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) as total_income,
+    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.transaction_status = 'paid' THEN tr.amount ELSE 0 END), 0) as total_income,
     -- Expenses (property-level or lease-level) - already negative, use ABS for calculation
     COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') THEN ABS(tr.amount) ELSE 0 END), 0) as total_expenses,
     -- Net profit/loss: income (positive) + expenses (negative) = net
-    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.status = 'paid' THEN tr.amount ELSE 0 END), 0) + 
+    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.transaction_status = 'paid' THEN tr.amount ELSE 0 END), 0) + 
     COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as net_profit,
     -- Current lease status
-    p.status,
+    p.property_status,
     p.monthly_rent
 FROM public.properties p
 LEFT JOIN public.transactions tr ON p.id = tr.property_id

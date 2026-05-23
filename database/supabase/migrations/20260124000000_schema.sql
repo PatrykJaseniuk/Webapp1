@@ -25,7 +25,7 @@ CREATE TABLE public.properties (
     bedrooms integer,
     monthly_rent decimal(10,2) NOT NULL,
     deposit_amount decimal(10,2) NOT NULL,
-    status text NOT NULL DEFAULT 'available' CHECK (status IN ('available', 'occupied', 'inactive')),
+    property_status text NOT NULL DEFAULT 'available' CHECK (property_status IN ('available', 'occupied', 'inactive')),
     notes text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
@@ -45,7 +45,7 @@ CREATE TABLE public.tenants (
     emergency_contact_name text,
     emergency_contact_phone text,
     notes text,
-    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'past', 'applicant')),
+    tenant_status text NOT NULL DEFAULT 'active' CHECK (tenant_status IN ('active', 'past', 'applicant')),
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
@@ -60,7 +60,7 @@ CREATE TABLE public.lease_agreements (
     end_date date,
     monthly_rent decimal(10,2) NOT NULL,
     deposit_amount decimal(10,2) NOT NULL,
-    status text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'expired', 'terminated')),
+    lease_status text NOT NULL DEFAULT 'active' CHECK (lease_status IN ('active', 'expired', 'terminated')),
     notes text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
@@ -100,7 +100,7 @@ CREATE TABLE public.transactions (
     description text NOT NULL,
     amount decimal(10,2) NOT NULL,
     due_date date NOT NULL,
-    status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'paid', 'overdue')),
+    transaction_status text NOT NULL DEFAULT 'pending' CHECK (transaction_status IN ('pending', 'paid', 'overdue')),
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL

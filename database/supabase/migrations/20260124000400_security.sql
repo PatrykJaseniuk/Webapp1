@@ -137,7 +137,7 @@ CREATE POLICY "Authenticated users can read properties"
             SELECT property_id 
             FROM public.lease_agreements 
             WHERE tenant_id = get_current_tenant_id() 
-            AND status = 'active'
+            AND lease_status = 'active'
         )
     );
 
@@ -279,7 +279,7 @@ CREATE POLICY "Authenticated users can read attachments"
             related_to_id IN (
                 SELECT property_id FROM public.lease_agreements 
                 WHERE tenant_id = get_current_tenant_id() 
-                AND status = 'active'
+                AND lease_status = 'active'
             )
         )
     );
@@ -329,7 +329,7 @@ CREATE POLICY "Authenticated users can read transactions"
         (lease_id IS NULL AND property_id IN (
             SELECT property_id FROM public.lease_agreements 
             WHERE tenant_id = get_current_tenant_id() 
-            AND status = 'active'
+            AND lease_status = 'active'
         ))
     );
 

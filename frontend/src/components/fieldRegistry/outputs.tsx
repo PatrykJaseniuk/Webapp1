@@ -363,14 +363,14 @@ export const outputTenantsRelation = createReadOnlyRenderer((value) => {
 export const outputLeaseAgreementsRelation = createReadOnlyRenderer((value) => {
     const leases = extractArray<{
         id?: string;
-        status?: string;
+        lease_status?: string;
         monthly_rent?: number;
         start_date?: string;
         end_date?: string;
         tenants?: { first_name?: string; last_name?: string } | null;
     }>(value);
 
-    const active = leases.find(l => l?.status === 'active');
+    const active = leases.find(l => l?.lease_status === 'active');
 
     const renderSingle = (lease: typeof leases[0]) =>
         lease?.id
@@ -379,14 +379,14 @@ export const outputLeaseAgreementsRelation = createReadOnlyRenderer((value) => {
                 onClick={(e) => e.stopPropagation()}
                 className={relationStyles.cellRelationLink}
             >
-                <span className={`${relationStyles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
-                    {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
+                <span className={`${relationStyles.cellLeaseStatus} ${getLeaseStatusClass(lease?.lease_status)}`}>
+                    {LEASE_STATUS_LABELS[lease?.lease_status ?? ''] ?? lease?.lease_status ?? '—'}
                 </span>
                 <span className={relationStyles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
             </Link>
             : <div className={relationStyles.cellRelationSingle}>
-                <span className={`${relationStyles.cellLeaseStatus} ${getLeaseStatusClass(lease?.status)}`}>
-                    {LEASE_STATUS_LABELS[lease?.status ?? ''] ?? lease?.status ?? '—'}
+                <span className={`${relationStyles.cellLeaseStatus} ${getLeaseStatusClass(lease?.lease_status)}`}>
+                    {LEASE_STATUS_LABELS[lease?.lease_status ?? ''] ?? lease?.lease_status ?? '—'}
                 </span>
                 <span className={relationStyles.cellLeaseRent}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
             </div>;
@@ -415,7 +415,7 @@ export const outputPropertiesRelation = createReadOnlyRenderer((value) => {
         id?: string;
         name?: string;
         address?: string;
-        status?: string;
+        property_status?: string;
         property_type?: string;
     }>(value);
 
@@ -459,14 +459,14 @@ export const outputPropertiesRelation = createReadOnlyRenderer((value) => {
 export const outputTransactionsRelation = createReadOnlyRenderer((value) => {
     const transactions = extractArray<{
         id?: string;
-        status?: string;
+        transaction_status?: string;
         amount?: number;
         due_date?: string;
         type?: string;
     }>(value);
 
-    const overdue = transactions.filter(t => t?.status === 'overdue');
-    const pending = transactions.filter(t => t?.status === 'pending');
+    const overdue = transactions.filter(t => t?.transaction_status === 'overdue');
+    const pending = transactions.filter(t => t?.transaction_status === 'pending');
 
     const renderSingle = (t: typeof transactions[0]) =>
         t?.id ?
@@ -475,14 +475,14 @@ export const outputTransactionsRelation = createReadOnlyRenderer((value) => {
                 onClick={(e) => e.stopPropagation()}
                 className={relationStyles.cellRelationLink}
             >
-                <span className={`${relationStyles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
-                    {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
+                <span className={`${relationStyles.cellTransactionStatus} ${getTransactionStatusClass(t?.transaction_status)}`}>
+                    {TRANSACTION_STATUS_LABELS[t?.transaction_status ?? ''] ?? t?.transaction_status ?? '—'}
                 </span>
                 <span className={relationStyles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
             </Link> :
             <div className={relationStyles.cellRelationSingle}>
-                <span className={`${relationStyles.cellTransactionStatus} ${getTransactionStatusClass(t?.status)}`}>
-                    {TRANSACTION_STATUS_LABELS[t?.status ?? ''] ?? t?.status ?? '—'}
+                <span className={`${relationStyles.cellTransactionStatus} ${getTransactionStatusClass(t?.transaction_status)}`}>
+                    {TRANSACTION_STATUS_LABELS[t?.transaction_status ?? ''] ?? t?.transaction_status ?? '—'}
                 </span>
                 <span className={relationStyles.cellTransactionAmount}>{formatCurrency(t?.amount ?? 0)}</span>
             </div>;

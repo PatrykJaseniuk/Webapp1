@@ -24,7 +24,7 @@ export const FIELD_REGISTRY: Record<string, FieldConfig> = {
     property_type: { label: 'Typ nieruchomości', fieldRenderer: inputPropertyType },
     monthly_rent: { label: 'Czynsz miesięczny', fieldRenderer: inputCurrency },
     deposit_amount: { label: 'Kaucja', fieldRenderer: inputCurrency },
-    status: { label: 'Status', fieldRenderer: inputPropertyStatus },
+    property_status: { label: 'Status', fieldRenderer: inputPropertyStatus },
     size_sqm: { label: 'Powierzchnia (m²)', fieldRenderer: inputNumber },
     bedrooms: { label: 'Sypialnie', fieldRenderer: inputNumber },
     notes: { label: 'Notatki', fieldRenderer: inputTextarea },

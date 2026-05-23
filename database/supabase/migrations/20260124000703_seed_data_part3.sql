@@ -9,7 +9,7 @@
 -- ================================================
 
 -- ===== LEASE 2: Kraków Apartment (Anna Nowak) =====
-INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, status, created_at, updated_at, created_by) VALUES
+INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, transaction_status, created_at, updated_at, created_by) VALUES
     -- Deposit
     ('d0000000-0000-0000-0000-000000000100', 
      'c0000000-0000-0000-0000-000000000002', 
@@ -194,7 +194,7 @@ INSERT INTO public.transactions (id, lease_id, property_id, type, description, a
      '00000000-0000-0000-0000-000000000002');
 
 -- ===== LEASE 3: Gdańsk House (Piotr Wiśniewski) =====
-INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, status, created_at, updated_at, created_by) VALUES
+INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, transaction_status, created_at, updated_at, created_by) VALUES
     -- Deposit
     ('d0000000-0000-0000-0000-000000000200', 
      'c0000000-0000-0000-0000-000000000003', 

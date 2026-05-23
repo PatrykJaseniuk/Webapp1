@@ -216,7 +216,7 @@ ON CONFLICT (user_id) DO UPDATE SET
 -- ================================================
 -- Rental properties across major Polish cities
 
-INSERT INTO public.properties (id, name, address, property_type, size_sqm, bedrooms, monthly_rent, deposit_amount, status, notes, created_at, updated_at, created_by) VALUES
+INSERT INTO public.properties (id, name, address, property_type, size_sqm, bedrooms, monthly_rent, deposit_amount, property_status, notes, created_at, updated_at, created_by) VALUES
     -- Property 1: Warsaw Apartment
     ('a0000000-0000-0000-0000-000000000001', 
      'Apartament Warszawa Centrum', 

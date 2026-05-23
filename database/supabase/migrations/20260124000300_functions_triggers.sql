@@ -45,11 +45,11 @@ SET search_path = public
 AS $$
 BEGIN
     -- When a new lease becomes active, mark property as occupied
-    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') AND NEW.status = 'active' THEN
+    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') AND NEW.lease_status = 'active' THEN
         UPDATE public.properties 
-        SET status = 'occupied' 
+        SET property_status = 'occupied' 
         WHERE id = NEW.property_id 
-        AND status != 'inactive';  -- Don't override inactive status
+        AND property_status != 'inactive';  -- Don't override inactive status
     END IF;
     
     -- When a lease ends (terminated or expired), check if property should be available
@@ -69,15 +69,15 @@ BEGIN
             SELECT COUNT(*) INTO active_lease_count
             FROM public.lease_agreements
             WHERE property_id = lease_property_id 
-            AND status = 'active'
+            AND lease_status = 'active'
             AND id != COALESCE(NEW.id, OLD.id);
             
             -- If no active leases remain, mark property as available
             IF active_lease_count = 0 THEN
                 UPDATE public.properties 
-                SET status = 'available' 
+                SET property_status = 'available' 
                 WHERE id = lease_property_id 
-                AND status = 'occupied';  -- Only change if currently occupied
+                AND property_status = 'occupied';  -- Only change if currently occupied
             END IF;
         END;
     END IF;

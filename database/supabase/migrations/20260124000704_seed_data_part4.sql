@@ -9,7 +9,7 @@
 -- ================================================
 -- Property-level expenses (no lease_id, only property_id)
 
-INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, status, created_at, updated_at, created_by) VALUES
+INSERT INTO public.transactions (id, lease_id, property_id, type, description, amount, due_date, transaction_status, created_at, updated_at, created_by) VALUES
     -- ===== PROPERTY 1: Warsaw Apartment Expenses =====
     ('e0000000-0000-0000-0000-000000000001', 
      NULL, 

@@ -80,11 +80,11 @@ export type Database = {
           deposit_amount: number
           end_date: string | null
           id: string
+          lease_status: string
           monthly_rent: number
           notes: string | null
           property_id: string
           start_date: string
-          status: string
           tenant_id: string
           updated_at: string | null
         }
@@ -94,11 +94,11 @@ export type Database = {
           deposit_amount: number
           end_date?: string | null
           id?: string
+          lease_status?: string
           monthly_rent: number
           notes?: string | null
           property_id: string
           start_date: string
-          status?: string
           tenant_id: string
           updated_at?: string | null
         }
@@ -108,11 +108,11 @@ export type Database = {
           deposit_amount?: number
           end_date?: string | null
           id?: string
+          lease_status?: string
           monthly_rent?: number
           notes?: string | null
           property_id?: string
           start_date?: string
-          status?: string
           tenant_id?: string
           updated_at?: string | null
         }
@@ -158,9 +158,9 @@ export type Database = {
           monthly_rent: number
           name: string
           notes: string | null
+          property_status: string
           property_type: string
           size_sqm: number | null
-          status: string
           updated_at: string | null
         }
         Insert: {
@@ -173,9 +173,9 @@ export type Database = {
           monthly_rent: number
           name: string
           notes?: string | null
+          property_status?: string
           property_type: string
           size_sqm?: number | null
-          status?: string
           updated_at?: string | null
         }
         Update: {
@@ -188,9 +188,9 @@ export type Database = {
           monthly_rent?: number
           name?: string
           notes?: string | null
+          property_status?: string
           property_type?: string
           size_sqm?: number | null
-          status?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -207,7 +207,7 @@ export type Database = {
           last_name: string
           notes: string | null
           phone: string
-          status: string
+          tenant_status: string
           updated_at: string | null
           user_id: string | null
         }
@@ -222,7 +222,7 @@ export type Database = {
           last_name: string
           notes?: string | null
           phone: string
-          status?: string
+          tenant_status?: string
           updated_at?: string | null
           user_id?: string | null
         }
@@ -237,7 +237,7 @@ export type Database = {
           last_name?: string
           notes?: string | null
           phone?: string
-          status?: string
+          tenant_status?: string
           updated_at?: string | null
           user_id?: string | null
         }
@@ -253,7 +253,7 @@ export type Database = {
           id: string
           lease_id: string | null
           property_id: string | null
-          status: string
+          transaction_status: string
           type: string
           updated_at: string | null
         }
@@ -266,7 +266,7 @@ export type Database = {
           id?: string
           lease_id?: string | null
           property_id?: string | null
-          status?: string
+          transaction_status?: string
           type: string
           updated_at?: string | null
         }
@@ -279,7 +279,7 @@ export type Database = {
           id?: string
           lease_id?: string | null
           property_id?: string | null
-          status?: string
+          transaction_status?: string
           type?: string
           updated_at?: string | null
         }
@@ -367,6 +367,7 @@ export type Database = {
           deposit_amount: number | null
           end_date: string | null
           id: string | null
+          lease_status: string | null
           monthly_rent: number | null
           notes: string | null
           property_address: string | null
@@ -374,7 +375,6 @@ export type Database = {
           property_name: string | null
           property_type: string | null
           start_date: string | null
-          status: string | null
           tenant_email: string | null
           tenant_id: string | null
           tenant_name: string | null
@@ -419,7 +419,7 @@ export type Database = {
           net_profit: number | null
           property_id: string | null
           property_name: string | null
-          status: string | null
+          property_status: string | null
           total_expenses: number | null
           total_income: number | null
         }
@@ -441,9 +441,9 @@ export type Database = {
           monthly_rent: number | null
           name: string | null
           notes: string | null
+          property_status: string | null
           property_type: string | null
           size_sqm: number | null
-          status: string | null
           tenant_id: string | null
           updated_at: string | null
         }
