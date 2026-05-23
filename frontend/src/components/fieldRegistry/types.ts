@@ -1,14 +1,11 @@
 'use client';
 import type React from 'react';
 
-export type FieldRenderMode = 'read' | 'edit';
-
-export type FieldRenderContext = 'details' | 'table';
-
-export interface FieldRendererProps {
+// ── Field Renderer Types ──────────────────────────────────────────
+interface FieldRendererProps {
     value: unknown;
-    mode: FieldRenderMode;
-    context: FieldRenderContext;
+    mode: 'read' | 'edit';
+    context: 'details' | 'table';
     fieldKey: string;
     onChange?: (value: unknown) => void;
 }
