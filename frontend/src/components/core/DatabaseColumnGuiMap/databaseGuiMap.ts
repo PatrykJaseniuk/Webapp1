@@ -1,4 +1,5 @@
-import { DATABASE_COLUMN_GUI_MAP } from "@/components/DATABASE_COLUMN_GUI_MAP";
+
+import { DATABASE_COLUMN_GUI_MAP } from "@/components/databaseColumnGuiMap/DATABASE_COLUMN_GUI_MAP";
 import { textRenderer } from "./BasicFieldRenderers";
 import { FieldConfig } from "./types";
 
