@@ -38,13 +38,13 @@ INSERT INTO auth.users (
     email_change_token_new,
     recovery_token,
     raw_app_meta_data,
-    raw_user_meta_data,
+    raw_user_meta_data, 
     is_super_admin,
     aud,
     role
 ) VALUES
     -- Admin user
-    ('00000000-0000-0000-0000-000000000001', 
+    ('00000000-0000-0000-0000-000000000001',    
      '00000000-0000-0000-0000-000000000000',
      'admin@test.local', 
      crypt('password123', gen_salt('bf')),

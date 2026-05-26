@@ -1,7 +1,6 @@
 'use client';
 import type React from 'react';
 import type { FieldRendererFn } from './types';
-import { formatCurrency } from './basicRenderers';
 import computedStyles from '@/components/styles/computedRenderers.module.css';
 import relationStyles from '@/components/styles/relationRenderers.module.css';
 import { routes } from '@/api/routes/appRoutes';
@@ -130,20 +129,20 @@ export const leaseAgreementsRelationRenderer = createReadOnlyRenderer((value) =>
                 <span className={`${relationStyles.leaseStatusRenderer} ${getLeaseStatusClass(lease?.lease_status)}`}>
                     {LEASE_STATUS_LABELS[lease?.lease_status ?? ''] ?? lease?.lease_status ?? '—'}
                 </span>
-                <span className={relationStyles.leaseRentRenderer}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
+                <span className={relationStyles.leaseRentRenderer}>{new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(lease?.monthly_rent ?? 0)}</span>
             </Link>
             : <div className={relationStyles.relationSingleRenderer}>
                 <span className={`${relationStyles.leaseStatusRenderer} ${getLeaseStatusClass(lease?.lease_status)}`}>
                     {LEASE_STATUS_LABELS[lease?.lease_status ?? ''] ?? lease?.lease_status ?? '—'}
                 </span>
-                <span className={relationStyles.leaseRentRenderer}>{formatCurrency(lease?.monthly_rent ?? 0)}</span>
+                <span className={relationStyles.leaseRentRenderer}>{new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(lease?.monthly_rent ?? 0)}</span>
             </div>;
 
     const renderArray = () =>
         <div className={relationStyles.relationSingleRenderer}>
             <span className={relationStyles.leasesCountRenderer}>{leases.length} umów</span>
             {active
-                ? <span className={relationStyles.leasesActiveRenderer}>{formatCurrency(active.monthly_rent ?? 0)}/mies</span>
+                ? <span className={relationStyles.leasesActiveRenderer}>{new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(active.monthly_rent ?? 0)}/mies</span>
                 : <span className={relationStyles.leasesHintRenderer}>brak aktywnych</span>}
         </div>;
 
@@ -223,13 +222,13 @@ export const transactionsRelationRenderer = createReadOnlyRenderer((value) => {
                 <span className={`${relationStyles.transactionStatusRenderer} ${getTransactionStatusClass(t?.transaction_status)}`}>
                     {TRANSACTION_STATUS_LABELS[t?.transaction_status ?? ''] ?? t?.transaction_status ?? '—'}
                 </span>
-                <span className={relationStyles.transactionAmountRenderer}>{formatCurrency(t?.amount ?? 0)}</span>
+                <span className={relationStyles.transactionAmountRenderer}>{new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(t?.amount ?? 0)}</span>
             </Link> :
             <div className={relationStyles.relationSingleRenderer}>
                 <span className={`${relationStyles.transactionStatusRenderer} ${getTransactionStatusClass(t?.transaction_status)}`}>
                     {TRANSACTION_STATUS_LABELS[t?.transaction_status ?? ''] ?? t?.transaction_status ?? '—'}
                 </span>
-                <span className={relationStyles.transactionAmountRenderer}>{formatCurrency(t?.amount ?? 0)}</span>
+                <span className={relationStyles.transactionAmountRenderer}>{new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN' }).format(t?.amount ?? 0)}</span>
             </div>;
 
     const renderArray = () =>
