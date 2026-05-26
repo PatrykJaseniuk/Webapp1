@@ -1,11 +1,27 @@
-/* ── Field Renderer Relations (for nested Supabase queries) ────── */
+/* ── Relation field renderers ──────────────────────────────────── */
 
-/* ── Single object variant ───────────────────────────────────── */
-
-.relationSingleRenderer {
-  display: flex;
-  flex-direction: column;
+.relationStackRenderer {
+  display: grid;
   gap: var(--spacing-xs);
+  min-height: 2.75rem;
+  align-content: center;
+}
+
+.relationPrimaryRenderer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.relationSecondaryRenderer {
+  min-height: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.relationSecondaryPlaceholder {
+  visibility: hidden;
 }
 
 .relationNameRenderer {
@@ -14,21 +30,39 @@
   font-size: 0.9375rem;
 }
 
-.relationSubRenderer {
+.relationSubRenderer,
+.relationMutedRenderer {
   font-size: 0.75rem;
   color: var(--color-muted);
-  font-style: italic;
+}
+
+.relationAccentRenderer {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.relationValueRenderer,
+.relationSummaryRenderer {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Relation link ───────────────────────────────────────────── */
 
 .relationLinkRenderer {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 var(--spacing-xs);
+  border-radius: var(--radius);
   color: var(--color-primary);
   font-weight: 500;
   text-decoration: none;
-  cursor: pointer;
-  padding: var(--spacing-xs) var(--spacing-xs);
-  border-radius: var(--radius);
   transition: background-color var(--transition), color var(--transition);
 }
 
@@ -48,15 +82,18 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs);
+  align-items: center;
+  min-height: 2.75rem;
 }
 
 .relationBadgeRenderer {
   display: inline-flex;
   align-items: center;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 1.75rem;
+  padding: 0 var(--spacing-sm);
   background-color: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: 9999px;
   font-size: 0.75rem;
   font-weight: 500;
   white-space: nowrap;
@@ -68,19 +105,6 @@
   background-color: var(--color-bg-hover);
   border-color: var(--color-muted);
   transform: translateY(-1px);
-}
-
-.relationBadgeMoreRenderer {
-  background-color: var(--color-border);
-  color: var(--color-muted);
-  font-style: italic;
-  border-color: var(--color-border);
-}
-
-.relationBadgeMoreRenderer:hover {
-  background-color: var(--color-muted);
-  color: var(--color-bg);
-  border-color: var(--color-muted);
 }
 
 .relationBadgeTypeRenderer {
@@ -96,7 +120,6 @@
 .relationBadgeErrorRenderer {
   background-color: var(--color-error-light);
   color: var(--color-error);
-  font-weight: 600;
   border-color: var(--color-error);
 }
 
@@ -107,7 +130,6 @@
 .relationBadgeWarningRenderer {
   background-color: var(--color-warning-light);
   color: var(--color-warning);
-  font-weight: 600;
   border-color: var(--color-warning);
 }
 
@@ -117,124 +139,44 @@
 
 /* ── Lease relation specific ─────────────────────────────────── */
 
-.leaseStatusRenderer {
-  display: inline-flex;
-  align-items: center;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-  transition: background-color var(--transition), color var(--transition);
-}
-
-.leaseStatusActiveRenderer {
-  background-color: var(--color-success-light);
-  color: var(--color-success);
-}
-
-.leaseStatusExpiredRenderer {
-  background-color: var(--color-bg-subtle);
-  color: var(--color-muted);
-}
-
-.leaseStatusTerminatedRenderer {
-  background-color: var(--color-error-light);
-  color: var(--color-error);
-}
-
-.leaseStatusDraftRenderer {
-  background-color: var(--color-warning-light);
-  color: var(--color-warning);
-}
-
-.leaseStatusDefaultRenderer {
-  background-color: var(--color-bg-subtle);
-  color: var(--color-text-secondary);
-}
-
-.leaseRentRenderer {
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  color: var(--color-success);
-  font-size: 0.875rem;
-  letter-spacing: 0.025em;
-}
-
-.leasesCountRenderer {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 0.875rem;
-}
-
-.leasesActiveRenderer {
-  font-size: 0.75rem;
-  color: var(--color-success);
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
-  font-weight: 500;
-}
-
-.leasesHintRenderer {
-  font-size: 0.75rem;
-  color: var(--color-muted);
-  font-style: italic;
-}
-
-/* ── Transaction relation specific ───────────────────────────── */
-
+.leaseStatusRenderer,
 .transactionStatusRenderer {
   display: inline-flex;
   align-items: center;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  min-height: 1.75rem;
+  padding: 0 var(--spacing-sm);
   border-radius: 9999px;
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.025em;
   transition: background-color var(--transition), color var(--transition);
 }
 
+.leaseStatusActiveRenderer,
 .transactionStatusPaidRenderer {
   background-color: var(--color-success-light);
   color: var(--color-success);
 }
 
-.transactionStatusPendingRenderer {
-  background-color: var(--color-warning-light);
-  color: var(--color-warning);
+.leaseStatusExpiredRenderer,
+.transactionStatusCancelledRenderer,
+.leaseStatusDefaultRenderer,
+.transactionStatusDefaultRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
 }
 
+.leaseStatusTerminatedRenderer,
 .transactionStatusOverdueRenderer {
   background-color: var(--color-error-light);
   color: var(--color-error);
 }
 
-.transactionStatusCancelledRenderer {
-  background-color: var(--color-bg-subtle);
-  color: var(--color-muted);
-}
-
-.transactionStatusDefaultRenderer {
-  background-color: var(--color-bg-subtle);
-  color: var(--color-text-secondary);
-}
-
-.transactionAmountRenderer {
-  font-variant-numeric: tabular-nums;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 0.875rem;
-  letter-spacing: 0.025em;
-}
-
-.transactionsCountRenderer {
-  font-weight: 600;
-  color: var(--color-text);
-  font-size: 0.875rem;
+.leaseStatusDraftRenderer,
+.transactionStatusPendingRenderer {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
 }
 
 /* ── Reduced motion ──────────────────────────────────────────── */

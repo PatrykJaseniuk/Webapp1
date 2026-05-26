@@ -1,424 +1,141 @@
-/* ── Field Renderers — CSS Modules ─────────────────────────────
-   Each field renderer function has its own edit/read class pairs.
-   Naming: {fieldName}Renderer{Mode}  (e.g., textRendererEdit)
-   ─────────────────────────────────────────────────────────── */
+/* ── Unified field renderers ───────────────────────────────────── */
 
 /* ── Text Renderer ─────────────────────────────────────────── */
 
-.textRendererEdit {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  font-variant-numeric: tabular-nums;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
-}
-
-.textRendererEdit:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.textRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.textRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  cursor: default;
-  pointer-events: none;
-}
-
-.textRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
-}
-
-/* ── Text Required Renderer ────────────────────────────────── */
-
-.textRequiredWrapper {
+.fieldShell {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
   width: 100%;
 }
 
-.textRequiredRendererEdit {
+.fieldFrame {
+  display: flex;
+  align-items: stretch;
+  min-height: 2.75rem;
   width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
+  border: 1px solid transparent;
   border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  font-variant-numeric: tabular-nums;
   transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
 }
 
-.textRequiredRendererEdit:focus {
-  outline: none;
+.fieldEdit {
+  border-color: var(--color-border);
+  background-color: var(--color-bg);
+}
+
+.fieldEdit:hover:not(:focus-within) {
+  border-color: var(--color-muted);
+}
+
+.fieldEdit:focus-within {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.textRequiredRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.textRequiredRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
+.fieldRead {
   background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  cursor: default;
-  pointer-events: none;
 }
 
-.textRequiredRendererRead:hover {
+.fieldRead:hover {
   background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
 }
 
-.textRequiredError {
-  border-color: var(--color-error) !important;
-  animation: fieldErrorPulse 2s ease-in-out;
+.fieldInvalid {
+  border-color: var(--color-error);
 }
 
-.textRequiredErrorMsg {
-  font-size: 0.75rem;
-  color: var(--color-error);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.textRequiredErrorMsg::before {
-  content: '⚠';
-  font-size: 0.875rem;
-}
-
-/* ── Email Renderer ────────────────────────────────────────── */
-
-.emailWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
+.fieldControl,
+.selectControl {
   width: 100%;
-}
-
-.emailRendererEdit {
-  width: 100%;
+  min-height: 2.75rem;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
+  border: none;
+  background: transparent;
   color: var(--color-text);
-  background-color: var(--color-bg);
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
-}
-
-.emailRendererEdit:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.emailRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.emailRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  cursor: default;
-  pointer-events: none;
-}
-
-.emailRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
-}
-
-.emailError {
-  border-color: var(--color-error) !important;
-  animation: fieldErrorPulse 2s ease-in-out;
-}
-
-.emailErrorMsg {
-  font-size: 0.75rem;
-  color: var(--color-error);
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-}
-
-.emailErrorMsg::before {
-  content: '⚠';
-  font-size: 0.875rem;
-}
-
-/* ── Textarea Renderer ─────────────────────────────────────── */
-
-.textareaRendererEdit {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  min-height: 4rem;
-  resize: vertical;
   font-family: inherit;
-  line-height: 1.5;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
 }
 
-.textareaRendererEdit:focus {
+.fieldControl:focus,
+.selectControl:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
-.textareaRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
+.fieldControl::placeholder,
+.selectControl:invalid {
+  color: var(--color-muted);
 }
 
-.textareaRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  cursor: default;
-  pointer-events: none;
-  min-height: 4rem;
-  line-height: 1.5;
-}
-
-.textareaRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
-}
-
-/* ── Number Renderer ───────────────────────────────────────── */
-
-.numberRendererEdit {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  font-variant-numeric: tabular-nums;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
-}
-
-.numberRendererEdit:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.numberRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.numberRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
+.fieldControl[readonly] {
   cursor: default;
   pointer-events: none;
 }
 
-.numberRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
+.fieldNumeric {
+  font-variant-numeric: tabular-nums;
 }
 
-/* ── Currency Renderer ─────────────────────────────────────── */
+.fieldTextarea {
+  min-height: 4.75rem;
+  resize: vertical;
+  line-height: 1.5;
+}
 
-.currencyWrapper {
+.fieldMessage {
+  min-height: 1rem;
+  font-size: 0.75rem;
+  color: transparent;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+
+.fieldMessageVisible {
+  color: var(--color-error);
+}
+
+.fieldMessageVisible::before {
+  content: '⚠';
+  margin-right: var(--spacing-xs);
+  font-size: 0.875rem;
+}
+
+.currencyShell,
+.booleanShell {
+  width: 100%;
+}
+
+.currencyLayout {
   display: flex;
   align-items: stretch;
   width: 100%;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.currencyWrapper:focus-within {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.currencyRendererEdit {
+.currencyInput {
   flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: none;
-  border-radius: var(--radius) 0 0 var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  font-variant-numeric: tabular-nums;
-  transition: background-color var(--transition);
-}
-
-.currencyRendererEdit:focus {
-  outline: none;
-  background-color: var(--color-bg-hover);
-}
-
-.currencyRendererRead {
-  flex: 1;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: none;
-  border-radius: var(--radius) 0 0 var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: transparent;
-  font-variant-numeric: tabular-nums;
-  cursor: default;
-  pointer-events: none;
 }
 
 .currencySuffix {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   padding: 0 var(--spacing-md);
-  background-color: var(--color-bg-subtle);
   border-left: 1px solid var(--color-border);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  background-color: var(--color-bg-subtle);
   color: var(--color-muted);
   font-size: 0.875rem;
   font-weight: 500;
   user-select: none;
 }
 
-/* ── Date Renderer ─────────────────────────────────────────── */
-
-.dateRendererEdit {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  font-variant-numeric: tabular-nums;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
-}
-
-.dateRendererEdit:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.dateRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.dateRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-  cursor: default;
-  pointer-events: none;
-}
-
-.dateRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
-}
-
-/* ── DateTime Renderer ─────────────────────────────────────── */
-
-.dateTimeRendererEdit {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
-  font-variant-numeric: tabular-nums;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
-}
-
-.dateTimeRendererEdit:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.dateTimeRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.dateTimeRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  font-variant-numeric: tabular-nums;
-  cursor: default;
-  pointer-events: none;
-}
-
-.dateTimeRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
-}
-
-/* ── Boolean Renderer ──────────────────────────────────────── */
-
-.booleanRendererEdit,
-.booleanRendererRead {
+.booleanField {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
+  min-height: 2.75rem;
+  padding: 0 var(--spacing-md);
   cursor: pointer;
-  user-select: none;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius);
-  transition: background-color var(--transition);
-}
-
-.booleanRendererEdit:hover,
-.booleanRendererRead:hover {
-  background-color: var(--color-bg-subtle);
 }
 
 .checkboxInput {
@@ -435,79 +152,22 @@
   font-weight: 500;
 }
 
-/* ── Select Renderer (enum) ────────────────────────────────── */
-
-.selectRendererEdit {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius);
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  background-color: var(--color-bg);
+.selectControl {
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--spacing-sm) center;
   background-size: 1.25rem;
   padding-right: 2.5rem;
-  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
 }
 
-.selectRendererEdit:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
-}
-
-.selectRendererEdit:hover:not(:focus) {
-  border-color: var(--color-muted);
-}
-
-.selectRendererRead {
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid transparent;
-  background-color: transparent;
-  font-size: 0.9375rem;
-  color: var(--color-text);
-  appearance: none;
+.selectControl:disabled {
   cursor: default;
   pointer-events: none;
 }
 
-.selectRendererRead:hover {
-  background-color: var(--color-bg-subtle);
-  border-radius: var(--radius);
-}
-
-/* ── Error animation ───────────────────────────────────────── */
-
-@keyframes fieldErrorPulse {
-  0%, 100% { border-color: var(--color-error); }
-  50% { border-color: var(--color-error-light); }
-}
-
-/* ── Reduced motion ────────────────────────────────────────── */
-
 @media (prefers-reduced-motion: reduce) {
-  .textRendererEdit,
-  .textRequiredRendererEdit,
-  .emailRendererEdit,
-  .textareaRendererEdit,
-  .numberRendererEdit,
-  .currencyRendererEdit,
-  .dateRendererEdit,
-  .dateTimeRendererEdit,
-  .selectRendererEdit,
-  .booleanRendererEdit,
-  .booleanRendererRead,
-  .currencyWrapper {
+  .fieldFrame {
     transition: none;
-  }
-
-  .textRequiredError,
-  .emailError {
-    animation: none;
   }
 }

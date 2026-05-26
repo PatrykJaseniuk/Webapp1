@@ -42,10 +42,17 @@ const formatCurrency = (value?: number): string => POLISH_CURRENCY.format(value 
 const getClassName = (map: Record<string, string>, key: string | undefined, fallback: string): string => map[key ?? ''] ?? fallback;
 const getFullName = (firstName?: string, lastName?: string): string => `${firstName ?? ''} ${lastName ?? ''}`.trim();
 const createReadOnlyRenderer = (render: (value: unknown) => React.ReactNode): FieldRendererFn => ({ value }) => render(value);
-const renderLink = (href: string | undefined, content: React.ReactNode): React.ReactNode =>
-    href ? <Link href={href} onClick={stopPropagation} className={relationStyles.relationLinkRenderer}>{content}</Link> : content;
 const asArray = <T,>(value: unknown): readonly T[] => Array.isArray(value) ? value as readonly T[] : [];
 const asRecord = <T,>(value: unknown): T | null => value !== null && value !== undefined && !Array.isArray(value) ? value as T : null;
+const renderLink = (href: string | undefined, content: React.ReactNode): React.ReactNode =>
+    href ? <Link href={href} onClick={stopPropagation} className={relationStyles.relationLinkRenderer}>{content}</Link> : content;
+const renderBadge = (content: React.ReactNode, tone?: BadgeType, key?: React.Key): React.ReactNode =>
+    <span key={key} className={[relationStyles.relationBadgeRenderer, tone ? RELATION_BADGE_CLASSES[tone] : ''].filter(Boolean).join(' ')}>{content}</span>;
+const renderStack = (primary: React.ReactNode, secondary?: React.ReactNode): React.ReactNode =>
+    <div className={relationStyles.relationStackRenderer}>
+        <div className={relationStyles.relationPrimaryRenderer}>{primary}</div>
+        <div className={relationStyles.relationSecondaryRenderer}>{secondary ?? <span className={relationStyles.relationSecondaryPlaceholder}> </span>}</div>
+    </div>;
 
 // ── Tenants Relation ───────────────────────────────────────────────
 
@@ -54,15 +61,13 @@ export const tenantsRelationRenderer = createReadOnlyRenderer((value) => {
     const record = asRecord<Tenant>(value);
     return value === null || value === undefined ? outputNull() : Array.isArray(value)
         ? <div className={relationStyles.relationBadgesRenderer}>
-            {records.slice(0, 3).map((tenant, index) =>
-                <span key={tenant.id ?? index} className={relationStyles.relationBadgeRenderer}>{getFullName(tenant.first_name, tenant.last_name)}</span>,
-            )}
-            {records.length > 3 ? <span className={`${relationStyles.relationBadgeRenderer} ${relationStyles.relationBadgeMoreRenderer}`}>+{records.length - 3}</span> : null}
+            {records.slice(0, 3).map((tenant, index) => renderBadge(getFullName(tenant.first_name, tenant.last_name), undefined, tenant.id ?? index))}
+            {records.length > 3 ? renderBadge(`+${records.length - 3}`, undefined, 'more') : null}
         </div>
-        : renderLink(
+        : renderStack(renderLink(
             record?.id ? routes.landlord.tenants({ id: record.id }) : undefined,
             <span className={record?.id ? undefined : relationStyles.relationNameRenderer}>{getFullName(record?.first_name, record?.last_name)}</span>,
-        );
+        ));
 });
 
 // ── Lease Agreements Relation ──────────────────────────────────────
@@ -74,21 +79,24 @@ export const leaseAgreementsRelationRenderer = createReadOnlyRenderer((value) =>
     const status = record?.lease_status;
     const label = LEASE_STATUS_LABELS[status ?? ''] ?? status ?? '—';
     const statusClass = getClassName(LEASE_STATUS_CLASSES, status, relationStyles.leaseStatusDefaultRenderer);
-    const content = <>
-        <span className={`${relationStyles.leaseStatusRenderer} ${statusClass}`}>{label}</span>
-        <span className={relationStyles.leaseRentRenderer}>{formatCurrency(record?.monthly_rent)}</span>
-    </>;
+    const content = renderStack(
+        <>
+            <span className={`${relationStyles.leaseStatusRenderer} ${statusClass}`}>{label}</span>
+            <span className={relationStyles.relationValueRenderer}>{formatCurrency(record?.monthly_rent)}</span>
+        </>,
+        <span className={relationStyles.relationSubRenderer}>czynsz miesięczny</span>,
+    );
 
     return value === null || value === undefined ? outputNull('Brak umów') : Array.isArray(value)
-        ? <div className={relationStyles.relationSingleRenderer}>
-            <span className={relationStyles.leasesCountRenderer}>{records.length} umów</span>
-            {active
-                ? <span className={relationStyles.leasesActiveRenderer}>{formatCurrency(active.monthly_rent)}/mies</span>
-                : <span className={relationStyles.leasesHintRenderer}>brak aktywnych</span>}
-        </div>
+        ? renderStack(
+            <span className={relationStyles.relationSummaryRenderer}>{records.length} umów</span>,
+            active
+                ? <span className={relationStyles.relationAccentRenderer}>{formatCurrency(active.monthly_rent)}/mies</span>
+                : <span className={relationStyles.relationMutedRenderer}>brak aktywnych</span>,
+        )
         : record?.id
             ? renderLink(routes.landlord.leases({ id: record.id }), content)
-            : <div className={relationStyles.relationSingleRenderer}>{content}</div>;
+            : content;
 });
 
 // ── Properties Relation ────────────────────────────────────────────
@@ -98,18 +106,16 @@ export const propertiesRelationRenderer = createReadOnlyRenderer((value) => {
     const record = asRecord<Property>(value);
     return value === null || value === undefined ? outputNull() : Array.isArray(value)
         ? <div className={relationStyles.relationBadgesRenderer}>
-            <span className={relationStyles.relationBadgeRenderer}>{records.length} nieruchomości</span>
-            {records.slice(0, 2).map((property, index) =>
-                <span key={property.id ?? index} className={`${relationStyles.relationBadgeRenderer} ${RELATION_BADGE_CLASSES.type}`}>{property.name}</span>,
-            )}
+            {renderBadge(`${records.length} nieruchomości`, undefined, 'count')}
+            {records.slice(0, 2).map((property, index) => renderBadge(property.name, 'type', property.id ?? index))}
         </div>
-        : <div className={relationStyles.relationSingleRenderer}>
-            {renderLink(
+        : renderStack(
+            renderLink(
                 record?.id ? routes.landlord.properties({ id: record.id }) : undefined,
                 <span className={record?.id ? undefined : relationStyles.relationNameRenderer}>{record?.name}</span>,
-            )}
-            <span className={relationStyles.relationSubRenderer}>{record?.address}</span>
-        </div>;
+            ),
+            <span className={relationStyles.relationSubRenderer}>{record?.address}</span>,
+        );
 });
 
 // ── Transactions Relation ──────────────────────────────────────────
@@ -122,23 +128,26 @@ export const transactionsRelationRenderer = createReadOnlyRenderer((value) => {
     const status = record?.transaction_status;
     const label = TRANSACTION_STATUS_LABELS[status ?? ''] ?? status ?? '—';
     const statusClass = getClassName(TRANSACTION_STATUS_CLASSES, status, relationStyles.transactionStatusDefaultRenderer);
-    const content = <>
-        <span className={`${relationStyles.transactionStatusRenderer} ${statusClass}`}>{label}</span>
-        <span className={relationStyles.transactionAmountRenderer}>{formatCurrency(record?.amount)}</span>
-    </>;
+    const content = renderStack(
+        <>
+            <span className={`${relationStyles.transactionStatusRenderer} ${statusClass}`}>{label}</span>
+            <span className={relationStyles.relationValueRenderer}>{formatCurrency(record?.amount)}</span>
+        </>,
+        <span className={relationStyles.relationSubRenderer}>status płatności</span>,
+    );
 
     return value === null || value === undefined ? outputNull() : Array.isArray(value)
-        ? <div className={relationStyles.relationSingleRenderer}>
-            <span className={relationStyles.transactionsCountRenderer}>{records.length} transakcji</span>
-            {overdueCount > 0
-                ? <span className={`${relationStyles.relationBadgeRenderer} ${RELATION_BADGE_CLASSES.error}`}>{overdueCount} zaległych</span>
+        ? renderStack(
+            <span className={relationStyles.relationSummaryRenderer}>{records.length} transakcji</span>,
+            overdueCount > 0
+                ? renderBadge(`${overdueCount} zaległych`, 'error')
                 : pendingCount > 0
-                    ? <span className={`${relationStyles.relationBadgeRenderer} ${RELATION_BADGE_CLASSES.warning}`}>{pendingCount} oczekujących</span>
-                    : null}
-        </div>
+                    ? renderBadge(`${pendingCount} oczekujących`, 'warning')
+                    : <span className={relationStyles.relationSecondaryPlaceholder}> </span>,
+        )
         : record?.id
             ? renderLink(routes.landlord.transactions({ id: record.id }), content)
-            : <div className={relationStyles.relationSingleRenderer}>{content}</div>;
+            : content;
 });
 
 // ── Attachments Relation ───────────────────────────────────────────
@@ -147,7 +156,5 @@ export const attachmentsRelationRenderer = createReadOnlyRenderer((value) => {
     const records = asArray<Attachment>(value);
     return value === null || value === undefined
         ? outputNull()
-        : Array.isArray(value)
-            ? <span className={relationStyles.relationBadgeRenderer}>{records.length} plików</span>
-            : <span className={relationStyles.relationBadgeRenderer}>1 plik</span>;
+        : renderBadge(Array.isArray(value) ? `${records.length} plików` : '1 plik');
 });

@@ -1,193 +1,193 @@
 'use client';
 import type React from 'react';
+import type { ChangeEvent } from 'react';
 import type { FieldRendererFn } from './types';
 import styles from '@/components/styles/basicRenderers.module.css';
 import computedStyles from '@/components/styles/computedRenderers.module.css';
 
-// ── Helpers ────────────────────────────────────────────────────────
+type FieldMode = 'read' | 'edit';
+type TextLikeType = 'text' | 'email' | 'date' | 'datetime-local' | 'number';
 
-const displayValue = (value: unknown): string =>
-    value === null || value === undefined ? '' : String(value);
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const numberDisplayValue = (value: unknown): string | number =>
-    value === null || value === undefined ? '' : (value as number);
+const displayValue = (value: unknown): string => value === null || value === undefined ? '' : String(value);
+const numberDisplayValue = (value: unknown): string | number => value === null || value === undefined ? '' : Number(value);
+const isBlank = (value: unknown): boolean => displayValue(value).trim() === '';
+const joinClasses = (...classNames: readonly (string | false | null | undefined)[]): string => classNames.filter(Boolean).join(' ');
+const getModeClass = (mode: FieldMode): string => mode === 'edit' ? styles.fieldEdit : styles.fieldRead;
+const getInputProps = (mode: FieldMode) => ({ readOnly: mode === 'read', tabIndex: mode === 'read' ? -1 : undefined });
+const getSelectProps = (mode: FieldMode) => ({ disabled: mode === 'read', tabIndex: mode === 'read' ? -1 : undefined });
+const getChangeHandler = <T,>(
+    mode: FieldMode,
+    onChange: ((value: T) => void) | undefined,
+    mapValue: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => T,
+) => mode === 'edit' ? (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => onChange?.(mapValue(event)) : undefined;
 
-// ── Text Renderer ──────────────────────────────────────────────────
-
-/** Text input */
-export const textRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <input
-        type="text"
-        className={mode === 'edit' ? styles.textRendererEdit : styles.textRendererRead}
-        value={displayValue(value)}
-        readOnly={mode === 'read'}
-        tabIndex={mode === 'read' ? -1 : undefined}
-        onChange={mode === 'edit' ? (e) => onChange?.(e.target.value || null) : undefined}
-        placeholder="Wprowadź wartość"
-    />
-);
-
-// ── Text Required Renderer ─────────────────────────────────────────
-
-/** Required text input with validation */
-export const textRequiredRenderer: FieldRendererFn = ({ value, mode, onChange }) => {
-    const hasValue = value !== null && value !== undefined && String(value).trim() !== '';
-    return (
-        <div className={styles.textRequiredWrapper}>
-            <input
-                type="text"
-                className={`${styles.textRequiredRendererEdit} ${!hasValue && mode === 'edit' ? styles.textRequiredError : ''}`}
-                value={displayValue(value)}
-                readOnly={mode === 'read'}
-                tabIndex={mode === 'read' ? -1 : undefined}
-                onChange={mode === 'edit' ? (e) => onChange?.(e.target.value || null) : undefined}
-                placeholder="Wymagane"
-            />
-            {!hasValue && mode === 'edit' && <span className={styles.textRequiredErrorMsg}>Pole wymagane</span>}
-        </div>
-    );
-};
-
-// ── Email Renderer ─────────────────────────────────────────────────
-
-/** Email input with validation */
-export const emailRenderer: FieldRendererFn = ({ value, mode, onChange }) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const strValue = displayValue(value);
-    const isValid = strValue === '' || emailRegex.test(strValue);
-    return (
-        <div className={styles.emailWrapper}>
-            <input
-                type="email"
-                className={`${styles.emailRendererEdit} ${!isValid && mode === 'edit' ? styles.emailError : ''}`}
-                value={strValue}
-                readOnly={mode === 'read'}
-                tabIndex={mode === 'read' ? -1 : undefined}
-                onChange={mode === 'edit' ? (e) => onChange?.(e.target.value || null) : undefined}
-                placeholder="email@przyklad.pl"
-            />
-            {!isValid && mode === 'edit' && <span className={styles.emailErrorMsg}>Nieprawidłowy adres email</span>}
-        </div>
-    );
-};
-
-// ── Textarea Renderer ──────────────────────────────────────────────
-
-/** Textarea input */
-export const textareaRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <textarea
-        className={mode === 'edit' ? styles.textareaRendererEdit : styles.textareaRendererRead}
-        value={displayValue(value)}
-        readOnly={mode === 'read'}
-        tabIndex={mode === 'read' ? -1 : undefined}
-        onChange={mode === 'edit' ? (e) => onChange?.(e.target.value) : undefined}
-        rows={3}
-        placeholder="Wprowadź tekst..."
-    />
-);
-
-// ── Number Renderer ────────────────────────────────────────────────
-
-/** Number input */
-export const numberRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <input
-        type="number"
-        className={mode === 'edit' ? styles.numberRendererEdit : styles.numberRendererRead}
-        value={numberDisplayValue(value)}
-        readOnly={mode === 'read'}
-        tabIndex={mode === 'read' ? -1 : undefined}
-        onChange={mode === 'edit' ? (e) => onChange?.(e.target.value === '' ? null : Number(e.target.value)) : undefined}
-        placeholder="0"
-    />
-);
-
-// ── Currency Renderer ──────────────────────────────────────────────
-
-/** Currency input with suffix */
-export const currencyRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <div className={styles.currencyWrapper}>
-        <input
-            type="number"
-            className={mode === 'edit' ? styles.currencyRendererEdit : styles.currencyRendererRead}
-            step="0.01"
-            min="0"
-            value={numberDisplayValue(value)}
-            readOnly={mode === 'read'}
-            tabIndex={mode === 'read' ? -1 : undefined}
-            onChange={mode === 'edit' ? (e) => onChange?.(e.target.value === '' ? null : Number(e.target.value)) : undefined}
-            placeholder="0.00"
-        />
-        <span className={styles.currencySuffix}>zł</span>
+const FieldShell = ({
+    mode,
+    invalid = false,
+    message,
+    children,
+    className,
+}: Readonly<{
+    mode: FieldMode;
+    invalid?: boolean;
+    message?: string;
+    children: React.ReactNode;
+    className?: string;
+}>) => (
+    <div className={joinClasses(styles.fieldShell, className)}>
+        <div className={joinClasses(styles.fieldFrame, getModeClass(mode), invalid && mode === 'edit' && styles.fieldInvalid)}>{children}</div>
+        <span className={joinClasses(styles.fieldMessage, invalid && mode === 'edit' && styles.fieldMessageVisible)} aria-live="polite">
+            {invalid && mode === 'edit' ? message : ' '}
+        </span>
     </div>
 );
 
-// ── Date Renderer ──────────────────────────────────────────────────
+const TextField = ({
+    value,
+    mode,
+    onChange,
+    type = 'text',
+    placeholder,
+    multiline = false,
+    rows = 3,
+    invalid = false,
+    message,
+    step,
+    min,
+}: Readonly<{
+    value: unknown;
+    mode: FieldMode;
+    onChange?: (value: unknown) => void;
+    type?: TextLikeType;
+    placeholder?: string;
+    multiline?: boolean;
+    rows?: number;
+    invalid?: boolean;
+    message?: string;
+    step?: string;
+    min?: string;
+}>) => {
+    const currentValue = type === 'number' ? numberDisplayValue(value) : displayValue(value);
+    return (
+        <FieldShell mode={mode} invalid={invalid} message={message}>
+            {multiline
+                ? <textarea
+                    className={joinClasses(styles.fieldControl, styles.fieldTextarea)}
+                    value={displayValue(value)}
+                    placeholder={placeholder}
+                    rows={rows}
+                    {...getInputProps(mode)}
+                    onChange={getChangeHandler(mode, onChange, (event) => event.target.value)}
+                />
+                : <input
+                    type={type}
+                    className={joinClasses(styles.fieldControl, type === 'number' && styles.fieldNumeric)}
+                    value={currentValue}
+                    placeholder={placeholder}
+                    step={step}
+                    min={min}
+                    {...getInputProps(mode)}
+                    onChange={getChangeHandler(mode, onChange, (event) =>
+                        type === 'number'
+                            ? event.target.value === '' ? null : Number(event.target.value)
+                            : event.target.value || null,
+                    )}
+                />}
+        </FieldShell>
+    );
+};
 
-/** Date input */
-export const dateRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <input
-        type="date"
-        className={mode === 'edit' ? styles.dateRendererEdit : styles.dateRendererRead}
-        value={displayValue(value)}
-        readOnly={mode === 'read'}
-        tabIndex={mode === 'read' ? -1 : undefined}
-        onChange={mode === 'edit' ? (e) => onChange?.(e.target.value || null) : undefined}
-    />
+export const textRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <TextField value={value} mode={mode} onChange={onChange} placeholder="Wprowadź wartość" />
 );
 
-// ── DateTime Renderer ──────────────────────────────────────────────
-
-/** DateTime input */
-export const dateTimeRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <input
-        type="datetime-local"
-        className={mode === 'edit' ? styles.dateTimeRendererEdit : styles.dateTimeRendererRead}
-        value={displayValue(value)}
-        readOnly={mode === 'read'}
-        tabIndex={mode === 'read' ? -1 : undefined}
-        onChange={mode === 'edit' ? (e) => onChange?.(e.target.value || null) : undefined}
-    />
+export const textRequiredRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <TextField value={value} mode={mode} onChange={onChange} placeholder="Wymagane" invalid={isBlank(value)} message="Pole wymagane" />
 );
 
-// ── Boolean Renderer ───────────────────────────────────────────────
-
-/** Boolean checkbox input */
-export const booleanRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
-    <label className={mode === 'edit' ? styles.booleanRendererEdit : styles.booleanRendererRead}>
-        <input
-            type="checkbox"
-            className={styles.checkboxInput}
-            checked={value === true}
-            disabled={mode === 'read'}
-            tabIndex={mode === 'read' ? -1 : undefined}
-            onChange={mode === 'edit' ? (e) => onChange?.(e.target.checked) : undefined}
+export const emailRenderer: FieldRendererFn = ({ value, mode, onChange }) => {
+    const currentValue = displayValue(value);
+    return (
+        <TextField
+            value={value}
+            mode={mode}
+            onChange={onChange}
+            type="email"
+            placeholder="email@przyklad.pl"
+            invalid={currentValue !== '' && !EMAIL_REGEX.test(currentValue)}
+            message="Nieprawidłowy adres email"
         />
-        <span className={styles.checkboxText}>{value === true ? 'Tak' : 'Nie'}</span>
-    </label>
+    );
+};
+
+export const textareaRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <TextField value={value} mode={mode} onChange={onChange} multiline rows={3} placeholder="Wprowadź tekst..." />
 );
 
-// ── Enum / Select Inputs ──────────────────────────────────────────
+export const numberRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <TextField value={value} mode={mode} onChange={onChange} type="number" placeholder="0" />
+);
 
-/** Generic select input from options map */
+export const currencyRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <FieldShell mode={mode} className={styles.currencyShell}>
+        <div className={styles.currencyLayout}>
+            <input
+                type="number"
+                className={joinClasses(styles.fieldControl, styles.fieldNumeric, styles.currencyInput)}
+                step="0.01"
+                min="0"
+                value={numberDisplayValue(value)}
+                placeholder="0.00"
+                {...getInputProps(mode)}
+                onChange={getChangeHandler(mode, onChange, (event) => event.target.value === '' ? null : Number(event.target.value))}
+            />
+            <span className={styles.currencySuffix}>zł</span>
+        </div>
+    </FieldShell>
+);
+
+export const dateRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <TextField value={value} mode={mode} onChange={onChange} type="date" />
+);
+
+export const dateTimeRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <TextField value={value} mode={mode} onChange={onChange} type="datetime-local" />
+);
+
+export const booleanRenderer: FieldRendererFn = ({ value, mode, onChange }) => (
+    <FieldShell mode={mode} className={styles.booleanShell}>
+        <label className={styles.booleanField}>
+            <input
+                type="checkbox"
+                className={styles.checkboxInput}
+                checked={value === true}
+                disabled={mode === 'read'}
+                tabIndex={mode === 'read' ? -1 : undefined}
+                onChange={mode === 'edit' ? (event) => onChange?.(event.target.checked) : undefined}
+            />
+            <span className={styles.checkboxText}>{value === true ? 'Tak' : 'Nie'}</span>
+        </label>
+    </FieldShell>
+);
+
 export const enumRendererGenerator = (
     options: Record<string, string>,
     placeholder: string,
 ): FieldRendererFn => ({ value, mode, onChange }) => (
-    <select
-        className={mode === 'edit' ? styles.selectRendererEdit : styles.selectRendererRead}
-        value={displayValue(value)}
-        disabled={mode === 'read'}
-        tabIndex={mode === 'read' ? -1 : undefined}
-        onChange={mode === 'edit' ? (e) => onChange?.(e.target.value || null) : undefined}
-    >
-        <option value="">{placeholder}</option>
-        {Object.entries(options).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
-        ))}
-    </select>
+    <FieldShell mode={mode}>
+        <select
+            className={styles.selectControl}
+            value={displayValue(value)}
+            {...getSelectProps(mode)}
+            onChange={getChangeHandler(mode, onChange, (event) => event.target.value || null)}
+        >
+            <option value="">{placeholder}</option>
+            {Object.entries(options).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+        </select>
+    </FieldShell>
 );
-
-// ── Enum Options ──────────────────────────────────────────────────
 
 // ── Computed Renderers ──────────────────────────────────────────────
 
