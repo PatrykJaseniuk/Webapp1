@@ -1,0 +1,279 @@
+/* ── Field Renderer Cells (read-only display) ───────────────── */
+
+/* Null / empty state */
+.nullRenderer {
+  color: var(--color-muted);
+  font-style: italic;
+  font-size: 0.875rem;
+}
+
+/* ── Currency ───────────────────────────────────────────────── */
+
+.currencyRenderer {
+  font-weight: 600;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+}
+
+.currencyNegativeRenderer {
+  color: var(--color-error);
+}
+
+/* ── Date / DateTime ────────────────────────────────────────── */
+
+.dateRenderer,
+.dateTimeRenderer {
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+/* ── Number ─────────────────────────────────────────────────── */
+
+.numberRenderer {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+}
+
+.numberPositiveRenderer {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.numberNegativeRenderer {
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+.numberZeroRenderer {
+  color: var(--color-muted);
+}
+
+/* ── Days Count — urgency colors ────────────────────────────── */
+
+.daysCountOverdueRenderer {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+.daysCountWarningRenderer {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.daysCountNormalRenderer {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.daysCountSafeRenderer {
+  color: var(--color-text-secondary);
+}
+
+/* ── Item Count — severity colors ───────────────────────────── */
+
+.itemCountGoodRenderer {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.itemCountWarningRenderer {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+.itemCountCriticalRenderer {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+/* ── Text ───────────────────────────────────────────────────── */
+
+.textRenderer {
+  color: var(--color-text);
+}
+
+/* ── Boolean ────────────────────────────────────────────────── */
+
+.booleanRenderer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.booleanTrueRenderer {
+  color: var(--color-success);
+}
+
+.booleanFalseRenderer {
+  color: var(--color-error);
+}
+
+/* ── Enum Badge ─────────────────────────────────────────────── */
+
+.enumRenderer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  transition: background-color var(--transition), border-color var(--transition), color var(--transition);
+}
+
+.enumRenderer:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-muted);
+}
+
+/* Enum badge color variants — primary */
+.enumBlueRenderer {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.enumBlueRenderer:hover {
+  background-color: var(--color-primary-lighter);
+}
+
+/* Enum badge color variants — success */
+.enumGreenRenderer {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+  border-color: var(--color-success);
+}
+
+.enumGreenRenderer:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Enum badge color variants — purple */
+.enumPurpleRenderer {
+  background-color: var(--color-purple-light);
+  color: var(--color-purple);
+  border-color: var(--color-purple);
+}
+
+.enumPurpleRenderer:hover {
+  background-color: var(--color-purple-lighter);
+}
+
+/* Enum badge color variants — orange */
+.enumOrangeRenderer {
+  background-color: var(--color-orange-light);
+  color: var(--color-orange);
+  border-color: var(--color-orange);
+}
+
+.enumOrangeRenderer:hover {
+  background-color: var(--color-orange-lighter);
+}
+
+/* Enum badge color variants — error */
+.enumRedRenderer {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
+
+.enumRedRenderer:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* Enum badge color variants — warning */
+.enumYellowRenderer {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+  border-color: var(--color-warning);
+}
+
+.enumYellowRenderer:hover {
+  background-color: var(--color-warning-lighter);
+}
+
+/* Enum badge color variants — muted */
+.enumGrayRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.enumGrayRenderer:hover {
+  background-color: var(--color-bg-hover);
+}
+
+/* ── Status Pill ────────────────────────────────────────────── */
+
+.statusRenderer {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.statusRenderer::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+.statusSuccessRenderer {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.statusWarningRenderer {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.statusErrorRenderer {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.statusInfoRenderer {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.statusMutedRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
+}
+
+.statusDefaultRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+/* ── File Size ──────────────────────────────────────────────── */
+
+.fileSizeRenderer {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+}

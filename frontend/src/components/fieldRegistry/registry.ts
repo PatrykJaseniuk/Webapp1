@@ -4,14 +4,11 @@ import {
     textRenderer, textRequiredRenderer, emailRenderer, textareaRenderer,
     numberRenderer, currencyRenderer, dateRenderer, dateTimeRenderer,
     booleanRenderer,
-    propertyTypeRenderer, propertyStatusRenderer,
-    tenantStatusRenderer, leaseStatusRenderer,
-    transactionTypeRenderer, transactionStatusRenderer,
-} from './renderers';
-import {
+    enumRendererGenerator,
+    createFileTypeRenderer as FileTypeRendererGenerator,
     daysCountRenderer, itemCountRenderer,
-    fileSizeRenderer, fileTypeRenderer,
-} from './computedRenderers';
+    fileSizeRenderer,
+} from './basicRenderers';
 import {
     tenantsRelationRenderer, leaseAgreementsRelationRenderer,
     propertiesRelationRenderer, transactionsRelationRenderer,
@@ -35,10 +32,10 @@ const FIELD_REGISTRY: Record<string, FieldConfig> = {
     // ── Property fields ──────────────────────────────────────────
     name: { label: 'Nazwa', fieldRenderer: textRequiredRenderer },
     address: { label: 'Adres', fieldRenderer: textRequiredRenderer },
-    property_type: { label: 'Typ nieruchomości', fieldRenderer: propertyTypeRenderer },
+    property_type: { label: 'Typ nieruchomości', fieldRenderer: enumRendererGenerator({ apartment: '🏠 Mieszkanie', house: '🏡 Dom', commercial: '🏢 Lokal usługowy', room: '🛏️ Pokój' }, 'Wybierz typ...') },
     monthly_rent: { label: 'Czynsz miesięczny', fieldRenderer: currencyRenderer },
     deposit_amount: { label: 'Kaucja', fieldRenderer: currencyRenderer },
-    property_status: { label: 'Status', fieldRenderer: propertyStatusRenderer },
+    property_status: { label: 'Status', fieldRenderer: enumRendererGenerator({ available: 'Dostępna', occupied: 'Zajęta', inactive: 'Nieaktywna' }, 'Wybierz status...') },
     size_sqm: { label: 'Powierzchnia (m²)', fieldRenderer: numberRenderer },
     bedrooms: { label: 'Sypialnie', fieldRenderer: numberRenderer },
     notes: { label: 'Notatki', fieldRenderer: textareaRenderer },
@@ -50,27 +47,36 @@ const FIELD_REGISTRY: Record<string, FieldConfig> = {
     emergency_contact_name: { label: 'Kontakt awaryjny' },
     emergency_contact_phone: { label: 'Tel. kontaktu awaryjnego' },
     user_id: { label: 'ID użytkownika', isHidden: true },
-    tenant_status: { label: 'Status', fieldRenderer: tenantStatusRenderer },
+    tenant_status: { label: 'Status', fieldRenderer: enumRendererGenerator({ active: 'Aktywny', past: 'Były', applicant: 'Kandydat' }, 'Wybierz status...') },
 
     // ── Lease fields ─────────────────────────────────────────────
     tenant_id: { label: 'Najemca', isHidden: true },
     property_id: { label: 'Nieruchomość', isHidden: true },
     start_date: { label: 'Data rozpoczęcia', fieldRenderer: dateRenderer },
     end_date: { label: 'Data zakończenia', fieldRenderer: dateRenderer },
-    lease_status: { label: 'Status', fieldRenderer: leaseStatusRenderer },
+    lease_status: { label: 'Status', fieldRenderer: enumRendererGenerator({ active: 'Aktywna', expired: 'Wygasła', terminated: 'Rozwiązana' }, 'Wybierz status...') },
 
     // ── Transaction fields ───────────────────────────────────────
     lease_id: { label: 'Umowa', isHidden: true },
-    type: { label: 'Typ', fieldRenderer: transactionTypeRenderer },
+    type: { label: 'Typ', fieldRenderer: enumRendererGenerator({ rent: '💰 Czynsz', utility: '💡 Media', expense: '📤 Wydatek', payment: '💳 Wpłata', withdraw: '🏧 Wypłata', fee: '📋 Opłata', other: '📎 Inne' }, 'Wybierz typ...') },
     description: { label: 'Opis' },
     amount: { label: 'Kwota', fieldRenderer: currencyRenderer },
     due_date: { label: 'Termin', fieldRenderer: dateRenderer },
-    transaction_status: { label: 'Status', fieldRenderer: transactionStatusRenderer },
+    transaction_status: { label: 'Status', fieldRenderer: enumRendererGenerator({ pending: 'Oczekująca', paid: 'Opłacona', overdue: 'Zaległa' }, 'Wybierz status...') },
 
     // ── Attachment fields ────────────────────────────────────────
     file_name: { label: 'Nazwa pliku' },
     file_url: { label: 'URL' },
-    file_type: { label: 'Typ pliku', fieldRenderer: fileTypeRenderer },
+    file_type: {
+        label: 'Typ pliku',
+        fieldRenderer: FileTypeRendererGenerator({
+            image: { label: '🖼️ Obraz', color: 'enumBlueRenderer' },
+            video: { label: '🎥 Wideo', color: 'enumPurpleRenderer' },
+            pdf: { label: '📄 PDF', color: 'enumRedRenderer' },
+            document: { label: '📝 Dokument', color: 'enumGreenRenderer' },
+            other: { label: '📎 Inny', color: 'enumGrayRenderer' },
+        }),
+    },
     file_size: { label: 'Rozmiar', fieldRenderer: fileSizeRenderer },
     related_to_id: { label: 'ID powiązania', isHidden: true },
     related_to_type: { label: 'Typ powiązania', isHidden: true },
@@ -121,7 +127,7 @@ export const getFieldConfig = (
 
     const isProperKey = Object.keys(FIELD_REGISTRY).find((regKey) => regKey === fieldKey) !== undefined;
 
-    return isProperKey
-        ? { ...defaultConfig, ...FIELD_REGISTRY[fieldKey] }
-        : defaultConfig;
+    return isProperKey ?
+        { ...defaultConfig, ...FIELD_REGISTRY[fieldKey] } :
+        defaultConfig;
 };

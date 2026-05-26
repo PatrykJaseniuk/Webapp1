@@ -1,0 +1,253 @@
+/* ── Field Renderer Relations (for nested Supabase queries) ────── */
+
+/* ── Single object variant ───────────────────────────────────── */
+
+.relationSingleRenderer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.relationNameRenderer {
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.9375rem;
+}
+
+.relationSubRenderer {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* ── Relation link ───────────────────────────────────────────── */
+
+.relationLinkRenderer {
+  color: var(--color-primary);
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  padding: var(--spacing-xs) var(--spacing-xs);
+  border-radius: var(--radius);
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.relationLinkRenderer:hover {
+  text-decoration: underline;
+  background-color: var(--color-primary-light);
+}
+
+.relationLinkRenderer:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
+}
+
+/* ── Array variant — badges ──────────────────────────────────── */
+
+.relationBadgesRenderer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.relationBadgeRenderer {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--color-text-secondary);
+  transition: background-color var(--transition), border-color var(--transition), transform var(--transition);
+}
+
+.relationBadgeRenderer:hover {
+  background-color: var(--color-bg-hover);
+  border-color: var(--color-muted);
+  transform: translateY(-1px);
+}
+
+.relationBadgeMoreRenderer {
+  background-color: var(--color-border);
+  color: var(--color-muted);
+  font-style: italic;
+  border-color: var(--color-border);
+}
+
+.relationBadgeMoreRenderer:hover {
+  background-color: var(--color-muted);
+  color: var(--color-bg);
+  border-color: var(--color-muted);
+}
+
+.relationBadgeTypeRenderer {
+  background-color: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.relationBadgeTypeRenderer:hover {
+  background-color: var(--color-primary-lighter);
+}
+
+.relationBadgeErrorRenderer {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+  font-weight: 600;
+  border-color: var(--color-error);
+}
+
+.relationBadgeErrorRenderer:hover {
+  background-color: var(--color-bg-hover);
+}
+
+.relationBadgeWarningRenderer {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+  font-weight: 600;
+  border-color: var(--color-warning);
+}
+
+.relationBadgeWarningRenderer:hover {
+  background-color: var(--color-warning-lighter);
+}
+
+/* ── Lease relation specific ─────────────────────────────────── */
+
+.leaseStatusRenderer {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.leaseStatusActiveRenderer {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.leaseStatusExpiredRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
+}
+
+.leaseStatusTerminatedRenderer {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.leaseStatusDraftRenderer {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.leaseStatusDefaultRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.leaseRentRenderer {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--color-success);
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+}
+
+.leasesCountRenderer {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+.leasesActiveRenderer {
+  font-size: 0.75rem;
+  color: var(--color-success);
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.leasesHintRenderer {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+/* ── Transaction relation specific ───────────────────────────── */
+
+.transactionStatusRenderer {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  transition: background-color var(--transition), color var(--transition);
+}
+
+.transactionStatusPaidRenderer {
+  background-color: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.transactionStatusPendingRenderer {
+  background-color: var(--color-warning-light);
+  color: var(--color-warning);
+}
+
+.transactionStatusOverdueRenderer {
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+.transactionStatusCancelledRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-muted);
+}
+
+.transactionStatusDefaultRenderer {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+}
+
+.transactionAmountRenderer {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.875rem;
+  letter-spacing: 0.025em;
+}
+
+.transactionsCountRenderer {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.875rem;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .relationLinkRenderer,
+  .relationBadgeRenderer,
+  .leaseStatusRenderer,
+  .transactionStatusRenderer {
+    transition: none;
+  }
+
+  .relationBadgeRenderer:hover {
+    transform: none;
+  }
+}
