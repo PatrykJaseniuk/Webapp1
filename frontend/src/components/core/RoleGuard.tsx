@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { useAuth } from '@/api/useAuth';
 import { routes } from '@/api/routes/appRoutes';
-import { Spinner } from '@/components/coreComponents/Spinner';
+import { Spinner } from '@/components/core/Spinner';
 import styles from '@/components/styles/appShell.module.css';
 
 interface RoleGuardProps {

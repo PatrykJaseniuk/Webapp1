@@ -1,24 +1,13 @@
 'use client';
-import type { FieldConfig } from './types';
-import {
-    textRenderer, textRequiredRenderer, emailRenderer, textareaRenderer,
-    numberRenderer, currencyRenderer, dateRenderer, dateTimeRenderer,
-    booleanRenderer,
-    enumRendererGenerator,
-    createFileTypeRenderer as FileTypeRendererGenerator,
-    daysCountRenderer, itemCountRenderer,
-    fileSizeRenderer,
-} from './basicRenderers';
-import {
-    tenantsRelationRenderer, leaseAgreementsRelationRenderer,
-    propertiesRelationRenderer, transactionsRelationRenderer,
-    attachmentsRelationRenderer,
-} from './relationRenderers';
 
-// ── Global Field Registry ─────────────────────────────────────────────
-// Defaults (applied by getFieldConfig): textRenderer, hidden: false, isSortable: true
+import { dateTimeRenderer, emailRenderer, textRequiredRenderer, enumRendererGenerator, currencyRenderer, numberRenderer, textareaRenderer, dateRenderer, fileSizeRenderer, daysCountRenderer, itemCountRenderer, FileTypeRendererGenerator } from "../core/DatabaseColumnGuiMap/BasicFieldRenderers";
+import { tenantsRelationRenderer, leaseAgreementsRelationRenderer, propertiesRelationRenderer, transactionsRelationRenderer, attachmentsRelationRenderer } from "./RelationFieldRenderers";
+import { FieldConfig } from "../core/DatabaseColumnGuiMap/types";
 
-const FIELD_REGISTRY: Record<string, FieldConfig> = {
+
+// DATABASE_COLUMN_GUI_MAP - this name was inspired by ORM(object relationship mapping). This object map db columns fields to proper gui component (this component is both for read and edit). Then this map is use in components for example responsible for rendering data acquired form db request in form of table. Thanks to this map component like that know how to render each field.   
+
+export const DATABASE_COLUMN_GUI_MAP: Record<string, FieldConfig> = {
     // ── Common system fields ─────────────────────────────────────
     id: { label: 'ID', isHidden: true },
     created_at: { label: 'Utworzono', fieldRenderer: dateTimeRenderer },
@@ -112,22 +101,3 @@ const FIELD_REGISTRY: Record<string, FieldConfig> = {
     total_overdue_amount: { label: 'Kwota zaległa', fieldRenderer: currencyRenderer },
     earliest_due_date: { label: 'Najwcześniejszy termin', fieldRenderer: dateRenderer },
 } as const;
-
-// ── Resolver ────────────────────────────────────────────────────────
-
-export const getFieldConfig = (
-    fieldKey: string,
-): Required<FieldConfig> => {
-    const defaultConfig: Required<FieldConfig> = {
-        label: fieldKey,
-        fieldRenderer: textRenderer,
-        isHidden: false,
-        isSortable: true,
-    };
-
-    const isProperKey = Object.keys(FIELD_REGISTRY).find((regKey) => regKey === fieldKey) !== undefined;
-
-    return isProperKey ?
-        { ...defaultConfig, ...FIELD_REGISTRY[fieldKey] } :
-        defaultConfig;
-};

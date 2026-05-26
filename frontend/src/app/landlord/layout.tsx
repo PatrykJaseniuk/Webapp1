@@ -1,10 +1,10 @@
-import { AppLayout } from '@/components/coreComponents/AppLayout';
-import { RoleGuard } from '@/components/coreComponents/RoleGuard';
+import { AppLayout } from '@/components/core/AppLayout';
+import { RoleGuard } from '@/components/core/RoleGuard';
 
 export default function LandlordLayout({ children }: { children: React.ReactNode }) {
 
-    function Book(name:string){
-         
+    function Book(name: string) {
+
     }
 
     return (

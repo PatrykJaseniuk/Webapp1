@@ -1,7 +1,7 @@
 'use client';
 import { useAuth } from '@/api/useAuth';
 import { routes } from '@/api/routes/appRoutes';
-import { Sidebar } from '@/components/coreComponents/Sidebar';
+import { Sidebar } from '@/components/core/Sidebar';
 import styles from '@/components/styles/appShell.module.css';
 import { useRouter } from 'next/navigation';
 

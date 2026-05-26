@@ -1,13 +1,14 @@
 'use client';
 import { useState } from 'react';
 import { useAsync } from 'react-use';
-import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
-import { EmptyState } from '@/components/coreComponents/EmptyState';
+import { ErrorBanner } from '@/components/core/ErrorBanner';
+import { EmptyState } from '@/components/core/EmptyState';
 import styles from '@/components/styles/manyRecords.module.css';
 import pageStyles from '@/components/styles/pageLayout.module.css';
-import { getFieldConfig } from '../fieldRegistry/registry';
+
 import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 import { database } from '@/api/database';
+import { databaseGuiMap } from './DatabaseColumnGuiMap/databaseGuiMap';
 
 // ── Types ───────────────────────────────────────────────────────────
 
@@ -161,7 +162,7 @@ export const ManyRecords = ({
                                     <thead className={styles.tableHeader}>
                                         <tr>
                                             {Object.keys(rows[0]).map((fieldKey) => {
-                                                const fieldConfig = getFieldConfig(fieldKey)
+                                                const fieldConfig = databaseGuiMap(fieldKey)
                                                 return (
                                                     fieldConfig.isHidden ||
                                                     <th
@@ -199,7 +200,7 @@ export const ManyRecords = ({
                                                 onKeyDown={onRowClick ? (e) => (e.key === 'Enter' || e.key === ' ') && onRowClick(row) : undefined}
                                             >
                                                 {Object.keys(row).map((fieldKey) => {
-                                                    const fieldConfig = getFieldConfig(fieldKey);
+                                                    const fieldConfig = databaseGuiMap(fieldKey);
                                                     return (
                                                         fieldConfig.isHidden ||
                                                         <td key={fieldKey} className={styles.tableCell}>

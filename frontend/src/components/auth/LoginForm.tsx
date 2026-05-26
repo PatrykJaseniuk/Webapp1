@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { useAuth } from '@/api/useAuth';
 // import { useNavigate } from '@/routes/useNavigate';
 import { routes, ROLE_REDIRECTS } from '@/api/routes/appRoutes';
-import { Spinner } from '@/components/coreComponents/Spinner';
-import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { Spinner } from '@/components/core/Spinner';
+import { ErrorBanner } from '@/components/core/ErrorBanner';
 import styles from '@/components/styles/forms.module.css';
 import { useRouter } from 'next/navigation';
 

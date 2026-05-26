@@ -1,5 +1,5 @@
-import { AppLayout } from '@/components/coreComponents/AppLayout';
-import { RoleGuard } from '@/components/coreComponents/RoleGuard';
+import { AppLayout } from '@/components/core/AppLayout';
+import { RoleGuard } from '@/components/core/RoleGuard';
 
 export default function TenantLayout({ children }: { children: React.ReactNode }) {
     return (

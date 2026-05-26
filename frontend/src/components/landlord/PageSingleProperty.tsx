@@ -6,10 +6,10 @@ import { useAsync, useAsyncFn } from 'react-use';
 import { routes } from '@/api/routes/appRoutes';
 import { useRouter } from 'next/navigation';
 import { database } from '@/api/database';
-import { SingleRecord } from '@/components/coreComponents/SingleRecord';
-import { ManyRecords } from '@/components/coreComponents/ManyRecords';
-import { Spinner } from '@/components/coreComponents/Spinner';
-import { ErrorBanner } from '@/components/coreComponents/ErrorBanner';
+import { SingleRecord } from '@/components/core/SingleRecord';
+import { ManyRecords } from '@/components/core/ManyRecords';
+import { Spinner } from '@/components/core/Spinner';
+import { ErrorBanner } from '@/components/core/ErrorBanner';
 import styles from '@/components/styles/pageLayout.module.css';
 
 type PageSingleRecordProps =

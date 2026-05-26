@@ -1,11 +1,13 @@
 'use client';
 import type React from 'react';
-import type { FieldRendererFn } from './types';
+import type { FieldRendererFn } from '../core/DatabaseColumnGuiMap/types';
 import computedStyles from '@/components/styles/computedRenderers.module.css';
 import relationStyles from '@/components/styles/relationRenderers.module.css';
 import { routes } from '@/api/routes/appRoutes';
 import Link from 'next/link';
 
+
+// This are renderers of db field that is referenc/references to other record/records. Supabase client ORM put all reference record/records (depend if it's one-many or many-many) under table name of referennced record. So All of this referenced renderers have to handle both cases(rendre table or single record)
 // ── Helper: Extract array from value ──────────────────────────────
 
 const extractArray = <T,>(value: unknown): T[] =>

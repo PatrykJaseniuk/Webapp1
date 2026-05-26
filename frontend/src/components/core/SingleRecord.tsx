@@ -2,8 +2,8 @@
 
 import styles from '@/components/styles/singleRecord.module.css';
 import viewSingleStyles from '@/components/styles/pageLayout.module.css';
-import { getFieldConfig } from '../fieldRegistry/registry';
 import { useState } from 'react';
+import { databaseGuiMap } from './DatabaseColumnGuiMap/databaseGuiMap';
 
 // ── Types ──────────────────────────────────────────────────────
 
@@ -44,7 +44,7 @@ export const SingleRecord = ({
     };
 
     const visibleFieldKeys = Object.keys(fields).filter(
-        fieldKey => !getFieldConfig(fieldKey).isHidden
+        fieldKey => !databaseGuiMap(fieldKey).isHidden
     );
 
     return (
@@ -66,11 +66,11 @@ export const SingleRecord = ({
             <fieldset className={styles.detailsFieldset}>
                 <div className={styles.detailsGrid}>
                     {visibleFieldKeys.map(fieldKey => {
-                        const config = getFieldConfig(fieldKey);
-                        const currentValue = mode === 'edit' 
-                            ? (editValues[fieldKey] ?? fields[fieldKey]) 
+                        const config = databaseGuiMap(fieldKey);
+                        const currentValue = mode === 'edit'
+                            ? (editValues[fieldKey] ?? fields[fieldKey])
                             : fields[fieldKey];
-                        
+
                         return (
                             <div key={fieldKey} className={styles.detailsField}>
                                 <label htmlFor={fieldKey} className={styles.detailsLabel}>

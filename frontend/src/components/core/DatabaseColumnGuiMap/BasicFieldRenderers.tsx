@@ -253,7 +253,7 @@ export const fileSizeRenderer = createReadOnlyRenderer((value) => {
 // ── File Type Badge Factory ────────────────────────────────────────
 
 /** Create a file type badge renderer with custom label/color options */
-export const createFileTypeRenderer = (
+export const FileTypeRendererGenerator = (
     options: Record<string, { label: string; color: string }>,
 ): FieldRendererFn =>
     ({ value }) => {

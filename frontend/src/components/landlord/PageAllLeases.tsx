@@ -1,7 +1,7 @@
 'use client';
 import { database } from '@/api/database';
 import { routes } from '@/api/routes/appRoutes';
-import { ManyRecords } from '@/components/coreComponents/ManyRecords';
+import { ManyRecords } from '@/components/core/ManyRecords';
 import { useRouter } from 'next/navigation';
 
 export const ViewAllLeases = () => {
