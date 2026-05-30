@@ -1,1 +1,0 @@
-In this directory are elements that are edit not so often

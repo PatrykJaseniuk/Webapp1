@@ -1,1 +1,0 @@
-In this dir are files responsible for mapping db's column's fields to proper gui element. There is other dir with the same name: `../core/databaseColumnGuiMap`. Elements are separated in context of change frequency. Elements in this dir change more often than in `../core/databaseColumnGuiMap` dir  
