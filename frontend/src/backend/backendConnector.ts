@@ -5,4 +5,4 @@ import type { Database } from './database.types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
-export const database = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const backendConnector = createClient<Database>(supabaseUrl, supabaseAnonKey);

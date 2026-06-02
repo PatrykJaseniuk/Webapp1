@@ -1,145 +1,119 @@
-# Frontend — Vite + React
+# Frontend — Generation Rules for LLM Agents
 
-> **Audience:** LLM agents working on the frontend.
-> Covers: stack, project structure, layer rules, data fetching, routing, code style.
+> Generate a React frontend from a Supabase backend.
+> Code-level rules: `.clinerules/FUNCTIONAL_TS.md`
+> System overview: `doc/SYSTEM.md`
 
-## Tech Stack
+## Stack (fixed)
 
 | Layer | Choice |
 |-------|--------|
-| Build | Vite |
+| Build + Dev | Vite |
 | UI | React 18, TypeScript `strict: true` |
-| Styling | Tailwind CSS (zero runtime, JIT) |
+| Styling | Tailwind CSS |
 | Routing | React Router v6 `createHashRouter` |
-| FP | fp-ts, ts-pattern |
+| Server state | TanStack Query |
+| Pattern matching | ts-pattern |
 | API | @supabase/supabase-js |
-| Testing | Vitest + fast-check |
 
-## Project Structure
+## Directory Structure
 
 ```
-frontend/
-└── src/
-    ├── api/
-    │   ├── database.ts          # single supabase client (rule R-010)
-    │   └── database.types.ts    # generated: supabase gen types
-    ├── domain/                  # pure types + business logic (no I/O, no React)
-    ├── shared/                  # FP utils, UI primitives (no domain knowledge)
-    ├── infra/                   # Supabase adapters — effectful I/O boundary
-    ├── application/             # hooks (useAuth, useAsync), route guards
-    ├── features/                # role-scoped screens, lazy-loaded
-    │   ├── role-a/
-    │   └── role-b/
-    ├── App.tsx
-    └── main.tsx
+src/
+├── api/
+│   ├── database.ts              # single supabase client — create once, never duplicate
+│   └── database.types.ts         # generated: supabase gen types
+├── domain/
+│   ├── entities.ts               # type aliases from generated Database types + const arrays
+│   └── types.ts                  # Result<T, E>, ok/err, AppError union, AsyncState
+├── shared/
+│   ├── routes.ts                 # ROUTES object + buildRoute (see §Routing)
+│   └── form.ts                   # FormState helpers
+├── data/                         # one file per DB table — CRUD + TanStack hooks
+│   └── <table>.ts
+├── features/                     # pure display components — props in, JSX out
+│   └── <table>/
+│       ├── <TableName>List.tsx   # table/list display
+│       └── <TableName>Form.tsx   # create/edit form
+├── pages/                        # stateful route targets — call data/ hooks, wire to features
+│   ├── Layout.tsx                # sidebar + user menu + <Outlet />
+│   ├── <TableName>Page.tsx       # list page
+│   ├── <TableName>DetailPage.tsx # detail page (receives params as typed props)
+│   └── DashboardPage.tsx
+├── App.tsx                       # route table + auth guard + param extraction wrappers
+└── main.tsx                      # QueryClientProvider + mount
 ```
 
 ## Layer Rules (import discipline)
 
 | Layer | Can import | Must not import |
 |-------|-----------|-----------------|
-| `domain/` | nothing | no I/O, no React, no framework code |
-| `shared/` | `domain/` | no app-specific code |
-| `infra/` | `domain/`, `shared/` | no React components |
-| `application/` | `domain/`, `infra/`, `shared/` | no `features/` code |
-| `features/` | `application/`, `infra/`, `domain/`, `shared/` | no other `features/` |
+| `domain/` | `api/database.types` (types only) | no I/O, no React |
+| `shared/` | nothing | no domain, no app code |
+| `data/` | `domain/`, `api/` | no React components |
+| `features/` | `domain/`, `shared/` | no `data/`, no `useQuery`/`useMutation` |
+| `pages/` | `data/`, `features/`, `domain/`, `shared/` | no other `pages/` |
+| `App.tsx` | everything | — |
 
-## Supabase Client
+**State vs pure separation:** `pages/` call `useQuery`/`useMutation` and pass data down. `features/` receive data via props — they may use `useState` for local form fields only. Never `useQuery` in `features/`.
 
-**Single instance** — rule R-010 from `.clinerules/FRONTEND_STYLE_GUIDE_LIBRARY.md`:
+## For Each DB Table — Generate These 4 Files
 
-```typescript
-// src/api/database.ts — the ONLY place a client is created
-import { createClient } from '@supabase/supabase-js';
-import type { Database } from './database.types';
+### 1. `domain/entities.ts` — type aliases
+- `Row`, `Insert`, `Update` aliases from `Database['public']['Tables']['<table>']`
+- `as const` arrays for any CHECK-constrained columns (statuses, types)
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+### 2. `data/<table>.ts` — CRUD + TanStack hooks
+- CRUD async functions: `fetchAll`, `fetchById`, `save`, `update`, `delete`
+- All CRUD functions return `Promise<Result<T, AppError>>` — never throw
+- Wrap Supabase errors with a `toAppError` helper mapping `PostgrestError` → `AppError`
+- TanStack hooks (`useQuery`, `useMutation`) unwrap `Result` at the boundary:
+  use `match` to branch on `{ tag: 'ok' }` / `{ tag: 'err' }` inside `mutationFn`
+- `useQuery` key: `['<table>'] as const`
 
-export const database = createClient<Database>(supabaseUrl, supabaseAnonKey);
+### 3. `features/<table>/` — pure display components
+- **List** — `readonly items[]` + `onEdit`/`onDelete` callbacks as props
+- **Form** — optional `item` for edit mode, `onSubmit: (data: Insert) => Promise<void>`, `onCancel`
+
+### 4. `pages/<Name>Page.tsx` — stateful page
+- Calls `data/` hooks, passes data down to `features/`
+- Uses `ts-pattern` `match` for loading / error / success states
+- Local UI state only: `useState` for editing mode, form visibility
+
+## Routing
+
+**`shared/routes.ts`** — pure constants, zero imports. Typed `RouteParams` record → `ROUTES` object → `buildRoute<K>(route, params)` builder.
+
+**`App.tsx`** — the only place calling `useParams`, `createHashRouter`:
+- Public routes (login, signup) at top level
+- Protected routes behind an `AuthGuard` wrapper that checks `useSessionQuery`
+- Lazy-loaded page components via `lazy(() => import(...))`
+- Param wrappers for parameterized routes — extract `useParams`, pass as typed props to detail pages
+- Pages never call `useParams` themselves
+
+**Links** — always use `buildRoute`: `<NavLink to={buildRoute('<route>', {})}>`
+
+## What NOT to Do
+
+- ❌ No raw strings in `to`/`path` — always `buildRoute` or `ROUTES.*.path`
+- ❌ No `useParams` in page components — extraction happens in `App.tsx` wrappers
+- ❌ No `useQuery`/`useMutation` in `features/` — only in `pages/`
+- ❌ No `database` calls in `pages/` or `features/` — only in `data/`
+- ❌ No `throw` anywhere — use `Result<T, E>` (FUNCTIONAL_TS.md §7)
+- ❌ No `switch` statements — use `ts-pattern` (FUNCTIONAL_TS.md §6)
+- ❌ No `if/else if` chains for value mapping — use lookup objects
+- ❌ No `let`, `var`, non-null assertions (`!`), or `any`
+
+## Pipeline
+
+```
+pages/ → data/<table>.ts → api/database → Supabase
+  ↑            ↑
+stateful   CRUD + hooks (Result-based, no throw)
+           (one file per table)
 ```
 
-## Data Fetching Rules
-
-Per `.clinerules/FRONTEND_STYLE_GUIDE_LIBRARY.md`:
-
-| Rule | When | Pattern |
-|------|------|---------|
-| R-006 | Data on mount / page load | `useAsync` |
-| R-007 | Data on user action (click, submit) | `useAsyncFn` |
-| R-008 | Refetch after mutation | `refreshKey` — increment counter to trigger reload |
-| R-009 | Rendering lists | Never use array index as `key` — use unique IDs |
-
-```typescript
-// R-006: fetch on mount
-const { data, loading, error } = useAsync(() =>
-  database.from('table').select('*')
-);
-
-// R-007: fetch on user action
-const [fetchData, { data, loading }] = useAsyncFn(
-  (id: string) => database.from('table').select('*').eq('id', id)
-);
-
-// R-008: refetch after mutation
-const [refreshKey, setRefreshKey] = useState(0);
-const { data } = useAsync(() => fetchData(), [refreshKey]);
-// After mutation: setRefreshKey(k => k + 1)
-```
-
-## Auth + Routing
-
-1. Supabase Auth handles sign-in → JWT stored in browser
-2. Session listener updates global auth state
-3. Role fetched from roles table (not from JWT claims)
-4. Route guards check role before rendering feature modules
-5. Feature modules loaded via `React.lazy()` — unused role code stays on disk
-
-## Routing (Hash Router)
-
-**Hash router required** — GitHub Pages has no server-side URL rewriting:
-
-```typescript
-const router = createHashRouter([
-  { path: '/login', element: <Login /> },
-  {
-    element: <RequireRole roles={['admin']} />,
-    children: [
-      { path: '/admin', element: <AdminDashboard /> },
-    ],
-  },
-  { path: '*', element: <Navigate to="/" /> },
-]);
-```
-
-## Code Style
-
-Governed by `.clinerules/` (global FUNCTIONAL_TS.md):
-
-- No classes — plain objects + standalone functions
-- Immutable data — `Readonly<T>`, `ReadonlyArray<T>`, `as const`
-- Errors as `Result<T, E>`, absence as `Option<T>` (fp-ts)
-- Discriminated unions for state machines
-- `pipe` / `flow` for composition
-- No `let` (prefer `const`), no `any` (use `unknown` + narrowing)
-- ESLint: `functional/immutable-data`, `functional/no-let`, `functional/no-loop-statements`, `import/no-cycle`
-
-## CI Commands
+## CI
 
 ```bash
-npm run lint      # ESLint with functional/* rules
-npm run typecheck # tsc --noEmit (strict mode)
-npm run test      # Vitest
-npm run build     # Vite build → dist/
-```
-
-## Key Decisions
-
-| Decision | Reason |
-|----------|--------|
-| Hash router | GH Pages cannot rewrite URLs |
-| Lazy-loaded role features | Unused role code never sent to the browser |
-| Single supabase client | Rule R-010 — one instance, typed with generated types |
-| `domain/` has zero deps | Pure logic, testable without mocking |
-| `infra/` is the I/O boundary | All Supabase calls live here, nowhere else |
-| Tailwind CSS | Zero runtime — no JS overhead in static SPA |
+npm run lint && npm run typecheck && npm run test && npm run build

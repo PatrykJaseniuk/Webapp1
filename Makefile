@@ -31,7 +31,7 @@ dev-backend: ## Start Supabase local stack (Postgres, Auth, API, Studio)
 
 dev-frontend: ## Start Vite dev server
 	@echo "=== Starting Vite dev server ==="
-	cd frontend && npm run dev
+	cd frontend && npm run dev -- --open
 
 types: ## Generate database types from local Supabase (requires running backend)
 	@echo "=== Generating database types ==="
