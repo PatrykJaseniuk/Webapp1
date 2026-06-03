@@ -11,10 +11,9 @@ const sidebarLinkClass = ({
 }: {
   readonly isActive: boolean;
 }): string =>
-  `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive
-      ? 'bg-blue-100 text-blue-700'
-      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+  `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
+    ? 'bg-blue-100 text-blue-700'
+    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
   }`;
 
 export const Layout = (): JSX.Element => {
@@ -26,11 +25,11 @@ export const Layout = (): JSX.Element => {
   );
 
   const user =
-    !sessionState.loading &&
-    sessionState.value !== undefined &&
-    sessionState.value.data?.session?.user !== undefined
-      ? sessionState.value.data.session.user
-      : null;
+    (!sessionState.loading &&
+      sessionState.value !== undefined &&
+      sessionState.value.data?.session?.user !== undefined) ?
+      sessionState.value.data.session.user :
+      null;
 
   const userId: string | null = user?.id ?? null;
 
@@ -38,10 +37,10 @@ export const Layout = (): JSX.Element => {
     async () =>
       userId !== null
         ? backendConnector
-            .from('user_roles')
-            .select('*')
-            .eq('user_id', userId)
-            .maybeSingle()
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle()
         : { data: null, error: null },
     [userId],
   );
@@ -55,9 +54,9 @@ export const Layout = (): JSX.Element => {
   };
 
   const roleData =
-    !roleState.loading && roleState.value !== undefined
-      ? roleState.value.data
-      : null;
+    !roleState.loading && roleState.value !== undefined ?
+      roleState.value.data :
+      null;
 
   return (
     <div className="flex min-h-screen">

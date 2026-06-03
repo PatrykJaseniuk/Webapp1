@@ -14,9 +14,9 @@ const ROLE_LABELS: Record<string, string> = {
 };
 
 export const UserMenu = ({ user, role, onLogout }: Props): JSX.Element => {
-  const roleLabel: string = role !== null
-    ? (ROLE_LABELS[role.role] ?? role.role)
-    : '—';
+  const roleLabel: string = role !== null ?
+    (ROLE_LABELS[role.role] ?? role.role) :
+    '—';
 
   return (
     <div className="border-t border-gray-200 pt-4">

@@ -51,9 +51,9 @@ export const PropertiesPage = (): JSX.Element => {
 
   const handleCreate = (input: TablesInsert<'properties'>): Promise<void> =>
     saveProperty(input).then((result) =>
-      result.error !== null
-        ? Promise.reject(result.error)
-        : (setShowCreateForm(false), triggerRefetch(), undefined),
+      result.error !== null ?
+        Promise.reject(result.error) :
+        (setShowCreateForm(false), triggerRefetch(), undefined),
     );
 
   const handleEdit = (property: Tables<'properties'>): void => {
@@ -63,12 +63,12 @@ export const PropertiesPage = (): JSX.Element => {
 
   const handleUpdate = (input: TablesInsert<'properties'>): Promise<void> => {
     const id = editingProperty?.id;
-    return id === undefined
-      ? Promise.resolve()
-      : updateProperty({ id, patch: input }).then((result) =>
-          result.error !== null
-            ? Promise.reject(result.error)
-            : (setEditingProperty(undefined), triggerRefetch(), undefined),
+    return id === undefined ?
+      Promise.resolve() :
+      updateProperty({ id, patch: input }).then((result) =>
+          result.error !== null ?
+            Promise.reject(result.error) :
+            (setEditingProperty(undefined), triggerRefetch(), undefined),
         );
   };
 
@@ -83,9 +83,9 @@ export const PropertiesPage = (): JSX.Element => {
   const properties: readonly Tables<'properties'>[] =
     !propertiesState.loading &&
     propertiesState.value !== undefined &&
-    propertiesState.value.data !== null
-      ? (propertiesState.value.data as readonly Tables<'properties'>[])
-      : [];
+    propertiesState.value.data !== null ?
+      (propertiesState.value.data as readonly Tables<'properties'>[]) :
+      [];
 
   return (
     <div className="space-y-6">

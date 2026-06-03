@@ -83,14 +83,14 @@ export const PropertyForm = ({
     key: K,
     value: PropertyFormData[K],
   ): void => {
-    form.tag === 'editing'
-      ? setForm(formEditing(setField(form.data, key, value)))
-      : undefined;
+    form.tag === 'editing' ?
+      setForm(formEditing(setField(form.data, key, value))) :
+      undefined;
   };
 
   const handleSubmit = (): void => {
-    form.tag === 'editing'
-      ? (() => {
+    form.tag === 'editing' ?
+      (() => {
           setForm(formSubmitting(form.data));
           const insert = formDataToInsert(form.data);
           onSubmit(insert)
@@ -99,8 +99,8 @@ export const PropertyForm = ({
               const message = err instanceof Error ? err.message : 'Błąd zapisu';
               setForm(formError(form.data, message));
             });
-        })()
-      : undefined;
+        })() :
+      undefined;
   };
 
   const isEditing = form.tag === 'editing';

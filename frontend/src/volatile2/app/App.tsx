@@ -33,11 +33,13 @@ const SignupPage = lazy(() =>
 // ── Param extraction wrappers ──
 const TenantDetailElement = (): JSX.Element => {
   const { tenantId } = useParams<{ readonly tenantId: string }>();
-  return tenantId !== undefined ? (
-    <TenantDetailPage tenantId={tenantId} />
-  ) : (
-    <Navigate to={ROUTES.tenants.path} replace />
-  );
+  return tenantId !== undefined ?
+    (
+      <TenantDetailPage tenantId={tenantId} />
+    ) :
+    (
+      <Navigate to={ROUTES.tenants.path} replace />
+    );
 };
 
 // ── Auth guard ──
@@ -47,15 +49,15 @@ const AuthGuard = (): JSX.Element => {
     [],
   );
 
-  return sessionState.loading
-    ? (
+  return sessionState.loading ?
+    (
       <div className="flex items-center justify-center py-16">
         <p className="text-gray-400">Ładowanie...</p>
       </div>
-    )
-    : sessionState.value?.data?.session?.user !== undefined
-      ? <Layout />
-      : <Navigate to={ROUTES.login.path} replace />;
+    ) :
+    sessionState.value?.data?.session?.user !== undefined ?
+      <Layout /> :
+      <Navigate to={ROUTES.login.path} replace />;
 };
 
 // ── Router ──

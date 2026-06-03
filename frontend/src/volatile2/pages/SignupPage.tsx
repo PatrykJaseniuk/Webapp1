@@ -47,21 +47,21 @@ export const SignupPage = (): JSX.Element => {
 
   const user =
     !sessionState.loading &&
-    sessionState.value !== undefined
-      ? (sessionState.value.data?.session?.user ?? null)
-      : null;
+    sessionState.value !== undefined ?
+      (sessionState.value.data?.session?.user ?? null) :
+      null;
 
-  return user !== null
-    ? (
+  return user !== null ?
+    (
       <Navigate to={buildRoute('dashboard', {})} replace />
-    )
-    : sessionState.loading
-      ? (
+    ) :
+    sessionState.loading ?
+      (
         <div className="flex items-center justify-center py-16">
           <p className="text-gray-400">Ładowanie...</p>
         </div>
-      )
-      : (
+      ) :
+      (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <AuthForm
@@ -69,9 +69,9 @@ export const SignupPage = (): JSX.Element => {
               onSubmit={handleSubmit}
               isLoading={signUpState.loading}
               error={
-                signUpState.error !== undefined
-                  ? signUpState.error.message
-                  : null
+                signUpState.error !== undefined ?
+                  signUpState.error.message :
+                  null
               }
             />
             <p className="mt-4 text-center text-sm text-gray-500">

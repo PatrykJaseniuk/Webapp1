@@ -106,6 +106,16 @@
   Guard clauses with early return are forbidden (see §4).
 - Exhaust every discriminated union. `ts-pattern`'s `.exhaustive()` provides
   compile-time checking — never use a throw-based `assertNever`.
+- Ternary `?` and `:` must be placed at the **end of the line**, not at the
+  beginning of the next line:
+    ✅  const result =
+          condition ?
+            consequent :
+            alternative;
+    ❌  const result =
+          condition
+            ? consequent
+            : alternative;
 
 # ───────────────────────────────────────────────────────────────
 # 7. ERROR HANDLING

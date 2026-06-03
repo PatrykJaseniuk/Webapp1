@@ -32,9 +32,9 @@ export const LoginPage = (): JSX.Element => {
       match(data)
         .with({ tag: 'login', input: P.select() }, (input: LoginInput) => {
           signIn(input).then((result) =>
-            result.error === null
-              ? navigate(buildRoute('dashboard', {}))
-              : undefined,
+            result.error === null ?
+              navigate(buildRoute('dashboard', {})) :
+              undefined,
           );
         })
         .with({ tag: 'signup' }, () => undefined)
@@ -45,21 +45,21 @@ export const LoginPage = (): JSX.Element => {
 
   const user =
     !sessionState.loading &&
-    sessionState.value !== undefined
-      ? (sessionState.value.data?.session?.user ?? null)
-      : null;
+    sessionState.value !== undefined ?
+      (sessionState.value.data?.session?.user ?? null) :
+      null;
 
-  return user !== null
-    ? (
+  return user !== null ?
+    (
       <Navigate to={buildRoute('dashboard', {})} replace />
-    )
-    : sessionState.loading
-      ? (
+    ) :
+    sessionState.loading ?
+      (
         <div className="flex items-center justify-center py-16">
           <p className="text-gray-400">Ładowanie...</p>
         </div>
-      )
-      : (
+      ) :
+      (
         <div className="flex min-h-screen items-center justify-center bg-gray-50">
           <div className="w-full max-w-sm rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <AuthForm
