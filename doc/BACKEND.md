@@ -32,7 +32,7 @@ supabase db reset             # reset DB, re-run migrations + seed
 supabase db diff --linked --file <name>  # generate migration from local→linked remote diff
 supabase db pull <name> --local --yes    # generate migration from local DB state
 supabase db lint              # check migrations for errors
-supabase gen types typescript --local > ../frontend/src/api/database.types.ts
+supabase gen types typescript --local > ../../frontend/src/volatile0/infra/__generated__/database.types.ts
 supabase migration new <name>  # create empty migration file (always use this — never invent filename)
 supabase functions new <name>  # create new edge function
 supabase functions deploy <name>
@@ -44,6 +44,11 @@ supabase functions deploy <name>
 - Iterate with `execute_sql` (MCP) or `supabase db query` (CLI) — no migration history entry
 - When done, generate a clean migration: `supabase db pull <name> --local --yes`
 - Run `supabase db advisors` to check for security issues
+
+**ENUM types:**
+- Use real Postgres ENUMs (`CREATE TYPE ... AS ENUM (...)`), not `text` columns with `CHECK` constraints
+- `supabase gen types` auto-detects ENUMs — the `Enums` section of the generated types and `Constants.public.Enums` runtime arrays are populated automatically
+- No need to hand-duplicate enum values in the frontend
 
 **Row Level Security (RLS):**
 - Enable RLS on every table in exposed schemas (including `public`)
@@ -59,13 +64,33 @@ supabase functions deploy <name>
 
 **Type generation:**
 ```bash
-supabase gen types typescript --local > ../frontend/src/api/database.types.ts
+supabase gen types typescript --local > ../../frontend/src/volatile0/infra/__generated__/database.types.ts
 ```
-Import pattern:
+
+The generated file lives in `frontend/src/volatile0/infra/__generated__/database.types.ts` — **never edit it manually**. It is rebuilt from scratch on every `make dev`. It is:
+- Located in `volatile0/` (stable — never changes during development)
+- Ignored by ESLint
+- Marked `linguist-generated=true` in `.gitattributes` (diffs collapsed on GitHub)
+
+Import pattern in consumer code:
 ```typescript
-import type { Database } from '@/api/database.types';
-type TableRow = Database['public']['Tables']['table_name']['Row'];
+import type { Tables, TablesInsert, Enums } from '@/backend';
+import { Constants } from '@/backend';
+
+// Row type
+type PropertyRow = Tables<'properties'>;
+
+// Insert type
+type PropertyInsert = TablesInsert<'properties'>;
+
+// Enum type (for narrowing form string values)
+type PropertyType = Enums<'property_type'>;
+
+// Runtime enum array (for <option> rendering)
+Constants.public.Enums.property_type // readonly ["apartment", "house", "commercial", "room"]
 ```
+
+The `@/backend` path alias resolves to `volatile0/infra/` — consumers don't need to know the physical location.
 
 ## Auth
 

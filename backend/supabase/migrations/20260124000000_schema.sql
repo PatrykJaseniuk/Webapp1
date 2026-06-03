@@ -5,11 +5,36 @@
 -- Tables are created without indexes, constraints, or triggers
 -- Those are added in subsequent migration files
 
+-- ================================================
+-- ENUM TYPES
+-- ================================================
+
+-- User roles
+CREATE TYPE public.app_role AS ENUM ('tenant', 'landlord', 'admin');
+
+-- Properties
+CREATE TYPE public.property_type AS ENUM ('apartment', 'house', 'commercial', 'room');
+CREATE TYPE public.property_status AS ENUM ('available', 'occupied', 'inactive');
+
+-- Tenants
+CREATE TYPE public.tenant_status AS ENUM ('active', 'past', 'applicant');
+
+-- Leases
+CREATE TYPE public.lease_status AS ENUM ('active', 'expired', 'terminated');
+
+-- Attachments
+CREATE TYPE public.related_to_type AS ENUM ('property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense');
+CREATE TYPE public.file_type AS ENUM ('image', 'video', 'pdf', 'document', 'other');
+
+-- Transactions
+CREATE TYPE public.transaction_type AS ENUM ('rent', 'utility', 'expense', 'payment', 'withdraw', 'fee', 'other');
+CREATE TYPE public.transaction_status AS ENUM ('pending', 'paid', 'overdue');
+
 -- 1. USER ROLES TABLE
 -- Manages user access levels: tenant, landlord, admin
 CREATE TABLE public.user_roles (
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-    role text NOT NULL CHECK (role IN ('tenant', 'landlord', 'admin')),
+    role public.app_role NOT NULL,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
@@ -20,12 +45,12 @@ CREATE TABLE public.properties (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     name text NOT NULL,
     address text NOT NULL,
-    property_type text NOT NULL CHECK (property_type IN ('apartment', 'house', 'commercial', 'room')),
+    property_type public.property_type NOT NULL,
     size_sqm decimal(10,2),
     bedrooms integer,
     monthly_rent decimal(10,2) NOT NULL,
     deposit_amount decimal(10,2) NOT NULL,
-    property_status text NOT NULL DEFAULT 'available' CHECK (property_status IN ('available', 'occupied', 'inactive')),
+    property_status public.property_status NOT NULL DEFAULT 'available',
     notes text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
@@ -45,7 +70,7 @@ CREATE TABLE public.tenants (
     emergency_contact_name text,
     emergency_contact_phone text,
     notes text,
-    tenant_status text NOT NULL DEFAULT 'active' CHECK (tenant_status IN ('active', 'past', 'applicant')),
+    tenant_status public.tenant_status NOT NULL DEFAULT 'active',
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now()
 );
@@ -60,7 +85,7 @@ CREATE TABLE public.lease_agreements (
     end_date date,
     monthly_rent decimal(10,2) NOT NULL,
     deposit_amount decimal(10,2) NOT NULL,
-    lease_status text NOT NULL DEFAULT 'active' CHECK (lease_status IN ('active', 'expired', 'terminated')),
+    lease_status public.lease_status NOT NULL DEFAULT 'active',
     notes text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
@@ -71,11 +96,11 @@ CREATE TABLE public.lease_agreements (
 -- Universal file storage for documents, photos, videos
 CREATE TABLE public.attachments (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    related_to_type text NOT NULL CHECK (related_to_type IN ('property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense')),
+    related_to_type public.related_to_type NOT NULL,
     related_to_id uuid NOT NULL,
     file_name text NOT NULL,
     file_url text NOT NULL,
-    file_type text CHECK (file_type IN ('image', 'video', 'pdf', 'document', 'other')),
+    file_type public.file_type,
     file_size integer,
     description text,
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
@@ -96,11 +121,11 @@ CREATE TABLE public.transactions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     lease_id uuid REFERENCES public.lease_agreements(id) ON DELETE CASCADE,
     property_id uuid REFERENCES public.properties(id) ON DELETE CASCADE,
-    type text NOT NULL CHECK (type IN ('rent', 'utility', 'expense', 'payment', 'withdraw', 'fee', 'other')),
+    type public.transaction_type NOT NULL,
     description text NOT NULL,
     amount decimal(10,2) NOT NULL,
     due_date date NOT NULL,
-    transaction_status text NOT NULL DEFAULT 'pending' CHECK (transaction_status IN ('pending', 'paid', 'overdue')),
+    transaction_status public.transaction_status NOT NULL DEFAULT 'pending',
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
