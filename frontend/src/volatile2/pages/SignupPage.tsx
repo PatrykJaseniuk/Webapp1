@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { match, P } from 'ts-pattern';
 import { useAsyncFn } from 'react-use';
-import { backendConnector } from '@/volatile1/infra/backendConnector';
+import { backendConnector } from '@/volatile0/infra/backendConnector';
 import { AuthForm, useAuth } from '@/volatile1/auth';
 import { buildRoute } from '@/volatile1/routes';
 import type { SignupInput } from '@/volatile1/domain';

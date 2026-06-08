@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
-import { backendConnector } from '@/volatile1/infra/backendConnector';
-import type { Tables, TablesInsert } from '@/volatile1/infra';
+import { backendConnector } from '@/volatile0/infra/backendConnector';
+import type { Tables, TablesInsert } from '@/volatile0/infra';
 import { PropertiesList } from '@/volatile2/properties/PropertiesList';
 import { PropertyForm } from '@/volatile2/properties/PropertyForm';
 
@@ -66,10 +66,10 @@ export const PropertiesPage = (): JSX.Element => {
     return id === undefined ?
       Promise.resolve() :
       updateProperty({ id, patch: input }).then((result) =>
-          result.error !== null ?
-            Promise.reject(result.error) :
-            (setEditingProperty(undefined), triggerRefetch(), undefined),
-        );
+        result.error !== null ?
+          Promise.reject(result.error) :
+          (setEditingProperty(undefined), triggerRefetch(), undefined),
+      );
   };
 
   const handleDelete = (id: string): void => {
@@ -82,8 +82,8 @@ export const PropertiesPage = (): JSX.Element => {
   const isError = !propertiesState.loading && propertiesState.error !== undefined;
   const properties: readonly Tables<'properties'>[] =
     !propertiesState.loading &&
-    propertiesState.value !== undefined &&
-    propertiesState.value.data !== null ?
+      propertiesState.value !== undefined &&
+      propertiesState.value.data !== null ?
       (propertiesState.value.data as readonly Tables<'properties'>[]) :
       [];
 

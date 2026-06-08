@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { Tables, TablesInsert, Enums } from '@/volatile1/infra';
-import { Constants } from '@/volatile1/infra';
+import type { Tables, TablesInsert, Enums } from '@/volatile0/infra';
+import { Constants } from '@/volatile0/infra';
 import { formEditing, formSubmitting, formSuccess, formError, setField } from '@/volatile0/generic';
 import type { FormState } from '@/volatile0/generic';
 
@@ -91,15 +91,15 @@ export const PropertyForm = ({
   const handleSubmit = (): void => {
     form.tag === 'editing' ?
       (() => {
-          setForm(formSubmitting(form.data));
-          const insert = formDataToInsert(form.data);
-          onSubmit(insert)
-            .then(() => setForm(formSuccess(form.data)))
-            .catch((err: unknown) => {
-              const message = err instanceof Error ? err.message : 'Błąd zapisu';
-              setForm(formError(form.data, message));
-            });
-        })() :
+        setForm(formSubmitting(form.data));
+        const insert = formDataToInsert(form.data);
+        onSubmit(insert)
+          .then(() => setForm(formSuccess(form.data)))
+          .catch((err: unknown) => {
+            const message = err instanceof Error ? err.message : 'Błąd zapisu';
+            setForm(formError(form.data, message));
+          });
+      })() :
       undefined;
   };
 

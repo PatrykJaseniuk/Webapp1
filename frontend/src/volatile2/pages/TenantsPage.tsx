@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
-import { backendConnector } from '@/volatile1/infra/backendConnector';
-import type { Tables, TablesInsert } from '@/volatile1/infra';
+import { backendConnector } from '@/volatile0/infra/backendConnector';
+import type { Tables, TablesInsert } from '@/volatile0/infra';
 import { TenantsList } from '@/volatile2/tenants/TenantsList';
 import { TenantForm } from '@/volatile2/tenants/TenantForm';
 
@@ -66,10 +66,10 @@ export const TenantsPage = (): JSX.Element => {
     return id === undefined ?
       Promise.resolve() :
       updateTenant({ id, patch: input }).then((result) =>
-          result.error !== null ?
-            Promise.reject(result.error) :
-            (setEditingTenant(undefined), triggerRefetch(), undefined),
-        );
+        result.error !== null ?
+          Promise.reject(result.error) :
+          (setEditingTenant(undefined), triggerRefetch(), undefined),
+      );
   };
 
   const handleDelete = (id: string): void => {
@@ -82,8 +82,8 @@ export const TenantsPage = (): JSX.Element => {
   const isError = !tenantsState.loading && tenantsState.error !== undefined;
   const tenants: readonly Tables<'tenants'>[] =
     !tenantsState.loading &&
-    tenantsState.value !== undefined &&
-    tenantsState.value.data !== null ?
+      tenantsState.value !== undefined &&
+      tenantsState.value.data !== null ?
       (tenantsState.value.data as readonly Tables<'tenants'>[]) :
       [];
 
