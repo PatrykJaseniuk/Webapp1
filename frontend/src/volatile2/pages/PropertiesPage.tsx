@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
-import { backendConnector } from '@/backend/backendConnector';
-import type { Tables, TablesInsert } from '@/backend';
-import { PropertiesList } from '@/features/properties/PropertiesList';
-import { PropertyForm } from '@/features/properties/PropertyForm';
+import { backendConnector } from '@/volatile1/infra/backendConnector';
+import type { Tables, TablesInsert } from '@/volatile1/infra';
+import { PropertiesList } from '@/volatile2/properties/PropertiesList';
+import { PropertyForm } from '@/volatile2/properties/PropertyForm';
 
 export const PropertiesPage = (): JSX.Element => {
   const [editingProperty, setEditingProperty] = useState<Tables<'properties'> | undefined>(undefined);

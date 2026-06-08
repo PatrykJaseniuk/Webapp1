@@ -36,6 +36,7 @@ export type AppError =
   | { readonly tag: 'NetworkError'; readonly message: string }
   | { readonly tag: 'NotFound'; readonly resource: string }
   | { readonly tag: 'Unauthorized' }
+  | { readonly tag: 'Forbidden' }
   | { readonly tag: 'ValidationError'; readonly message: string };
 
 /** Generic async state for UI components. */
@@ -45,18 +46,3 @@ export type AsyncState<T> =
   | { readonly tag: 'success'; readonly data: T }
   | { readonly tag: 'error'; readonly error: AppError };
 
-// ──────────────────────────────────────────────
-// Auth DTOs — pure domain inputs
-// ──────────────────────────────────────────────
-
-export type LoginInput = {
-  readonly email: string;
-  readonly password: string;
-};
-
-export type SignupInput = {
-  readonly email: string;
-  readonly password: string;
-  readonly firstName: string;
-  readonly lastName: string;
-};

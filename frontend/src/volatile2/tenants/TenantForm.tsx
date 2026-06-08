@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import type { Tables, TablesInsert, Enums } from '@/backend';
-import { Constants } from '@/backend';
-import { formEditing, formSubmitting, formSuccess, formError, setField } from '@/shared';
-import type { FormState } from '@/shared';
+import type { Tables, TablesInsert, Enums } from '@/volatile1/infra';
+import { Constants } from '@/volatile1/infra';
+import { formEditing, formSubmitting, formSuccess, formError, setField } from '@/volatile0/generic';
+import type { FormState } from '@/volatile0/generic';
 
 type TenantFormData = {
   readonly first_name: string;

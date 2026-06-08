@@ -25,7 +25,7 @@ setup: ## Install all dependencies and prepare .env
 	@echo "=== Copying frontend .env ==="
 	@test -f frontend/.env || cp frontend/.env.example frontend/.env
 	@echo "=== Installing frontend dependencies ==="
-	cd frontend && npm install
+	(cd frontend && npm install)
 	@echo "=== Setup complete ==="
 
 # ── Development (full clean rebuild, cleanup on exit) ─────────────────────────
@@ -33,52 +33,52 @@ setup: ## Install all dependencies and prepare .env
 dev: ## Full pure rebuild: start → reset DB → gen types → frontend → cleanup
 	@trap '$(MAKE) stop' INT TERM EXIT; \
 	echo "=== Starting Supabase ==="; \
-	cd backend/supabase && npx supabase start; \
+	(cd backend/supabase && npx supabase start); \
 	echo "=== Resetting database (migrations + seed) ==="; \
-	cd backend/supabase && npx supabase db reset; \
+	(cd backend/supabase && npx supabase db reset); \
 	echo "=== Generating database types ==="; \
-	cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/volatile0/infra/__generated__/database.types.ts; \
-	echo "Types written to frontend/src/volatile0/infra/__generated__/database.types.ts"; \
+	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/volatile1/infra/__generated__/database.types.ts); \
+	echo "Types written to frontend/src/volatile1/infra/__generated__/database.types.ts"; \
 	echo "=== Ensuring frontend dependencies ==="; \
-	cd frontend && npm install; \
+	(cd frontend && npm install); \
 	echo "=== Starting frontend ==="; \
-	cd frontend && npm run dev -- --open
+	(cd frontend && npm run dev -- --open)
 
 # ── Stop / Cleanup ────────────────────────────────────────────────────────────
 
 stop: ## Stop Supabase and clean up all containers
 	@echo "=== Stopping Supabase (cleanup) ==="
-	-cd backend/supabase && npx supabase stop
+	-(cd backend/supabase && npx supabase stop)
 	@echo "=== Cleanup complete ==="
 
 # ── Quality ───────────────────────────────────────────────────────────────────
 
 lint: ## Lint all components
 	@echo "=== Linting frontend ==="
-	cd frontend && npm run lint
+	(cd frontend && npm run lint)
 	@echo "=== Linting backend migrations ==="
-	cd backend/supabase && npx supabase db lint
+	(cd backend/supabase && npx supabase db lint)
 
 typecheck: ## TypeScript type-check (no emit)
 	@echo "=== Type-checking frontend ==="
-	cd frontend && npm run typecheck
+	(cd frontend && npm run typecheck)
 
 test: ## Run frontend tests
 	@echo "=== Running frontend tests ==="
-	cd frontend && npm run test
+	(cd frontend && npm run test)
 
 # ── Build (full clean rebuild → build → cleanup) ──────────────────────────────
 
 build: setup stop ## Production build: reset DB → gen types → build → cleanup
 	@trap '$(MAKE) stop' EXIT; \
 	echo "=== Starting Supabase ==="; \
-	cd backend/supabase && npx supabase start; \
+	(cd backend/supabase && npx supabase start); \
 	echo "=== Resetting database (migrations + seed) ==="; \
-	cd backend/supabase && npx supabase db reset; \
+	(cd backend/supabase && npx supabase db reset); \
 	echo "=== Generating database types ==="; \
-	cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/volatile0/infra/__generated__/database.types.ts; \
+	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/volatile1/infra/__generated__/database.types.ts); \
 	echo "=== Building frontend for production ==="; \
-	cd frontend && npm run build; \
+	(cd frontend && npm run build); \
 	echo "Build output: frontend/dist/"
 
 # ── Clean ─────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import type { Tables } from '@/backend';
+import type { Tables } from '@/volatile1/infra';
 
 type TenantsListProps = {
   readonly tenants: readonly Tables<'tenants'>[];

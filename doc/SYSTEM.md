@@ -75,8 +75,18 @@ Files are grouped into three directories by **change frequency** during developm
 ```
 src/
 ├── volatile0/   ══ STABLE ══   infrastructure, domain types, generic utilities, app bootstrap
+│   ├── bootstrap/    (main.tsx, index.css, vite-env.d.ts)
+│   ├── infra/        (backendConnector.ts, __generated__/database.types.ts)
+│   ├── domain/       (types.ts — Result, AppError, AsyncState, AppRole, AuthState, DTOs)
+│   └── generic/      (form.ts, utils.ts)
 ├── volatile1/   ══ MODERATE ══  routes, auth — changes when app structure changes
+│   ├── routes/       (ROUTE_TREE → ROUTES + buildRoute)
+│   └── auth/         (AuthContext.tsx, AuthForm.tsx, RoleGuard.tsx, UserMenu.tsx)
 └── volatile2/   ══ VOLATILE ══  features, pages, layout, App.tsx — daily work
+    ├── app/          (App.tsx — router, AuthProvider, route generation)
+    ├── layout/       (Layout.tsx — role-derived sidebar)
+    ├── pages/        (<Role>DashboardPage.tsx, <Name>Page.tsx, <Name>DetailPage.tsx)
+    └── <feature>/    (hooks.ts, <Name>List.tsx, <Name>Form.tsx)
 ```
 
 | Level | When it changes | May import |
@@ -133,3 +143,4 @@ No loose files at `src/` root. Everything lives under one of the three volatilit
 | Volatility-based directory structure | `volatile0/` (stable), `volatile1/` (moderate), `volatile2/` (volatile) — grouped by change frequency + dependency direction |
 | Generated types in `__generated__/` | Clearly signals "do not edit"; rebuilt every launch; ESLint + `.gitattributes` enforced |
 | Real Postgres ENUMs | Single source of truth in the database — types auto-generated, no hand-duplication |
+| RBAC at both layers | Backend: RLS policies on `user_roles`. Frontend: `RoleGuard` components derived from `allowedRoles` on each route entry — no duplicated access logic |

@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react';
 import { match } from 'ts-pattern';
-import type { LoginInput, SignupInput } from '@/domain';
+import type { LoginInput, SignupInput } from '@/volatile1/domain';
 
 // ── Union type for the form mode ──
 

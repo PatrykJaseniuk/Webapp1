@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
-import { backendConnector } from '@/backend/backendConnector';
-import type { Tables, TablesInsert } from '@/backend';
-import { TenantsList } from '@/features/tenants/TenantsList';
-import { TenantForm } from '@/features/tenants/TenantForm';
+import { backendConnector } from '@/volatile1/infra/backendConnector';
+import type { Tables, TablesInsert } from '@/volatile1/infra';
+import { TenantsList } from '@/volatile2/tenants/TenantsList';
+import { TenantForm } from '@/volatile2/tenants/TenantForm';
 
 export const TenantsPage = (): JSX.Element => {
   const [editingTenant, setEditingTenant] = useState<Tables<'tenants'> | undefined>(undefined);

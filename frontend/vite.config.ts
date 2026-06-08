@@ -7,15 +7,6 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@/backend': resolve(__dirname, 'src/volatile0/infra'),
-      '@/domain': resolve(__dirname, 'src/volatile0/domain'),
-      '@/shared': resolve(__dirname, 'src/volatile0/generic'),
-      '@/routes': resolve(__dirname, 'src/volatile1/routes'),
-      '@/auth': resolve(__dirname, 'src/volatile1/auth'),
-      '@/features': resolve(__dirname, 'src/volatile2'),
-      '@/pages': resolve(__dirname, 'src/volatile2/pages'),
-      '@/layout': resolve(__dirname, 'src/volatile2/layout'),
-      '@/app': resolve(__dirname, 'src/volatile2/app'),
     },
   },
   base: './',

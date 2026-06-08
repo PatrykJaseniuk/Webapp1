@@ -1,11 +1,11 @@
 import { useCallback } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { match, P } from 'ts-pattern';
-import { useAsync, useAsyncFn } from 'react-use';
-import { backendConnector } from '@/backend/backendConnector';
-import { AuthForm } from '@/auth';
-import { buildRoute } from '@/routes';
-import type { LoginInput } from '@/domain';
+import { useAsyncFn } from 'react-use';
+import { backendConnector } from '@/volatile1/infra/backendConnector';
+import { AuthForm, useAuth } from '@/volatile1/auth';
+import { buildRoute } from '@/volatile1/routes';
+import type { LoginInput } from '@/volatile1/domain';
 
 type FormData =
   | { readonly tag: 'login'; readonly input: LoginInput }
@@ -13,11 +13,7 @@ type FormData =
 
 export const LoginPage = (): JSX.Element => {
   const navigate = useNavigate();
-
-  const sessionState = useAsync(
-    async () => backendConnector.auth.getSession(),
-    [],
-  );
+  const authState = useAuth();
 
   const [signInState, signIn] = useAsyncFn(
     async (input: LoginInput) =>
@@ -43,17 +39,11 @@ export const LoginPage = (): JSX.Element => {
     [signIn, navigate],
   );
 
-  const user =
-    !sessionState.loading &&
-    sessionState.value !== undefined ?
-      (sessionState.value.data?.session?.user ?? null) :
-      null;
-
-  return user !== null ?
+  return authState.tag === 'authenticated' ?
     (
       <Navigate to={buildRoute('dashboard', {})} replace />
     ) :
-    sessionState.loading ?
+    authState.tag === 'loading' ?
       (
         <div className="flex items-center justify-center py-16">
           <p className="text-gray-400">Ładowanie...</p>

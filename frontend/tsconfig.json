@@ -14,23 +14,7 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/backend": ["./src/volatile0/infra"],
-      "@/backend/*": ["./src/volatile0/infra/*"],
-      "@/domain": ["./src/volatile0/domain"],
-      "@/domain/*": ["./src/volatile0/domain/*"],
-      "@/shared": ["./src/volatile0/generic"],
-      "@/shared/*": ["./src/volatile0/generic/*"],
-      "@/routes": ["./src/volatile1/routes"],
-      "@/routes/*": ["./src/volatile1/routes/*"],
-      "@/auth": ["./src/volatile1/auth"],
-      "@/auth/*": ["./src/volatile1/auth/*"],
-      "@/features/*": ["./src/volatile2/*"],
-      "@/pages/*": ["./src/volatile2/pages/*"],
-      "@/layout": ["./src/volatile2/layout"],
-      "@/layout/*": ["./src/volatile2/layout/*"],
-      "@/app": ["./src/volatile2/app"],
-      "@/app/*": ["./src/volatile2/app/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],

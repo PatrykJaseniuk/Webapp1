@@ -1,16 +1,16 @@
 import { NavLink } from 'react-router-dom';
-import { buildRoute } from '@/routes';
+import { buildRoute } from '@/volatile1/routes';
 
 const dashboardCardClass =
   'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow';
 
-export const DashboardPage = (): JSX.Element => (
+export const LandlordDashboardPage = (): JSX.Element => (
   <div className="flex flex-col items-center justify-center py-16">
-    <h1 className="mb-2 text-3xl font-bold text-gray-900">WebApp1</h1>
+    <h1 className="mb-2 text-3xl font-bold text-gray-900">Panel Wynajmującego</h1>
     <p className="text-gray-500">System zarządzania najmem</p>
     <div className="mt-8 grid gap-4 sm:grid-cols-2">
       <NavLink
-        to={buildRoute('dashboard', {})}
+        to={buildRoute('landlord.properties', {})}
         className={dashboardCardClass}
       >
         <p className="text-lg font-semibold text-gray-800">Nieruchomości</p>
@@ -19,7 +19,7 @@ export const DashboardPage = (): JSX.Element => (
         </p>
       </NavLink>
       <NavLink
-        to={buildRoute('tenants', {})}
+        to={buildRoute('landlord.tenants', {})}
         className={dashboardCardClass}
       >
         <p className="text-lg font-semibold text-gray-800">Najemcy</p>

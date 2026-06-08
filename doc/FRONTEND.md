@@ -22,42 +22,48 @@ Files are grouped by **how often they change** during development:
 
 ```
 src/
-├── volatile0/                              ══ STABLE — touched once, never again ══
+├── volatile0/                              ══ STABLE — same across different projects ══
 │   ├── bootstrap/           (zero imports beyond Vite/React — app entry)
 │   │   ├── main.tsx
 │   │   ├── index.css
 │   │   └── vite-env.d.ts
-│   ├── infra/               (dep: supabase-js)
+│   ├── domain/              (dep: fp-ts — universal types)
+│   │   ├── types.ts                # Result<T,E>, AppError, AsyncState, UserId, Option, Either
+│   │   └── index.ts
+│   └── generic/             (dep: nothing — pure utilities)
+│       ├── flattenRoutes.ts         # Tree→flat route flattener (generic over role type)
+│       ├── form.ts                 # FormState<T> helpers
+│       ├── utils.ts
+│       └── index.ts
+│
+├── volatile1/                              ══ MODERATE — defined once at project start ══
+│   ├── domain/              (dep: volatile0/domain)
+│   │   ├── types.ts                # AppRole, AuthState, LoginInput, SignupInput — project-specific
+│   │   └── index.ts
+│   ├── infra/               (dep: supabase-js, this project's DB schema)
 │   │   ├── __generated__/
 │   │   │   └── database.types.ts   # GENERATED — never edit (rebuilt by make dev)
 │   │   ├── backendConnector.ts     # single Supabase client — create once
 │   │   └── index.ts                # barrel: re-exports from __generated__/
-│   ├── domain/              (dep: fp-ts)
-│   │   ├── types.ts                # Result<T,E>, AppError, AsyncState, UserId, LoginInput, SignupInput
+│   ├── routes/              (dep: react-router-dom, volatile0/domain, volatile1/domain)
+│   │   ├── routes.ts               # ROUTE_TREE → flattenRoutes → ROUTES + buildRoute
 │   │   └── index.ts
-│   └── generic/             (dep: nothing — pure utilities)
-│       ├── form.ts                 # FormState helpers
-│       ├── utils.ts
-│       └── index.ts
-│
-├── volatile1/                              ══ MODERATE — changes with app structure ══
-│   ├── routes/              (dep: react-router-dom)
-│   │   ├── routes.ts               # ROUTES object + buildRoute
-│   │   └── index.ts
-│   └── auth/                (dep: React, volatile0/domain)
+│   └── auth/                (dep: React, volatile1/domain, volatile1/routes)
+│       ├── AuthContext.tsx           # AuthProvider + useAuth + useRequireRole
 │       ├── AuthForm.tsx
+│       ├── RoleGuard.tsx             # role-based route guard component
 │       ├── UserMenu.tsx
 │       └── index.ts
 │
 └── volatile2/                              ══ VOLATILE — daily feature work ══
     ├── app/                 (dep: React Router, volatile0, volatile1, volatile2)
-    │   └── App.tsx                   # route table + auth guard + param wrappers
+    │   └── App.tsx                   # route table + AuthProvider + auth guard + param wrappers
     ├── layout/              (dep: react-router-dom, volatile1)
-    │   └── Layout.tsx
+    │   └── Layout.tsx               # sidebar with role-derived nav items
     ├── pages/               (dep: volatile0, volatile2 features, react-use)
+    │   ├── <Role>DashboardPage.tsx   # per-role dashboards (LandlordDashboardPage, AdminDashboardPage, TenantDashboardPage)
     │   ├── <Name>Page.tsx
-    │   ├── <Name>DetailPage.tsx
-    │   └── DashboardPage.tsx
+    │   └── <Name>DetailPage.tsx
     ├── <feature>/            # per-domain: components + hooks
     │   ├── hooks.ts                # custom hooks wrapping backendConnector + useAsync
     │   ├── <Name>List.tsx
@@ -82,25 +88,25 @@ src/
 
 | Alias | Physical path | Import example |
 |-------|---------------|----------------|
-| `@/backend` | `volatile0/infra` | `import { Constants } from '@/backend'` |
-| `@/domain` | `volatile0/domain` | `import type { LoginInput } from '@/domain'` |
+| `@/backend` | `volatile1/infra` | `import { Constants } from '@/backend'` |
+| `@/domain` | `volatile1/domain` | `import type { AppRole, AuthState } from '@/domain'` |
 | `@/shared` | `volatile0/generic` | `import { setField } from '@/shared'` |
-| `@/routes` | `volatile1/routes` | `import { buildRoute } from '@/routes'` |
-| `@/auth` | `volatile1/auth` | `import { AuthForm } from '@/auth'` |
+| `@/routes` | `volatile1/routes` | `import { ROUTES, buildRoute } from '@/routes'` |
+| `@/auth` | `volatile1/auth` | `import { AuthProvider, useAuth, RoleGuard } from '@/auth'` |
 | `@/features/properties` | `volatile2/properties` | `import { PropertiesList } from '@/features/properties'` |
-| `@/pages/*` | `volatile2/pages` | `import { DashboardPage } from '@/pages/DashboardPage'` |
+| `@/pages/*` | `volatile2/pages` | `import { LandlordDashboardPage } from '@/pages/LandlordDashboardPage'` |
 | `@/layout` | `volatile2/layout` | `import { Layout } from '@/layout/Layout'` |
 | `@/app` | `volatile2/app` | `import { App } from '@/app/App'` |
 
 ## Generated Types (`__generated__/database.types.ts`)
 
-Located in `volatile0/infra/__generated__/`. Generated by `make dev` (via `supabase gen types`). **Never edit manually.**
+Located in `volatile1/infra/__generated__/`. Generated by `make dev` (via `supabase gen types`). **Never edit manually.**
 
 Protected by:
 - ESLint `ignores` in `eslint.config.js`
 - `.gitattributes` `linguist-generated=true`
 
-The barrel `volatile0/infra/index.ts` re-exports everything consumers need:
+The barrel `volatile1/infra/index.ts` re-exports everything consumers need:
 ```typescript
 import type { Tables, TablesInsert, TablesUpdate, Enums } from '@/backend';
 import { Constants } from '@/backend';
@@ -206,7 +212,7 @@ const { properties, isLoading, isError, saveProperty, deleteProperty } = useProp
 ### 1. No `domain/entities.ts` needed
 - Database-derived types come directly from `@/backend` via `Tables<'name'>`, `TablesInsert<'name'>`, `Enums<'name'>`
 - Runtime enum arrays come from `Constants.public.Enums.*`
-- Only pure domain types (`Result`, `AppError`, `AsyncState`, auth DTOs) live in `volatile0/domain/types.ts`
+- Only pure domain types: universal (`Result`, `AppError`, `AsyncState`) live in `volatile0/domain/types.ts`, project-specific (`AppRole`, `AuthState`, auth DTOs) live in `volatile1/domain/types.ts`
 
 ### 2. `volatile2/<feature>/` — components + hooks
 - **hooks.ts** — `use<Name>`, `useSave<Name>`, `useDelete<Name>` (calls `backendConnector` + `useAsync`)
@@ -222,16 +228,45 @@ const { properties, isLoading, isError, saveProperty, deleteProperty } = useProp
 
 ## Routing
 
-**`volatile1/routes/routes.ts`** — pure constants. Typed `RouteParams` record → `ROUTES` object → `buildRoute<K>(route, params)` builder. Imported as `@/routes`.
+**`volatile1/routes/routes.ts`** — hierarchical route definitions. A `ROUTE_TREE` groups pages by role prefix (e.g., `/landlord/properties`). Each node carries `allowedRoles` and optional `navLabel`. A `flattenRoutes` helper produces a flat `ROUTES` record with dot-joined keys (`'landlord.properties'`). Imported as `@/routes`.
 
 **`volatile2/app/App.tsx`** — the only place calling `useParams`, `createHashRouter`:
+- Wraps the entire tree in `<AuthProvider>`
 - Public routes (login, signup) at top level
-- Protected routes behind an `AuthGuard` wrapper that checks session via `useAsync(() => backendConnector.auth.getSession())`
-- Lazy-loaded page components via `lazy(() => import(...))`
+- Root `/` → `AuthGuard` that redirects to the role-appropriate dashboard
+- Protected routes are **generated** from `ROUTES` entries (excluding login/signup/dashboard) — each is wrapped in `<RoleGuard allowedRoles={entry.allowedRoles}>`
+- A `PAGE_COMPONENTS` record maps each route key to a lazy-loaded page component
 - Param wrappers for parameterized routes — extract `useParams`, pass as typed props to detail pages
 - Pages never call `useParams` themselves
 
-**Links** — always use `buildRoute`: `<NavLink to={buildRoute('<route>', {})}>`
+**Sidebar** — `Layout.tsx` derives nav items by filtering `ROUTES` for entries where `navLabel` is set and `allowedRoles` includes the current user's role.
+
+**Links** — always use `buildRoute`: `<NavLink to={buildRoute('landlord.properties', {})}>`
+
+## Auth & RBAC
+
+### Context — `volatile1/auth/AuthContext.tsx`
+
+`<AuthProvider>` wraps the app in `App.tsx`. On mount it calls `backendConnector.auth.getSession()` and `backendConnector.from('user_roles').select('role')`, then subscribes to `onAuthStateChange` to keep state in sync.
+
+Exported hooks:
+- **`useAuth()`** — returns `AuthState` (a discriminated union: `loading | unauthenticated | authenticated`)
+- **`useRequireRole(allowedRoles)`** — returns `boolean`, uses `ts-pattern` for exhaustive matching
+
+### Guard — `volatile1/auth/RoleGuard.tsx`
+
+Wraps a route element. Calls `useAuth()` and `useRequireRole()`. Renders:
+- Loading spinner while `authState.tag === 'loading'`
+- Redirect to `/` if role check fails
+- Children if role is allowed
+
+### UserMenu — `volatile1/auth/UserMenu.tsx`
+
+Self-contained — no props. Uses `useAuth()` internally. Renders email + role label + logout button (calls `backendConnector.auth.signOut()` then navigates to login).
+
+### Route definitions carry access control
+
+Every route entry in `routes.ts` has `allowedRoles`. `App.tsx` wraps each route with `<RoleGuard allowedRoles={...}>` automatically — no duplicated role logic.
 
 ## What NOT to Do
 
@@ -247,12 +282,13 @@ const { properties, isLoading, isError, saveProperty, deleteProperty } = useProp
 - ❌ No `QueryClientProvider` or TanStack Query imports
 - ❌ No hand-duplicated type aliases (`Property = Database['...']['Row']`) — use `Tables<'properties'>` directly
 - ❌ No `as const` arrays for enum values — use `Constants.public.Enums.*` from generated types
-- ❌ Never edit `volatile0/infra/__generated__/database.types.ts` — it is rebuilt by `make dev`
+- ❌ Never edit `volatile1/infra/__generated__/database.types.ts` — it is rebuilt by `make dev`
+- ❌ No hand-rolled route or nav-item lists — derive from `ROUTES`
 
 ## Pipeline
 
 ```
-volatile2/ → volatile0/infra/backendConnector → Supabase
+volatile2/ → volatile1/infra/backendConnector → Supabase
   ↑                    ↑
 stateful           single Supabase client
 (useAsync/          (createClient, never
