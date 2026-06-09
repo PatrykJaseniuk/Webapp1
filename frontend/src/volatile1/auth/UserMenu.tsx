@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import { backendConnector } from '@/volatile0/infra/backendConnector';
-import { buildRoute } from '@/volatile1/routes';
+import { link } from '@/volatile1/routes';
 import { useAuth } from './AuthContext';
 import type { AppRole } from '@/volatile1/domain';
 
@@ -19,7 +19,7 @@ export const UserMenu = (): JSX.Element => {
   const handleLogout = useCallback((): void => {
     backendConnector.auth
       .signOut()
-      .then(() => navigate(buildRoute('login', {})));
+      .then(() => navigate((link.login as unknown as { readonly gen: () => string }).gen()));
   }, [navigate]);
 
   return match(authState)

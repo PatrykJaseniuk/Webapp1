@@ -1,2 +1,2 @@
-export { ROUTES, buildRoute } from './routes';
-export type { RouteKey, FlatRouteEntry } from './routes';
+export { router, link } from './routes';
+export type { RouteNode } from './helpers';

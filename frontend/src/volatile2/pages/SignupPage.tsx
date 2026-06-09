@@ -4,7 +4,7 @@ import { match, P } from 'ts-pattern';
 import { useAsyncFn } from 'react-use';
 import { backendConnector } from '@/volatile0/infra/backendConnector';
 import { AuthForm, useAuth } from '@/volatile1/auth';
-import { buildRoute } from '@/volatile1/routes';
+import { link } from '@/volatile1/routes';
 import type { SignupInput } from '@/volatile1/domain';
 
 type FormData =
@@ -33,7 +33,7 @@ export const SignupPage = (): JSX.Element => {
     (data: FormData): void => {
       match(data)
         .with({ tag: 'signup', input: P.select() }, (input: SignupInput) => {
-          signUp(input).then(() => navigate(buildRoute('login', {})));
+          signUp(input).then(() => navigate((link.login as { readonly gen: () => string }).gen()));
         })
         .with({ tag: 'login' }, () => undefined)
         .exhaustive();
@@ -67,7 +67,7 @@ export const SignupPage = (): JSX.Element => {
             <p className="mt-4 text-center text-sm text-gray-500">
               Masz już konto?{' '}
               <a
-                href={`#${buildRoute('login', {})}`}
+                href={`#${(link.login as { readonly gen: () => string }).gen()}`}
                 className="font-medium text-blue-600 hover:text-blue-500"
               >
                 Zaloguj się
