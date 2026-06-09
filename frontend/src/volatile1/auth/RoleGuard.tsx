@@ -1,6 +1,5 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth, useRequireRole } from './AuthContext';
-import { buildRoute } from '@/volatile1/routes';
 import type { AppRole } from '@/volatile1/domain';
 import type { ReactNode } from 'react';
 
@@ -21,5 +20,5 @@ export const RoleGuard = ({ allowedRoles, children }: Props): JSX.Element => {
     ) :
     allowed ?
       <>{children}</> :
-      <Navigate to={buildRoute('dashboard', {})} replace />;
+      <Navigate to="/" replace />;
 };

@@ -29,7 +29,7 @@ export const LoginPage = (): JSX.Element => {
         .with({ tag: 'login', input: P.select() }, (input: LoginInput) => {
           signIn(input).then((result) =>
             result.error === null ?
-              navigate(buildRoute('dashboard', {})) :
+              navigate('/') :
               undefined,
           );
         })
@@ -41,7 +41,7 @@ export const LoginPage = (): JSX.Element => {
 
   return authState.tag === 'authenticated' ?
     (
-      <Navigate to={buildRoute('dashboard', {})} replace />
+      <Navigate to="/" replace />
     ) :
     authState.tag === 'loading' ?
       (

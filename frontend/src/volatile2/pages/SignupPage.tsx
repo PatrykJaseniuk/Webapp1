@@ -43,7 +43,7 @@ export const SignupPage = (): JSX.Element => {
 
   return authState.tag === 'authenticated' ?
     (
-      <Navigate to={buildRoute('dashboard', {})} replace />
+      <Navigate to="/" replace />
     ) :
     authState.tag === 'loading' ?
       (
