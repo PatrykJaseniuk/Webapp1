@@ -10,6 +10,9 @@ import { LoginPage } from "@/pages/LoginPage";
 import { SignupPage } from "@/pages/SignupPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 import { ErrorPage } from "@/pages/ErrorPage";
+import { AdminLayoutPage } from "@/pages/AdminLayoutPage";
+import { LandlordLayoutPage } from "@/pages/LandlordLayoutPage";
+import { TenantLayoutPage } from "@/pages/TenantLayoutPage";
 import { createHashRouter, Navigate } from "react-router-dom";
 
 export const router = createHashRouter([
@@ -23,15 +26,33 @@ export const router = createHashRouter([
       },
       {
         path: 'admin',
-        Component: AdminDashboardPage
+        Component: AdminLayoutPage,
+        children: [
+          {
+            index: true,
+            Component: AdminDashboardPage,
+          },
+        ],
       },
       {
         path: 'landlord',
-        Component: LandlordDashboardPage,
+        Component: LandlordLayoutPage,
+        children: [
+          {
+            index: true,
+            Component: LandlordDashboardPage,
+          },
+        ],
       },
       {
         path: 'tenant',
-        Component: TenantDashboardPage,
+        Component: TenantLayoutPage,
+        children: [
+          {
+            index: true,
+            Component: TenantDashboardPage,
+          },
+        ],
       },
       {
         path: 'login',

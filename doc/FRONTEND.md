@@ -17,7 +17,8 @@ src/
 │                       (NotFound, ErrorDisplay, AccessDenied, LoginForm, SignupForm, LoadingSpinner,
 │                        AdminDashboard, LandlordDashboard, TenantDashboard, AppLayoutShell)
 └── pages/              Route-level thin wrappers — they compose master + slave components, never
-                        contain their own JSX/render logic. Each page matches one route endpoint.
+                        contain their own JSX/render logic. LayoutPage wires the layout; all other
+                        pages match one route endpoint each.
 ```
 
 ## Component Layering Rules
@@ -51,9 +52,9 @@ This applies to `Login`/`LoginForm`, `Signup`/`SignupForm`, and `AppLayout`/`App
 | Path         | Component               | Notes                                    |
 |-------------|-------------------------|------------------------------------------|
 | `/`          | redirect to `/login`   | index route with `Navigate`              |
-| `/admin`     | `AdminDashboardPage`    | protected by `RoleGuard`                 |
-| `/landlord`  | `LandlordDashboardPage` | protected by `RoleGuard`                 |
-| `/tenant`    | `TenantDashboardPage`  | protected by `RoleGuard`                 |
+| `/admin`     | `LayoutPage` → `AdminDashboardPage`    | layout route with shared sidebar + header |
+| `/landlord`  | `LayoutPage` → `LandlordDashboardPage` | layout route with shared sidebar + header |
+| `/tenant`    | `LayoutPage` → `TenantDashboardPage`   | layout route with shared sidebar + header |
 | `/login`     | `LoginPage`            | redirects authenticated users to dashboard |
 | `/signup`    | `SignupPage`           |                                          |
 | `*`          | `NotFoundPage`         | catch-all for unknown URLs               |
@@ -62,6 +63,8 @@ This applies to `Login`/`LoginForm`, `Signup`/`SignupForm`, and `AppLayout`/`App
 
 Routes are nested under one root `'/'` route. The root `errorElement` catches errors thrown by any child component.
 
+Dashboard routes (`admin`, `landlord`, `tenant`) use a **layout route** pattern: `LayoutPage` renders the shared sidebar and content area with `<Outlet />`, and dashboard page components render only their specific content as index children. Auth and error pages are flat routes with no layout wrapping.
+
 ## App Layout
 
 Dashboard pages (admin, landlord, tenant) are wrapped in a shared layout shell providing sidebar navigation and a top header with logout. Auth pages, error pages, and the not-found page are standalone fullscreen and do not use the layout.
@@ -69,7 +72,7 @@ Dashboard pages (admin, landlord, tenant) are wrapped in a shared layout shell p
 - **`masterComponents/AppLayout`** — owns the per-role navigation link definitions (`NAV_LINKS`) as a default argument. Reads auth state via `useAuth`, derives sidebar items by role, handles logout with redirect to `/login`.
 - **`slaveComponents/AppLayoutShell`** — receives nav items, email, and logout handler as props. Renders the sidebar, header bar, and content area. Contains no app-level route or navigation knowledge.
 - **`generic/NavItem`** — the shared type for a single navigation link (label + path). Used by both layers, defined in the neutral `generic/` directory.
-- Pages wire them with `<AppLayout Shell={AppLayoutShell}>`.
+- **`pages/LayoutPage`** — the wiring layer. Connects `AppLayout` (master) and `AppLayoutShell` (slave) and renders `<Outlet />` for child route content. Used as a layout route in `routes.tsx`.
 
 ## Error & Not Found Handling
 
