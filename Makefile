@@ -37,8 +37,8 @@ dev: ## Full pure rebuild: start → reset DB → gen types → frontend → cle
 	echo "=== Resetting database (migrations + seed) ==="; \
 	(cd backend/supabase && npx supabase db reset); \
 	echo "=== Generating database types ==="; \
-	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/volatile1/infra/__generated__/database.types.ts); \
-	echo "Types written to frontend/src/volatile1/infra/__generated__/database.types.ts"; \
+	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/backendConnector/__generated__/database.types.ts); \
+	echo "Types written to frontend/src/backendConnector/__generated__/database.types.ts"; \
 	echo "=== Ensuring frontend dependencies ==="; \
 	(cd frontend && npm install); \
 	echo "=== Starting frontend ==="; \
@@ -76,7 +76,7 @@ build: setup stop ## Production build: reset DB → gen types → build → clea
 	echo "=== Resetting database (migrations + seed) ==="; \
 	(cd backend/supabase && npx supabase db reset); \
 	echo "=== Generating database types ==="; \
-	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/volatile1/infra/__generated__/database.types.ts); \
+	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/backendConnector/__generated__/database.types.ts); \
 	echo "=== Building frontend for production ==="; \
 	(cd frontend && npm run build); \
 	echo "Build output: frontend/dist/"

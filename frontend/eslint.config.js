@@ -7,7 +7,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 /** @type {import('eslint').Linter.Config[]} */
 export default [
   {
-    ignores: ['dist/', 'node_modules/', 'src/volatile0/infra/__generated__/'],
+    ignores: ['dist/', 'node_modules/', 'src/backendConnector/__generated__/'],
   },
   {
     files: ['src/**/*.{ts,tsx}'],

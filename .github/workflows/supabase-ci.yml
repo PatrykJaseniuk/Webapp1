@@ -1,0 +1,38 @@
+name: Supabase CI (Migrations)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/supabase/migrations/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/supabase/migrations/**'
+
+jobs:
+  validate-migrations:
+    name: Validate Migrations (lint + diff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start local Supabase
+        run: supabase start
+      - name: Reset database (apply migrations)
+        run: supabase db reset
+      - name: Lint migrations
+        run: supabase db lint
+      - name: Dry-run drift check against production
+        if: github.event_name == 'push'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }} && supabase db diff --linked
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop
