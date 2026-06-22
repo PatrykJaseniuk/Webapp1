@@ -1,5 +1,5 @@
 import { RouterProvider } from 'react-router-dom';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider } from '@/hooks/AuthContext';
 import { router } from './routes';
 
 export const App = (): JSX.Element => (

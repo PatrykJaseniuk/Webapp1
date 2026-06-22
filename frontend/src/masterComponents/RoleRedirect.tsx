@@ -1,9 +1,9 @@
-import { AppRole, useAuth } from "@/contexts/AuthContext"
+import { AppRole, useAuth } from "@/hooks/AuthContext"
 import { type ReactNode } from "react"
 import { Navigate } from "react-router-dom"
 
 const DEFAULT_REDIRECT_MAP: Readonly<Record<AppRole, string>> = Object.freeze({
-    admin: '/',
+    admin: '/admin',
     landlord: '/landlord',
     tenant: '/tenant',
 });

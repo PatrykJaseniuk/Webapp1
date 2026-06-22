@@ -1,5 +1,5 @@
 import { Database } from '@/backendConnector';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/hooks/AuthContext';
 import type { ReactNode } from 'react';
 
 type Props = {
