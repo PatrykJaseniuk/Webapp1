@@ -16,6 +16,7 @@ export type {
   UserId,
   AppError,
   AsyncState,
+  NavItem,
 } from './utils';
 
 export { ok, err } from './utils';

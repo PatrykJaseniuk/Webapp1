@@ -9,28 +9,36 @@
 src/
 ├── main/               App bootstrap and routing (main.tsx, App.tsx, routes.tsx)
 ├── backendConnector/   Supabase client + generated DB types (never edit __generated__/)
-├── generic/            Pure FP utilities — FormState, Result, AppError, AsyncState, UserId
+├── generic/            Pure FP utilities — FormState, Result, AppError, AsyncState, UserId, NavItem
 ├── hooks/              Hooks and contexts (AuthContext, useAuth, etc.)
-├── masterComponents/   Container components with logic (Login, Signup, RoleGuard, RoleRedirect)
+├── masterComponents/   Container components with logic — auth gating, redirects, data fetching,
+│                       layout orchestration (Login, Signup, RoleGuard, RoleRedirect, AppLayout)
 ├── slaveComponents/    Presentational/render components — the actual UI rendering lives here
 │                       (NotFound, ErrorDisplay, AccessDenied, LoginForm, SignupForm, LoadingSpinner,
-│                        AdminDashboard, LandlordDashboard, TenantDashboard)
+│                        AdminDashboard, LandlordDashboard, TenantDashboard, AppLayoutShell)
 └── pages/              Route-level thin wrappers — they compose master + slave components, never
                         contain their own JSX/render logic. Each page matches one route endpoint.
 ```
 
-### Component Layering Rule
+## Component Layering Rules
 
-- **`pages/`** — thin endpoint. Imports from `masterComponents/` and `slaveComponents/`, returns a single JSX tree composed from them. No inline rendering.
-- **`slaveComponents/`** — actual UI. Contains JSX, Tailwind classes, and pure presentational logic (e.g. `useRouteError()`). Does NOT import from `pages/` or `masterComponents/`.
-- **`masterComponents/`** — logic containers. Provide auth gating, redirects, data fetching wrappers. Render via `children`.
+### Dependency Direction
 
-Example:
-```
-pages/NotFoundPage.tsx  →  import { NotFound } from "@/slaveComponents/NotFound"  →  <NotFound />
-pages/ErrorPage.tsx     →  import { ErrorDisplay } from "@/slaveComponents/ErrorDisplay"  →  <ErrorDisplay />
-pages/LoginPage.tsx     →  import { Login } from "@/masterComponents/Login" + { LoginForm } from "@/slaveComponents/LoginForm"
-```
+- **`masterComponents/`** — never imports from `slaveComponents/`. Receives slave components via `ComponentType` props. Owns the props types that slave components conform to.
+- **`slaveComponents/`** — may import **type-only** from `masterComponents/` (the master defines the contract). Contains JSX, Tailwind classes, and presentational logic. Does not import from `pages/`.
+- **`pages/`** — the wiring layer. Imports from both `masterComponents/` and `slaveComponents/`, connects them, and returns a single JSX tree. Contains no rendering logic.
+- **`generic/`** — shared types used by both master and slave layers. No domain knowledge.
+
+### Master→Slave Wiring
+
+Components that pair a master (logic) with a slave (rendering) follow a consistent pattern:
+
+- The master defines the slave's props type.
+- The master receives the slave as a `ComponentType` prop.
+- The slave imports the props type from the master.
+- The page imports both and connects them.
+
+This applies to `Login`/`LoginForm`, `Signup`/`SignupForm`, and `AppLayout`/`AppLayoutShell`.
 
 ## Routing
 
@@ -52,22 +60,16 @@ pages/LoginPage.tsx     →  import { Login } from "@/masterComponents/Login" + 
 
 ### Structure
 
-Routes are nested under one root `'/'` route:
+Routes are nested under one root `'/'` route. The root `errorElement` catches errors thrown by any child component.
 
-```tsx
-createHashRouter([
-  {
-    path: '/',
-    errorElement: <ErrorPage />,   // catches errors thrown by any child component
-    children: [
-      { index: true, element: <Navigate to="/login" replace /> },
-      { path: 'admin', Component: AdminDashboardPage },
-      // ...
-      { path: '*', element: <NotFoundPage /> },
-    ],
-  },
-])
-```
+## App Layout
+
+Dashboard pages (admin, landlord, tenant) are wrapped in a shared layout shell providing sidebar navigation and a top header with logout. Auth pages, error pages, and the not-found page are standalone fullscreen and do not use the layout.
+
+- **`masterComponents/AppLayout`** — owns the per-role navigation link definitions (`NAV_LINKS`) as a default argument. Reads auth state via `useAuth`, derives sidebar items by role, handles logout with redirect to `/login`.
+- **`slaveComponents/AppLayoutShell`** — receives nav items, email, and logout handler as props. Renders the sidebar, header bar, and content area. Contains no app-level route or navigation knowledge.
+- **`generic/NavItem`** — the shared type for a single navigation link (label + path). Used by both layers, defined in the neutral `generic/` directory.
+- Pages wire them with `<AppLayout Shell={AppLayoutShell}>`.
 
 ## Error & Not Found Handling
 

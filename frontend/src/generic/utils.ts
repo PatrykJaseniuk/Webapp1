@@ -7,6 +7,15 @@ import type { Either } from 'fp-ts/Either';
 export type { Option, Either };
 
 // ──────────────────────────────────────────────
+// Navigation
+// ──────────────────────────────────────────────
+
+export type NavItem = {
+  readonly label: string;
+  readonly to: string;
+};
+
+// ──────────────────────────────────────────────
 // Result — explicit error handling, no throw
 // ──────────────────────────────────────────────
 
