@@ -3,6 +3,7 @@
 > **Audience:** LLM agents working on the frontend.
 > Covers: directory structure, routing, auth, error handling, component patterns.
 
+
 ## Directory Structure
 
 ```
