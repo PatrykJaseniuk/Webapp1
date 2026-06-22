@@ -4,12 +4,12 @@ on:
   push:
     branches: [main]
     paths:
-      - 'backend/supabase/**'
-      - '.github/workflows/supabase-ci.yml'
+      - "backend/supabase/**"
+      - ".github/workflows/supabase-ci.yml"
   pull_request:
     branches: [main]
     paths:
-      - 'backend/supabase/migrations/**'
+      - "backend/supabase/migrations/**"
 
 defaults:
   run:
