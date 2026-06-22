@@ -32,7 +32,8 @@ describe('Result', () => {
     expect(result.tag).toBe('err');
     const error = result.tag === 'err' ? result.error : { tag: 'NotFound' as const, resource: '' };
     expect(error.tag).toBe('NotFound');
-    expect(error.resource).toBe('user/1');
+    const resource = error.tag === 'NotFound' ? error.resource : '';
+    expect(resource).toBe('user/1');
   });
 });
 
