@@ -1,7 +1,11 @@
 import { useAsyncFn } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import type { LoginInput } from '@/domain';
+
+export type LoginInput = {
+  readonly email: string;
+  readonly password: string;
+};
 
 export type LoginFormProps = {
   readonly onSubmit: (input: LoginInput) => void;

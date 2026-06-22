@@ -32,7 +32,7 @@ supabase db reset             # reset DB, re-run migrations + seed
 supabase db diff --linked --file <name>  # generate migration from local→linked remote diff
 supabase db pull <name> --local --yes    # generate migration from local DB state
 supabase db lint              # check migrations for errors
-supabase gen types typescript --local > ../../frontend/src/volatile0/infra/__generated__/database.types.ts
+supabase gen types typescript --local > ../../frontend/src/backendConnector/__generated__/database.types.ts
 supabase migration new <name>  # create empty migration file (always use this — never invent filename)
 supabase functions new <name>  # create new edge function
 supabase functions deploy <name>
@@ -64,18 +64,18 @@ supabase functions deploy <name>
 
 **Type generation:**
 ```bash
-supabase gen types typescript --local > ../../frontend/src/volatile0/infra/__generated__/database.types.ts
+supabase gen types typescript --local > ../../frontend/src/backendConnector/__generated__/database.types.ts
 ```
 
-The generated file lives in `frontend/src/volatile0/infra/__generated__/database.types.ts` — **never edit it manually**. It is rebuilt from scratch on every `make dev`. It is:
-- Located in `volatile0/` (stable — never changes during development)
+The generated file lives in `frontend/src/backendConnector/__generated__/database.types.ts` — **never edit it manually**. It is rebuilt from scratch on every `make dev`. It is:
+- Located in `backendConnector/` (infrastructure — never changes during development)
 - Ignored by ESLint
 - Marked `linguist-generated=true` in `.gitattributes` (diffs collapsed on GitHub)
 
 Import pattern in consumer code:
 ```typescript
-import type { Tables, TablesInsert, Enums } from '@/backend';
-import { Constants } from '@/backend';
+import type { Tables, TablesInsert, Enums } from '@/backendConnector';
+import { Constants } from '@/backendConnector';
 
 // Row type
 type PropertyRow = Tables<'properties'>;
@@ -90,7 +90,7 @@ type PropertyType = Enums<'property_type'>;
 Constants.public.Enums.property_type // readonly ["apartment", "house", "commercial", "room"]
 ```
 
-The `@/backend` path alias resolves to `volatile0/infra/` — consumers don't need to know the physical location.
+The `@/backendConnector` path alias resolves to `backendConnector/` — consumers don't need to know the physical location.
 
 ## Auth
 

@@ -8,3 +8,14 @@ export {
 } from './form';
 
 export type { FormState } from './form';
+
+export type {
+  Option,
+  Either,
+  Result,
+  UserId,
+  AppError,
+  AsyncState,
+} from './utils';
+
+export { ok, err } from './utils';

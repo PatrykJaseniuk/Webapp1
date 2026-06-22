@@ -74,11 +74,10 @@ Files are grouped into three directories by **change frequency** during developm
 
 ```
 src/
-├── volatile0/   ══ STABLE ══   infrastructure, domain types, generic utilities, app bootstrap
+├── volatile0/   ══ STABLE ══   infrastructure, generic utilities, app bootstrap
 │   ├── bootstrap/    (main.tsx, index.css, vite-env.d.ts)
 │   ├── infra/        (backendConnector.ts, __generated__/database.types.ts)
-│   ├── domain/       (types.ts — Result, AppError, AsyncState, AppRole, AuthState, DTOs)
-│   └── generic/      (form.ts, utils.ts)
+│   └── generic/      (form.ts — FormState; utils.ts — Result, AppError, AsyncState, UserId)
 ├── volatile1/   ══ MODERATE ══  routes, auth — changes when app structure changes
 │   ├── routes/       (ROUTE_TREE → ROUTES + buildRoute)
 │   └── auth/         (AuthContext.tsx, AuthForm.tsx, RoleGuard.tsx, UserMenu.tsx)

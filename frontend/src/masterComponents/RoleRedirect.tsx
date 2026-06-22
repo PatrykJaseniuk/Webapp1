@@ -1,7 +1,6 @@
 import { AppRole, useAuth } from "@/contexts/AuthContext"
 import { type ReactNode } from "react"
 import { Navigate } from "react-router-dom"
-import { LoadingSpinner } from "@/slaveComponents/LoadingSpinner"
 
 const DEFAULT_REDIRECT_MAP: Readonly<Record<AppRole, string>> = Object.freeze({
     admin: '/',
@@ -12,13 +11,13 @@ const DEFAULT_REDIRECT_MAP: Readonly<Record<AppRole, string>> = Object.freeze({
 type Props = {
     readonly children: ReactNode,
     readonly redirectMap?: Record<AppRole, string>,
-    readonly LoadingComponent?: ReactNode
+    readonly LoadingComponent: ReactNode
 }
 
 export const RoleRedirect = ({
     children,
     redirectMap = DEFAULT_REDIRECT_MAP,
-    LoadingComponent = <LoadingSpinner />,
+    LoadingComponent,
 }: Props) => {
 
     const auth = useAuth()

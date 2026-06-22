@@ -1,7 +1,13 @@
 import { useAsyncFn } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import type { SignupInput } from '@/domain';
+
+export type SignupInput = {
+  readonly email: string;
+  readonly password: string;
+  readonly firstName: string;
+  readonly lastName: string;
+};
 
 export type SignupFormProps = {
   readonly onSubmit: (input: SignupInput) => void;

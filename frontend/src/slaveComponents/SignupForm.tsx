@@ -1,6 +1,5 @@
 import type { FormEvent } from 'react';
-import type { SignupInput } from '@/domain';
-import type { SignupFormProps } from '@/masterComponents/Signup';
+import type { SignupFormProps, SignupInput } from '@/masterComponents/Signup';
 
 const inputClass =
   'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';

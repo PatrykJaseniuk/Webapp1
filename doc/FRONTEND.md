@@ -1,302 +1,39 @@
-# Frontend — Generation Rules for LLM Agents
+# Frontend — React SPA
 
-> Generate a React frontend from a Supabase backend.
-> Code-level rules: `.clinerules/FUNCTIONAL_TS.md`
-> System overview: `doc/SYSTEM.md`
+> **Audience:** LLM agents working on the frontend.
+> Covers: directory structure, routing, auth, component patterns.
 
-## Stack (fixed)
-
-| Layer | Choice |
-|-------|--------|
-| Build + Dev | Vite |
-| UI | React 18, TypeScript `strict: true` |
-| Styling | Tailwind CSS |
-| Routing | React Router v6 `createHashRouter` |
-| Server state | react-use (`useAsync` / `useAsyncFn`) |
-| Pattern matching | ts-pattern |
-| API | @supabase/supabase-js |
-
-## Directory Structure — Three Volatility Levels
-
-Files are grouped by **how often they change** during development:
+## Directory Structure
 
 ```
 src/
-├── volatile0/                              ══ STABLE — same across different projects ══
-│   ├── bootstrap/           (zero imports beyond Vite/React — app entry)
-│   │   ├── main.tsx
-│   │   ├── index.css
-│   │   └── vite-env.d.ts
-│   ├── domain/              (dep: fp-ts — universal types)
-│   │   ├── types.ts                # Result<T,E>, AppError, AsyncState, UserId, Option, Either
-│   │   └── index.ts
-│   └── generic/             (dep: nothing — pure utilities)
-│       ├── flattenRoutes.ts         # Tree→flat route flattener (generic over role type)
-│       ├── form.ts                 # FormState<T> helpers
-│       ├── utils.ts
-│       └── index.ts
-│
-├── volatile1/                              ══ MODERATE — defined once at project start ══
-│   ├── domain/              (dep: volatile0/domain)
-│   │   ├── types.ts                # AppRole, AuthState, LoginInput, SignupInput — project-specific
-│   │   └── index.ts
-│   ├── infra/               (dep: supabase-js, this project's DB schema)
-│   │   ├── __generated__/
-│   │   │   └── database.types.ts   # GENERATED — never edit (rebuilt by make dev)
-│   │   ├── backendConnector.ts     # single Supabase client — create once
-│   │   └── index.ts                # barrel: re-exports from __generated__/
-│   ├── routes/              (dep: react-router-dom, volatile0/domain, volatile1/domain)
-│   │   ├── routes.ts               # ROUTE_TREE → flattenRoutes → ROUTES + buildRoute
-│   │   └── index.ts
-│   └── auth/                (dep: React, volatile1/domain, volatile1/routes)
-│       ├── AuthContext.tsx           # AuthProvider + useAuth + useRequireRole
-│       ├── AuthForm.tsx
-│       ├── RoleGuard.tsx             # role-based route guard component
-│       ├── UserMenu.tsx
-│       └── index.ts
-│
-└── volatile2/                              ══ VOLATILE — daily feature work ══
-    ├── app/                 (dep: React Router, volatile0, volatile1, volatile2)
-    │   └── App.tsx                   # route table + AuthProvider + auth guard + param wrappers
-    ├── layout/              (dep: react-router-dom, volatile1)
-    │   └── Layout.tsx               # sidebar with role-derived nav items
-    ├── pages/               (dep: volatile0, volatile2 features, react-use)
-    │   ├── <Role>DashboardPage.tsx   # per-role dashboards (LandlordDashboardPage, AdminDashboardPage, TenantDashboardPage)
-    │   ├── <Name>Page.tsx
-    │   └── <Name>DetailPage.tsx
-    ├── <feature>/            # per-domain: components + hooks
-    │   ├── hooks.ts                # custom hooks wrapping backendConnector + useAsync
-    │   ├── <Name>List.tsx
-    │   ├── <Name>Form.tsx
-    │   └── index.ts
-    └── ...
+├── main/               App bootstrap and routing (main.tsx, App.tsx, routes.tsx)
+├── backendConnector/   Supabase client + generated DB types (never edit __generated__/)
+├── generic/            Pure FP utilities — FormState, Result, AppError, AsyncState, UserId
+├── contexts/           Auth context — AuthState discriminated union, AuthProvider, useAuth hook
+├── masterComponents/   Container components with logic (Login, Signup, RoleGuard, RoleRedirect)
+├── slaveComponents/    Presentational components (forms, dashboards, loading/error states)
+├── pages/              Route-level page components (LoginPage, SignupPage, *DashboardPage)
+└── hooks/              (reserved, currently empty)
 ```
-
-**No loose files at `src/` root.** Everything lives under `volatile0/`, `volatile1/`, or `volatile2/`.
-
-## Volatility Rules
-
-| Level | When it changes | May import |
-|-------|----------------|------------|
-| `volatile0/` | **Never** (set up at project start) | External libs only. Never `volatile1/` or `volatile2/` |
-| `volatile1/` | **Rarely** (new route, auth concern) | `volatile0/` groups. Never `volatile2/` |
-| `volatile2/` | **Daily** (every new feature) | `volatile0/` + `volatile1/` groups |
-
-**State vs pure separation:** `volatile2/pages/` and `volatile2/<feature>/hooks.ts` call `backendConnector` inside `useAsync`/`useAsyncFn`. Pure components in `volatile2/<feature>/` receive data via props — they may use `useState` for local form fields only.
-
-## Path Aliases
-
-| Alias | Physical path | Import example |
-|-------|---------------|----------------|
-| `@/backend` | `volatile1/infra` | `import { Constants } from '@/backend'` |
-| `@/domain` | `volatile1/domain` | `import type { AppRole, AuthState } from '@/domain'` |
-| `@/shared` | `volatile0/generic` | `import { setField } from '@/shared'` |
-| `@/routes` | `volatile1/routes` | `import { ROUTES, buildRoute } from '@/routes'` |
-| `@/auth` | `volatile1/auth` | `import { AuthProvider, useAuth, RoleGuard } from '@/auth'` |
-| `@/features/properties` | `volatile2/properties` | `import { PropertiesList } from '@/features/properties'` |
-| `@/pages/*` | `volatile2/pages` | `import { LandlordDashboardPage } from '@/pages/LandlordDashboardPage'` |
-| `@/layout` | `volatile2/layout` | `import { Layout } from '@/layout/Layout'` |
-| `@/app` | `volatile2/app` | `import { App } from '@/app/App'` |
-
-## Generated Types (`__generated__/database.types.ts`)
-
-Located in `volatile1/infra/__generated__/`. Generated by `make dev` (via `supabase gen types`). **Never edit manually.**
-
-Protected by:
-- ESLint `ignores` in `eslint.config.js`
-- `.gitattributes` `linguist-generated=true`
-
-The barrel `volatile1/infra/index.ts` re-exports everything consumers need:
-```typescript
-import type { Tables, TablesInsert, TablesUpdate, Enums } from '@/backend';
-import { Constants } from '@/backend';
-```
-
-### Type helpers
-
-| Helper | Use |
-|--------|-----|
-| `Tables<'table_name'>` | Row type (SELECT result) |
-| `TablesInsert<'table_name'>` | Insert payload |
-| `TablesUpdate<'table_name'>` | Update payload |
-| `Enums<'enum_name'>` | Enum literal union (e.g., `"apartment" \| "house" \| ...`) |
-| `Constants.public.Enums.enum_name` | Runtime enum array (`readonly string[]`) — for `<option>` rendering |
-
-### Form patterns with enum narrowing
-
-Form fields are `string` (from `<input>`/`<select>`). When constructing insert payloads, narrow to enum literals with `as Enums<'enum_name'>`:
-```typescript
-const formDataToInsert = (data: Readonly<FormData>): TablesInsert<'properties'> => ({
-  name: data.name,
-  property_type: data.property_type as Enums<'property_type'>,
-  property_status: data.property_status as Enums<'property_status'>,
-  // ...
-});
-```
-
-Runtime `<option>` rendering uses `Constants`:
-```tsx
-<select>
-  {Constants.public.Enums.property_type.map((t) => (
-    <option key={t} value={t}>{t}</option>
-  ))}
-</select>
-```
-
-## Server State Pattern
-
-Pages and hooks in `volatile2/` call `backendConnector` methods inline — there are no intermediate wrapper functions or CRUD modules.
-
-### Queries — `useAsync(fn, deps)`
-
-```tsx
-const state = useAsync(
-  async () =>
-    backendConnector
-      .from('table')
-      .select('*')
-      .order('created_at', { ascending: false }),
-  [refetchKey],
-);
-```
-
-- `state.loading` — true while the promise is in-flight
-- `state.value` — the Supabase response `{ data, error }` on success
-- `state.error` — thrown error (network failures, not Supabase error codes)
-- Use a `useState<number>` counter as a dependency to trigger refetch on mutation success
-
-### Mutations — `useAsyncFn(fn)`
-
-```tsx
-const [state, execute] = useAsyncFn(
-  async (input: TablesInsert<'table'>) =>
-    backendConnector.from('table').insert(input).select().single(),
-);
-```
-
-- `state.loading` — true while the mutation is in-flight
-- `state.error` — thrown error
-- `execute()` returns `Promise<{ data, error }>` — check `result.error` for Supabase errors
-- On success, increment the `refetchKey` to refresh the list
-
-### Custom hooks — `volatile2/<feature>/hooks.ts`
-
-Encapsulate data fetching for a feature in a dedicated hooks file:
-```typescript
-// volatile2/properties/hooks.ts
-import { useAsync, useAsyncFn } from 'react-use';
-import { backendConnector } from '@/backend';
-import type { TablesInsert } from '@/backend';
-
-export const useProperties = (refetchKey: number) =>
-  useAsync(
-    async () =>
-      backendConnector.from('properties').select('*').order('created_at', { ascending: false }),
-    [refetchKey],
-  );
-
-export const useSaveProperty = () =>
-  useAsyncFn(
-    async (input: TablesInsert<'properties'>) =>
-      backendConnector.from('properties').insert(input).select().single(),
-  );
-```
-
-Pages then become thin wiring:
-```tsx
-const { properties, isLoading, isError, saveProperty, deleteProperty } = useProperties(refetchKey);
-```
-
-## For Each DB Table — Generate These Files
-
-### 1. No `domain/entities.ts` needed
-- Database-derived types come directly from `@/backend` via `Tables<'name'>`, `TablesInsert<'name'>`, `Enums<'name'>`
-- Runtime enum arrays come from `Constants.public.Enums.*`
-- Only pure domain types: universal (`Result`, `AppError`, `AsyncState`) live in `volatile0/domain/types.ts`, project-specific (`AppRole`, `AuthState`, auth DTOs) live in `volatile1/domain/types.ts`
-
-### 2. `volatile2/<feature>/` — components + hooks
-- **hooks.ts** — `use<Name>`, `useSave<Name>`, `useDelete<Name>` (calls `backendConnector` + `useAsync`)
-- **List** — `readonly items[]` + `onEdit`/`onDelete` callbacks as props
-- **Form** — optional `item` for edit mode, `onSubmit: (data: TablesInsert<'name'>) => Promise<void>`, `onCancel`
-- Forms use `Enums<'name'>` to narrow `string` values from form fields to enum literals
-- `<select>` options use `Constants.public.Enums.*` for runtime arrays
-
-### 3. `volatile2/pages/<Name>Page.tsx` — thin route target
-- Uses feature hooks or calls `backendConnector` inline
-- Passes data down to feature components
-- Handles loading / error / success via state
 
 ## Routing
 
-**`volatile1/routes/routes.ts`** — hierarchical route definitions. A `ROUTE_TREE` groups pages by role prefix (e.g., `/landlord/properties`). Each node carries `allowedRoles` and optional `navLabel`. A `flattenRoutes` helper produces a flat `ROUTES` record with dot-joined keys (`'landlord.properties'`). Imported as `@/routes`.
+- **Hash router** (`createHashRouter`) — required for GitHub Pages (no server-side URL rewriting).
+- Routes defined in `main/routes.tsx`: `/`, `/landlord`, `/tenant`, `/login`, `/signup`.
 
-**`volatile2/app/App.tsx`** — the only place calling `useParams`, `createHashRouter`:
-- Wraps the entire tree in `<AuthProvider>`
-- Public routes (login, signup) at top level
-- Root `/` → `AuthGuard` that redirects to the role-appropriate dashboard
-- Protected routes are **generated** from `ROUTES` entries (excluding login/signup/dashboard) — each is wrapped in `<RoleGuard allowedRoles={entry.allowedRoles}>`
-- A `PAGE_COMPONENTS` record maps each route key to a lazy-loaded page component
-- Param wrappers for parameterized routes — extract `useParams`, pass as typed props to detail pages
-- Pages never call `useParams` themselves
+## Auth
 
-**Sidebar** — `Layout.tsx` derives nav items by filtering `ROUTES` for entries where `navLabel` is set and `allowedRoles` includes the current user's role.
+- `AuthContext` manages session state via `supabase-js` — listens for `onAuthStateChange`.
+- Role derived from `get_user_role()` RPC call to Supabase.
+- `RoleGuard` wraps protected routes; `RoleRedirect` sends authenticated users to their dashboard.
 
-**Links** — always use `buildRoute`: `<NavLink to={buildRoute('landlord.properties', {})}>`
+## Backend Connector
 
-## Auth & RBAC
+- Single Supabase client instance: `backendConnector` in `backendConnector/backendConnector.ts`.
+- DB types auto-generated in `__generated__/database.types.ts` — import via `@/backendConnector`.
 
-### Context — `volatile1/auth/AuthContext.tsx`
+## Imports
 
-`<AuthProvider>` wraps the app in `App.tsx`. On mount it calls `backendConnector.auth.getSession()` and `backendConnector.from('user_roles').select('role')`, then subscribes to `onAuthStateChange` to keep state in sync.
-
-Exported hooks:
-- **`useAuth()`** — returns `AuthState` (a discriminated union: `loading | unauthenticated | authenticated`)
-- **`useRequireRole(allowedRoles)`** — returns `boolean`, uses `ts-pattern` for exhaustive matching
-
-### Guard — `volatile1/auth/RoleGuard.tsx`
-
-Wraps a route element. Calls `useAuth()` and `useRequireRole()`. Renders:
-- Loading spinner while `authState.tag === 'loading'`
-- Redirect to `/` if role check fails
-- Children if role is allowed
-
-### UserMenu — `volatile1/auth/UserMenu.tsx`
-
-Self-contained — no props. Uses `useAuth()` internally. Renders email + role label + logout button (calls `backendConnector.auth.signOut()` then navigates to login).
-
-### Route definitions carry access control
-
-Every route entry in `routes.ts` has `allowedRoles`. `App.tsx` wraps each route with `<RoleGuard allowedRoles={...}>` automatically — no duplicated role logic.
-
-## What NOT to Do
-
-- ❌ No files at `src/` root — everything under `volatile0/`, `volatile1/`, or `volatile2/`
-- ❌ No raw strings in `to`/`path` — always `buildRoute` or `ROUTES.*.path`
-- ❌ No `useParams` in page components — extraction happens in `App.tsx` wrappers
-- ❌ No `useAsync`/`useAsyncFn` in feature components — only in `hooks.ts` and `pages/`
-- ❌ No intermediate CRUD wrapper files between `pages/` and `backendConnector` — call `backendConnector` inline or via hooks
-- ❌ No `throw` anywhere — use `Result<T, E>` (FUNCTIONAL_TS.md §7)
-- ❌ No `switch` statements — use `ts-pattern` (FUNCTIONAL_TS.md §6)
-- ❌ No `if/else if` chains for value mapping — use lookup objects
-- ❌ No `let`, `var`, non-null assertions (`!`), or `any`
-- ❌ No `QueryClientProvider` or TanStack Query imports
-- ❌ No hand-duplicated type aliases (`Property = Database['...']['Row']`) — use `Tables<'properties'>` directly
-- ❌ No `as const` arrays for enum values — use `Constants.public.Enums.*` from generated types
-- ❌ Never edit `volatile1/infra/__generated__/database.types.ts` — it is rebuilt by `make dev`
-- ❌ No hand-rolled route or nav-item lists — derive from `ROUTES`
-
-## Pipeline
-
-```
-volatile2/ → volatile1/infra/backendConnector → Supabase
-  ↑                    ↑
-stateful           single Supabase client
-(useAsync/          (createClient, never
-useAsyncFn,          duplicated)
-hooks.ts)
-```
-
-## CI
-
-```bash
-npm run lint && npm run typecheck && npm run test && npm run build
+- Path alias `@/*` maps to `src/*` (configured in `tsconfig.json`).
+- Use `import type` for type-only imports.

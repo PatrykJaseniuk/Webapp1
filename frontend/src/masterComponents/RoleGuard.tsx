@@ -1,7 +1,5 @@
 import { Database } from '@/backendConnector';
 import { useAuth } from '../contexts/AuthContext';
-import { LoadingSpinner } from '../slaveComponents/LoadingSpinner';
-import { AccessDenied } from '../slaveComponents/AccessDenied';
 import type { ReactNode } from 'react';
 
 type Props = {
@@ -9,15 +7,15 @@ type Props = {
   | { readonly isAuthenticated: false }
   | { readonly isAuthenticated: true; readonly roles: readonly Database['public']['Enums']['app_role'][] };
   readonly children: ReactNode;
-  readonly LoadingComponent?: ReactNode;
-  readonly AccessDeniedComponent?: ReactNode;
+  readonly LoadingComponent: ReactNode;
+  readonly AccessDeniedComponent: ReactNode;
 };
 
 export const AuthorisationGuard = ({
   authoriseRequirement,
   children,
-  LoadingComponent = <LoadingSpinner />,
-  AccessDeniedComponent = <AccessDenied />,
+  LoadingComponent,
+  AccessDeniedComponent,
 }: Props): JSX.Element => {
   const authState = useAuth();
 
