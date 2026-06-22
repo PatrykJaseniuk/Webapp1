@@ -1,4 +1,4 @@
-name: CI — Frontend
+name: CI
 
 on:
   push:
@@ -6,14 +6,15 @@ on:
   pull_request:
     branches: [main]
 
-defaults:
-  run:
-    working-directory: frontend
-
 jobs:
-  lint:
-    name: Lint (ESLint)
+  # ═══════════════ Frontend checks ═══════════════
+
+  frontend-lint:
+    name: Frontend Lint (ESLint)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,9 +25,12 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
-  typecheck:
-    name: Type Check (tsc --noEmit)
+  frontend-typecheck:
+    name: Frontend Type Check (tsc)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,9 +41,12 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
 
-  test:
-    name: Tests (Vitest)
+  frontend-test:
+    name: Frontend Tests (Vitest)
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -50,13 +57,89 @@ jobs:
       - run: npm ci
       - run: npm run test
 
-  build:
-    name: Build & Deploy
+  # ═══════════════ Backend check ═══════════════
+
+  backend-lint:
+    name: Backend Lint (supabase db lint)
     runs-on: ubuntu-latest
-    needs: [lint, typecheck, test]
-    if: github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase db start
+      - run: supabase db lint
+
+  # ═══════════════ Deploy (push to main only) ═══════════════
+
+  deploy-backend:
+    name: Deploy Backend (db push)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs:
+      - frontend-lint
+      - frontend-typecheck
+      - frontend-test
+      - backend-lint
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }}
+      - run: supabase db push
+
+  gen-types:
+    name: Generate Database Types
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: deploy-backend
     permissions:
       contents: write
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.PRODUCTION_DB_PASSWORD }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }}
+      - run: |
+          supabase gen types typescript --linked \
+            > ../frontend/src/backendConnector/__generated__/database.types.ts
+      - name: Commit updated types
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ../frontend/src/backendConnector/__generated__/database.types.ts
+          git diff --staged --quiet || git commit -m "chore: update database types [skip ci]"
+          git push
+
+  deploy-frontend:
+    name: Deploy Frontend (build + gh-pages)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs: gen-types
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
