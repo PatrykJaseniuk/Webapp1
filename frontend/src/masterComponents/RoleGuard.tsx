@@ -1,11 +1,22 @@
 import { Database } from '@/backendConnector';
-import { useAuth } from '@/hooks/AuthContext';
+import { useAuth, type AuthState } from '@/hooks/AuthContext';
 import type { ReactNode } from 'react';
 
-type Props = {
-  readonly authoriseRequirement:
+export type AuthoriseRequirement =
   | { readonly isAuthenticated: false }
   | { readonly isAuthenticated: true; readonly roles: readonly Database['public']['Enums']['app_role'][] };
+
+export const computeAuthorisation = (
+  authState: AuthState,
+  authoriseRequirement: AuthoriseRequirement,
+): boolean =>
+  authoriseRequirement.isAuthenticated === false ?
+    true
+    : authState.tag === 'authenticated' &&
+    authoriseRequirement.roles.includes(authState.role);
+
+type Props = {
+  readonly authoriseRequirement: AuthoriseRequirement;
   readonly children: ReactNode;
   readonly LoadingComponent: ReactNode;
   readonly AccessDeniedComponent: ReactNode;
@@ -19,13 +30,7 @@ export const AuthorisationGuard = ({
 }: Props): JSX.Element => {
   const authState = useAuth();
 
-  const isAuthorised: boolean =
-    authoriseRequirement.isAuthenticated === false ?
-      true
-      : authState.tag === 'authenticated' &&
-      authoriseRequirement.roles.includes(authState.role);
-
-  console.log(authState)
+  const isAuthorised: boolean = computeAuthorisation(authState, authoriseRequirement);
 
   return authState.tag === 'loading' ?
     <>{LoadingComponent}</>

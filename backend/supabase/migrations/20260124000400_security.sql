@@ -5,6 +5,72 @@
 -- Defines access control for landlords, tenants, and admins
 
 -- ================================================
+-- STEP 0: CUSTOM ACCESS TOKEN HOOK
+-- ================================================
+-- Runs before a JWT is issued. Embeds user_role claim
+-- so RLS policies can read auth.jwt() ->> 'user_role'
+-- instead of querying public.user_roles (avoiding RLS
+-- recursion and permission-check side-effects).
+
+CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SET search_path = ''
+AS $$
+DECLARE
+    claims jsonb;
+    user_role text;
+BEGIN
+    SELECT role INTO user_role
+    FROM public.user_roles
+    WHERE user_id = (event ->> 'user_id')::uuid;
+
+    claims := event -> 'claims';
+
+    IF user_role IS NOT NULL THEN
+        claims := jsonb_set(claims, '{user_role}', to_jsonb(user_role));
+    ELSE
+        claims := jsonb_set(claims, '{user_role}', 'null');
+    END IF;
+
+    event := jsonb_set(event, '{claims}', claims);
+
+    RETURN event;
+END;
+$$;
+
+-- Grants for the auth hook
+GRANT USAGE ON SCHEMA public TO supabase_auth_admin;
+
+GRANT EXECUTE
+    ON FUNCTION public.custom_access_token_hook
+    TO supabase_auth_admin;
+
+REVOKE EXECUTE
+    ON FUNCTION public.custom_access_token_hook
+    FROM authenticated, anon, public;
+
+GRANT ALL
+    ON TABLE public.user_roles
+    TO supabase_auth_admin;
+
+REVOKE ALL
+    ON TABLE public.user_roles
+    FROM anon, public;
+
+-- Note: authenticated remains granted for admin role management via API
+-- RLS policies on user_roles further restrict to admins only
+
+-- Auth admin needs to read user_roles — dedicated permissive policy
+CREATE POLICY "Allow auth admin to read user roles"
+    ON public.user_roles
+    AS PERMISSIVE
+    FOR SELECT
+    TO supabase_auth_admin
+    USING (true);
+
+-- ================================================
 -- STEP 1: ENABLE RLS ON ALL TABLES
 -- ================================================
 
@@ -19,47 +85,34 @@ ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 -- STEP 2: HELPER FUNCTIONS FOR RLS
 -- ================================================
 
--- Get current user's role
--- SECURITY DEFINER bypasses RLS to prevent infinite recursion
+-- Get current user's role from the JWT (set by custom_access_token_hook)
 CREATE OR REPLACE FUNCTION public.get_user_role()
 RETURNS text
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
+LANGUAGE sql
+STABLE
+SET search_path = ''
 AS $$
-DECLARE
-    user_role text;
-BEGIN
-    SELECT role INTO user_role
-    FROM public.user_roles
-    WHERE user_id = auth.uid();
-    
-    RETURN user_role;
-END;
+    SELECT auth.jwt() ->> 'user_role';
 $$;
 
--- Check if current user is admin
+-- Check if current user is admin (reads JWT claim, no DB query)
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
+LANGUAGE sql
+STABLE
+SET search_path = ''
 AS $$
-BEGIN
-    RETURN get_user_role() = 'admin';
-END;
+    SELECT COALESCE(auth.jwt() ->> 'user_role' = 'admin', false);
 $$;
 
--- Check if current user is landlord (moderator role or admin)
+-- Check if current user is landlord or admin (reads JWT claim, no DB query)
 CREATE OR REPLACE FUNCTION public.is_landlord()
 RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
+LANGUAGE sql
+STABLE
+SET search_path = ''
 AS $$
-BEGIN
-    RETURN get_user_role() IN ('landlord', 'admin');
-END;
+    SELECT COALESCE(auth.jwt() ->> 'user_role' IN ('admin', 'landlord'), false);
 $$;
 
 -- Get tenant_id for current user
@@ -67,7 +120,7 @@ CREATE OR REPLACE FUNCTION public.get_current_tenant_id()
 RETURNS uuid
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = ''
 AS $$
 DECLARE
     tenant_uuid uuid;
@@ -78,6 +131,43 @@ BEGIN
     
     RETURN tenant_uuid;
 END;
+$$;
+
+-- Returns all lease IDs for the current tenant (SECURITY DEFINER — bypasses RLS on lease_agreements)
+CREATE OR REPLACE FUNCTION public.get_tenant_lease_ids()
+RETURNS uuid[]
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = ''
+AS $$
+    SELECT COALESCE(
+        array_agg(id),
+        ARRAY[]::uuid[]
+    )
+    FROM public.lease_agreements
+    WHERE tenant_id = (
+        SELECT id FROM public.tenants WHERE user_id = auth.uid()
+    );
+$$;
+
+-- Returns property IDs from active leases for the current tenant (SECURITY DEFINER — bypasses RLS on lease_agreements)
+CREATE OR REPLACE FUNCTION public.get_tenant_visible_property_ids()
+RETURNS uuid[]
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = ''
+AS $$
+    SELECT COALESCE(
+        array_agg(property_id),
+        ARRAY[]::uuid[]
+    )
+    FROM public.lease_agreements
+    WHERE tenant_id = (
+        SELECT id FROM public.tenants WHERE user_id = auth.uid()
+    )
+    AND lease_status = 'active';
 $$;
 
 -- ================================================
@@ -123,23 +213,20 @@ CREATE POLICY "Admins can delete roles"
 -- STEP 4: PROPERTIES POLICIES
 -- ================================================
 
--- Consolidated SELECT policy for all authenticated users
-CREATE POLICY "Authenticated users can read properties"
+-- Policy for landlords and admins: see all properties (no subquery on lease_agreements)
+CREATE POLICY "Landlords can read all properties"
     ON public.properties
     FOR SELECT
     TO authenticated
-    USING (
-        -- Landlords see all properties
-        is_landlord()
-        OR
-        -- Tenants see properties they are currently leasing
-        id IN (
-            SELECT property_id 
-            FROM public.lease_agreements 
-            WHERE tenant_id = get_current_tenant_id() 
-            AND lease_status = 'active'
-        )
-    );
+    USING (is_landlord());
+
+-- Policy for tenants: see properties they are currently leasing
+-- Uses SECURITY DEFINER wrapper to avoid permission errors on lease_agreements
+CREATE POLICY "Tenants can read their leased properties"
+    ON public.properties
+    FOR SELECT
+    TO authenticated
+    USING (id = ANY(get_tenant_visible_property_ids()));
 
 -- Landlords can insert properties
 CREATE POLICY "Landlords can insert properties"
@@ -261,27 +348,11 @@ CREATE POLICY "Authenticated users can read attachments"
     FOR SELECT
     TO authenticated
     USING (
-        -- Landlords see all attachments
         is_landlord()
         OR
-        -- Tenants see lease attachments
-        (
-            related_to_type = 'lease' AND
-            related_to_id IN (
-                SELECT id FROM public.lease_agreements 
-                WHERE tenant_id = get_current_tenant_id()
-            )
-        )
+        (related_to_type = 'lease' AND related_to_id = ANY(get_tenant_lease_ids()))
         OR
-        -- Tenants see property attachments for their leased properties
-        (
-            related_to_type = 'property' AND
-            related_to_id IN (
-                SELECT property_id FROM public.lease_agreements 
-                WHERE tenant_id = get_current_tenant_id() 
-                AND lease_status = 'active'
-            )
-        )
+        (related_to_type = 'property' AND related_to_id = ANY(get_tenant_visible_property_ids()))
     );
 
 -- Landlords can insert attachments
@@ -316,21 +387,11 @@ CREATE POLICY "Authenticated users can read transactions"
     FOR SELECT
     TO authenticated
     USING (
-        -- Landlords see all transactions
         is_landlord()
         OR
-        -- Tenants see transactions related to their leases
-        (lease_id IN (
-            SELECT id FROM public.lease_agreements 
-            WHERE tenant_id = get_current_tenant_id()
-        ))
+        (lease_id = ANY(get_tenant_lease_ids()))
         OR
-        -- Tenants see property-level transactions for their leased properties
-        (lease_id IS NULL AND property_id IN (
-            SELECT property_id FROM public.lease_agreements 
-            WHERE tenant_id = get_current_tenant_id() 
-            AND lease_status = 'active'
-        ))
+        (lease_id IS NULL AND property_id = ANY(get_tenant_visible_property_ids()))
     );
 
 -- Landlords can insert transactions
@@ -354,3 +415,29 @@ CREATE POLICY "Landlords can delete transactions"
     FOR DELETE
     TO authenticated
     USING (is_landlord());
+
+-- ================================================
+-- STEP 9: TABLE PRIVILEGES (GRANTS)
+-- ================================================
+-- DML privileges for PostgREST (authenticated / anon roles).
+-- RLS policies still enforce row-level access — these grants only
+-- allow PostgREST to attempt the query; RLS decides which rows are visible.
+
+-- ── Domain tables: full DML for authenticated ──────
+-- anon is granted alongside authenticated for consistency with Supabase
+-- defaults; all RLS policies are TO authenticated, so anon sees no rows.
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON public.properties,
+           public.tenants,
+           public.lease_agreements,
+           public.attachments,
+           public.transactions
+    TO authenticated, anon;
+
+-- ── user_roles: DML for authenticated only ─────────
+-- anon is explicitly revoked above; authenticated needs DML for admin
+-- role management via API.
+GRANT SELECT, INSERT, UPDATE, DELETE
+    ON public.user_roles
+    TO authenticated;
+

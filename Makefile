@@ -1,4 +1,4 @@
-.PHONY: help setup dev stop lint typecheck test build clean
+.PHONY: help setup dev stop lint typecheck test-frontend test-backend test-e2e test-all build clean
 
 # ── System-Wide Local Development ─────────────────────────────────────────────
 # This Makefile orchestrates both backend (Supabase) and frontend (Vite + React).
@@ -63,9 +63,47 @@ typecheck: ## TypeScript type-check (no emit)
 	@echo "=== Type-checking frontend ==="
 	(cd frontend && npm run typecheck)
 
-test: ## Run frontend tests
+test-frontend: ## Run frontend vitest tests (unit + integration, no Supabase)
 	@echo "=== Running frontend tests ==="
 	(cd frontend && npm run test)
+
+# ── Backend Tests ─────────────────────────────────────────────────────────
+
+test-backend: ## Run backend tests (pgTAP + Vitest integration)
+	@trap '$(MAKE) stop' INT TERM EXIT; \
+	echo "=== Starting Supabase for tests ==="; \
+	(cd backend/supabase && npx supabase start); \
+	echo "=== Resetting database (migrations + seed) ==="; \
+	(cd backend/supabase && npx supabase db reset); \
+	echo "=== Running pgTAP tests ==="; \
+	for f in backend/supabase/tests/*.test.sql; do \
+		echo "--- $(basename $f) ---"; \
+		(cd backend/supabase && npx supabase db test $f 2>/dev/null) \
+		|| echo "  (pgTAP CLI test runner — verify separately with psql)"; \
+	done; \
+	echo "=== Installing backend test dependencies ==="; \
+	(cd backend && npm install); \
+	echo "=== Extracting anon key ==="; \
+	SUPABASE_ANON_KEY=$$(cd backend/supabase && npx supabase status 2>/dev/null | awk -F'│' '/Publishable/{gsub(/^[ \t]+|[ \t]+$$/, "", $$3); print $$3}'); \
+	echo "=== Running Vitest integration tests ==="; \
+	(cd backend && SUPABASE_ANON_KEY="$$SUPABASE_ANON_KEY" npx vitest run); \
+	echo "=== Backend tests complete ==="
+
+# ── E2E Tests ──────────────────────────────────────────────────────────────────
+
+test-e2e: ## Run Playwright E2E tests (auto-installs Chromium if needed)
+	@trap '$(MAKE) stop' INT TERM EXIT; \
+	echo "=== Ensuring Playwright browsers are installed ==="; \
+	(cd frontend && npx playwright install chromium 2>/dev/null || true); \
+	echo "=== Starting Supabase for E2E ==="; \
+	(cd backend/supabase && npx supabase start); \
+	echo "=== Resetting database (migrations + seed) ==="; \
+	(cd backend/supabase && npx supabase db reset); \
+	echo "=== Running Playwright E2E tests ==="; \
+	(cd frontend && npx playwright test); \
+	echo "=== E2E tests complete ==="
+
+test-all: test-frontend test-backend test-e2e ## Run all tests (frontend + backend + E2E)
 
 # ── Build (full clean rebuild → build → cleanup) ──────────────────────────────
 

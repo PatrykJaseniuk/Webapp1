@@ -104,3 +104,17 @@ SELECT
 FROM public.properties p
 LEFT JOIN public.transactions tr ON p.id = tr.property_id
 GROUP BY p.id;
+
+-- ================================================
+-- VIEW PRIVILEGES (GRANTS)
+-- ================================================
+-- Views are security_invoker = true, so RLS policies of the
+-- querying user apply. Grant SELECT to authenticated / anon so
+-- PostgREST can attempt the query; RLS decides which rows are visible.
+GRANT SELECT
+    ON public.active_leases,
+           public.property_occupancy,
+           public.unpaid_transactions_summary,
+           public.property_financial_summary
+    TO authenticated, anon;
+

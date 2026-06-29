@@ -13,6 +13,8 @@ import { ErrorPage } from "@/pages/ErrorPage";
 import { AdminLayoutPage } from "@/pages/AdminLayoutPage";
 import { LandlordLayoutPage } from "@/pages/LandlordLayoutPage";
 import { TenantLayoutPage } from "@/pages/TenantLayoutPage";
+import { PropertiesListPage } from "@/pages/PropertiesListPage";
+import { PropertiesFormPage } from "@/pages/PropertiesFormPage";
 import { createHashRouter, Navigate } from "react-router-dom";
 
 export const router = createHashRouter([
@@ -32,6 +34,23 @@ export const router = createHashRouter([
             index: true,
             Component: AdminDashboardPage,
           },
+          {
+            path: 'properties',
+            children: [
+              {
+                index: true,
+                Component: PropertiesListPage,
+              },
+              {
+                path: 'new',
+                Component: PropertiesFormPage,
+              },
+              {
+                path: ':id',
+                Component: PropertiesFormPage,
+              },
+            ],
+          },
         ],
       },
       {
@@ -41,6 +60,23 @@ export const router = createHashRouter([
           {
             index: true,
             Component: LandlordDashboardPage,
+          },
+          {
+            path: 'properties',
+            children: [
+              {
+                index: true,
+                Component: PropertiesListPage,
+              },
+              {
+                path: 'new',
+                Component: PropertiesFormPage,
+              },
+              {
+                path: ':id',
+                Component: PropertiesFormPage,
+              },
+            ],
           },
         ],
       },

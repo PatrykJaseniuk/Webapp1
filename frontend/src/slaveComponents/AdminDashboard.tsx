@@ -9,7 +9,7 @@ export const AdminDashboard = (): JSX.Element => (
     <p className="text-gray-500">System zarządzania najmem</p>
     <div className="mt-8 grid gap-4 sm:grid-cols-2">
       <NavLink
-        to="/"
+        to="/admin/properties"
         className={dashboardCardClass}
       >
         <p className="text-lg font-semibold text-gray-800">Nieruchomości</p>
@@ -18,7 +18,7 @@ export const AdminDashboard = (): JSX.Element => (
         </p>
       </NavLink>
       <NavLink
-        to="/"
+        to="/admin/tenants"
         className={dashboardCardClass}
       >
         <p className="text-lg font-semibold text-gray-800">Najemcy</p>

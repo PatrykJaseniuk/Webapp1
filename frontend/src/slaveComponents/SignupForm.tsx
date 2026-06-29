@@ -1,6 +1,13 @@
 import type { FormEvent } from 'react';
 import type { SignupFormProps, SignupInput } from '@/masterComponents/Signup';
 
+export const extractSignupInput = (formData: FormData): SignupInput => ({
+  email: (formData.get('email') as string) ?? '',
+  password: (formData.get('password') as string) ?? '',
+  firstName: (formData.get('firstName') as string) ?? '',
+  lastName: (formData.get('lastName') as string) ?? '',
+});
+
 const inputClass =
   'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
 
@@ -16,15 +23,8 @@ export const SignupForm = ({
 }: SignupFormProps): JSX.Element => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    const form = e.currentTarget;
-    const formData = new FormData(form);
-    const input: SignupInput = {
-      email: (formData.get('email') as string) ?? '',
-      password: (formData.get('password') as string) ?? '',
-      firstName: (formData.get('firstName') as string) ?? '',
-      lastName: (formData.get('lastName') as string) ?? '',
-    };
-    onSubmit(input);
+    const formData = new FormData(e.currentTarget);
+    onSubmit(extractSignupInput(formData));
   };
 
   return (
