@@ -50,7 +50,7 @@ CREATE TABLE public.properties (
     bedrooms integer,
     monthly_rent decimal(10,2) NOT NULL,
     deposit_amount decimal(10,2) NOT NULL,
-    property_status public.property_status NOT NULL DEFAULT 'available',
+    property_status public.property_status NOT NULL ,
     notes text,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),

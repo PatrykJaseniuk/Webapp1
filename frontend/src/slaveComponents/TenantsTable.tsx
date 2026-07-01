@@ -1,7 +1,5 @@
 import { match } from 'ts-pattern';
-import type { Database } from '@/backendConnector';
-
-type TenantRow = Database['public']['Tables']['tenants']['Row'];
+import type { TenantRow } from '@/masterComponents/TenantsMany';
 
 type StatusLabelMap = Readonly<Record<TenantRow['tenant_status'], string>>;
 

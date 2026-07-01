@@ -1,29 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { toInput, emptyInput, TYPE_OPTIONS, STATUS_OPTIONS } from './PropertiesFormFields';
-import type { Database } from '@/backendConnector';
-
-type PropertyRow = Database['public']['Tables']['properties']['Row'];
-
-// ──────────────────────────────────────────────────────────────
-// Test helpers — construct a minimal PropertyRow
-// ──────────────────────────────────────────────────────────────
-
-const makeRow = (overrides?: Partial<PropertyRow>): PropertyRow => ({
-  id: 'prop-1',
-  name: 'Test Property',
-  address: 'ul. Testowa 1',
-  property_type: 'apartment',
-  property_status: 'available',
-  monthly_rent: 2000,
-  deposit_amount: 4000,
-  size_sqm: 50.5,
-  bedrooms: 2,
-  notes: null,
-  created_at: '2025-01-01T00:00:00Z',
-  updated_at: '2025-01-01T00:00:00Z',
-  created_by: 'user-1',
-  ...overrides,
-});
+import { TYPE_OPTIONS, STATUS_OPTIONS, extractPropertyInput } from './PropertiesFormFields';
+import { emptyInput } from '@/masterComponents/PropertiesSingle';
 
 // ──────────────────────────────────────────────────────────────
 // emptyInput
@@ -68,81 +45,6 @@ describe('emptyInput', () => {
 
   it('is frozen (immutable)', () => {
     expect(Object.isFrozen(emptyInput)).toBe(true);
-  });
-});
-
-// ──────────────────────────────────────────────────────────────
-// toInput
-// ──────────────────────────────────────────────────────────────
-
-describe('toInput', () => {
-  it('maps name from row', () => {
-    const row = makeRow({ name: 'Mieszkanie Centrum' });
-    expect(toInput(row).name).toBe('Mieszkanie Centrum');
-  });
-
-  it('maps address from row', () => {
-    const row = makeRow({ address: 'Rynek 5' });
-    expect(toInput(row).address).toBe('Rynek 5');
-  });
-
-  it('maps property_type from row', () => {
-    const row = makeRow({ property_type: 'house' });
-    expect(toInput(row).property_type).toBe('house');
-  });
-
-  it('maps property_status from row', () => {
-    const row = makeRow({ property_status: 'occupied' });
-    expect(toInput(row).property_status).toBe('occupied');
-  });
-
-  it('maps monthly_rent from row', () => {
-    const row = makeRow({ monthly_rent: 3500 });
-    expect(toInput(row).monthly_rent).toBe(3500);
-  });
-
-  it('maps deposit_amount from row', () => {
-    const row = makeRow({ deposit_amount: 7000 });
-    expect(toInput(row).deposit_amount).toBe(7000);
-  });
-
-  it('maps size_sqm from row (non-null)', () => {
-    const row = makeRow({ size_sqm: 75.25 });
-    expect(toInput(row).size_sqm).toBe(75.25);
-  });
-
-  it('maps size_sqm as null when row has null', () => {
-    const row = makeRow({ size_sqm: null });
-    expect(toInput(row).size_sqm).toBeNull();
-  });
-
-  it('maps bedrooms from row (non-null)', () => {
-    const row = makeRow({ bedrooms: 3 });
-    expect(toInput(row).bedrooms).toBe(3);
-  });
-
-  it('maps bedrooms as null when row has null', () => {
-    const row = makeRow({ bedrooms: null });
-    expect(toInput(row).bedrooms).toBeNull();
-  });
-
-  it('maps notes from row', () => {
-    const row = makeRow({ notes: 'close to metro' });
-    expect(toInput(row).notes).toBe('close to metro');
-  });
-
-  it('maps notes as null when row has null', () => {
-    const row = makeRow({ notes: null });
-    expect(toInput(row).notes).toBeNull();
-  });
-
-  it('does not include created_at, updated_at, created_by, id', () => {
-    const row = makeRow();
-    const input = toInput(row);
-    expect('created_at' in input).toBe(false);
-    expect('updated_at' in input).toBe(false);
-    expect('created_by' in input).toBe(false);
-    expect('id' in input).toBe(false);
   });
 });
 
@@ -199,5 +101,81 @@ describe('STATUS_OPTIONS', () => {
 
   it('is frozen', () => {
     expect(Object.isFrozen(STATUS_OPTIONS)).toBe(true);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────
+// extractPropertyInput
+// ──────────────────────────────────────────────────────────────
+
+describe('extractPropertyInput', () => {
+  it('extracts name from FormData', () => {
+    const fd = new FormData();
+    fd.set('name', 'Test');
+    expect(extractPropertyInput(fd).name).toBe('Test');
+  });
+
+  it('extracts address from FormData', () => {
+    const fd = new FormData();
+    fd.set('address', 'ul. Nowa 1');
+    expect(extractPropertyInput(fd).address).toBe('ul. Nowa 1');
+  });
+
+  it('defaults name to empty string when missing', () => {
+    expect(extractPropertyInput(new FormData()).name).toBe('');
+  });
+
+  it('defaults property_type to apartment when missing', () => {
+    expect(extractPropertyInput(new FormData()).property_type).toBe('apartment');
+  });
+
+  it('defaults property_status to available when missing', () => {
+    expect(extractPropertyInput(new FormData()).property_status).toBe('available');
+  });
+
+  it('parses monthly_rent as float', () => {
+    const fd = new FormData();
+    fd.set('monthly_rent', '1234.56');
+    expect(extractPropertyInput(fd).monthly_rent).toBe(1234.56);
+  });
+
+  it('defaults monthly_rent to 0 when missing', () => {
+    expect(extractPropertyInput(new FormData()).monthly_rent).toBe(0);
+  });
+
+  it('defaults monthly_rent to 0 for invalid input', () => {
+    const fd = new FormData();
+    fd.set('monthly_rent', 'abc');
+    expect(extractPropertyInput(fd).monthly_rent).toBe(0);
+  });
+
+  it('returns null for size_sqm when empty', () => {
+    expect(extractPropertyInput(new FormData()).size_sqm).toBeNull();
+  });
+
+  it('returns null for bedrooms when empty', () => {
+    expect(extractPropertyInput(new FormData()).bedrooms).toBeNull();
+  });
+
+  it('returns null for notes when empty', () => {
+    expect(extractPropertyInput(new FormData()).notes).toBeNull();
+  });
+
+  it('parses size_sqm as float', () => {
+    const fd = new FormData();
+    fd.set('size_sqm', '42.5');
+    expect(extractPropertyInput(fd).size_sqm).toBe(42.5);
+  });
+
+  it('parses bedrooms as int', () => {
+    const fd = new FormData();
+    fd.set('bedrooms', '3');
+    expect(extractPropertyInput(fd).bedrooms).toBe(3);
+  });
+
+  it('extracts notes from FormData', () => {
+    const fd = new FormData();
+    fd.set('notes', 'some note');
+    expect(extractPropertyInput(fd).notes).toBe('some note');
   });
 });

@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 
-type TenantRow = Database['public']['Tables']['tenants']['Row'];
+export type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
 type TableProps = {
   readonly tenants: readonly TenantRow[];
@@ -33,7 +33,7 @@ export const TenantsMany = ({
       .select('*')
       .order('last_name')
       .order('first_name');
-    return dbError !== null ? data ?? [] : data;
+    return dbError !== null ? [] : data;
   }, [reloadKey]);
 
   const handleDelete = useCallback(

@@ -54,3 +54,14 @@ export type AsyncState<T> =
   | { readonly tag: 'loading' }
   | { readonly tag: 'success'; readonly data: T }
   | { readonly tag: 'error'; readonly error: AppError };
+
+// ──────────────────────────────────────────────
+// Slave component props
+// ──────────────────────────────────────────────
+
+/** Shared props contract for slaves that receive async-fetched data. */
+export type SlaveAsyncProps<T> = {
+  readonly data: T;
+  readonly isLoading: boolean;
+  readonly error: string | null;
+};

@@ -173,7 +173,7 @@ export type Database = {
           monthly_rent: number
           name: string
           notes?: string | null
-          property_status?: Database["public"]["Enums"]["property_status"]
+          property_status: Database["public"]["Enums"]["property_status"]
           property_type: Database["public"]["Enums"]["property_type"]
           size_sqm?: number | null
           updated_at?: string | null

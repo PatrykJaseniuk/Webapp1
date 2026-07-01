@@ -18,6 +18,8 @@ import { TenantsListPage } from "@/pages/TenantsListPage";
 import { TenantsFormPage } from "@/pages/TenantsFormPage";
 import { createHashRouter, Navigate } from "react-router-dom";
 
+
+
 export const router = createHashRouter(
   [
     {

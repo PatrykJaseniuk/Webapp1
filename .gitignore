@@ -32,3 +32,4 @@ doc/Supabase/
 *storybook.log
 storybook-static
 .lighthouseci/
+test-results/

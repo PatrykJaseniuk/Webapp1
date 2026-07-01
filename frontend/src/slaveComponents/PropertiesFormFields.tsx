@@ -1,46 +1,19 @@
-import { useState } from 'react';
-import { match } from 'ts-pattern';
-import { useNavigate } from 'react-router-dom';
-import type { Database } from '@/backendConnector';
-import { FormState, formEditing, formSubmitting, formError, setField } from '@/generic/form';
+import type { FormEvent } from 'react';
+import type { FormProps } from '@/masterComponents/PropertiesSingle';
 
-type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
-type PropertyRow = Database['public']['Tables']['properties']['Row'];
-type PropertyType = Database['public']['Enums']['property_type'];
-type PropertyStatus = Database['public']['Enums']['property_status'];
-
-type PropertyInput = Readonly<Omit<PropertyInsert, 'created_at' | 'updated_at' | 'created_by'>>;
-
-type Props = {
-  readonly initial?: PropertyRow;
-  readonly onSave: (data: PropertyInput) => Promise<Readonly<{ error?: string }>>;
-};
-
-export const emptyInput: PropertyInput = Object.freeze({
-  name: '',
-  address: '',
-  property_type: 'apartment' as PropertyType,
-  property_status: 'available' as PropertyStatus,
-  monthly_rent: 0,
-  deposit_amount: 0,
-  size_sqm: null,
-  bedrooms: null,
-  notes: null,
+export const extractPropertyInput = (formData: FormData): FormProps['data'] => ({
+  name: (formData.get('name') as string) ?? '',
+  address: (formData.get('address') as string) ?? '',
+  property_type: (formData.get('property_type') as FormProps['data']['property_type']) ?? 'apartment',
+  property_status: (formData.get('property_status') as FormProps['data']['property_status']) ?? 'available',
+  monthly_rent: parseFloat((formData.get('monthly_rent') as string) ?? '0') || 0,
+  deposit_amount: parseFloat((formData.get('deposit_amount') as string) ?? '0') || 0,
+  size_sqm: formData.get('size_sqm') ? parseFloat(formData.get('size_sqm') as string) : null,
+  bedrooms: formData.get('bedrooms') ? parseInt(formData.get('bedrooms') as string, 10) : null,
+  notes: (formData.get('notes') as string) || null,
 });
 
-export const toInput = (row: PropertyRow): PropertyInput => ({
-  name: row.name,
-  address: row.address,
-  property_type: row.property_type,
-  property_status: row.property_status,
-  monthly_rent: row.monthly_rent,
-  deposit_amount: row.deposit_amount,
-  size_sqm: row.size_sqm,
-  bedrooms: row.bedrooms,
-  notes: row.notes,
-});
-
-export type TypeLabelMap = Readonly<Record<PropertyType, string>>;
+export type TypeLabelMap = Readonly<Record<FormProps['data']['property_type'], string>>;
 
 export const TYPE_OPTIONS: TypeLabelMap = Object.freeze({
   apartment: 'Mieszkanie',
@@ -49,7 +22,7 @@ export const TYPE_OPTIONS: TypeLabelMap = Object.freeze({
   room: 'Pokój',
 });
 
-export type StatusLabelMap = Readonly<Record<PropertyStatus, string>>;
+export type StatusLabelMap = Readonly<Record<FormProps['data']['property_status'], string>>;
 
 export const STATUS_OPTIONS: StatusLabelMap = Object.freeze({
   available: 'Dostępna',
@@ -59,55 +32,35 @@ export const STATUS_OPTIONS: StatusLabelMap = Object.freeze({
 
 const inputClass = 'w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const labelClass = 'mb-1 block text-sm font-medium text-gray-700';
-const errorClass = 'mt-1 text-xs text-red-600';
 
-export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element => {
-  const navigate = useNavigate();
-  const [form, setForm] = useState<FormState<PropertyInput>>(
-    initial !== undefined ? formEditing(toInput(initial)) : formEditing(emptyInput),
-  );
-
-  const handleSubmit = (e: React.FormEvent): void => {
+export const PropertiesFormFields = ({
+  data: defaults,
+  isEditing,
+  onSubmit,
+  isLoading,
+  error,
+  onCancel,
+}: FormProps): JSX.Element => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    match(form)
-      .with({ tag: 'editing' }, ({ data }) => {
-        setForm(formSubmitting(data));
-        onSave(data).then((result) => {
-          result.error !== undefined ?
-            setForm(formError(data, result.error)) :
-            navigate(-1);
-        });
-      })
-      .otherwise(() => { /* ignore — already submitting or submitted */ });
-  };
-
-  const handleCancel = (): void => {
-    navigate(-1);
+    onSubmit(extractPropertyInput(new FormData(e.currentTarget)));
   };
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-gray-900">
-        {initial !== undefined ? 'Edytuj nieruchomość' : 'Nowa nieruchomość'}
+        {isEditing ? 'Edytuj nieruchomość' : 'Nowa nieruchomość'}
       </h2>
 
       <div>
         <label htmlFor="field-name" className={labelClass}>Nazwa</label>
         <input
           id="field-name"
+          name="name"
           className={inputClass}
           type="text"
           required
-          value={
-            form.tag === 'idle' ? '' : form.data.name
-          }
-          onChange={(e) => {
-            match(form)
-              .with({ tag: 'editing' }, ({ data }) => {
-                setForm(formEditing(setField(data, 'name', e.target.value)));
-              })
-              .otherwise(() => {});
-          }}
+          defaultValue={defaults.name}
         />
       </div>
 
@@ -115,19 +68,11 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
         <label htmlFor="field-address" className={labelClass}>Adres</label>
         <input
           id="field-address"
+          name="address"
           className={inputClass}
           type="text"
           required
-          value={
-            form.tag === 'idle' ? '' : form.data.address
-          }
-          onChange={(e) => {
-            match(form)
-              .with({ tag: 'editing' }, ({ data }) => {
-                setForm(formEditing(setField(data, 'address', e.target.value)));
-              })
-              .otherwise(() => {});
-          }}
+          defaultValue={defaults.address}
         />
       </div>
 
@@ -136,17 +81,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
           <label htmlFor="field-type" className={labelClass}>Typ</label>
           <select
             id="field-type"
+            name="property_type"
             className={inputClass}
-            value={
-              form.tag === 'idle' ? 'apartment' : form.data.property_type
-            }
-            onChange={(e) => {
-              match(form)
-                .with({ tag: 'editing' }, ({ data }) => {
-                  setForm(formEditing(setField(data, 'property_type', e.target.value as PropertyType)));
-                })
-                .otherwise(() => {});
-            }}
+            defaultValue={defaults.property_type}
           >
             {Object.entries(TYPE_OPTIONS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -158,17 +95,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
           <label htmlFor="field-status" className={labelClass}>Status</label>
           <select
             id="field-status"
+            name="property_status"
             className={inputClass}
-            value={
-              form.tag === 'idle' ? 'available' : form.data.property_status
-            }
-            onChange={(e) => {
-              match(form)
-                .with({ tag: 'editing' }, ({ data }) => {
-                  setForm(formEditing(setField(data, 'property_status', e.target.value as PropertyStatus)));
-                })
-                .otherwise(() => {});
-            }}
+            defaultValue={defaults.property_status}
           >
             {Object.entries(STATUS_OPTIONS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -182,21 +111,13 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
           <label htmlFor="field-monthly_rent" className={labelClass}>Czynsz miesięczny (zł)</label>
           <input
             id="field-monthly_rent"
+            name="monthly_rent"
             className={inputClass}
             type="number"
             min="0"
             step="0.01"
             required
-            value={
-              form.tag === 'idle' ? 0 : form.data.monthly_rent
-            }
-            onChange={(e) => {
-              match(form)
-                .with({ tag: 'editing' }, ({ data }) => {
-                  setForm(formEditing(setField(data, 'monthly_rent', parseFloat(e.target.value) || 0)));
-                })
-                .otherwise(() => {});
-            }}
+            defaultValue={defaults.monthly_rent}
           />
         </div>
 
@@ -204,21 +125,13 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
           <label htmlFor="field-deposit_amount" className={labelClass}>Kaucja (zł)</label>
           <input
             id="field-deposit_amount"
+            name="deposit_amount"
             className={inputClass}
             type="number"
             min="0"
             step="0.01"
             required
-            value={
-              form.tag === 'idle' ? 0 : form.data.deposit_amount
-            }
-            onChange={(e) => {
-              match(form)
-                .with({ tag: 'editing' }, ({ data }) => {
-                  setForm(formEditing(setField(data, 'deposit_amount', parseFloat(e.target.value) || 0)));
-                })
-                .otherwise(() => {});
-            }}
+            defaultValue={defaults.deposit_amount}
           />
         </div>
       </div>
@@ -228,21 +141,12 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
           <label htmlFor="field-size_sqm" className={labelClass}>Powierzchnia (m²)</label>
           <input
             id="field-size_sqm"
+            name="size_sqm"
             className={inputClass}
             type="number"
             min="0"
             step="0.01"
-            value={
-              form.tag === 'idle' ? '' : form.data.size_sqm ?? ''
-            }
-            onChange={(e) => {
-              match(form)
-                .with({ tag: 'editing' }, ({ data }) => {
-                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                  setForm(formEditing(setField(data, 'size_sqm', val)));
-                })
-                .otherwise(() => {});
-            }}
+            defaultValue={defaults.size_sqm ?? ''}
           />
         </div>
 
@@ -250,20 +154,11 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
           <label htmlFor="field-bedrooms" className={labelClass}>Sypialnie</label>
           <input
             id="field-bedrooms"
+            name="bedrooms"
             className={inputClass}
             type="number"
             min="0"
-            value={
-              form.tag === 'idle' ? '' : form.data.bedrooms ?? ''
-            }
-            onChange={(e) => {
-              match(form)
-                .with({ tag: 'editing' }, ({ data }) => {
-                  const val = e.target.value === '' ? null : parseInt(e.target.value, 10);
-                  setForm(formEditing(setField(data, 'bedrooms', val)));
-                })
-                .otherwise(() => {});
-            }}
+            defaultValue={defaults.bedrooms ?? ''}
           />
         </div>
       </div>
@@ -272,42 +167,31 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
         <label htmlFor="field-notes" className={labelClass}>Notatki</label>
         <textarea
           id="field-notes"
+          name="notes"
           className={inputClass}
           rows={3}
-          value={
-            form.tag === 'idle' ? '' : form.data.notes ?? ''
-          }
-          onChange={(e) => {
-            match(form)
-              .with({ tag: 'editing' }, ({ data }) => {
-                const val = e.target.value === '' ? null : e.target.value;
-                setForm(formEditing(setField(data, 'notes', val)));
-              })
-              .otherwise(() => {});
-          }}
+          defaultValue={defaults.notes ?? ''}
         />
       </div>
 
-      {
-        form.tag === 'error' ?
-          <p className={errorClass}>{form.message}</p> :
-          undefined
-      }
+      {error !== null ?
+        <p className="mt-1 text-xs text-red-600">{error}</p> :
+        undefined}
 
       <div className="flex justify-end gap-3 pt-2">
         <button
           type="button"
-          onClick={handleCancel}
+          onClick={onCancel}
           className="rounded border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           Anuluj
         </button>
         <button
           type="submit"
-          disabled={form.tag === 'submitting'}
+          disabled={isLoading}
           className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {form.tag === 'submitting' ? 'Zapisywanie...' : 'Zapisz'}
+          {isLoading ? 'Zapisywanie...' : 'Zapisz'}
         </button>
       </div>
     </form>

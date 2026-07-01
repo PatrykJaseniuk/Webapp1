@@ -17,6 +17,7 @@ export type {
   AppError,
   AsyncState,
   NavItem,
+  SlaveAsyncProps,
 } from './utils';
 
 export { ok, err } from './utils';
