@@ -51,6 +51,7 @@ export default defineConfig({
       })],
       test: {
         name: 'storybook',
+        reporters: ['verbose'],
         browser: {
           enabled: true,
           headless: true,

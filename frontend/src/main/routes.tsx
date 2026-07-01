@@ -1,4 +1,3 @@
-
 // ══════════════════════════════════════════════════════════════
 // ROUTE_TREE — single source of truth
 // ══════════════════════════════════════════════════════════════
@@ -15,6 +14,8 @@ import { LandlordLayoutPage } from "@/pages/LandlordLayoutPage";
 import { TenantLayoutPage } from "@/pages/TenantLayoutPage";
 import { PropertiesListPage } from "@/pages/PropertiesListPage";
 import { PropertiesFormPage } from "@/pages/PropertiesFormPage";
+import { TenantsListPage } from "@/pages/TenantsListPage";
+import { TenantsFormPage } from "@/pages/TenantsFormPage";
 import { createHashRouter, Navigate } from "react-router-dom";
 
 export const router = createHashRouter(
@@ -52,6 +53,23 @@ export const router = createHashRouter(
                 },
               ],
             },
+            {
+              path: 'tenants',
+              children: [
+                {
+                  index: true,
+                  Component: TenantsListPage,
+                },
+                {
+                  path: 'new',
+                  Component: TenantsFormPage,
+                },
+                {
+                  path: ':id',
+                  Component: TenantsFormPage,
+                },
+              ],
+            },
           ],
         },
         {
@@ -76,6 +94,23 @@ export const router = createHashRouter(
                 {
                   path: ':id',
                   Component: PropertiesFormPage,
+                },
+              ],
+            },
+            {
+              path: 'tenants',
+              children: [
+                {
+                  index: true,
+                  Component: TenantsListPage,
+                },
+                {
+                  path: 'new',
+                  Component: TenantsFormPage,
+                },
+                {
+                  path: ':id',
+                  Component: TenantsFormPage,
                 },
               ],
             },
@@ -108,9 +143,7 @@ export const router = createHashRouter(
   ],
   {
     future: {
-      v7_startTransition: true,
       v7_relativeSplatPath: true,
     },
   },
 );
-
