@@ -9,18 +9,21 @@ type PropertyRow = Database['public']['Tables']['properties']['Row'];
 type TableProps = {
   readonly properties: readonly PropertyRow[];
   readonly onDelete: (id: string) => void;
+  readonly getEditUrl: (id: string) => string;
 };
 
 type Props = {
   readonly TableComponent: ComponentType<TableProps>;
   readonly LoadingComponent: JSX.Element;
   readonly ErrorComponent: ComponentType<{ readonly message: string; readonly onRetry: () => void }>;
+  readonly getEditUrl: (id: string) => string;
 };
 
 export const PropertiesMany = ({
   TableComponent,
   LoadingComponent,
   ErrorComponent,
+  getEditUrl,
 }: Props): JSX.Element => {
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -29,7 +32,7 @@ export const PropertiesMany = ({
       .from('properties')
       .select('*')
       .order('name');
-    return dbError !== null ? Promise.reject(dbError) : data;
+    return dbError !== null ? data ?? [] : data;
   }, [reloadKey]);
 
   const handleDelete = useCallback(
@@ -53,5 +56,5 @@ export const PropertiesMany = ({
     LoadingComponent :
     error !== undefined ?
       <ErrorComponent message={error.message} onRetry={handleRetry} /> :
-      <TableComponent properties={value ?? []} onDelete={handleDelete} />;
+      <TableComponent properties={value ?? []} onDelete={handleDelete} getEditUrl={getEditUrl} />;
 };

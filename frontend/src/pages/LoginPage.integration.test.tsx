@@ -51,7 +51,7 @@ describe('LoginPage (integration)', () => {
 
   it('renders the login form for unauthenticated users', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>,
     );
@@ -64,7 +64,7 @@ describe('LoginPage (integration)', () => {
 
   it('renders the signup link', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>,
     );
@@ -78,7 +78,7 @@ describe('LoginPage (integration)', () => {
     mockSignInWithPassword.mockResolvedValue({ data: {}, error: null });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>,
     );
@@ -103,7 +103,7 @@ describe('LoginPage (integration)', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>,
     );
@@ -125,7 +125,7 @@ describe('LoginPage (integration)', () => {
     );
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>,
     );
@@ -145,7 +145,7 @@ describe('LoginPage (integration)', () => {
     mockUseAuth.mockReturnValue({ tag: 'loading' });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <LoginPage />
       </MemoryRouter>,
     );

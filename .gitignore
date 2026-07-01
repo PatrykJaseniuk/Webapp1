@@ -22,3 +22,6 @@ Thumbs.db
 # Documentation directories with sensitive content
 doc/Next/
 doc/Supabase/
+
+*storybook.log
+storybook-static

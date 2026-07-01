@@ -23,9 +23,10 @@ export const TYPE_LABEL: TypeLabelMap = Object.freeze({
 type Props = {
   readonly properties: readonly PropertyRow[];
   readonly onDelete: (id: string) => void;
+  readonly getEditUrl: (id: string) => string;
 };
 
-export const PropertiesTable = ({ properties, onDelete }: Props): JSX.Element =>
+export const PropertiesTable = ({ properties, onDelete, getEditUrl }: Props): JSX.Element =>
   match(properties.length)
     .with(0, () => (
       <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p>
@@ -56,7 +57,7 @@ export const PropertiesTable = ({ properties, onDelete }: Props): JSX.Element =>
                 <td className="py-3 text-right">
                   <div className="flex justify-end gap-2">
                     <a
-                      href={`#/properties/${p.id}`}
+                      href={getEditUrl(p.id)}
                       className="rounded px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50"
                     >
                       Edytuj

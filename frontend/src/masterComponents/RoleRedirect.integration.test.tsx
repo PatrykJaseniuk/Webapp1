@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RoleRedirect } from './RoleRedirect';
-import type { AuthState, AppRole } from '@/hooks/AuthContext';
+import type { AuthState } from '@/hooks/AuthContext';
 
 // ──────────────────────────────────────────────────────────────
 // Mock useAuth
@@ -31,7 +31,7 @@ describe('RoleRedirect (integration)', () => {
     mockUseAuth.mockReturnValue({ tag: 'loading' });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
@@ -46,7 +46,7 @@ describe('RoleRedirect (integration)', () => {
     mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
@@ -65,7 +65,7 @@ describe('RoleRedirect (integration)', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
@@ -85,7 +85,7 @@ describe('RoleRedirect (integration)', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
@@ -104,7 +104,7 @@ describe('RoleRedirect (integration)', () => {
     });
 
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>

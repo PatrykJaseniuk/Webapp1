@@ -17,92 +17,100 @@ import { PropertiesListPage } from "@/pages/PropertiesListPage";
 import { PropertiesFormPage } from "@/pages/PropertiesFormPage";
 import { createHashRouter, Navigate } from "react-router-dom";
 
-export const router = createHashRouter([
+export const router = createHashRouter(
+  [
+    {
+      path: '/',
+      errorElement: <ErrorPage />,
+      children: [
+        {
+          index: true,
+          element: <Navigate to="/login" replace />,
+        },
+        {
+          path: 'admin',
+          Component: AdminLayoutPage,
+          children: [
+            {
+              index: true,
+              Component: AdminDashboardPage,
+            },
+            {
+              path: 'properties',
+              children: [
+                {
+                  index: true,
+                  Component: PropertiesListPage,
+                },
+                {
+                  path: 'new',
+                  Component: PropertiesFormPage,
+                },
+                {
+                  path: ':id',
+                  Component: PropertiesFormPage,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          path: 'landlord',
+          Component: LandlordLayoutPage,
+          children: [
+            {
+              index: true,
+              Component: LandlordDashboardPage,
+            },
+            {
+              path: 'properties',
+              children: [
+                {
+                  index: true,
+                  Component: PropertiesListPage,
+                },
+                {
+                  path: 'new',
+                  Component: PropertiesFormPage,
+                },
+                {
+                  path: ':id',
+                  Component: PropertiesFormPage,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          path: 'tenant',
+          Component: TenantLayoutPage,
+          children: [
+            {
+              index: true,
+              Component: TenantDashboardPage,
+            },
+          ],
+        },
+        {
+          path: 'login',
+          Component: LoginPage,
+        },
+        {
+          path: 'signup',
+          Component: SignupPage,
+        },
+        {
+          path: '*',
+          element: <NotFoundPage />,
+        },
+      ],
+    },
+  ],
   {
-    path: '/',
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        index: true,
-        element: <Navigate to="/login" replace />,
-      },
-      {
-        path: 'admin',
-        Component: AdminLayoutPage,
-        children: [
-          {
-            index: true,
-            Component: AdminDashboardPage,
-          },
-          {
-            path: 'properties',
-            children: [
-              {
-                index: true,
-                Component: PropertiesListPage,
-              },
-              {
-                path: 'new',
-                Component: PropertiesFormPage,
-              },
-              {
-                path: ':id',
-                Component: PropertiesFormPage,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        path: 'landlord',
-        Component: LandlordLayoutPage,
-        children: [
-          {
-            index: true,
-            Component: LandlordDashboardPage,
-          },
-          {
-            path: 'properties',
-            children: [
-              {
-                index: true,
-                Component: PropertiesListPage,
-              },
-              {
-                path: 'new',
-                Component: PropertiesFormPage,
-              },
-              {
-                path: ':id',
-                Component: PropertiesFormPage,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        path: 'tenant',
-        Component: TenantLayoutPage,
-        children: [
-          {
-            index: true,
-            Component: TenantDashboardPage,
-          },
-        ],
-      },
-      {
-        path: 'login',
-        Component: LoginPage,
-      },
-      {
-        path: 'signup',
-        Component: SignupPage,
-      },
-      {
-        path: '*',
-        element: <NotFoundPage />,
-      },
-    ],
+    future: {
+      v7_startTransition: true,
+      v7_relativeSplatPath: true,
+    },
   },
-])
+);
 

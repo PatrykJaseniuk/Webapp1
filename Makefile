@@ -41,8 +41,8 @@ dev: ## Full pure rebuild: start → reset DB → gen types → frontend → cle
 	echo "Types written to frontend/src/backendConnector/__generated__/database.types.ts"; \
 	echo "=== Ensuring frontend dependencies ==="; \
 	(cd frontend && npm install); \
-	echo "=== Starting frontend ==="; \
-	(cd frontend && npm run dev -- --open)
+	echo "=== Starting frontend (Vite + Storybook) ==="; \
+	(cd frontend && { npm run storybook & npm run dev -- --open; })
 
 # ── Stop / Cleanup ────────────────────────────────────────────────────────────
 

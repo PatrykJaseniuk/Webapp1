@@ -15,7 +15,10 @@ import { defineConfig, devices } from '@playwright/test';
 // ═══════════════════════════════════════════════════════════
 
 export default defineConfig({
-  testDir: './e2e',
+  // Single-page e2e tests live next to page components in src/pages/.
+  // Multi-page e2e flows go in ./e2e/ — add that dir when needed.
+  testDir: './src',
+  testMatch: '**/*.e2e.test.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

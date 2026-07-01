@@ -92,8 +92,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
       </h2>
 
       <div>
-        <label className={labelClass}>Nazwa</label>
+        <label htmlFor="field-name" className={labelClass}>Nazwa</label>
         <input
+          id="field-name"
           className={inputClass}
           type="text"
           required
@@ -111,8 +112,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
       </div>
 
       <div>
-        <label className={labelClass}>Adres</label>
+        <label htmlFor="field-address" className={labelClass}>Adres</label>
         <input
+          id="field-address"
           className={inputClass}
           type="text"
           required
@@ -131,8 +133,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Typ</label>
+          <label htmlFor="field-type" className={labelClass}>Typ</label>
           <select
+            id="field-type"
             className={inputClass}
             value={
               form.tag === 'idle' ? 'apartment' : form.data.property_type
@@ -152,8 +155,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
         </div>
 
         <div>
-          <label className={labelClass}>Status</label>
+          <label htmlFor="field-status" className={labelClass}>Status</label>
           <select
+            id="field-status"
             className={inputClass}
             value={
               form.tag === 'idle' ? 'available' : form.data.property_status
@@ -175,8 +179,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Czynsz miesięczny (zł)</label>
+          <label htmlFor="field-monthly_rent" className={labelClass}>Czynsz miesięczny (zł)</label>
           <input
+            id="field-monthly_rent"
             className={inputClass}
             type="number"
             min="0"
@@ -196,8 +201,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
         </div>
 
         <div>
-          <label className={labelClass}>Kaucja (zł)</label>
+          <label htmlFor="field-deposit_amount" className={labelClass}>Kaucja (zł)</label>
           <input
+            id="field-deposit_amount"
             className={inputClass}
             type="number"
             min="0"
@@ -219,8 +225,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className={labelClass}>Powierzchnia (m²)</label>
+          <label htmlFor="field-size_sqm" className={labelClass}>Powierzchnia (m²)</label>
           <input
+            id="field-size_sqm"
             className={inputClass}
             type="number"
             min="0"
@@ -240,8 +247,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
         </div>
 
         <div>
-          <label className={labelClass}>Sypialnie</label>
+          <label htmlFor="field-bedrooms" className={labelClass}>Sypialnie</label>
           <input
+            id="field-bedrooms"
             className={inputClass}
             type="number"
             min="0"
@@ -261,8 +269,9 @@ export const PropertiesFormFields = ({ initial, onSave }: Props): JSX.Element =>
       </div>
 
       <div>
-        <label className={labelClass}>Notatki</label>
+        <label htmlFor="field-notes" className={labelClass}>Notatki</label>
         <textarea
+          id="field-notes"
           className={inputClass}
           rows={3}
           value={

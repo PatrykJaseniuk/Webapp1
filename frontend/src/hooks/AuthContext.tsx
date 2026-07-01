@@ -7,23 +7,51 @@ import {
 } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { Database } from '@/backendConnector';
+import type { Database } from '@/backendConnector';
 
-export type AppRole = Database['public']['Enums']['app_role']
+export type AppRole = Database['public']['Enums']['app_role'];
 
 export type AuthState =
-  { readonly tag: "authenticated", readonly userId: string, readonly email: string, readonly role: AppRole } |
-  { readonly tag: "unauthenticated" } |
-  { readonly tag: "loading" }
+  | { readonly tag: 'authenticated'; readonly userId: string; readonly email: string; readonly role: AppRole }
+  | { readonly tag: 'unauthenticated' }
+  | { readonly tag: 'loading' };
+
+// ── JWT claims shape ──
 
 type JwtClaims = {
   readonly user_role?: AppRole;
 } & Record<string, unknown>;
 
+// ── Session shape (subset we care about) ──
+
+export type SessionLike = {
+  readonly user: { readonly id: string; readonly email?: string | null };
+  readonly access_token: string;
+};
+
+// ── Pure: session → AuthState ──
+
+export const parseSession = (session: SessionLike | null): AuthState =>
+  session === null ?
+    { tag: 'unauthenticated' } :
+    (() => {
+      const claims = jwtDecode<JwtClaims>(session.access_token);
+      const appRole: AppRole =
+        claims.user_role === 'admin' || claims.user_role === 'landlord' ?
+          claims.user_role :
+          'tenant';
+
+      return {
+        tag: 'authenticated',
+        userId: session.user.id,
+        email: session.user.email ?? '',
+        role: appRole,
+      };
+    })();
+
+// ── Context + Provider ──
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
-
-// ── Provider ──
 
 type Props = {
   readonly children: ReactNode;
@@ -35,27 +63,16 @@ export const AuthProvider = ({ children }: Props): JSX.Element => {
   useEffect(() => {
     const fetchAuth = (): void => {
       void backendConnector.auth.getSession().then(({ data }) => {
-        const user = data.session?.user;
+        const session = data.session ?? null;
+        const sessionLike: SessionLike | null =
+          session !== null ?
+            {
+              user: { id: session.user.id, email: session.user.email },
+              access_token: session.access_token,
+            } :
+            null;
 
-        const next: AuthState =
-          user !== undefined ?
-            (() => {
-              const claims = jwtDecode<JwtClaims>(data.session!.access_token);
-              const appRole: AppRole =
-                claims.user_role === 'admin' || claims.user_role === 'landlord' ?
-                  claims.user_role :
-                  'tenant';
-
-              return {
-                tag: 'authenticated',
-                userId: user.id,
-                email: user.email ?? '',
-                role: appRole,
-              };
-            })() :
-            { tag: 'unauthenticated' };
-
-        setAuthState(next);
+        setAuthState(parseSession(sessionLike));
       });
     };
 

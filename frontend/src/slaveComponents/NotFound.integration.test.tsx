@@ -6,7 +6,7 @@ import { NotFound } from './NotFound';
 describe('NotFound', () => {
   it('renders 404 heading', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <NotFound />
       </MemoryRouter>,
     );
@@ -16,7 +16,7 @@ describe('NotFound', () => {
 
   it('renders the descriptive message', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <NotFound />
       </MemoryRouter>,
     );
@@ -29,7 +29,7 @@ describe('NotFound', () => {
 
   it('renders a link to login', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <NotFound />
       </MemoryRouter>,
     );

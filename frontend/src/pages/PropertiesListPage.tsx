@@ -8,5 +8,6 @@ export const PropertiesListPage = (): JSX.Element => (
     TableComponent={PropertiesTable}
     LoadingComponent={<LoadingSpinner />}
     ErrorComponent={ErrorMessage}
+    getEditUrl={(id: string): string => `#/properties/${id}`}
   />
 );

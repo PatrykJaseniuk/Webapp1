@@ -45,7 +45,7 @@ describe('AuthorisationGuard (integration)', () => {
       const req: AuthoriseRequirement = { isAuthenticated: true, roles: ['admin'] };
 
       render(
-        <MemoryRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
             LoadingComponent={Loading}
@@ -68,7 +68,7 @@ describe('AuthorisationGuard (integration)', () => {
       mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
       render(
-        <MemoryRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
             LoadingComponent={Loading}
@@ -91,7 +91,7 @@ describe('AuthorisationGuard (integration)', () => {
       });
 
       render(
-        <MemoryRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
             LoadingComponent={Loading}
@@ -118,7 +118,7 @@ describe('AuthorisationGuard (integration)', () => {
       });
 
       render(
-        <MemoryRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
             LoadingComponent={Loading}
@@ -141,7 +141,7 @@ describe('AuthorisationGuard (integration)', () => {
       });
 
       render(
-        <MemoryRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
             LoadingComponent={Loading}
@@ -160,7 +160,7 @@ describe('AuthorisationGuard (integration)', () => {
       mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
       render(
-        <MemoryRouter>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
             LoadingComponent={Loading}

@@ -6,7 +6,7 @@ import { AccessDenied } from './AccessDenied';
 describe('AccessDenied', () => {
   it('renders the access denied heading', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AccessDenied />
       </MemoryRouter>,
     );
@@ -16,7 +16,7 @@ describe('AccessDenied', () => {
 
   it('renders the descriptive message', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AccessDenied />
       </MemoryRouter>,
     );
@@ -28,7 +28,7 @@ describe('AccessDenied', () => {
 
   it('renders a link to login', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AccessDenied />
       </MemoryRouter>,
     );

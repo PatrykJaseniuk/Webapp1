@@ -1,12 +1,14 @@
-import { isRouteErrorResponse, useRouteError, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 
-export const ErrorDisplay = (): JSX.Element => {
-  const error = useRouteError();
+type Props = {
+  readonly is404: boolean;
+};
 
-  return isRouteErrorResponse(error) && error.status === 404 ?
+export const ErrorDisplay = ({ is404 }: Props): JSX.Element =>
+  is404 ?
     (
       <div className="flex h-screen flex-col items-center justify-center gap-4">
-        <h1 className="text-6xl font-bold text-gray-300">404</h1>
+        <h1 className="text-6xl font-bold text-gray-500">404</h1>
         <h2 className="text-xl font-semibold text-gray-700">Page not found</h2>
         <p className="text-gray-500">
           The page you are looking for does not exist or has been moved.
@@ -27,4 +29,3 @@ export const ErrorDisplay = (): JSX.Element => {
         </Link>
       </div>
     );
-};
