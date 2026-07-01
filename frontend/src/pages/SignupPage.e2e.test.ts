@@ -9,6 +9,8 @@ import { test, expect } from '@playwright/test';
 // ═══════════════════════════════════════════════════════════
 
 test.describe('Signup', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test('displays the signup form', async ({ page }) => {
     await page.goto('/#/signup');
 

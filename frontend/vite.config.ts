@@ -22,6 +22,7 @@ export default defineConfig({
     port: 5173
   },
    test: {
+     reporters: ['verbose'],
      coverage: {
        provider: 'v8',
        reporter: ['text', 'lcov', 'html'],
@@ -51,7 +52,6 @@ export default defineConfig({
       })],
       test: {
         name: 'storybook',
-        reporters: ['verbose'],
         browser: {
           enabled: true,
           headless: true,

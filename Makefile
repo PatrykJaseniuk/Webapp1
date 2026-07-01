@@ -91,19 +91,26 @@ test-backend: ## Run backend tests (pgTAP + Vitest integration)
 
 # ── E2E Tests ──────────────────────────────────────────────────────────────────
 
-test-e2e: ## Run Playwright E2E tests (auto-installs Chromium if needed)
-	@trap '$(MAKE) stop' INT TERM EXIT; \
-	echo "=== Ensuring Playwright browsers are installed ==="; \
-	(cd frontend && npx playwright install chromium 2>/dev/null || true); \
-	echo "=== Starting Supabase for E2E ==="; \
-	(cd backend/supabase && npx supabase start); \
-	echo "=== Resetting database (migrations + seed) ==="; \
-	(cd backend/supabase && npx supabase db reset); \
+test-e2e: ## Run Playwright E2E tests (no side effects — only stops backend if it started it)
+	@echo "=== Ensuring Playwright browsers are installed ==="
+	(cd frontend && npx playwright install chromium 2>/dev/null || true)
+	@WE_STARTED=false; \
+	trap 'if [ "$$WE_STARTED" = "true" ]; then echo "=== Stopping backend (started by test-e2e) ==="; (cd backend/supabase && npx supabase stop); fi' INT TERM EXIT; \
+	echo "=== Checking Supabase status ==="; \
+	if (cd backend/supabase && npx supabase status >/dev/null 2>&1); then \
+		echo "  Supabase already running — reusing existing instance"; \
+	else \
+		echo "  Starting Supabase for E2E"; \
+		(cd backend/supabase && npx supabase start) || exit 1; \
+		echo "  Resetting database (migrations + seed)"; \
+		(cd backend/supabase && npx supabase db reset) || exit 1; \
+		WE_STARTED=true; \
+	fi; \
 	echo "=== Running Playwright E2E tests ==="; \
-	(cd frontend && npx playwright test); \
+	(cd frontend && npx playwright test) || exit 1; \
 	echo "=== E2E tests complete ==="
 
-test-all: test-frontend test-backend test-e2e ## Run all tests (frontend + backend + E2E)
+test-all: test-frontend test-backend test-e2e ## Run all tests (frontend + backend + E2E incl. Lighthouse)
 
 # ── Build (full clean rebuild → build → cleanup) ──────────────────────────────
 

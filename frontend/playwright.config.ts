@@ -19,7 +19,7 @@ export default defineConfig({
   // Multi-page e2e flows go in ./e2e/ — add that dir when needed.
   testDir: './src',
   testMatch: '**/*.e2e.test.ts',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
@@ -33,7 +33,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], launchOptions: { args: ['--remote-debugging-port=9222'] } },
     },
   ],
 

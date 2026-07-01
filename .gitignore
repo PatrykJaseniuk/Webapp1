@@ -6,6 +6,12 @@ dist/
 build/
 .next/
 
+# TypeScript compilation artifacts
+*.tsbuildinfo
+frontend/src/**/*.js
+frontend/src/**/*.d.ts
+!frontend/src/**/vite-env.d.ts
+
 # Environment files
 .env
 .env.local
@@ -25,3 +31,4 @@ doc/Supabase/
 
 *storybook.log
 storybook-static
+.lighthouseci/
