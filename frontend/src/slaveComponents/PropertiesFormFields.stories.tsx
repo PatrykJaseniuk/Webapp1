@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { fn, userEvent, within, expect } from 'storybook/test';
 import { PropertiesFormFields } from './PropertiesFormFields';
 import type { PropertyInput } from '@/masterComponents/PropertiesSingle';
+import type { SlaveDataState } from '@/generic';
 
 const emptyDefaults: PropertyInput = Object.freeze({
   name: '',
@@ -27,10 +28,26 @@ const existingDefaults: PropertyInput = Object.freeze({
   notes: null,
 });
 
+const noop = (): void => {};
+
+const fulfilledState: SlaveDataState<PropertyInput> = {
+  tag: 'fulfilled',
+  data: emptyDefaults,
+};
+
+const pendingState: SlaveDataState<PropertyInput> = { tag: 'pending' };
+
+const rejectedState: SlaveDataState<PropertyInput> = {
+  tag: 'rejected',
+  message: 'Błąd sieci',
+  onRetry: noop,
+};
+
 const meta: Meta<typeof PropertiesFormFields> = {
   title: 'slave/PropertiesFormFields',
   component: PropertiesFormFields,
   args: {
+    fetchState: fulfilledState,
     data: emptyDefaults,
     isEditing: false,
     onSubmit: fn(),
@@ -43,8 +60,21 @@ export default meta;
 
 type Story = StoryObj<typeof PropertiesFormFields>;
 
+export const Pending: Story = {
+  args: {
+    fetchState: pendingState,
+  },
+};
+
+export const Rejected: Story = {
+  args: {
+    fetchState: rejectedState,
+  },
+};
+
 export const New: Story = {
   args: {
+    fetchState: fulfilledState,
     data: emptyDefaults,
     isEditing: false,
   },
@@ -52,6 +82,7 @@ export const New: Story = {
 
 export const Editing: Story = {
   args: {
+    fetchState: fulfilledState,
     data: existingDefaults,
     isEditing: true,
   },
@@ -59,12 +90,14 @@ export const Editing: Story = {
 
 export const Loading: Story = {
   args: {
+    fetchState: fulfilledState,
     isLoading: true,
   },
 };
 
 export const WithError: Story = {
   args: {
+    fetchState: fulfilledState,
     error: 'Wystąpił błąd podczas zapisywania.',
   },
 };

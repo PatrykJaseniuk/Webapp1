@@ -1,5 +1,8 @@
 import type { FormEvent } from 'react';
+import { match } from 'ts-pattern';
 import type { FormProps, TenantStatus } from '@/masterComponents/TenantsSingle';
+import { LoadingSpinner } from './LoadingSpinner';
+import { ErrorMessage } from './ErrorMessage';
 
 export const extractTenantInput = (formData: FormData): FormProps['data'] => ({
   user_id: null,
@@ -26,14 +29,23 @@ const inputClass =
   'w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const labelClass = 'mb-1 block text-sm font-medium text-gray-700';
 
-export const TenantsFormFields = ({
-  data,
+type FormFieldsInnerProps = {
+  readonly defaults: FormProps['data'];
+  readonly isEditing: boolean;
+  readonly onSave: (data: FormProps['data']) => void;
+  readonly isLoading: boolean;
+  readonly error: string | null;
+  readonly onCancel: () => void;
+};
+
+const FormFieldsInner = ({
+  defaults,
   isEditing,
   onSave,
   isLoading,
   error,
   onCancel,
-}: FormProps): JSX.Element => {
+}: FormFieldsInnerProps): JSX.Element => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     onSave(extractTenantInput(new FormData(e.currentTarget)));
@@ -57,7 +69,7 @@ export const TenantsFormFields = ({
             className={inputClass}
             type="text"
             required
-            defaultValue={data.first_name}
+            defaultValue={defaults.first_name}
           />
         </div>
 
@@ -69,7 +81,7 @@ export const TenantsFormFields = ({
             className={inputClass}
             type="text"
             required
-            defaultValue={data.last_name}
+            defaultValue={defaults.last_name}
           />
         </div>
       </div>
@@ -83,7 +95,7 @@ export const TenantsFormFields = ({
             className={inputClass}
             type="email"
             required
-            defaultValue={data.email}
+            defaultValue={defaults.email}
           />
         </div>
 
@@ -95,7 +107,7 @@ export const TenantsFormFields = ({
             className={inputClass}
             type="text"
             required
-            defaultValue={data.phone}
+            defaultValue={defaults.phone}
           />
         </div>
       </div>
@@ -106,7 +118,7 @@ export const TenantsFormFields = ({
           id="field-status"
           name="tenant_status"
           className={inputClass}
-          defaultValue={data.tenant_status}
+          defaultValue={defaults.tenant_status}
         >
           {Object.entries(STATUS_OPTIONS).map(([value, label]) => (
             <option key={value} value={value}>{label}</option>
@@ -121,7 +133,7 @@ export const TenantsFormFields = ({
           name="id_document_number"
           className={inputClass}
           type="text"
-          defaultValue={data.id_document_number ?? ''}
+          defaultValue={defaults.id_document_number ?? ''}
         />
       </div>
 
@@ -133,7 +145,7 @@ export const TenantsFormFields = ({
             name="emergency_contact_name"
             className={inputClass}
             type="text"
-            defaultValue={data.emergency_contact_name ?? ''}
+            defaultValue={defaults.emergency_contact_name ?? ''}
           />
         </div>
 
@@ -144,7 +156,7 @@ export const TenantsFormFields = ({
             name="emergency_contact_phone"
             className={inputClass}
             type="text"
-            defaultValue={data.emergency_contact_phone ?? ''}
+            defaultValue={defaults.emergency_contact_phone ?? ''}
           />
         </div>
       </div>
@@ -156,7 +168,7 @@ export const TenantsFormFields = ({
           name="notes"
           className={inputClass}
           rows={3}
-          defaultValue={data.notes ?? ''}
+          defaultValue={defaults.notes ?? ''}
         />
       </div>
 
@@ -183,3 +195,21 @@ export const TenantsFormFields = ({
     </form>
   );
 };
+
+export const TenantsFormFields = (props: FormProps): JSX.Element =>
+  match(props.fetchState)
+    .with({ tag: 'pending' }, () => <LoadingSpinner />)
+    .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+      <ErrorMessage message={message} onRetry={onRetry} />
+    ))
+    .with({ tag: 'fulfilled' }, ({ data }) => (
+      <FormFieldsInner
+        defaults={data}
+        isEditing={props.isEditing}
+        onSave={props.onSave}
+        isLoading={props.isLoading}
+        error={props.error}
+        onCancel={props.onCancel}
+      />
+    ))
+    .exhaustive();

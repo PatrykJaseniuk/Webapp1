@@ -3,26 +3,23 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
+import type { SlaveDataState } from '@/generic';
 
 export type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
 type TableProps = {
-  readonly tenants: readonly TenantRow[];
+  readonly state: SlaveDataState<readonly TenantRow[]>;
   readonly onDelete: (id: string) => void;
   readonly getEditUrl: (id: string) => string;
 };
 
 type Props = {
   readonly TableComponent: ComponentType<TableProps>;
-  readonly LoadingComponent: JSX.Element;
-  readonly ErrorComponent: ComponentType<{ readonly message: string; readonly onRetry: () => void }>;
   readonly getEditUrl: (id: string) => string;
 };
 
 export const TenantsMany = ({
   TableComponent,
-  LoadingComponent,
-  ErrorComponent,
   getEditUrl,
 }: Props): JSX.Element => {
   const [reloadKey, setReloadKey] = useState(0);
@@ -53,9 +50,12 @@ export const TenantsMany = ({
     setReloadKey((k: number) => k + 1);
   }, []);
 
-  return loading ?
-    LoadingComponent :
-    error !== undefined ?
-      <ErrorComponent message={error.message} onRetry={handleRetry} /> :
-      <TableComponent tenants={value ?? []} onDelete={handleDelete} getEditUrl={getEditUrl} />;
+  const state: SlaveDataState<readonly TenantRow[]> =
+    loading ?
+      { tag: 'pending' } :
+      error !== undefined ?
+        { tag: 'rejected', message: error.message, onRetry: handleRetry } :
+        { tag: 'fulfilled', data: value ?? [] };
+
+  return <TableComponent state={state} onDelete={handleDelete} getEditUrl={getEditUrl} />;
 };

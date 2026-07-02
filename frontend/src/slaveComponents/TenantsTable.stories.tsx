@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TenantsTable } from './TenantsTable';
 import type { Database } from '@/backendConnector';
+import type { SlaveDataState } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
@@ -21,6 +22,16 @@ const makeTenant = (overrides?: Partial<TenantRow>): TenantRow => ({
   ...overrides,
 });
 
+const noop = (): void => {};
+
+const pendingState: SlaveDataState<readonly TenantRow[]> = { tag: 'pending' };
+
+const rejectedState: SlaveDataState<readonly TenantRow[]> = {
+  tag: 'rejected',
+  message: 'Błąd sieci',
+  onRetry: noop,
+};
+
 const meta: Meta<typeof TenantsTable> = {
   component: TenantsTable,
   title: 'slaveComponents/TenantsTable',
@@ -30,11 +41,25 @@ export default meta;
 
 type Story = StoryObj<typeof TenantsTable>;
 
-const noop = (): void => {};
+export const Pending: Story = {
+  args: {
+    state: pendingState,
+    onDelete: noop,
+    getEditUrl: (id: string): string => `#/tenants/${id}`,
+  },
+};
+
+export const Rejected: Story = {
+  args: {
+    state: rejectedState,
+    onDelete: noop,
+    getEditUrl: (id: string): string => `#/tenants/${id}`,
+  },
+};
 
 export const Empty: Story = {
   args: {
-    tenants: [],
+    state: { tag: 'fulfilled', data: [] },
     onDelete: noop,
     getEditUrl: (id: string): string => `#/tenants/${id}`,
   },
@@ -42,11 +67,14 @@ export const Empty: Story = {
 
 export const WithRows: Story = {
   args: {
-    tenants: [
-      makeTenant({ id: '1', first_name: 'Jan', last_name: 'Kowalski', tenant_status: 'active' }),
-      makeTenant({ id: '2', first_name: 'Anna', last_name: 'Nowak', tenant_status: 'applicant', email: 'anna@example.com' }),
-      makeTenant({ id: '3', first_name: 'Piotr', last_name: 'Zieliński', tenant_status: 'past', phone: '555555555' }),
-    ],
+    state: {
+      tag: 'fulfilled',
+      data: [
+        makeTenant({ id: '1', first_name: 'Jan', last_name: 'Kowalski', tenant_status: 'active' }),
+        makeTenant({ id: '2', first_name: 'Anna', last_name: 'Nowak', tenant_status: 'applicant', email: 'anna@example.com' }),
+        makeTenant({ id: '3', first_name: 'Piotr', last_name: 'Zieliński', tenant_status: 'past', phone: '555555555' }),
+      ],
+    },
     onDelete: noop,
     getEditUrl: (id: string): string => `#/tenants/${id}`,
   },

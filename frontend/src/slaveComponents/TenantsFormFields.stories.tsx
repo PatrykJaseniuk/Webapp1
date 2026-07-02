@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { TenantsFormFields } from './TenantsFormFields';
 import { emptyTenantInput, toTenantInput } from '@/masterComponents/TenantsSingle';
 import type { Database } from '@/backendConnector';
+import type { SlaveDataState } from '@/generic';
+import type { TenantInput } from '@/masterComponents/TenantsSingle';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
@@ -23,6 +25,19 @@ const makeTenant = (): TenantRow => ({
 
 const noop = (): void => {};
 
+const fulfilledState: SlaveDataState<TenantInput> = {
+  tag: 'fulfilled',
+  data: emptyTenantInput,
+};
+
+const pendingState: SlaveDataState<TenantInput> = { tag: 'pending' };
+
+const rejectedState: SlaveDataState<TenantInput> = {
+  tag: 'rejected',
+  message: 'Błąd sieci',
+  onRetry: noop,
+};
+
 const meta: Meta<typeof TenantsFormFields> = {
   component: TenantsFormFields,
   title: 'slaveComponents/TenantsFormFields',
@@ -32,8 +47,33 @@ export default meta;
 
 type Story = StoryObj<typeof TenantsFormFields>;
 
+export const Pending: Story = {
+  args: {
+    fetchState: pendingState,
+    data: emptyTenantInput,
+    isEditing: false,
+    onSave: noop,
+    onCancel: noop,
+    isLoading: false,
+    error: null,
+  },
+};
+
+export const Rejected: Story = {
+  args: {
+    fetchState: rejectedState,
+    data: emptyTenantInput,
+    isEditing: false,
+    onSave: noop,
+    onCancel: noop,
+    isLoading: false,
+    error: null,
+  },
+};
+
 export const Create: Story = {
   args: {
+    fetchState: fulfilledState,
     data: emptyTenantInput,
     isEditing: false,
     onSave: noop,
@@ -45,6 +85,7 @@ export const Create: Story = {
 
 export const Edit: Story = {
   args: {
+    fetchState: fulfilledState,
     data: toTenantInput(makeTenant()),
     isEditing: true,
     onSave: noop,

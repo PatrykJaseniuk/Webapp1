@@ -1,13 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { TenantsSingle } from '@/masterComponents/TenantsSingle';
 import { TenantsFormFields } from '@/slaveComponents/TenantsFormFields';
-import { LoadingSpinner } from '@/slaveComponents/LoadingSpinner';
-
-const FormError = (
-  <div className="flex flex-col items-center justify-center gap-4 py-16">
-    <p className="text-red-600">Nie udało się załadować najemcy.</p>
-  </div>
-);
 
 export const TenantsFormPage = (): JSX.Element => {
   const { id } = useParams<{ readonly id: string }>();
@@ -16,8 +9,6 @@ export const TenantsFormPage = (): JSX.Element => {
     <TenantsSingle
       id={id}
       FormFieldsComponent={TenantsFormFields}
-      LoadingComponent={<LoadingSpinner />}
-      ErrorComponent={FormError}
     />
   );
 };

@@ -65,3 +65,17 @@ export type SlaveAsyncProps<T> = {
   readonly isLoading: boolean;
   readonly error: string | null;
 };
+
+// ──────────────────────────────────────────────
+// Slave data state — three-state discriminated union
+// ──────────────────────────────────────────────
+
+/**
+ * Three-state prop passed from master to data-displaying slaves.
+ * The slave matches on `tag` and renders the appropriate view.
+ * Replaces separate loading/error/data props — guaranteed exhaustive.
+ */
+export type SlaveDataState<T> =
+  | { readonly tag: 'pending' }
+  | { readonly tag: 'rejected'; readonly message: string; readonly onRetry: () => void }
+  | { readonly tag: 'fulfilled'; readonly data: T };

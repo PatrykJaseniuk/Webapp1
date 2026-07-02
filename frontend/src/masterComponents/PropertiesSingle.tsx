@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { SlaveAsyncProps } from '@/generic';
+import type { SlaveAsyncProps, SlaveDataState } from '@/generic';
 
 type PropertyRow = Database['public']['Tables']['properties']['Row'];
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
@@ -24,6 +24,7 @@ export const emptyInput: PropertyInput = Object.freeze({
 });
 
 export type FormProps = SlaveAsyncProps<PropertyInput> & {
+  readonly fetchState: SlaveDataState<PropertyInput>;
   readonly isEditing: boolean;
   readonly onSubmit: (data: PropertyInput) => void;
   readonly onCancel: () => void;
@@ -31,15 +32,11 @@ export type FormProps = SlaveAsyncProps<PropertyInput> & {
 
 type Props = {
   readonly FormFieldsComponent: ComponentType<FormProps>;
-  readonly LoadingComponent: JSX.Element;
-  readonly ErrorComponent: JSX.Element;
   readonly id: string | undefined;
 };
 
 export const PropertiesSingle = ({
   FormFieldsComponent,
-  LoadingComponent,
-  ErrorComponent,
   id,
 }: Props): JSX.Element => {
   const navigate = useNavigate();
@@ -88,18 +85,26 @@ export const PropertiesSingle = ({
     navigate(-1);
   }, [navigate]);
 
-  return fetchLoading ?
-    LoadingComponent :
-    fetchError !== undefined ?
-      ErrorComponent :
-      (
-        <FormFieldsComponent
-          data={fetchedRow ?? emptyInput}
-          isEditing={isEditing}
-          onSubmit={handleSubmit}
-          isLoading={saveState.loading}
-          error={saveState.error?.message ?? null}
-          onCancel={handleCancel}
-        />
-      );
+  const handleRetry = useCallback((): void => {
+    navigate(0);
+  }, [navigate]);
+
+  const fetchState: SlaveDataState<PropertyInput> =
+    fetchLoading ?
+      { tag: 'pending' } :
+      fetchError !== undefined ?
+        { tag: 'rejected', message: fetchError.message, onRetry: handleRetry } :
+        { tag: 'fulfilled', data: fetchedRow ?? emptyInput };
+
+  return (
+    <FormFieldsComponent
+      fetchState={fetchState}
+      data={fetchedRow ?? emptyInput}
+      isEditing={isEditing}
+      onSubmit={handleSubmit}
+      isLoading={saveState.loading}
+      error={saveState.error?.message ?? null}
+      onCancel={handleCancel}
+    />
+  );
 };

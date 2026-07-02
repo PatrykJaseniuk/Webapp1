@@ -1,5 +1,8 @@
 import type { FormEvent } from 'react';
+import { match } from 'ts-pattern';
 import type { FormProps } from '@/masterComponents/PropertiesSingle';
+import { LoadingSpinner } from './LoadingSpinner';
+import { ErrorMessage } from './ErrorMessage';
 
 export const extractPropertyInput = (formData: FormData): FormProps['data'] => ({
   name: (formData.get('name') as string) ?? '',
@@ -33,14 +36,23 @@ export const STATUS_OPTIONS: StatusLabelMap = Object.freeze({
 const inputClass = 'w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none';
 const labelClass = 'mb-1 block text-sm font-medium text-gray-700';
 
-export const PropertiesFormFields = ({
-  data: defaults,
+type FormFieldsInnerProps = {
+  readonly defaults: FormProps['data'];
+  readonly isEditing: boolean;
+  readonly onSubmit: (data: FormProps['data']) => void;
+  readonly isLoading: boolean;
+  readonly error: string | null;
+  readonly onCancel: () => void;
+};
+
+const FormFieldsInner = ({
+  defaults,
   isEditing,
   onSubmit,
   isLoading,
   error,
   onCancel,
-}: FormProps): JSX.Element => {
+}: FormFieldsInnerProps): JSX.Element => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     onSubmit(extractPropertyInput(new FormData(e.currentTarget)));
@@ -197,3 +209,21 @@ export const PropertiesFormFields = ({
     </form>
   );
 };
+
+export const PropertiesFormFields = (props: FormProps): JSX.Element =>
+  match(props.fetchState)
+    .with({ tag: 'pending' }, () => <LoadingSpinner />)
+    .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+      <ErrorMessage message={message} onRetry={onRetry} />
+    ))
+    .with({ tag: 'fulfilled' }, ({ data }) => (
+      <FormFieldsInner
+        defaults={data}
+        isEditing={props.isEditing}
+        onSubmit={props.onSubmit}
+        isLoading={props.isLoading}
+        error={props.error}
+        onCancel={props.onCancel}
+      />
+    ))
+    .exhaustive();

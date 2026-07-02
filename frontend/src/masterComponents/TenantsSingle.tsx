@@ -4,7 +4,7 @@ import { useAsync, useAsyncFn } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { SlaveAsyncProps } from '@/generic';
+import type { SlaveAsyncProps, SlaveDataState } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
@@ -38,6 +38,7 @@ export const toTenantInput = (row: TenantRow): TenantInput => ({
 });
 
 export type FormProps = SlaveAsyncProps<TenantInput> & {
+  readonly fetchState: SlaveDataState<TenantInput>;
   readonly isEditing: boolean;
   readonly onSave: (data: TenantInput) => void;
   readonly onCancel: () => void;
@@ -45,15 +46,11 @@ export type FormProps = SlaveAsyncProps<TenantInput> & {
 
 type Props = {
   readonly FormFieldsComponent: ComponentType<FormProps>;
-  readonly LoadingComponent: JSX.Element;
-  readonly ErrorComponent: JSX.Element;
   readonly id: string | undefined;
 };
 
 export const TenantsSingle = ({
   FormFieldsComponent,
-  LoadingComponent,
-  ErrorComponent,
   id,
 }: Props): JSX.Element => {
   const navigate = useNavigate();
@@ -102,18 +99,26 @@ export const TenantsSingle = ({
     navigate(-1);
   }, [navigate]);
 
-  return fetchLoading ?
-    LoadingComponent :
-    fetchError !== undefined ?
-      ErrorComponent :
-      (
-        <FormFieldsComponent
-          data={fetchedRow !== null && fetchedRow !== undefined ? toTenantInput(fetchedRow) : emptyTenantInput}
-          isEditing={isEditing}
-          onSave={handleSave}
-          isLoading={saveState.loading}
-          error={saveState.error?.message ?? null}
-          onCancel={handleCancel}
-        />
-      );
+  const handleRetry = useCallback((): void => {
+    navigate(0);
+  }, [navigate]);
+
+  const fetchState: SlaveDataState<TenantInput> =
+    fetchLoading ?
+      { tag: 'pending' } :
+      fetchError !== undefined ?
+        { tag: 'rejected', message: fetchError.message, onRetry: handleRetry } :
+        { tag: 'fulfilled', data: fetchedRow !== null && fetchedRow !== undefined ? toTenantInput(fetchedRow) : emptyTenantInput };
+
+  return (
+    <FormFieldsComponent
+      fetchState={fetchState}
+      data={fetchedRow !== null && fetchedRow !== undefined ? toTenantInput(fetchedRow) : emptyTenantInput}
+      isEditing={isEditing}
+      onSave={handleSave}
+      isLoading={saveState.loading}
+      error={saveState.error?.message ?? null}
+      onCancel={handleCancel}
+    />
+  );
 };

@@ -1,5 +1,8 @@
 import { match } from 'ts-pattern';
 import type { PropertyRow } from '@/masterComponents/PropertiesMany';
+import type { SlaveDataState } from '@/generic';
+import { LoadingSpinner } from './LoadingSpinner';
+import { ErrorMessage } from './ErrorMessage';
 
 type StatusLabelMap = Readonly<Record<PropertyRow['property_status'], string>>;
 
@@ -19,17 +22,15 @@ export const TYPE_LABEL: TypeLabelMap = Object.freeze({
 });
 
 type Props = {
-  readonly properties: readonly PropertyRow[];
+  readonly state: SlaveDataState<readonly PropertyRow[]>;
   readonly onDelete: (id: string) => void;
   readonly getEditUrl: (id: string) => string;
 };
 
-export const PropertiesTable = ({ properties, onDelete, getEditUrl }: Props): JSX.Element =>
-  match(properties.length)
-    .with(0, () => (
-      <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p>
-    ))
-    .otherwise(() => (
+const TableBody = ({ properties, onDelete, getEditUrl }: { readonly properties: readonly PropertyRow[]; readonly onDelete: (id: string) => void; readonly getEditUrl: (id: string) => string }): JSX.Element =>
+  properties.length === 0 ?
+    <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p> :
+    (
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
@@ -74,4 +75,15 @@ export const PropertiesTable = ({ properties, onDelete, getEditUrl }: Props): JS
           </tbody>
         </table>
       </div>
-    ));
+    );
+
+export const PropertiesTable = ({ state, onDelete, getEditUrl }: Props): JSX.Element =>
+  match(state)
+    .with({ tag: 'pending' }, () => <LoadingSpinner />)
+    .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+      <ErrorMessage message={message} onRetry={onRetry} />
+    ))
+    .with({ tag: 'fulfilled' }, ({ data }) => (
+      <TableBody properties={data} onDelete={onDelete} getEditUrl={getEditUrl} />
+    ))
+    .exhaustive();

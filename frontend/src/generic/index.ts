@@ -18,6 +18,7 @@ export type {
   AsyncState,
   NavItem,
   SlaveAsyncProps,
+  SlaveDataState,
 } from './utils';
 
 export { ok, err } from './utils';
