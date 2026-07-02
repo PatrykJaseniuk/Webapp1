@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useAsync } from 'react-use';
-import { useParams } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
@@ -18,14 +17,15 @@ type Props = {
   readonly FormFieldsComponent: ComponentType<FormProps>;
   readonly LoadingComponent: JSX.Element;
   readonly ErrorComponent: JSX.Element;
+  readonly id: string | undefined;
 };
 
 export const TenantsSingle = ({
   FormFieldsComponent,
   LoadingComponent,
   ErrorComponent,
+  id,
 }: Props): JSX.Element => {
-  const { id } = useParams<{ readonly id: string }>();
 
   const { loading, error, value } = useAsync(async (): Promise<TenantRow | null> => {
     const shouldFetch = id !== undefined && id !== 'new';

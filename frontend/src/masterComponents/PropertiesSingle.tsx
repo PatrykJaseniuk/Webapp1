@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { useAsync, useAsyncFn } from 'react-use';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
@@ -33,15 +33,16 @@ type Props = {
   readonly FormFieldsComponent: ComponentType<FormProps>;
   readonly LoadingComponent: JSX.Element;
   readonly ErrorComponent: JSX.Element;
+  readonly id: string | undefined;
 };
 
 export const PropertiesSingle = ({
   FormFieldsComponent,
   LoadingComponent,
   ErrorComponent,
+  id,
 }: Props): JSX.Element => {
   const navigate = useNavigate();
-  const { id } = useParams<{ readonly id: string }>();
 
   const isEditing = id !== undefined && id !== 'new';
 

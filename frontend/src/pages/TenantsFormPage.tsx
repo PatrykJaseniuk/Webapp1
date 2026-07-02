@@ -1,3 +1,4 @@
+import { useParams } from 'react-router-dom';
 import { TenantsSingle } from '@/masterComponents/TenantsSingle';
 import { TenantsFormFields } from '@/slaveComponents/TenantsFormFields';
 import { LoadingSpinner } from '@/slaveComponents/LoadingSpinner';
@@ -8,10 +9,15 @@ const FormError = (
   </div>
 );
 
-export const TenantsFormPage = (): JSX.Element => (
-  <TenantsSingle
-    FormFieldsComponent={TenantsFormFields}
-    LoadingComponent={<LoadingSpinner />}
-    ErrorComponent={FormError}
-  />
-);
+export const TenantsFormPage = (): JSX.Element => {
+  const { id } = useParams<{ readonly id: string }>();
+
+  return (
+    <TenantsSingle
+      id={id}
+      FormFieldsComponent={TenantsFormFields}
+      LoadingComponent={<LoadingSpinner />}
+      ErrorComponent={FormError}
+    />
+  );
+};
