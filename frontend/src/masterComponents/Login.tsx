@@ -11,13 +11,15 @@ export type LoginFormProps = {
   readonly onSubmit: (input: LoginInput) => void;
   readonly isLoading: boolean;
   readonly error: string | null;
+  readonly signupUrl: string;
 };
 
 type Props = {
   readonly Form: ComponentType<LoginFormProps>;
+  readonly signupUrl: string;
 };
 
-export const Login = ({ Form }: Props): JSX.Element => {
+export const Login = ({ Form, signupUrl }: Props): JSX.Element => {
   const [loginState, login] = useAsyncFn(
     async (input: LoginInput) => {
       const result = await backendConnector.auth.signInWithPassword({
@@ -38,6 +40,7 @@ export const Login = ({ Form }: Props): JSX.Element => {
         loginState.value?.error?.message ??
         null
       }
+      signupUrl={signupUrl}
     />
   );
 };

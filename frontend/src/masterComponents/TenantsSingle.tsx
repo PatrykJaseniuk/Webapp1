@@ -1,16 +1,46 @@
 import { useCallback } from 'react';
-import { useAsync } from 'react-use';
+import { useNavigate } from 'react-router-dom';
+import { useAsync, useAsyncFn } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
+import type { SlaveAsyncProps } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
-type TenantInput = Readonly<Omit<TenantInsert, 'created_at' | 'updated_at'>>;
+export type TenantStatus = Database['public']['Enums']['tenant_status'];
+export type TenantInput = Readonly<Omit<TenantInsert, 'created_at' | 'updated_at'>>;
 
-type FormProps = {
-  readonly initial?: TenantRow;
-  readonly onSave: (data: TenantInput) => Promise<Readonly<{ error?: string }>>;
+export const emptyTenantInput: TenantInput = Object.freeze({
+  user_id: null,
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  id_document_number: null,
+  emergency_contact_name: null,
+  emergency_contact_phone: null,
+  notes: null,
+  tenant_status: 'active' as TenantStatus,
+});
+
+export const toTenantInput = (row: TenantRow): TenantInput => ({
+  user_id: row.user_id,
+  first_name: row.first_name,
+  last_name: row.last_name,
+  email: row.email,
+  phone: row.phone,
+  id_document_number: row.id_document_number,
+  emergency_contact_name: row.emergency_contact_name,
+  emergency_contact_phone: row.emergency_contact_phone,
+  notes: row.notes,
+  tenant_status: row.tenant_status,
+});
+
+export type FormProps = SlaveAsyncProps<TenantInput> & {
+  readonly isEditing: boolean;
+  readonly onSave: (data: TenantInput) => void;
+  readonly onCancel: () => void;
 };
 
 type Props = {
@@ -26,48 +56,64 @@ export const TenantsSingle = ({
   ErrorComponent,
   id,
 }: Props): JSX.Element => {
+  const navigate = useNavigate();
 
-  const { loading, error, value } = useAsync(async (): Promise<TenantRow | null> => {
-    const shouldFetch = id !== undefined && id !== 'new';
-    const result: TenantRow | null =
-      shouldFetch ?
-        await (async (): Promise<TenantRow> => {
-          const { data, error: dbError } = await backendConnector
-            .from('tenants')
-            .select('*')
-            .eq('id', id)
-            .single();
-          return dbError !== null ? Promise.reject(dbError) : data;
-        })() :
-        null;
-    return result;
-  }, [id]);
+  const isEditing = id !== undefined && id !== 'new';
 
-  const handleSave = useCallback(
-    async (data: TenantInput): Promise<Readonly<{ error?: string }>> => {
-      const shouldUpdate = id !== undefined && id !== 'new';
-      const result =
-        shouldUpdate ?
-          await backendConnector.from('tenants').update(data).eq('id', id).select().single() :
-          await backendConnector.from('tenants').insert(data).select().single();
-
-      const msg: Readonly<{ error?: string }> =
-        result.error !== null ?
-          { error: result.error.message } :
-          {};
-      return msg;
+  const { loading: fetchLoading, error: fetchError, value: fetchedRow } = useAsync(
+    async (): Promise<TenantRow | null> => {
+      const result: TenantRow | null =
+        isEditing ?
+          await (async (): Promise<TenantRow> => {
+            const { data, error: dbError } = await backendConnector
+              .from('tenants')
+              .select('*')
+              .eq('id', id)
+              .single();
+            return dbError !== null ? Promise.reject(dbError) : data;
+          })() :
+          null;
+      return result;
     },
-    [id],
+    [id, isEditing],
   );
 
-  return loading ?
+  const [saveState, save] = useAsyncFn(
+    async (data: TenantInput) => {
+      const result =
+        isEditing ?
+          await backendConnector.from('tenants').update(data).eq('id', id).select().single() :
+          await backendConnector.from('tenants').insert(data).select().single();
+      return result.error !== null ? Promise.reject(result.error) : undefined;
+    },
+    [id, isEditing],
+  );
+
+  const handleSave = useCallback(
+    (data: TenantInput) => {
+      save(data).then(() => {
+        navigate(-1);
+      });
+    },
+    [save, navigate],
+  );
+
+  const handleCancel = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
+
+  return fetchLoading ?
     LoadingComponent :
-    error !== undefined ?
+    fetchError !== undefined ?
       ErrorComponent :
       (
         <FormFieldsComponent
-          initial={value ?? undefined}
+          data={fetchedRow !== null && fetchedRow !== undefined ? toTenantInput(fetchedRow) : emptyTenantInput}
+          isEditing={isEditing}
           onSave={handleSave}
+          isLoading={saveState.loading}
+          error={saveState.error?.message ?? null}
+          onCancel={handleCancel}
         />
       );
 };

@@ -13,13 +13,15 @@ export type SignupFormProps = {
   readonly onSubmit: (input: SignupInput) => void;
   readonly isLoading: boolean;
   readonly error: string | null;
+  readonly loginUrl: string;
 };
 
 type Props = {
   readonly Form: ComponentType<SignupFormProps>;
+  readonly loginUrl: string;
 };
 
-export const Signup = ({ Form }: Props): JSX.Element => {
+export const Signup = ({ Form, loginUrl }: Props): JSX.Element => {
   const [signupState, signup] = useAsyncFn(
     async (input: SignupInput) =>
       backendConnector.auth.signUp({
@@ -43,6 +45,7 @@ export const Signup = ({ Form }: Props): JSX.Element => {
         signupState.value?.error?.message ??
         null
       }
+      loginUrl={loginUrl}
     />
   );
 };

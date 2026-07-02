@@ -35,11 +35,13 @@
 - Pure functions. Zero side effects. Zero DB knowledge. Zero apication knowledge. Zero state
 - Import types ONLY from: `react` + their master.
 - NEVER: `@/backendConnector`, `Database`, `useNavigate`, `useAsync`, `useAsyncFn`.
+- have zero knowledge about url routes of whole application (url string are send by arguments) 
 
 # ───────────────────────────────────────────────────────────────
 # 3. PAGE (pages/) — WIRING
 # ───────────────────────────────────────────────────────────────
 
+- url string can be compose only in page components
 - router endpoint
 - read params from url and send it to master as regular param
 - Connect master + slave. Return a single JSX tree.

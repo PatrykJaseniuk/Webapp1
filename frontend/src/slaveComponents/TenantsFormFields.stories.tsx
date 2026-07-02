@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
 import { TenantsFormFields } from './TenantsFormFields';
+import { emptyTenantInput, toTenantInput } from '@/masterComponents/TenantsSingle';
 import type { Database } from '@/backendConnector';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
@@ -21,18 +21,11 @@ const makeTenant = (): TenantRow => ({
   updated_at: '2025-01-01T00:00:00Z',
 });
 
-const noop = async (): Promise<Readonly<{ error?: string }>> => ({});
+const noop = (): void => {};
 
 const meta: Meta<typeof TenantsFormFields> = {
   component: TenantsFormFields,
   title: 'slaveComponents/TenantsFormFields',
-  decorators: [
-    (Story) => (
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Story />
-      </MemoryRouter>
-    ),
-  ],
 };
 
 export default meta;
@@ -41,13 +34,22 @@ type Story = StoryObj<typeof TenantsFormFields>;
 
 export const Create: Story = {
   args: {
+    data: emptyTenantInput,
+    isEditing: false,
     onSave: noop,
+    onCancel: noop,
+    isLoading: false,
+    error: null,
   },
 };
 
 export const Edit: Story = {
   args: {
-    initial: makeTenant(),
+    data: toTenantInput(makeTenant()),
+    isEditing: true,
     onSave: noop,
+    onCancel: noop,
+    isLoading: false,
+    error: null,
   },
 };

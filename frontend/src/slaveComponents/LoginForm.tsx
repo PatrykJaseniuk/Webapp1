@@ -18,6 +18,7 @@ export const LoginForm = ({
   onSubmit,
   isLoading,
   error,
+  signupUrl,
 }: LoginFormProps): JSX.Element => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -73,7 +74,7 @@ export const LoginForm = ({
         <p className="mt-4 text-center text-sm text-gray-500">
           Nie masz konta?{' '}
           <a
-            href="/signup"
+            href={signupUrl}
             className="font-medium text-blue-600 hover:text-blue-500"
           >
             Zarejestruj się
