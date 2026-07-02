@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../e2e/console-fixture';
 
 // ═══════════════════════════════════════════════════════════
 // E2E: Signup Flow
