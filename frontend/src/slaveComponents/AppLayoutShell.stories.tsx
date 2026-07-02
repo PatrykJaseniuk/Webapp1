@@ -1,30 +1,37 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import type { ComponentType, ReactNode } from 'react';
 import { AppLayoutShell } from './AppLayoutShell';
-import type { NavItem } from '@/generic';
 
-const navItems: readonly NavItem[] = [
-  { label: 'Dashboard', to: '/admin' },
-  { label: 'Properties', to: '/admin/properties' },
-  { label: 'Tenants', to: '/admin/tenants' },
-];
+const navItems = {
+  dashboard: '/admin',
+  properties: '/admin/properties',
+  tenants: '/admin/tenants',
+};
 
 const noop = (): void => {};
+
+type LinkProps = {
+  readonly to: string | { readonly pathname: string };
+  readonly children: ReactNode;
+  readonly className?: string;
+};
+
+const MockLink: ComponentType<LinkProps> = ({
+  children,
+  className,
+}: LinkProps): JSX.Element => (
+  <a className={className}>{children}</a>
+);
 
 const meta: Meta<typeof AppLayoutShell> = {
   title: 'slave/AppLayoutShell',
   component: AppLayoutShell,
-  decorators: [
-    (Story) => (
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <Story />
-      </MemoryRouter>
-    ),
-  ],
   args: {
     navItems,
     email: 'admin@example.com',
     onLogout: noop,
+    LinkComponent: MockLink,
+    activeTo: '/admin',
   },
 };
 export default meta;

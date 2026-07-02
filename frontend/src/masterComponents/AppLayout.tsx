@@ -1,37 +1,19 @@
 import type { ReactNode, ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, type AppRole } from '@/hooks/AuthContext';
+import { useAuth } from '@/hooks/AuthContext';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import type { NavItem } from '@/generic';
+import type { LinkComponent } from '@/generic';
 import { LoadingSpinner } from '@/slaveComponents/LoadingSpinner';
 
 // ── Shell props (defined here so slave can import from master) ──
 
 export type AppLayoutShellProps = {
-  readonly navItems: ReadonlyArray<NavItem>;
+  readonly navItems: Readonly<Record<string, string>>;
   readonly email: string;
   readonly onLogout: () => void;
   readonly children: ReactNode;
-};
-
-// ── Default navigation links ──
-
-const NAV_LINKS: Record<AppRole, ReadonlyArray<NavItem>> = {
-  admin: [
-    { label: 'Dashboard', to: '/admin' },
-    { label: 'Properties', to: '/admin/properties' },
-    { label: 'Tenants', to: '/admin/tenants' },
-  ],
-  landlord: [
-    { label: 'Dashboard', to: '/landlord' },
-    { label: 'Properties', to: '/landlord/properties' },
-    { label: 'Tenants', to: '/landlord/tenants' },
-  ],
-  tenant: [
-    { label: 'Dashboard', to: '/tenant' },
-    { label: 'Contracts', to: '/tenant/contracts' },
-    { label: 'Payments', to: '/tenant/payments' },
-  ],
+  readonly LinkComponent: LinkComponent;
+  readonly activeTo: string;
 };
 
 // ── Component ──
@@ -39,13 +21,19 @@ const NAV_LINKS: Record<AppRole, ReadonlyArray<NavItem>> = {
 type Props = {
   readonly children: ReactNode;
   readonly Shell: ComponentType<AppLayoutShellProps>;
-  readonly navLinks?: Record<AppRole, ReadonlyArray<NavItem>>;
+  readonly navItems: Readonly<Record<string, string>>;
+  readonly LinkComponent: LinkComponent;
+  readonly activeTo: string;
+  readonly loginTo: string;
 };
 
 export const AppLayout = ({
   children,
   Shell,
-  navLinks = NAV_LINKS,
+  navItems,
+  LinkComponent,
+  activeTo,
+  loginTo,
 }: Props): JSX.Element => {
   const authState = useAuth();
 
@@ -53,16 +41,18 @@ export const AppLayout = ({
 
   const handleLogout = (): void => {
     void backendConnector.auth.signOut().then(() => {
-      navigate('/login');
+      navigate(loginTo);
     });
   };
 
   return authState.tag === 'authenticated' ?
     (
       <Shell
-        navItems={navLinks[authState.role]}
+        navItems={navItems}
         email={authState.email}
         onLogout={handleLogout}
+        LinkComponent={LinkComponent}
+        activeTo={activeTo}
       >
         {children}
       </Shell>

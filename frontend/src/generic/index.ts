@@ -16,7 +16,7 @@ export type {
   UserId,
   AppError,
   AsyncState,
-  NavItem,
+  LinkComponent,
   SlaveAsyncProps,
   SlaveDataState,
 } from './utils';

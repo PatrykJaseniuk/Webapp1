@@ -10,10 +10,14 @@ export type { Option, Either };
 // Navigation
 // ──────────────────────────────────────────────
 
-export type NavItem = {
-  readonly label: string;
-  readonly to: string;
-};
+import type { ReactNode, ComponentType } from 'react';
+
+/** Router-agnostic link component contract — used by slaves to avoid importing react-router-dom. */
+export type LinkComponent = ComponentType<{
+  readonly to: string | { readonly pathname: string };
+  readonly children: ReactNode;
+  readonly className?: string;
+}>;
 
 // ──────────────────────────────────────────────
 // Result — explicit error handling, no throw
