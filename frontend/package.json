@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "lint": "eslint src/",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --coverage --reporter=verbose",
+    "test": "vitest run --reporter=verbose",
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -42,7 +42,6 @@
     "@typescript-eslint/parser": "^8.60.0",
     "@vitejs/plugin-react": "^4.4.1",
     "@vitest/browser-playwright": "^4.1.7",
-    "@vitest/coverage-v8": "^4.1.7",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.33.0",
     "eslint-plugin-functional": "^8.0.0",

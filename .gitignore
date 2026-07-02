@@ -6,6 +6,9 @@ dist/
 build/
 .next/
 
+# Vitest coverage output
+coverage/
+
 # TypeScript compilation artifacts
 *.tsbuildinfo
 frontend/src/**/*.js

@@ -21,20 +21,9 @@ export default defineConfig({
   server: {
     port: 5173
   },
-   test: {
-     reporters: ['verbose'],
-     coverage: {
-       provider: 'v8',
-       reporter: ['text', 'lcov', 'html'],
-       include: ['src/**/*.{ts,tsx}'],
-       exclude: [
-         'src/**/*.stories.{ts,tsx}',
-         'src/**/*.test.{ts,tsx}',
-         'src/**/*.e2e.test.ts',
-         'src/backendConnector/__generated__/**'
-       ]
-     },
-     projects: [{
+    test: {
+      reporters: ['verbose'],
+      projects: [{
       extends: true,
       test: {
         globals: true,
