@@ -77,13 +77,16 @@ const TableBody = ({ properties, onDelete, getEditUrl }: { readonly properties: 
       </div>
     );
 
-export const PropertiesTable = ({ state, onDelete, getEditUrl }: Props): JSX.Element =>
-  match(state)
-    .with({ tag: 'pending' }, () => <LoadingSpinner />)
-    .with({ tag: 'rejected' }, ({ message, onRetry }) => (
-      <ErrorMessage message={message} onRetry={onRetry} />
-    ))
-    .with({ tag: 'fulfilled' }, ({ data }) => (
-      <TableBody properties={data} onDelete={onDelete} getEditUrl={getEditUrl} />
-    ))
-    .exhaustive();
+export const PropertiesTable = ({ state, onDelete, getEditUrl }: Props): JSX.Element => (
+  <div className="min-h-[300px]">
+    {match(state)
+      .with({ tag: 'pending' }, () => <LoadingSpinner />)
+      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+        <ErrorMessage message={message} onRetry={onRetry} />
+      ))
+      .with({ tag: 'fulfilled' }, ({ data }) => (
+        <TableBody properties={data} onDelete={onDelete} getEditUrl={getEditUrl} />
+      ))
+      .exhaustive()}
+  </div>
+);

@@ -210,20 +210,23 @@ const FormFieldsInner = ({
   );
 };
 
-export const PropertiesFormFields = (props: FormProps): JSX.Element =>
-  match(props.fetchState)
-    .with({ tag: 'pending' }, () => <LoadingSpinner />)
-    .with({ tag: 'rejected' }, ({ message, onRetry }) => (
-      <ErrorMessage message={message} onRetry={onRetry} />
-    ))
-    .with({ tag: 'fulfilled' }, ({ data }) => (
-      <FormFieldsInner
-        defaults={data}
-        isEditing={props.isEditing}
-        onSubmit={props.onSubmit}
-        isLoading={props.isLoading}
-        error={props.error}
-        onCancel={props.onCancel}
-      />
-    ))
-    .exhaustive();
+export const PropertiesFormFields = (props: FormProps): JSX.Element => (
+  <div className="min-h-[400px]">
+    {match(props.fetchState)
+      .with({ tag: 'pending' }, () => <LoadingSpinner />)
+      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+        <ErrorMessage message={message} onRetry={onRetry} />
+      ))
+      .with({ tag: 'fulfilled' }, ({ data }) => (
+        <FormFieldsInner
+          defaults={data}
+          isEditing={props.isEditing}
+          onSubmit={props.onSubmit}
+          isLoading={props.isLoading}
+          error={props.error}
+          onCancel={props.onCancel}
+        />
+      ))
+      .exhaustive()}
+  </div>
+);
