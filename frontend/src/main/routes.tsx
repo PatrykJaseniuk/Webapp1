@@ -2,20 +2,23 @@
 // ROUTE_TREE — single source of truth
 // ══════════════════════════════════════════════════════════════
 
-import { AdminDashboardPage } from "@/pages/AdminDashboardPage";
-import { LandlordDashboardPage } from "@/pages/LandlordDashboardPage";
-import { TenantDashboardPage } from "@/pages/TenantDashboardPage";
-import { LoginPage } from "@/pages/LoginPage";
-import { SignupPage } from "@/pages/SignupPage";
-import { NotFoundPage } from "@/pages/NotFoundPage";
-import { ErrorPage } from "@/pages/ErrorPage";
-import { AdminLayoutPage } from "@/pages/AdminLayoutPage";
-import { LandlordLayoutPage } from "@/pages/LandlordLayoutPage";
-import { TenantLayoutPage } from "@/pages/TenantLayoutPage";
-import { PropertiesListPage } from "@/pages/PropertiesListPage";
-import { PropertiesFormPage } from "@/pages/PropertiesFormPage";
-import { TenantsListPage } from "@/pages/TenantsListPage";
-import { TenantsFormPage } from "@/pages/TenantsFormPage";
+import { AdminDashboardPage } from "@/pages/AdminDashboardP";
+import { LandlordDashboardPage } from "@/pages/LandlordDashboardP";
+import { TenantDashboardPage } from "@/pages/TenantDashboardP";
+import { LoginPage } from "@/pages/LoginP";
+import { SignupPage } from "@/pages/SignupP";
+import { NotFoundPage } from "@/pages/NotFoundP";
+import { ErrorPage } from "@/pages/ErrorP";
+import { AdminLayoutPage } from "@/pages/AdminLayoutP";
+import { LandlordLayoutPage } from "@/pages/LandlordLayoutP";
+import { TenantLayoutPage } from "@/pages/TenantLayoutP";
+import { PropertiesListPage } from "@/pages/PropertiesP";
+import { PropertyDetailPage } from "@/pages/PropertyP";
+import { TenantsListPage } from "@/pages/TenantsP";
+import { TenantDetailPage } from "@/pages/TenantP";
+import { LeaseAgreementsListPage } from "@/pages/LeaseAgreementsP";
+import { LeaseAgreementDetailPage } from "@/pages/LeaseAgreementP";
+import { TransactionDetailPage } from "@/pages/TransactionPage";
 import { createHashRouter, Navigate } from "react-router-dom";
 
 
@@ -46,12 +49,8 @@ export const router = createHashRouter(
                   Component: PropertiesListPage,
                 },
                 {
-                  path: 'new',
-                  Component: PropertiesFormPage,
-                },
-                {
                   path: ':id',
-                  Component: PropertiesFormPage,
+                  Component: PropertyDetailPage,
                 },
               ],
             },
@@ -63,12 +62,30 @@ export const router = createHashRouter(
                   Component: TenantsListPage,
                 },
                 {
-                  path: 'new',
-                  Component: TenantsFormPage,
+                  path: ':id',
+                  Component: TenantDetailPage,
+                },
+              ],
+            },
+            {
+              path: 'leases',
+              children: [
+                {
+                  index: true,
+                  Component: LeaseAgreementsListPage,
                 },
                 {
                   path: ':id',
-                  Component: TenantsFormPage,
+                  Component: LeaseAgreementDetailPage,
+                },
+              ],
+            },
+            {
+              path: 'transactions',
+              children: [
+                {
+                  path: ':id',
+                  Component: TransactionDetailPage,
                 },
               ],
             },
@@ -90,12 +107,8 @@ export const router = createHashRouter(
                   Component: PropertiesListPage,
                 },
                 {
-                  path: 'new',
-                  Component: PropertiesFormPage,
-                },
-                {
                   path: ':id',
-                  Component: PropertiesFormPage,
+                  Component: PropertyDetailPage,
                 },
               ],
             },
@@ -107,12 +120,30 @@ export const router = createHashRouter(
                   Component: TenantsListPage,
                 },
                 {
-                  path: 'new',
-                  Component: TenantsFormPage,
+                  path: ':id',
+                  Component: TenantDetailPage,
+                },
+              ],
+            },
+            {
+              path: 'leases',
+              children: [
+                {
+                  index: true,
+                  Component: LeaseAgreementsListPage,
                 },
                 {
                   path: ':id',
-                  Component: TenantsFormPage,
+                  Component: LeaseAgreementDetailPage,
+                },
+              ],
+            },
+            {
+              path: 'transactions',
+              children: [
+                {
+                  path: ':id',
+                  Component: TransactionDetailPage,
                 },
               ],
             },

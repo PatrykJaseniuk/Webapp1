@@ -83,3 +83,51 @@ export type SlaveDataState<T> =
   | { readonly tag: 'pending' }
   | { readonly tag: 'rejected'; readonly message: string; readonly onRetry: () => void }
   | { readonly tag: 'fulfilled'; readonly data: T };
+
+// ──────────────────────────────────────────────
+// Cross-table data shapes — for detail views and dashboards
+// ──────────────────────────────────────────────
+
+/** Summary of a lease agreement for display in detail views. */
+export type LeaseSummary = {
+  readonly id: string;
+  readonly propertyName: string;
+  readonly propertyId: string;
+  readonly tenantName: string;
+  readonly tenantId: string;
+  readonly startDate: string;
+  readonly endDate: string | null;
+  readonly monthlyRent: number;
+  readonly depositAmount: number;
+  readonly leaseStatus: string;
+};
+
+/** Summary of a transaction for display in detail views. */
+export type TransactionSummary = {
+  readonly id: string;
+  readonly type: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly dueDate: string;
+  readonly transactionStatus: string;
+};
+
+/** Summary of an attachment for display in detail views. */
+export type AttachmentSummary = {
+  readonly id: string;
+  readonly fileName: string;
+  readonly fileUrl: string;
+  readonly fileType: string | null;
+  readonly fileSize: number | null;
+  readonly description: string | null;
+};
+
+/** Aggregated data for dashboard stat cards. */
+export type DashboardSummary = {
+  readonly totalProperties: number;
+  readonly occupiedProperties: number;
+  readonly totalTenants: number;
+  readonly activeTenants: number;
+  readonly totalUnpaidAmount: number;
+  readonly overdueItems: number;
+};

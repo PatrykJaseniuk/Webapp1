@@ -1,0 +1,121 @@
+import { useCallback } from 'react';
+import { useAsync } from 'react-use';
+import type { ComponentType } from 'react';
+import { backendConnector } from '@/backendConnector/backendConnector';
+import type { Database } from '@/backendConnector';
+import type { SlaveDataState } from '@/generic';
+
+type TenantRow = Database['public']['Tables']['tenants']['Row'];
+
+export type EnrichedTenantRow = Readonly<{
+  id: string;
+  userId: string | null;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  idDocumentNumber: string | null;
+  emergencyContactName: string | null;
+  emergencyContactPhone: string | null;
+  notes: string | null;
+  tenantStatus: TenantRow['tenant_status'];
+  createdAt: string;
+  updatedAt: string;
+  currentPropertyNames: string;
+  currentPropertyIds: readonly string[];
+}>;
+
+type PropertyRef = {
+  readonly id: string;
+  readonly name: string | null;
+};
+
+type LeaseAgreementRef = {
+  readonly property_id: string;
+  readonly lease_status: string;
+  readonly properties: PropertyRef | null;
+};
+
+type TenantWithLeases = TenantRow & {
+  readonly lease_agreements: readonly LeaseAgreementRef[] | null;
+};
+
+const enrich = (row: TenantWithLeases): EnrichedTenantRow => {
+  const activeLeases: readonly LeaseAgreementRef[] =
+    (row.lease_agreements ?? []).filter(
+      (la: LeaseAgreementRef) => la.lease_status === 'active',
+    );
+
+  const propertyNames: readonly string[] = activeLeases
+    .map((la: LeaseAgreementRef) => la.properties?.name)
+    .filter((n: string | null | undefined): n is string => n !== null && n !== undefined);
+
+  const propertyIds: readonly string[] = activeLeases
+    .map((la: LeaseAgreementRef) => la.property_id)
+    .filter((id: string): id is string => id !== '');
+
+  return {
+    id: row.id,
+    userId: row.user_id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    email: row.email,
+    phone: row.phone,
+    idDocumentNumber: row.id_document_number,
+    emergencyContactName: row.emergency_contact_name,
+    emergencyContactPhone: row.emergency_contact_phone,
+    notes: row.notes,
+    tenantStatus: row.tenant_status,
+    createdAt: row.created_at ?? '',
+    updatedAt: row.updated_at ?? '',
+    currentPropertyNames: propertyNames.join(', '),
+    currentPropertyIds: propertyIds,
+  };
+};
+
+type TableProps = {
+  readonly state: SlaveDataState<readonly EnrichedTenantRow[]>;
+  readonly getDetailUrl: (id: string) => string;
+  readonly getPropertyUrl: (propertyId: string) => string;
+};
+
+type Props = {
+  readonly TableComponent: ComponentType<TableProps>;
+  readonly getDetailUrl: (id: string) => string;
+  readonly getPropertyUrl: (propertyId: string) => string;
+};
+
+export const TenantsList = ({
+  TableComponent,
+  getDetailUrl,
+  getPropertyUrl,
+}: Props): JSX.Element => {
+  const { loading, error, value } = useAsync(async (): Promise<readonly EnrichedTenantRow[]> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error: dbError } = await (backendConnector as any)
+      .from('tenants')
+      .select('*, lease_agreements(property_id, lease_status, properties(id, name))')
+      .order('last_name')
+      .order('first_name');
+    return dbError !== null ? [] : ((data ?? []) as TenantWithLeases[]).map(enrich);
+  }, []);
+
+  const handleRetry = useCallback((): void => {
+    window.location.reload();
+  }, []);
+
+  const state: SlaveDataState<readonly EnrichedTenantRow[]> =
+    loading ?
+      { tag: 'pending' } :
+      error !== undefined ?
+        { tag: 'rejected', message: error.message, onRetry: handleRetry } :
+        { tag: 'fulfilled', data: value ?? [] };
+
+  return (
+    <TableComponent
+      state={state}
+      getDetailUrl={getDetailUrl}
+      getPropertyUrl={getPropertyUrl}
+    />
+  );
+};

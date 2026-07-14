@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { computeAuthorisation } from './RoleGuard';
-import type { AuthoriseRequirement } from './RoleGuard';
+import { computeAuthorisation } from './RoleGuardM';
+import type { AuthoriseRequirement } from './RoleGuardM';
 import type { AuthState, AppRole } from '@/hooks/AuthContext';
 
 // ──────────────────────────────────────────────────────────────

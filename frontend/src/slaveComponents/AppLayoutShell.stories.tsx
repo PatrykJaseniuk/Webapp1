@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentType, ReactNode } from 'react';
-import { AppLayoutShell } from './AppLayoutShell';
+import { AppLayoutShell } from './AppLayouS';
+import type { SlaveDataState } from '@/generic';
+import type { AuthContextData } from '@/masterComponents/AppLayoutM';
 
 const navItems = {
   dashboard: '/admin',
@@ -8,7 +10,7 @@ const navItems = {
   tenants: '/admin/tenants',
 };
 
-const noop = (): void => {};
+const noop = (): void => { };
 
 type LinkProps = {
   readonly to: string | { readonly pathname: string };
@@ -23,13 +25,22 @@ const MockLink: ComponentType<LinkProps> = ({
   <a className={className}>{children}</a>
 );
 
+const fulfilledAuth: SlaveDataState<AuthContextData> = {
+  tag: 'fulfilled',
+  data: { email: 'admin@example.com', onLogout: noop },
+};
+
+const fulfilledAuthLongEmail: SlaveDataState<AuthContextData> = {
+  tag: 'fulfilled',
+  data: { email: 'very.long.email.address@example.com', onLogout: noop },
+};
+
 const meta: Meta<typeof AppLayoutShell> = {
   title: 'slave/AppLayoutShell',
   component: AppLayoutShell,
   args: {
     navItems,
-    email: 'admin@example.com',
-    onLogout: noop,
+    authState: fulfilledAuth,
     LinkComponent: MockLink,
     activeTo: '/admin',
   },
@@ -46,7 +57,7 @@ export const Default: Story = {
 
 export const LongEmail: Story = {
   args: {
-    email: 'very.long.email.address@example.com',
+    authState: fulfilledAuthLongEmail,
     children: <p className="p-4 text-gray-600">Content area</p>,
   },
 };

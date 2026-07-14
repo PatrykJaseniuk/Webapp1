@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AuthorisationGuard } from './RoleGuard';
-import type { AuthoriseRequirement } from './RoleGuard';
+import { AuthorisationGuard } from './RoleGuardM';
+import type { AuthoriseRequirement, AccessGateSlaveProps } from './RoleGuardM';
 import type { AuthState } from '@/hooks/AuthContext';
+import type { ComponentType } from 'react';
+import { match } from 'ts-pattern';
 
 // ──────────────────────────────────────────────────────────────
 // Mock useAuth
@@ -23,9 +25,23 @@ vi.mock('@/hooks/AuthContext', async () => {
 // Helpers
 // ──────────────────────────────────────────────────────────────
 
-const Loading = <span>Loading…</span>;
-const AccessDenied = <span>Access Denied</span>;
 const Content = <p>Authorised Content</p>;
+
+const MockAccessGate: ComponentType<AccessGateSlaveProps> = ({
+  authState,
+  children,
+}: AccessGateSlaveProps): JSX.Element => (
+  <div>
+    {match(authState)
+      .with({ tag: 'pending' }, () => <span>Loading…</span>)
+      .with({ tag: 'fulfilled' }, ({ data }) =>
+        data.isAuthorised ?
+          <>{children}</> :
+          <span>Access Denied</span>)
+      .with({ tag: 'rejected' }, ({ message }) => <span>{message}</span>)
+      .exhaustive()}
+  </div>
+);
 
 // ──────────────────────────────────────────────────────────────
 // Tests
@@ -41,15 +57,14 @@ describe('AuthorisationGuard (integration)', () => {
       mockUseAuth.mockReturnValue({ tag: 'loading' });
     });
 
-    it('renders LoadingComponent', () => {
+    it('renders loading via Slave', () => {
       const req: AuthoriseRequirement = { isAuthenticated: true, roles: ['admin'] };
 
       render(
         <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
-            LoadingComponent={Loading}
-            AccessDeniedComponent={AccessDenied}
+            Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
@@ -71,8 +86,7 @@ describe('AuthorisationGuard (integration)', () => {
         <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
-            LoadingComponent={Loading}
-            AccessDeniedComponent={AccessDenied}
+            Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
@@ -94,8 +108,7 @@ describe('AuthorisationGuard (integration)', () => {
         <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
-            LoadingComponent={Loading}
-            AccessDeniedComponent={AccessDenied}
+            Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
@@ -121,8 +134,7 @@ describe('AuthorisationGuard (integration)', () => {
         <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
-            LoadingComponent={Loading}
-            AccessDeniedComponent={AccessDenied}
+            Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
@@ -132,7 +144,7 @@ describe('AuthorisationGuard (integration)', () => {
       expect(screen.getByText('Authorised Content')).toBeInTheDocument();
     });
 
-    it('renders AccessDeniedComponent when user lacks required role', () => {
+    it('renders AccessDenied when user lacks required role', () => {
       mockUseAuth.mockReturnValue({
         tag: 'authenticated',
         userId: 'u2',
@@ -144,8 +156,7 @@ describe('AuthorisationGuard (integration)', () => {
         <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
-            LoadingComponent={Loading}
-            AccessDeniedComponent={AccessDenied}
+            Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
@@ -156,15 +167,14 @@ describe('AuthorisationGuard (integration)', () => {
       expect(screen.queryByText('Authorised Content')).not.toBeInTheDocument();
     });
 
-    it('renders AccessDeniedComponent when user is unauthenticated', () => {
+    it('renders AccessDenied when user is unauthenticated', () => {
       mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
       render(
         <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthorisationGuard
             authoriseRequirement={req}
-            LoadingComponent={Loading}
-            AccessDeniedComponent={AccessDenied}
+            Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>

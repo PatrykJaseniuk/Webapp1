@@ -37,7 +37,7 @@ vi.mock('@/hooks/AuthContext', async () => {
 // Lazy import after mocks are set up
 // ──────────────────────────────────────────────────────────────
 
-const { LoginPage } = await import('./LoginPage');
+const { LoginPage } = await import('./LoginP');
 
 // ──────────────────────────────────────────────────────────────
 // Tests

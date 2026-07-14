@@ -1,0 +1,34 @@
+import { match } from 'ts-pattern';
+import type { AccessGateSlaveProps, AuthorisationResult } from '@/masterComponents/RoleGuardM';
+import type { ReactNode } from 'react';
+import { LoadingSpinner } from './LoadingSpinnerS';
+import { ErrorMessage } from './ErrorMessageS';
+import { AccessDenied } from './AccessDeniedS';
+
+const GateContent = ({
+  authData,
+  children,
+}: {
+  readonly authData: AuthorisationResult;
+  readonly children: ReactNode;
+}): JSX.Element =>
+  authData.isAuthorised ?
+    <>{children}</> :
+    <AccessDenied />;
+
+export const AccessGateS = ({
+  authState,
+  children,
+}: AccessGateSlaveProps): JSX.Element => (
+  <div className="min-h-[300px]">
+    {match(authState)
+      .with({ tag: 'pending' }, () => <LoadingSpinner />)
+      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+        <ErrorMessage message={message} onRetry={onRetry} />
+      ))
+      .with({ tag: 'fulfilled' }, ({ data }) => (
+        <GateContent authData={data}>{children}</GateContent>
+      ))
+      .exhaustive()}
+  </div>
+);

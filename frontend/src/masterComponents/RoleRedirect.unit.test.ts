@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_REDIRECT_MAP } from './RoleRedirect';
+import { DEFAULT_REDIRECT_MAP } from './RoleRedirectM';
 
 // ──────────────────────────────────────────────────────────────
 // DEFAULT_REDIRECT_MAP
