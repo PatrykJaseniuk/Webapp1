@@ -83,13 +83,13 @@ const AuthenticatedShell = ({
 
 export const AppLayoutShell = ({
   navItems,
-  authState,
+  dataMode,
   children,
   LinkComponent,
   activeTo,
 }: AppLayoutSProps): JSX.Element => (
   <div className="min-h-screen">
-    {match(authState)
+    {match(dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

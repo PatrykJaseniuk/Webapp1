@@ -30,7 +30,7 @@ const fulfilledDataMode: DataMode<AuthContextData> = {
   data: { email: 'admin@example.com', onLogout: noop },
 };
 
-const fulfilledAuthLongEmail: DataMode<AuthContextData> = {
+const fulfilledLongEmail: DataMode<AuthContextData> = {
   tag: 'fulfilled',
   data: { email: 'very.long.email.address@example.com', onLogout: noop },
 };
@@ -40,7 +40,7 @@ const meta: Meta<typeof AppLayoutShell> = {
   component: AppLayoutShell,
   args: {
     navItems,
-    authState: fulfilledAuth,
+    dataMode: fulfilledDataMode,
     LinkComponent: MockLink,
     activeTo: '/admin',
   },
@@ -57,7 +57,7 @@ export const Default: Story = {
 
 export const LongEmail: Story = {
   args: {
-    authState: fulfilledAuthLongEmail,
+    dataMode: fulfilledLongEmail,
     children: <p className="p-4 text-gray-600">Content area</p>,
   },
 };

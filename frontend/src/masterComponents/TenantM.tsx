@@ -7,33 +7,31 @@ import type { DataMode, LeaseSummary, TransactionSummary, AttachmentSummary } fr
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
-export type TenantDetailData = Readonly<{
+type TenantDetailData = Readonly<{
   tenant: TenantRow;
   leases: readonly LeaseSummary[];
   transactions: readonly TransactionSummary[];
   attachments: readonly AttachmentSummary[];
 }>;
 
-type DetailViewProps = {
-  readonly dataMode: DataMode<TenantDetailData>;
+type Url = {
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
   readonly getEditUrl: () => string;
   readonly getBackUrl: () => string;
 };
+
+export type TenantSProps = {
+  readonly dataMode: DataMode<TenantDetailData>;
+} & Url;
 
 type Props = {
-  readonly DetailViewComponent: ComponentType<DetailViewProps>;
+  readonly DetailViewComponent: ComponentType<TenantSProps>;
   readonly id: string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
-};
+} & Url;
 
-export const TenantsDetail = ({
+export const TenantDetailM = ({
   DetailViewComponent,
   id,
   getPropertyUrl,

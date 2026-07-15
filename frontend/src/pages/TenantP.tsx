@@ -1,6 +1,6 @@
 import { useParams, useLocation } from 'react-router-dom';
-import { TenantsDetail } from '@/masterComponents/TenantM';
-import { TenantDetailView } from '@/slaveComponents/TenantS';
+import { TenantDetailM } from '@/masterComponents/TenantM';
+import { TenantDetailS } from '@/slaveComponents/TenantS';
 
 export const TenantDetailPage = (): JSX.Element => {
   const { id } = useParams<{ readonly id: string }>();
@@ -16,8 +16,8 @@ export const TenantDetailPage = (): JSX.Element => {
   const getBackUrl = (): string => `#${tenantsPath}`;
 
   return (
-    <TenantsDetail
-      DetailViewComponent={TenantDetailView}
+    <TenantDetailM
+      DetailViewComponent={TenantDetailS}
       id={id!}
       getPropertyUrl={getPropertyUrl}
       getLeaseUrl={getLeaseUrl}

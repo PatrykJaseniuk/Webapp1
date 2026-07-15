@@ -55,14 +55,14 @@ const StatCards = ({ summary }: { readonly summary: DashboardSummary }): JSX.Ele
 export const AdminDashboard = ({
   LinkComponent,
   cards,
-  summaryState,
+  dataMode,
 }: Props): JSX.Element => (
   <div className="flex flex-col items-center justify-center py-16">
     <h1 className="mb-2 text-3xl font-bold text-gray-900">Panel Administratora</h1>
     <p className="text-gray-500">System zarządzania najmem</p>
 
     <div className="mt-6 w-full max-w-3xl">
-      {match(summaryState)
+      {match(dataMode)
         .with({ tag: 'pending' }, () => <LoadingSpinner />)
         .with({ tag: 'rejected' }, () => undefined)
         .with({ tag: 'fulfilled' }, ({ data }) => <StatCards summary={data} />)

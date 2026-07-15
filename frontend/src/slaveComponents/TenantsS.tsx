@@ -1,30 +1,27 @@
 import { match } from 'ts-pattern';
-import type { EnrichedTenantRow } from '@/masterComponents/TenantsM';
-import type { DataMode } from '@/generic';
+import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type StatusLabelMap = Readonly<Record<EnrichedTenantRow['tenantStatus'], string>>;
+type Row = Extract<TenantsSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type TenantStatus = Row['tenantStatus'];
 
-export const STATUS_LABEL: StatusLabelMap = Object.freeze({
+export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freeze({
   active: 'Aktywny',
   past: 'Były',
   applicant: 'Kandydat',
 });
 
 type Props = {
-  readonly dataMode: DataMode<readonly EnrichedTenantRow[]>;
-  readonly getDetailUrl: (id: string) => string;
+  readonly dataMode: TenantsSProps['dataMode'];
   readonly getPropertyUrl: (propertyId: string) => string;
 };
 
 const TableBody = ({
   tenants,
-  getDetailUrl,
   getPropertyUrl,
 }: {
-  readonly tenants: readonly EnrichedTenantRow[];
-  readonly getDetailUrl: (id: string) => string;
+  readonly tenants: readonly Row[];
   readonly getPropertyUrl: (propertyId: string) => string;
 }): JSX.Element =>
   tenants.length === 0 ?
@@ -43,7 +40,7 @@ const TableBody = ({
             </tr>
           </thead>
           <tbody>
-            {tenants.map((t: EnrichedTenantRow) => (
+            {tenants.map((t) => (
               <tr key={t.id} className="border-b border-gray-100 text-sm">
                 <td className="py-3 pr-4 font-medium text-gray-900">{t.lastName}</td>
                 <td className="py-3 pr-4 text-gray-600">{t.firstName}</td>
@@ -75,15 +72,15 @@ const TableBody = ({
       </div>
     );
 
-export const TenantsS = ({ state, getDetailUrl, getPropertyUrl }: Props): JSX.Element => (
+export const TenantsS = ({ dataMode, getPropertyUrl }: Props): JSX.Element => (
   <div className="min-h-[300px]">
-    {match(state)
+    {match(dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
-        <TableBody tenants={data} getDetailUrl={getDetailUrl} getPropertyUrl={getPropertyUrl} />
+        <TableBody tenants={data} getPropertyUrl={getPropertyUrl} />
       ))
       .exhaustive()}
   </div>

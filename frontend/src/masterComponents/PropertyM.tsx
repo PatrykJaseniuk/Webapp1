@@ -3,45 +3,47 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { DataMode, LeaseSummary, TransactionSummary, AttachmentSummary } from '@/generic';
+import type { DataMode } from '@/generic';
 
-type PropertyRow = Database['public']['Tables']['properties']['Row'];
+type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
+type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
+type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
+type FinancialSummaryDbRow = Database['public']['Views']['property_financial_summary']['Row'];
+type OccupancyDbRow = Database['public']['Views']['property_occupancy']['Row'];
+type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
 
-export type PropertyDetailData = Readonly<{
-  property: PropertyRow;
-  currentTenantName: string | null;
-  currentTenantId: string | null;
-  leases: readonly LeaseSummary[];
-  transactions: readonly TransactionSummary[];
-  financialSummary: {
-    readonly totalIncome: number;
-    readonly totalExpenses: number;
-    readonly netProfit: number;
-  };
-  attachments: readonly AttachmentSummary[];
+type PropertyWithRelationships = Readonly<{
+  property: PropertyDbRow | null;
+  occupancy: OccupancyDbRow | null;
+  leases: readonly (LeaseAgreementDbRow & {
+    readonly tenants: { readonly first_name: string; readonly last_name: string; };
+  })[];
+  transactions: readonly TransactionDbRow[];
+  financial: FinancialSummaryDbRow | null;
+  attachments: readonly AttachmentDbRow[];
 }>;
 
-export type PropertyDetailViewProps = {
-  readonly dataMode: DataMode<PropertyDetailData>;
+type Url = {
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
   readonly getEditUrl: () => string;
   readonly getBackUrl: () => string;
 };
+
+export type PropertySProps = {
+  readonly dataMode: DataMode<PropertyWithRelationships>;
+} &
+  Url;
 
 type Props = {
-  readonly DetailViewComponent: ComponentType<PropertyDetailViewProps>;
+  readonly Slave: ComponentType<PropertySProps>;
   readonly id: string;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
-};
+} &
+  Url;
 
-export const PropertyDetail = ({
-  DetailViewComponent,
+export const PropertyDetailM = ({
+  Slave,
   id,
   getTenantUrl,
   getLeaseUrl,
@@ -49,7 +51,7 @@ export const PropertyDetail = ({
   getEditUrl,
   getBackUrl,
 }: Props): JSX.Element => {
-  const { loading, error, value } = useAsync(async (): Promise<PropertyDetailData> => {
+  const { loading, error: fetchError, value } = useAsync(async () => {
     const [propertyResult, occupancyResult, leasesResult, transactionsResult, financialResult, attachmentsResult] =
       await Promise.all([
         backendConnector.from('properties').select('*').eq('id', id).single(),
@@ -58,7 +60,11 @@ export const PropertyDetail = ({
           .select('*')
           .eq('id', id)
           .single(),
-        backendConnector.from('lease_agreements').select('*').eq('property_id', id).order('start_date', { ascending: false }),
+        backendConnector
+          .from('lease_agreements')
+          .select('*, tenants(first_name,last_name)')
+          .eq('property_id', id)
+          .order('start_date', { ascending: false }),
         backendConnector
           .from('transactions')
           .select('*')
@@ -77,74 +83,33 @@ export const PropertyDetail = ({
           .eq('related_to_id', id),
       ]);
 
-    const property = propertyResult.data!;
-
-    const currentTenantName: string | null =
-      occupancyResult.data?.current_tenant_name ?? null;
-    const currentTenantId: string | null =
-      occupancyResult.data?.tenant_id ?? null;
-
-    const leases: readonly LeaseSummary[] = (leasesResult.data ?? []).map((l) => ({
-      id: l.id,
-      propertyName: property.name,
-      propertyId: l.property_id,
-      tenantName: '',
-      tenantId: l.tenant_id,
-      startDate: l.start_date,
-      endDate: l.end_date,
-      monthlyRent: l.monthly_rent,
-      depositAmount: l.deposit_amount,
-      leaseStatus: l.lease_status,
-    }));
-
-    const transactions: readonly TransactionSummary[] = (transactionsResult.data ?? []).map((t) => ({
-      id: t.id,
-      type: t.type,
-      description: t.description,
-      amount: t.amount,
-      dueDate: t.due_date,
-      transactionStatus: t.transaction_status,
-    }));
-
-    const finRow = financialResult.data;
-
-    const attachments: readonly AttachmentSummary[] = (attachmentsResult.data ?? []).map((a) => ({
-      id: a.id,
-      fileName: a.file_name,
-      fileUrl: a.file_url,
-      fileType: a.file_type,
-      fileSize: a.file_size,
-      description: a.description,
-    }));
-
-    return {
-      property,
-      currentTenantName,
-      currentTenantId,
-      leases,
-      transactions,
-      financialSummary: {
-        totalIncome: finRow?.total_income ?? 0,
-        totalExpenses: finRow?.total_expenses ?? 0,
-        netProfit: finRow?.net_profit ?? 0,
-      },
-      attachments,
-    };
+    return { propertyResult, occupancyResult, leasesResult, transactionsResult, financialResult, attachmentsResult };
   }, [id]);
+
+  const error = fetchError ?? value?.propertyResult.error ?? value?.occupancyResult.error ?? value?.leasesResult.error ?? value?.transactionsResult.error ?? value?.financialResult.error ?? value?.attachmentsResult.error;
+
+  const data: PropertyWithRelationships = {
+    property: value?.propertyResult.data ?? null,
+    occupancy: value?.occupancyResult.data ?? null,
+    leases: value?.leasesResult.data ?? [],
+    transactions: value?.transactionsResult.data ?? [],
+    financial: value?.financialResult.data ?? null,
+    attachments: value?.attachmentsResult.data ?? [],
+  };
 
   const handleRetry = useCallback((): void => {
     window.location.reload();
   }, []);
 
-  const dataMode: DataMode<PropertyDetailData> =
+  const dataMode: DataMode<PropertyWithRelationships> =
     loading ?
       { tag: 'pending' } :
-      error !== undefined ?
+      error ?
         { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data: value! };
+        { tag: 'fulfilled', data };
 
   return (
-    <DetailViewComponent
+    <Slave
       dataMode={dataMode}
       getTenantUrl={getTenantUrl}
       getLeaseUrl={getLeaseUrl}

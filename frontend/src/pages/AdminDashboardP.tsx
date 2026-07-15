@@ -11,11 +11,11 @@ const cards = [
 
 export const AdminDashboardPage = (): JSX.Element => (
   <DashboardSummaryData
-    SummaryComponent={({ state }) => (
+    SummaryComponent={({ dataMode }) => (
       <AdminDashboard
         LinkComponent={NavLink as unknown as LinkComponent}
         cards={cards}
-        summaryState={state}
+        dataMode={dataMode}
       />
     )}
   />

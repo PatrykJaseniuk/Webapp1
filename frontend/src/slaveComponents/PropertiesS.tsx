@@ -1,38 +1,31 @@
 import { match } from 'ts-pattern';
-import type { EnrichedPropertyRow } from '@/masterComponents/PropertiesM';
-import type { DataMode } from '@/generic';
+import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type StatusLabelMap = Readonly<Record<EnrichedPropertyRow['property_status'], string>>;
+type Row = Extract<PropertiesSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type PropertyStatus = NonNullable<Row['property_status']>;
+type PropertyType = NonNullable<Row['property_type']>;
 
-export const STATUS_LABEL: StatusLabelMap = Object.freeze({
+export const STATUS_LABEL: Readonly<Record<PropertyStatus, string>> = Object.freeze({
   available: 'Dostępna',
   occupied: 'Zajęta',
   inactive: 'Nieaktywna',
 });
 
-type TypeLabelMap = Readonly<Record<EnrichedPropertyRow['property_type'], string>>;
-
-export const TYPE_LABEL: TypeLabelMap = Object.freeze({
+export const TYPE_LABEL: Readonly<Record<PropertyType, string>> = Object.freeze({
   apartment: 'Mieszkanie',
   house: 'Dom',
   commercial: 'Lokal',
   room: 'Pokój',
 });
 
-type Props = {
-  readonly dataMode: DataMode<readonly EnrichedPropertyRow[]>;
-  readonly getDetailUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
-};
-
 const TableBody = ({
   properties,
   getDetailUrl,
   getTenantUrl,
 }: {
-  readonly properties: readonly EnrichedPropertyRow[];
+  readonly properties: readonly Row[];
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
 }): JSX.Element =>
@@ -52,28 +45,36 @@ const TableBody = ({
             </tr>
           </thead>
           <tbody>
-            {properties.map((p: EnrichedPropertyRow) => (
-              <tr key={p.id} className="border-b border-gray-100 text-sm">
+            {properties.map((p) => (
+              <tr key={p.id ?? ''} className="border-b border-gray-100 text-sm">
                 <td className="py-3 pr-4 font-medium text-gray-900">
-                  <a href={getDetailUrl(p.id)} className="text-blue-600 hover:text-blue-800 hover:underline">
+                  <a href={getDetailUrl(p.id ?? '')} className="text-blue-600 hover:text-blue-800 hover:underline">
                     {p.name}
                   </a>
                 </td>
                 <td className="py-3 pr-4 text-gray-600">{p.address}</td>
-                <td className="py-3 pr-4 text-gray-600">{TYPE_LABEL[p.property_type]}</td>
                 <td className="py-3 pr-4 text-gray-600">
-                  {p.currentTenantName !== null && p.currentTenantId !== null ?
+                  {p.property_type !== null ?
+                    TYPE_LABEL[p.property_type] :
+                    <span className="text-gray-400">—</span>}
+                </td>
+                <td className="py-3 pr-4 text-gray-600">
+                  {p.current_tenant_name !== null && p.tenant_id !== null ?
                     <a
-                      href={getTenantUrl(p.currentTenantId)}
+                      href={getTenantUrl(p.tenant_id)}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                     >
-                      {p.currentTenantName}
+                      {p.current_tenant_name}
                     </a> :
                     <span className="text-gray-400">—</span>}
                 </td>
-                <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[p.property_status]}</td>
+                <td className="py-3 pr-4 text-gray-600">
+                  {p.property_status !== null ?
+                    STATUS_LABEL[p.property_status] :
+                    <span className="text-gray-400">—</span>}
+                </td>
                 <td className="py-3 pr-4 text-right text-gray-900">
-                  {p.monthly_rent.toLocaleString('pl-PL')} zł
+                  {(p.monthly_rent ?? 0).toLocaleString('pl-PL')} zł
                 </td>
               </tr>
             ))}
@@ -82,9 +83,9 @@ const TableBody = ({
       </div>
     );
 
-export const PropertiesS = ({ state, getDetailUrl, getTenantUrl }: Props): JSX.Element => (
+export const PropertiesS = ({ dataMode, getDetailUrl, getTenantUrl }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
-    {match(state)
+    {match(dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

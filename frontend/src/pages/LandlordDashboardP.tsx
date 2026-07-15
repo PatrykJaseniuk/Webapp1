@@ -11,11 +11,11 @@ const cards = [
 
 export const LandlordDashboardPage = (): JSX.Element => (
   <DashboardSummaryData
-    SummaryComponent={({ state }) => (
+    SummaryComponent={({ dataMode }) => (
       <LandlordDashboard
         LinkComponent={NavLink as unknown as LinkComponent}
         cards={cards}
-        summaryState={state}
+        dataMode={dataMode}
       />
     )}
   />

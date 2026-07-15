@@ -1,28 +1,36 @@
 import { match } from 'ts-pattern';
-import type { PropertyDetailData, PropertyDetailViewProps } from '@/masterComponents/PropertyM';
+import type { PropertySProps } from '@/masterComponents/PropertyM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-const STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+type Data = Extract<PropertySProps['dataMode'], { tag: 'fulfilled' }>['data'];
+type PropertyData = NonNullable<Data['property']>;
+type PropertyStatusKey = PropertyData['property_status'];
+type PropertyTypeKey = PropertyData['property_type'];
+type LeaseStatusKey = Data['leases'][number]['lease_status'];
+type TxnTypeKey = Data['transactions'][number]['type'];
+type TxnStatusKey = Data['transactions'][number]['transaction_status'];
+
+const STATUS_LABEL: Readonly<Record<PropertyStatusKey, string>> = Object.freeze({
   available: 'Dostępna',
   occupied: 'Zajęta',
   inactive: 'Nieaktywna',
 });
 
-const TYPE_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const TYPE_LABEL: Readonly<Record<PropertyTypeKey, string>> = Object.freeze({
   apartment: 'Mieszkanie',
   house: 'Dom',
   commercial: 'Lokal',
   room: 'Pokój',
 });
 
-const LEASE_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatusKey, string>> = Object.freeze({
   active: 'Aktywna',
   expired: 'Wygasła',
   terminated: 'Rozwiązana',
 });
 
-const TRANSACTION_TYPE_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const TRANSACTION_TYPE_LABEL: Readonly<Record<TxnTypeKey, string>> = Object.freeze({
   rent: 'Czynsz',
   utility: 'Media',
   expense: 'Wydatek',
@@ -32,7 +40,7 @@ const TRANSACTION_TYPE_LABEL: Readonly<Record<string, string>> = Object.freeze({
   other: 'Inne',
 });
 
-const TRANSACTION_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const TRANSACTION_STATUS_LABEL: Readonly<Record<TxnStatusKey, string>> = Object.freeze({
   pending: 'Oczekująca',
   paid: 'Opłacona',
   overdue: 'Zaległa',
@@ -44,21 +52,21 @@ const labelClass = 'text-xs font-medium text-gray-500';
 const valueClass = 'text-sm text-gray-900';
 const pillClass = 'inline-block rounded-full px-2 py-0.5 text-xs font-medium';
 
-const statusPillClass = (status: string): string =>
+const statusPillClass = (status: PropertyStatusKey): string =>
   status === 'available' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'occupied' ?
       `${pillClass} bg-blue-50 text-blue-700` :
       `${pillClass} bg-gray-50 text-gray-600`;
 
-const leaseStatusPillClass = (status: string): string =>
+const leaseStatusPillClass = (status: LeaseStatusKey): string =>
   status === 'active' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'expired' ?
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-red-50 text-red-700`;
 
-const txnStatusPillClass = (status: string): string =>
+const txnStatusPillClass = (status: TxnStatusKey): string =>
   status === 'paid' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'overdue' ?
@@ -73,20 +81,23 @@ const financialValueClass = 'text-lg font-semibold';
 
 const DetailContent = ({
   data,
+  property: p,
   getTenantUrl,
   getLeaseUrl,
   getTransactionUrl,
   getEditUrl,
   getBackUrl,
 }: {
-  readonly data: PropertyDetailData;
+  readonly data: Data;
+  readonly property: PropertyData;
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
   readonly getEditUrl: () => string;
   readonly getBackUrl: () => string;
 }): JSX.Element => {
-  const p = data.property;
+  const occupancy = data.occupancy;
+  const financial = data.financial;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       {/* Header */}
@@ -135,12 +146,12 @@ const DetailContent = ({
           </div>
           <div>
             <p className={labelClass}>Aktualny najemca</p>
-            {data.currentTenantName !== null && data.currentTenantId !== null ?
+            {occupancy?.current_tenant_name !== null && occupancy?.current_tenant_name !== undefined && occupancy?.tenant_id !== null && occupancy?.tenant_id !== undefined ?
               <a
-                href={getTenantUrl(data.currentTenantId)}
+                href={getTenantUrl(occupancy.tenant_id)}
                 className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
               >
-                {data.currentTenantName}
+                {occupancy.current_tenant_name}
               </a> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
@@ -170,22 +181,22 @@ const DetailContent = ({
           <div className="rounded-lg bg-green-50 p-4 text-center">
             <p className={financialLabelClass}>Przychody</p>
             <p className={`${financialValueClass} text-green-700`}>
-              {data.financialSummary.totalIncome.toLocaleString('pl-PL')} zł
+              {(financial?.total_income ?? 0).toLocaleString('pl-PL')} zł
             </p>
           </div>
           <div className="rounded-lg bg-red-50 p-4 text-center">
             <p className={financialLabelClass}>Wydatki</p>
             <p className={`${financialValueClass} text-red-700`}>
-              {data.financialSummary.totalExpenses.toLocaleString('pl-PL')} zł
+              {(financial?.total_expenses ?? 0).toLocaleString('pl-PL')} zł
             </p>
           </div>
           <div className="rounded-lg bg-blue-50 p-4 text-center">
             <p className={financialLabelClass}>Bilans</p>
             <p
-              className={`${financialValueClass} ${data.financialSummary.netProfit >= 0 ? 'text-blue-700' : 'text-red-700'
+              className={`${financialValueClass} ${(financial?.net_profit ?? 0) >= 0 ? 'text-blue-700' : 'text-red-700'
                 }`}
             >
-              {data.financialSummary.netProfit.toLocaleString('pl-PL')} zł
+              {(financial?.net_profit ?? 0).toLocaleString('pl-PL')} zł
             </p>
           </div>
         </div>
@@ -210,7 +221,7 @@ const DetailContent = ({
               <tbody>
                 {data.transactions.map((tx) => (
                   <tr key={tx.id} className="border-b border-gray-100">
-                    <td className="py-2 pr-4 text-gray-600">{tx.dueDate}</td>
+                    <td className="py-2 pr-4 text-gray-600">{tx.due_date}</td>
                     <td className="py-2 pr-4 text-gray-600">
                       {TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}
                     </td>
@@ -223,8 +234,8 @@ const DetailContent = ({
                       {tx.amount.toLocaleString('pl-PL')} zł
                     </td>
                     <td className="py-2 pr-4">
-                      <span className={txnStatusPillClass(tx.transactionStatus)}>
-                        {TRANSACTION_STATUS_LABEL[tx.transactionStatus] ?? tx.transactionStatus}
+                      <span className={txnStatusPillClass(tx.transaction_status)}>
+                        {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
                       </span>
                     </td>
                   </tr>
@@ -255,24 +266,24 @@ const DetailContent = ({
                   <tr key={l.id} className="border-b border-gray-100">
                     <td className="py-2 pr-4">
                       <a
-                        href={getTenantUrl(l.tenantId)}
+                        href={getTenantUrl(l.tenant_id)}
                         className="text-blue-600 hover:text-blue-800 hover:underline"
                       >
-                        {l.tenantName}
+                        {l.tenants.first_name} {l.tenants.last_name}
                       </a>
                     </td>
                     <td className="py-2 pr-4">
                       <a href={getLeaseUrl(l.id)} className="text-blue-600 hover:text-blue-800 hover:underline">
-                        {l.startDate}
+                        {l.start_date}
                       </a>
                     </td>
-                    <td className="py-2 pr-4 text-gray-600">{l.endDate ?? '—'}</td>
+                    <td className="py-2 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
                     <td className="py-2 pr-4 text-right text-gray-900">
-                      {l.monthlyRent.toLocaleString('pl-PL')} zł
+                      {l.monthly_rent.toLocaleString('pl-PL')} zł
                     </td>
                     <td className="py-2 pr-4">
-                      <span className={leaseStatusPillClass(l.leaseStatus)}>
-                        {LEASE_STATUS_LABEL[l.leaseStatus] ?? l.leaseStatus}
+                      <span className={leaseStatusPillClass(l.lease_status)}>
+                        {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
                       </span>
                     </td>
                   </tr>
@@ -292,20 +303,20 @@ const DetailContent = ({
               <div key={a.id} className="flex items-center justify-between rounded border border-gray-100 px-4 py-2">
                 <div>
                   <a
-                    href={a.fileUrl}
+                    href={a.file_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
                   >
-                    {a.fileName}
+                    {a.file_name}
                   </a>
                   {a.description !== null ?
                     <p className="text-xs text-gray-500">{a.description}</p> :
                     undefined}
                 </div>
                 <span className="text-xs text-gray-400">
-                  {a.fileType ?? 'inny'}
-                  {a.fileSize !== null ? ` · ${(a.fileSize / 1024).toFixed(0)} KB` : ''}
+                  {a.file_type ?? 'inny'}
+                  {a.file_size !== null ? ` · ${(a.file_size / 1024).toFixed(0)} KB` : ''}
                 </span>
               </div>
             ))}
@@ -315,23 +326,28 @@ const DetailContent = ({
   );
 };
 
-export const PropertyDetailView = (props: PropertyDetailViewProps): JSX.Element => (
+export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
   <div className="min-h-[400px]">
     {match(props.dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
-      .with({ tag: 'fulfilled' }, ({ data }) => (
-        <DetailContent
-          data={data}
-          getTenantUrl={props.getTenantUrl}
-          getLeaseUrl={props.getLeaseUrl}
-          getTransactionUrl={props.getTransactionUrl}
-          getEditUrl={props.getEditUrl}
-          getBackUrl={props.getBackUrl}
-        />
-      ))
+      .with({ tag: 'fulfilled' }, ({ data }) =>
+        data.property !== null ?
+          <DetailContent
+            data={data}
+            property={data.property}
+            getTenantUrl={props.getTenantUrl}
+            getLeaseUrl={props.getLeaseUrl}
+            getTransactionUrl={props.getTransactionUrl}
+            getEditUrl={props.getEditUrl}
+            getBackUrl={props.getBackUrl}
+          /> :
+          <div className="flex items-center justify-center">
+            <p className="text-sm text-gray-500">Property not found.</p>
+          </div>
+      )
       .exhaustive()}
   </div>
 );

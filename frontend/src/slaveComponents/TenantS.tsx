@@ -1,22 +1,27 @@
 import { match } from 'ts-pattern';
-import type { TenantDetailData } from '@/masterComponents/TenantM';
-import type { DataMode } from '@/generic';
+import type { TenantSProps } from '@/masterComponents/TenantM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-const STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+type Data = Extract<TenantSProps['dataMode'], { tag: 'fulfilled' }>['data'];
+type TenantStatusKey = Data['tenant']['tenant_status'];
+type LeaseStatusKey = Data['leases'][number]['leaseStatus'];
+type TxnTypeKey = Data['transactions'][number]['type'];
+type TxnStatusKey = Data['transactions'][number]['transactionStatus'];
+
+const STATUS_LABEL: Readonly<Record<TenantStatusKey, string>> = Object.freeze({
   active: 'Aktywny',
   past: 'Były',
   applicant: 'Kandydat',
 });
 
-const LEASE_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatusKey, string>> = Object.freeze({
   active: 'Aktywna',
   expired: 'Wygasła',
   terminated: 'Rozwiązana',
 });
 
-const TRANSACTION_TYPE_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const TRANSACTION_TYPE_LABEL: Readonly<Record<TxnTypeKey, string>> = Object.freeze({
   rent: 'Czynsz',
   utility: 'Media',
   expense: 'Wydatek',
@@ -26,20 +31,11 @@ const TRANSACTION_TYPE_LABEL: Readonly<Record<string, string>> = Object.freeze({
   other: 'Inne',
 });
 
-const TRANSACTION_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+const TRANSACTION_STATUS_LABEL: Readonly<Record<TxnStatusKey, string>> = Object.freeze({
   pending: 'Oczekująca',
   paid: 'Opłacona',
   overdue: 'Zaległa',
 });
-
-type Props = {
-  readonly dataMode: DataMode<TenantDetailData>;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
-};
 
 const sectionClass = 'rounded-lg border border-gray-200 bg-white p-6 shadow-sm';
 const sectionTitleClass = 'mb-4 text-base font-semibold text-gray-900';
@@ -47,21 +43,21 @@ const labelClass = 'text-xs font-medium text-gray-500';
 const valueClass = 'text-sm text-gray-900';
 const pillClass = 'inline-block rounded-full px-2 py-0.5 text-xs font-medium';
 
-const statusPillClass = (status: string): string =>
+const statusPillClass = (status: TenantStatusKey): string =>
   status === 'active' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'past' ?
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-yellow-50 text-yellow-700`;
 
-const leaseStatusPillClass = (status: string): string =>
+const leaseStatusPillClass = (status: LeaseStatusKey): string =>
   status === 'active' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'expired' ?
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-red-50 text-red-700`;
 
-const txnStatusPillClass = (status: string): string =>
+const txnStatusPillClass = (status: TxnStatusKey): string =>
   status === 'paid' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'overdue' ?
@@ -79,7 +75,7 @@ const DetailContent = ({
   getEditUrl,
   getBackUrl,
 }: {
-  readonly data: TenantDetailData;
+  readonly data: Data;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
@@ -270,7 +266,7 @@ const DetailContent = ({
   );
 };
 
-export const TenantDetailView = (props: Props): JSX.Element => (
+export const TenantDetailS = (props: TenantSProps): JSX.Element => (
   <div className="min-h-[400px]">
     {match(props.dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)

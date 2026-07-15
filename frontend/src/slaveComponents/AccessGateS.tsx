@@ -17,11 +17,11 @@ const GateContent = ({
     <AccessDenied />;
 
 export const AccessGateS = ({
-  authState,
+  dataMode,
   children,
 }: AccessGateSlaveProps): JSX.Element => (
   <div className="min-h-[300px]">
-    {match(authState)
+    {match(dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

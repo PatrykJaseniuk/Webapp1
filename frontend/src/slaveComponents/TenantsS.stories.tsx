@@ -1,9 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TenantsS } from './TenantsS';
-import type { EnrichedTenantRow } from '@/masterComponents/TenantsM';
+import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import type { DataMode } from '@/generic';
 
-const makeTenant = (overrides?: Partial<EnrichedTenantRow>): EnrichedTenantRow => ({
+type Row = Extract<TenantsSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+
+const makeTenant = (overrides?: Partial<Row>): Row => ({
   id: '00000000-0000-0000-0000-000000000001',
   userId: null,
   firstName: 'Jan',
@@ -24,9 +26,9 @@ const makeTenant = (overrides?: Partial<EnrichedTenantRow>): EnrichedTenantRow =
 
 const noop = (): void => { };
 
-const pendingDataMode: DataMode<readonly EnrichedTenantRow[]> = { tag: 'pending' };
+const pendingDataMode: DataMode<readonly Row[]> = { tag: 'pending' };
 
-const rejectedDataMode: DataMode<readonly EnrichedTenantRow[]> = {
+const rejectedDataMode: DataMode<readonly Row[]> = {
   tag: 'rejected',
   message: 'Błąd sieci',
   onRetry: noop,
@@ -36,7 +38,6 @@ const meta: Meta<typeof TenantsS> = {
   component: TenantsS,
   title: 'slaveComponents/TenantsS',
   args: {
-    getDetailUrl: (id: string): string => `#/tenants/${id}`,
     getPropertyUrl: (propertyId: string): string => `#/properties/${propertyId}`,
   },
 };
@@ -46,20 +47,20 @@ export default meta;
 type Story = StoryObj<typeof TenantsS>;
 
 export const Pending: Story = {
-  args: { state: pendingState },
+  args: { dataMode: pendingDataMode },
 };
 
 export const Rejected: Story = {
-  args: { state: rejectedState },
+  args: { dataMode: rejectedDataMode },
 };
 
 export const Empty: Story = {
-  args: { state: { tag: 'fulfilled', data: [] } },
+  args: { dataMode: { tag: 'fulfilled', data: [] } },
 };
 
 export const WithRows: Story = {
   args: {
-    state: {
+    dataMode: {
       tag: 'fulfilled',
       data: [
         makeTenant({ id: '1', firstName: 'Jan', lastName: 'Kowalski', tenantStatus: 'active', currentPropertyNames: 'Apartament Centrum', currentPropertyIds: ['prop-1'] }),

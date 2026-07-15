@@ -5,17 +5,17 @@ import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { DataMode } from '@/generic';
 
-type LeaseAgreementRow = Database['public']['Tables']['lease_agreements']['Row'];
-type TransactionRow = Database['public']['Tables']['transactions']['Row'];
-type AttachmentRow = Database['public']['Tables']['attachments']['Row'];
+type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
+type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
+type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
 
-type LeaseAgreementData = Readonly<{
-  leaseAgreement: LeaseAgreementRow & {
+type LeaseAgreementWithRelationships = Readonly<{
+  leaseAgreement: LeaseAgreementDbRow & {
     readonly tenants: { readonly first_name: string; readonly last_name: string; };
     readonly properties: { readonly name: string; };
   } | null;
-  transactions: readonly TransactionRow[];
-  attachments: readonly AttachmentRow[];
+  transactions: readonly TransactionDbRow[];
+  attachments: readonly AttachmentDbRow[];
 }>;
 
 type Url = {
@@ -27,18 +27,18 @@ type Url = {
 }
 
 export type LeaseAgreementSProps = {
-  readonly dataMode: DataMode<LeaseAgreementData>;
+  readonly dataMode: DataMode<LeaseAgreementWithRelationships>;
 } &
   Url;
 
 type Props = {
-  readonly DetailViewComponent: ComponentType<LeaseAgreementSProps>;
+  readonly Slave: ComponentType<LeaseAgreementSProps>;
   readonly id: string;
 } &
   Url;
 
 export const LeaseAgreementDetailM = ({
-  DetailViewComponent,
+  Slave,
   id,
   getTenantUrl,
   getPropertyUrl,
@@ -71,7 +71,7 @@ export const LeaseAgreementDetailM = ({
 
   const error = fetchError ?? value?.attachmentsResult.error ?? value?.leaseResult.error ?? value?.transactionsResult.error
 
-  const data: LeaseAgreementData = {
+  const data: LeaseAgreementWithRelationships = {
     attachments: value?.attachmentsResult.data ?? [],
     leaseAgreement: value?.leaseResult.data ?? null,
     transactions: value?.transactionsResult.data ?? []
@@ -82,7 +82,7 @@ export const LeaseAgreementDetailM = ({
     window.location.reload();
   }, []);
 
-  const dataMode: DataMode<LeaseAgreementData> =
+  const dataMode: DataMode<LeaseAgreementWithRelationships> =
     loading ?
       { tag: 'pending' } :
       error ?
@@ -90,7 +90,7 @@ export const LeaseAgreementDetailM = ({
         { tag: 'fulfilled', data: data };
 
   return (
-    <DetailViewComponent
+    <Slave
       dataMode={dataMode}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}

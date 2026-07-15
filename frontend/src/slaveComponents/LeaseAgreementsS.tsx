@@ -1,10 +1,12 @@
 import { match } from 'ts-pattern';
-import type { EnrichedLeaseAgreementRow } from '@/masterComponents/LeaseAgreementsM';
-import type { DataMode } from '@/generic';
+import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-const LEASE_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
+type Row = Extract<LeaseAgreementsSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type LeaseStatus = Row['lease_status'];
+
+const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatus, string>> = Object.freeze({
   active: 'Aktywna',
   expired: 'Wygasła',
   terminated: 'Rozwiązana',
@@ -12,28 +14,24 @@ const LEASE_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze({
 
 const pillClass = 'inline-block rounded-full px-2 py-0.5 text-xs font-medium';
 
-const leaseStatusPillClass = (status: string): string =>
+const leaseStatusPillClass = (status: LeaseStatus): string =>
   status === 'active' ?
     `${pillClass} bg-green-50 text-green-700` :
     status === 'expired' ?
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-red-50 text-red-700`;
 
-type Props = {
-  readonly dataMode: DataMode<readonly EnrichedLeaseAgreementRow[]>;
-  readonly getDetailUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-};
+const tenantDisplayName = (r: Row): string =>
+  r.tenants ?
+    `${r.tenants.first_name ?? ''} ${r.tenants.last_name ?? ''}`.trim() :
+    '';
 
 const TableBody = ({
   leases,
-  getDetailUrl,
   getTenantUrl,
   getPropertyUrl,
 }: {
-  readonly leases: readonly EnrichedLeaseAgreementRow[];
-  readonly getDetailUrl: (id: string) => string;
+  readonly leases: readonly Row[];
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 }): JSX.Element =>
@@ -53,32 +51,32 @@ const TableBody = ({
             </tr>
           </thead>
           <tbody>
-            {leases.map((l: EnrichedLeaseAgreementRow) => (
+            {leases.map((l) => (
               <tr key={l.id} className="border-b border-gray-100 text-sm">
                 <td className="py-3 pr-4">
                   <a
-                    href={getTenantUrl(l.tenantId)}
+                    href={getTenantUrl(l.tenant_id)}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
-                    {l.tenantName}
+                    {tenantDisplayName(l)}
                   </a>
                 </td>
                 <td className="py-3 pr-4">
                   <a
-                    href={getPropertyUrl(l.propertyId)}
+                    href={getPropertyUrl(l.property_id)}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
-                    {l.propertyName}
+                    {l.properties?.name ?? ''}
                   </a>
                 </td>
-                <td className="py-3 pr-4 text-gray-600">{l.startDate}</td>
-                <td className="py-3 pr-4 text-gray-600">{l.endDate ?? '—'}</td>
+                <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
+                <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
                 <td className="py-3 pr-4 text-right text-gray-900">
-                  {l.monthlyRent.toLocaleString('pl-PL')} zł
+                  {l.monthly_rent.toLocaleString('pl-PL')} zł
                 </td>
                 <td className="py-3 pr-4">
-                  <span className={leaseStatusPillClass(l.leaseStatus)}>
-                    {LEASE_STATUS_LABEL[l.leaseStatus] ?? l.leaseStatus}
+                  <span className={leaseStatusPillClass(l.lease_status)}>
+                    {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
                   </span>
                 </td>
               </tr>
@@ -88,9 +86,9 @@ const TableBody = ({
       </div>
     );
 
-export const LeaseAgreementsTable = ({ state, getDetailUrl, getTenantUrl, getPropertyUrl }: Props): JSX.Element => (
+export const LeaseAgreementsTable = ({ dataMode, getTenantUrl, getPropertyUrl }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
-    {match(state)
+    {match(dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
@@ -98,7 +96,6 @@ export const LeaseAgreementsTable = ({ state, getDetailUrl, getTenantUrl, getPro
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           leases={data}
-          getDetailUrl={getDetailUrl}
           getTenantUrl={getTenantUrl}
           getPropertyUrl={getPropertyUrl}
         />

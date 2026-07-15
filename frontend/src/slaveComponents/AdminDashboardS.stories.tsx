@@ -35,7 +35,7 @@ const meta: Meta<typeof AdminDashboard> = {
   args: {
     LinkComponent: MockLink,
     cards,
-    summaryState: { tag: 'fulfilled', data: mockSummary },
+    dataMode: { tag: 'fulfilled', data: mockSummary },
   },
 };
 export default meta;
@@ -46,13 +46,13 @@ export const Default: Story = {};
 
 export const Pending: Story = {
   args: {
-    summaryState: { tag: 'pending' },
+    dataMode: { tag: 'pending' },
   },
 };
 
 export const Rejected: Story = {
   args: {
-    summaryState: {
+    dataMode: {
       tag: 'rejected',
       message: 'Nie udało się załadować danych dashboardu.',
       onRetry: () => undefined,

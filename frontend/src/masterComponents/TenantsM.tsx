@@ -7,7 +7,7 @@ import type { DataMode } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
-export type EnrichedTenantRow = Readonly<{
+type EnrichedTenantRow = Readonly<{
   id: string;
   userId: string | null;
   firstName: string;
@@ -73,19 +73,20 @@ const enrich = (row: TenantWithLeases): EnrichedTenantRow => {
   };
 };
 
-type TableProps = {
-  readonly dataMode: DataMode<readonly EnrichedTenantRow[]>;
+type Url = {
   readonly getDetailUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 };
+
+export type TenantsSProps = {
+  readonly dataMode: DataMode<readonly EnrichedTenantRow[]>;
+} & Url;
 
 type Props = {
-  readonly TableComponent: ComponentType<TableProps>;
-  readonly getDetailUrl: (id: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-};
+  readonly TableComponent: ComponentType<TenantsSProps>;
+} & Url;
 
-export const TenantsList = ({
+export const TenantsM = ({
   TableComponent,
   getDetailUrl,
   getPropertyUrl,

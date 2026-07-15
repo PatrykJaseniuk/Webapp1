@@ -3,66 +3,58 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { DataMode, LeaseSummary } from '@/generic';
+import type { DataMode } from '@/generic';
 
-export type EnrichedLeaseAgreementRow = LeaseSummary;
+type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row']
+type LeaseAgreementRow = LeaseAgreementDbRow & {
+  readonly tenants: { readonly first_name: string; readonly last_name: string; };
+  readonly properties: { readonly name: string; };
+};
 
-
-
-const enrich = (row: Database['public']['Views']['active_leases']['Row']): EnrichedLeaseAgreementRow => ({
-  id: row.id ?? '',
-  propertyName: row.property_name ?? '',
-  propertyId: row.property_id ?? '',
-  tenantName: row.tenant_name ?? '',
-  tenantId: row.tenant_id ?? '',
-  startDate: row.start_date ?? '',
-  endDate: row.end_date,
-  monthlyRent: row.monthly_rent ?? 0,
-  depositAmount: row.deposit_amount ?? 0,
-  leaseStatus: row.lease_status ?? 'active',
-});
-
-type TableProps = {
-  readonly dataMode: DataMode<readonly EnrichedLeaseAgreementRow[]>;
+type Url = {
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
-};
+}
+
+export type LeaseAgreementsSProps = {
+  readonly dataMode: DataMode<readonly LeaseAgreementRow[]>;
+} &
+  Url;
 
 type Props = {
-  readonly TableComponent: ComponentType<TableProps>;
-  readonly getDetailUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-};
+  readonly Slave: ComponentType<LeaseAgreementsSProps>;
+} &
+  Url;
 
-export const LeaseAgreementsList = ({
-  TableComponent,
+export const LeaseAgreementsM = ({
+  Slave,
   getDetailUrl,
   getTenantUrl,
   getPropertyUrl,
 }: Props): JSX.Element => {
-  const { loading, error, value } = useAsync(async (): Promise<readonly EnrichedLeaseAgreementRow[]> => {
-    const { data, error: dbError } = await backendConnector
-      .from('active_leases')
-      .select('*')
-      .order('start_date', { ascending: false });
-    return dbError !== null ? [] : (data ?? []).map(enrich);
-  }, []);
+  const { loading, error: fetchError, value } = useAsync(
+    async () => await backendConnector
+      .from('lease_agreements')
+      .select('*, tenants(first_name,last_name), properties(name)')
+    , []);
+
+  const error = fetchError ?? value?.error
+  const data = value?.data ?? [];
 
   const handleRetry = useCallback((): void => {
     window.location.reload();
   }, []);
 
-  const dataMode: DataMode<readonly EnrichedLeaseAgreementRow[]> =
+  const dataMode: DataMode<readonly LeaseAgreementRow[]> =
     loading ?
       { tag: 'pending' } :
-      error !== undefined ?
+      error ?
         { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data: value ?? [] };
+        { tag: 'fulfilled', data };
 
   return (
-    <TableComponent
+    <Slave
       dataMode={dataMode}
       getDetailUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}

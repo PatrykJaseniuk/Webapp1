@@ -49,5 +49,5 @@ export const AuthorisationGuard = ({
       { tag: 'pending' } :
       { tag: 'fulfilled', data: { isAuthorised } };
 
-  return <Slave authState={state}>{children}</Slave>;
+  return <Slave dataMode={dataMode}>{children}</Slave>;
 };

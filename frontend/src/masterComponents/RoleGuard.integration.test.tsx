@@ -28,11 +28,11 @@ vi.mock('@/hooks/AuthContext', async () => {
 const Content = <p>Authorised Content</p>;
 
 const MockAccessGate: ComponentType<AccessGateSlaveProps> = ({
-  authState,
+  dataMode,
   children,
 }: AccessGateSlaveProps): JSX.Element => (
   <div>
-    {match(authState)
+    {match(dataMode)
       .with({ tag: 'pending' }, () => <span>Loading…</span>)
       .with({ tag: 'fulfilled' }, ({ data }) =>
         data.isAuthorised ?

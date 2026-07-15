@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { LeaseAgreementsList } from '@/masterComponents/LeaseAgreementsM';
+import { LeaseAgreementsM } from '@/masterComponents/LeaseAgreementsM';
 import { LeaseAgreementsTable } from '@/slaveComponents/LeaseAgreementsS';
 
 export const LeaseAgreementsListPage = (): JSX.Element => {
@@ -13,8 +13,8 @@ export const LeaseAgreementsListPage = (): JSX.Element => {
   const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
 
   return (
-    <LeaseAgreementsList
-      TableComponent={LeaseAgreementsTable}
+    <LeaseAgreementsM
+      Slave={LeaseAgreementsTable}
       getDetailUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}

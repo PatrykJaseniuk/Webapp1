@@ -17,7 +17,7 @@ export const LeaseAgreementDetailPage = (): JSX.Element => {
 
   return (
     <LeaseAgreementDetailM
-      DetailViewComponent={LeaseAgreementDetailS}
+      Slave={LeaseAgreementDetailS}
       id={id!}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}

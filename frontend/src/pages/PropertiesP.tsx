@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { PropertiesList } from '@/masterComponents/PropertiesM';
+import { PropertiesM } from '@/masterComponents/PropertiesM';
 import { PropertiesS } from '@/slaveComponents/PropertiesS';
 
 export const PropertiesListPage = (): JSX.Element => {
@@ -12,8 +12,8 @@ export const PropertiesListPage = (): JSX.Element => {
   const getTenantUrl = (tenantId: string): string => `#${rolePrefix}/tenants/${tenantId}`;
 
   return (
-    <PropertiesList
-      TableComponent={PropertiesS}
+    <PropertiesM
+      Slave={PropertiesS}
       getDetailUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}
     />
