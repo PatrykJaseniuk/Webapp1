@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { TenantDetailData } from '@/masterComponents/TenantM';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
@@ -33,7 +33,7 @@ const TRANSACTION_STATUS_LABEL: Readonly<Record<string, string>> = Object.freeze
 });
 
 type Props = {
-  readonly state: SlaveDataState<TenantDetailData>;
+  readonly dataMode: DataMode<TenantDetailData>;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
@@ -272,7 +272,7 @@ const DetailContent = ({
 
 export const TenantDetailView = (props: Props): JSX.Element => (
   <div className="min-h-[400px]">
-    {match(props.state)
+    {match(props.dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

@@ -7,7 +7,7 @@ export type {
   AsyncState,
   LinkComponent,
   SlaveAsyncProps,
-  SlaveDataState,
+  DataMode,
   LeaseSummary,
   TransactionSummary,
   AttachmentSummary,

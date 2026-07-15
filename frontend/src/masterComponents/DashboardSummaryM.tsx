@@ -1,10 +1,10 @@
 import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import type { SlaveDataState, DashboardSummary } from '@/generic';
+import type { DataMode, DashboardSummary } from '@/generic';
 
 type DashboardViewProps = {
-  readonly state: SlaveDataState<DashboardSummary>;
+  readonly dataMode: DataMode<DashboardSummary>;
 };
 
 type Props = {
@@ -59,12 +59,12 @@ export const DashboardSummaryData = ({
     };
   }, []);
 
-  const state: SlaveDataState<DashboardSummary> =
+  const dataMode: DataMode<DashboardSummary> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
         { tag: 'rejected', message: error.message, onRetry: () => window.location.reload() } :
         { tag: 'fulfilled', data: value! };
 
-  return <SummaryComponent state={state} />;
+  return <SummaryComponent dataMode={dataMode} />;
 };

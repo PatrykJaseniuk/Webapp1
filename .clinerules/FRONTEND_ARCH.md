@@ -22,11 +22,28 @@
 # ───────────────────────────────────────────────────────────────
 
 - Own all side effects: `useAsync`, `useAsyncFn`, `useNavigate`.
-- Define and export the slave's interface
+- Define and export exactly ONE type — the slave's props interface
+  (e.g. `LeaseAgreementSProps`). All data-internal types (data shapes,
+  helpers, nested row types) are private to the master.
 - Do not define rendering functionality
 - Receive slave components as argument, do not import from slaves
 - Do not read url params
-- Every master component's name ends with letter 'M' : 'AppLayoutM.tsx', 'LeaseAgreementM.tsx', etc.
+- Every master component's **file name** ends with letter 'M' : 'AppLayoutM.tsx', 'LeaseAgreementM.tsx', etc.
+- Every master component's **export name** ends with letter 'M' : 'LeaseAgreementDetailM', 'PropertiesListM', etc.
+- Shared prop types between `Props` and `<Name>SProps` may use a DRY intersection alias:
+    type Url = { readonly getXUrl: ...; readonly getYUrl: ...; };
+    export type LeaseAgreementSProps = { readonly dataMode: DataMode<...>; } & Url;
+    type Props = { readonly DetailViewComponent: ...; readonly id: string; } & Url;
+- When fetching multiple related queries in parallel (e.g. lease + transactions + attachments),
+  return raw Supabase results from `useAsync`, derive the unioned error in-band via `??` chain,
+  and construct the data object with `??` fallbacks. Never wrap the returned data type in an
+  outer `| null` — only nested fields may be `| null` (e.g. `leaseAgreement: T | null` for "not found").
+    const { loading, error: fetchError, value } = useAsync(async () => {
+      const [a, b, c] = await Promise.all([...]);
+      return { a, b, c };
+    }, [deps]);
+    const error = fetchError ?? value?.a.error ?? value?.b.error;
+    const data: Data = { fieldA: value?.a.data ?? null, fieldB: value?.b.data ?? [] };
 
 # ───────────────────────────────────────────────────────────────
 # 2. SLAVE (slaveComponents/) — PURE RENDER
@@ -35,9 +52,22 @@
 - Define rendering functionality
 - Pure functions. Zero side effects. Zero DB knowledge. Zero application knowledge.
   Zero local React state (`useState`, `useReducer`, `useRef` for data storage).
-  Internal state is only allowed through the `SlaveDataState` prop (see §2a).
+  Internal state is only allowed through the `DataMode` prop (see §2a).
+- Import exactly ONE type from its master: the slave props interface
+  (e.g. `LeaseAgreementSProps`). Never import data-internal types from the master.
+- Derive the fulfilled-data type inline from the slave props:
+    type Data = Extract<SlaveProps['state'], { tag: 'fulfilled' }>['data'];
+- Derive strict enum-key types from the data shape and use them for all
+  lookup objects and helper function signatures. Never use loose
+  `Record<string, string>` or `(x: string)` for enum-based values.
+  Example:
+    type LeaseStatus = Data['lease']['lease_status'];
+    type TxnType = Data['transactions'][number]['type'];
+    const LABELS: Readonly<Record<LeaseStatus, string>> = { ... };
+    const pillClass = (status: LeaseStatus): string => ...;
 - Import types ONLY from: `react` + `@/generic` + their master.
-- Types are not defined in slave component's file
+- Types are not defined in slave component's file (the single inline
+  derivation above is the only exception).
 - May import pure-render sibling slave components (e.g. `LoadingSpinner`, `ErrorMessage`)
   but NEVER masters, pages, or `@/backendConnector`.
 - NEVER: `@/backendConnector`, `Database`, `useNavigate`, `useAsync`, `useAsyncFn`.
@@ -49,12 +79,12 @@
 # ───────────────────────────────────────────────────────────────
 
 - Every slave that receives fetched data MUST handle three states: pending, rejected, fulfilled.
-- Accept a single `state: SlaveDataState<T>` prop (from `@/generic`) instead of separate
+- Accept a single `dataMode: DataMode<T>` prop (from `@/generic`) instead of separate
   `isLoading`, `error`, `data` props.
 - Use `match(state).with({ tag: 'pending' }, ...).with({ tag: 'rejected' }, ...).with({ tag: 'fulfilled' }, ...).exhaustive()`
   to guarantee every state is rendered. This is the ONLY kind of "state" slaves handle —
   it models the data-fetch lifecycle, not application state.
-- The master converts `useAsync` output into `SlaveDataState<T>` and passes it down.
+- The master converts `useAsync` output into `DataMode<T>` and passes it down.
 - The master does NOT switch between Loading/Error/Data components — the slave does.
 - All three state renderings must share the same wrapper container with a stable minimum
   height (e.g. `min-h-[300px]` for tables, `min-h-[400px]` for forms) to prevent
@@ -78,7 +108,7 @@
   invokes the master's `onSubmit` callback with the extracted data.
 - Example signature:
     export type LeaseAgreementFormSlaveProps = {
-      readonly state: SlaveDataState<LeaseAgreementDetailData>;
+      readonly dataMode: DataMode<LeaseAgreementDetailData>;
       readonly initialData: LeaseAgreementDetailData;   // for defaultValue population
       readonly onSubmit: (data: LeaseAgreementFormInput) => void;
       readonly getCancelUrl: () => string;
@@ -128,6 +158,11 @@ Components per table:
 
 # ❌ Slave imports `@/backendConnector` or `Database`
 # ❌ Slave uses `useNavigate`, `useAsync`, `useAsyncFn`
+# ❌ Slave imports more than one type from its master
+# ❌ Slave imports data-internal types (e.g. `LeaseAgreementData`) from its master
+# ❌ Slave uses `Record<string, string>` or `(x: string)` for enum-based
+#     label lookups / helper functions — derive tight key types from the
+#     data shape inferred from `<Name>SProps` instead
 # ❌ Slave imports domain-specific components from other slaves that should
 #     come through props (e.g. a table-row component imported directly instead
 #     of being passed as a render-prop or children)
@@ -135,6 +170,7 @@ Components per table:
 # ❌ Controlled inputs (`value`+`onChange`) in form slaves — use uncontrolled
 #     (`defaultValue`) with `FormData` extraction instead (see §2b)
 # ❌ Slave imports anything from `pages/`
+# ❌ Master exports data-internal types separately from slave props
 # ❌ Master switches between Loading/Error/Data components (delegate to slave)
 # ❌ Page passes `LoadingComponent` or `ErrorComponent` to a master
 # ❌ Page conditionally renders different masters based on URL state —

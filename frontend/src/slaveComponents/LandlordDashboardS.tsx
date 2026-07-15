@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { LinkComponent, SlaveDataState, DashboardSummary } from '@/generic';
+import type { LinkComponent, DataMode, DashboardSummary } from '@/generic';
 import { LoadingSpinner } from './LoadingSpinnerS';
 
 type DashboardCard = {
@@ -11,7 +11,7 @@ type DashboardCard = {
 type Props = {
   readonly LinkComponent: LinkComponent;
   readonly cards: ReadonlyArray<DashboardCard>;
-  readonly summaryState: SlaveDataState<DashboardSummary>;
+  readonly dataMode: DataMode<DashboardSummary>;
 };
 
 const dashboardCardClass =

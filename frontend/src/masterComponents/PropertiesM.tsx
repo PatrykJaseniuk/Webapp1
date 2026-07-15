@@ -3,7 +3,7 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 
 export type PropertyRow = Database['public']['Tables']['properties']['Row'];
 
@@ -46,7 +46,7 @@ const enrich = (row: PropertyOccupancyView): EnrichedPropertyRow => ({
 });
 
 type TableProps = {
-  readonly state: SlaveDataState<readonly EnrichedPropertyRow[]>;
+  readonly dataMode: DataMode<readonly EnrichedPropertyRow[]>;
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
 };
@@ -74,7 +74,7 @@ export const PropertiesList = ({
     window.location.reload();
   }, []);
 
-  const state: SlaveDataState<readonly EnrichedPropertyRow[]> =
+  const dataMode: DataMode<readonly EnrichedPropertyRow[]> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
@@ -83,7 +83,7 @@ export const PropertiesList = ({
 
   return (
     <TableComponent
-      state={state}
+      dataMode={dataMode}
       getDetailUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}
     />

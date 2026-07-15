@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TenantsS } from './TenantsS';
 import type { EnrichedTenantRow } from '@/masterComponents/TenantsM';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 
 const makeTenant = (overrides?: Partial<EnrichedTenantRow>): EnrichedTenantRow => ({
   id: '00000000-0000-0000-0000-000000000001',
@@ -24,9 +24,9 @@ const makeTenant = (overrides?: Partial<EnrichedTenantRow>): EnrichedTenantRow =
 
 const noop = (): void => { };
 
-const pendingState: SlaveDataState<readonly EnrichedTenantRow[]> = { tag: 'pending' };
+const pendingDataMode: DataMode<readonly EnrichedTenantRow[]> = { tag: 'pending' };
 
-const rejectedState: SlaveDataState<readonly EnrichedTenantRow[]> = {
+const rejectedDataMode: DataMode<readonly EnrichedTenantRow[]> = {
   tag: 'rejected',
   message: 'Błąd sieci',
   onRetry: noop,

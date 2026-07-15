@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { EnrichedTenantRow } from '@/masterComponents/TenantsM';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
@@ -13,7 +13,7 @@ export const STATUS_LABEL: StatusLabelMap = Object.freeze({
 });
 
 type Props = {
-  readonly state: SlaveDataState<readonly EnrichedTenantRow[]>;
+  readonly dataMode: DataMode<readonly EnrichedTenantRow[]>;
   readonly getDetailUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 };

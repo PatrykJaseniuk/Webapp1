@@ -3,7 +3,7 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { SlaveDataState, LeaseSummary, TransactionSummary, AttachmentSummary } from '@/generic';
+import type { DataMode, LeaseSummary, TransactionSummary, AttachmentSummary } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
@@ -15,7 +15,7 @@ export type TenantDetailData = Readonly<{
 }>;
 
 type DetailViewProps = {
-  readonly state: SlaveDataState<TenantDetailData>;
+  readonly dataMode: DataMode<TenantDetailData>;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
@@ -103,7 +103,7 @@ export const TenantsDetail = ({
     window.location.reload();
   }, []);
 
-  const state: SlaveDataState<TenantDetailData> =
+  const dataMode: DataMode<TenantDetailData> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
@@ -112,7 +112,7 @@ export const TenantsDetail = ({
 
   return (
     <DetailViewComponent
-      state={state}
+      dataMode={dataMode}
       getPropertyUrl={getPropertyUrl}
       getLeaseUrl={getLeaseUrl}
       getTransactionUrl={getTransactionUrl}

@@ -3,40 +3,41 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 
-type LeaseRow = Database['public']['Tables']['lease_agreements']['Row'];
-type Transactions = readonly Database['public']['Tables']['transactions']['Row'][];
-type Attachments = readonly Database['public']['Tables']['attachments']['Row'][];
+type LeaseAgreementRow = Database['public']['Tables']['lease_agreements']['Row'];
+type TransactionRow = Database['public']['Tables']['transactions']['Row'];
+type AttachmentRow = Database['public']['Tables']['attachments']['Row'];
 
 type LeaseAgreementData = Readonly<{
-  lease: LeaseRow;
-  tenantName: string;
-  propertyName: string;
-  transactions: Transactions
-  attachments: Attachments;
+  leaseAgreement: LeaseAgreementRow & {
+    readonly tenants: { readonly first_name: string; readonly last_name: string; };
+    readonly properties: { readonly name: string; };
+  } | null;
+  transactions: readonly TransactionRow[];
+  attachments: readonly AttachmentRow[];
 }>;
 
-export type LeaseAgreementSProps = {
-  readonly state: SlaveDataState<LeaseAgreementData>;
+type Url = {
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
   readonly getEditUrl: () => string;
   readonly getBackUrl: () => string;
-};
+}
+
+export type LeaseAgreementSProps = {
+  readonly dataMode: DataMode<LeaseAgreementData>;
+} &
+  Url;
 
 type Props = {
   readonly DetailViewComponent: ComponentType<LeaseAgreementSProps>;
   readonly id: string;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
-};
+} &
+  Url;
 
-export const LeaseAgreementDetail = ({
+export const LeaseAgreementDetailM = ({
   DetailViewComponent,
   id,
   getTenantUrl,
@@ -45,9 +46,13 @@ export const LeaseAgreementDetail = ({
   getEditUrl,
   getBackUrl,
 }: Props): JSX.Element => {
-  const { loading, error, value } = useAsync(async (): Promise<LeaseAgreementData> => {
+  const { loading, error: fetchError, value } = useAsync(async () => {
     const [leaseResult, transactionsResult, attachmentsResult] = await Promise.all([
-      backendConnector.from('lease_agreements').select('*').eq('id', id).single(),
+      backendConnector
+        .from('lease_agreements')
+        .select('*, tenants(first_name,last_name), properties(name)')
+        .eq('id', id)
+        .single(),
       backendConnector
         .from('transactions')
         .select('*')
@@ -61,37 +66,32 @@ export const LeaseAgreementDetail = ({
         .eq('related_to_id', id),
     ]);
 
-    const lease = leaseResult.data!;
-
-    const [tenantResult, propertyResult] = await Promise.all([
-      backendConnector.from('tenants').select('first_name,last_name').eq('id', lease.tenant_id).single(),
-      backendConnector.from('properties').select('name').eq('id', lease.property_id).single(),
-    ]);
-
-    const tenantName = `${tenantResult.data?.first_name ?? ''} ${tenantResult.data?.last_name ?? ''}`.trim();
-    const propertyName = propertyResult.data?.name ?? '';
-
-    const transactions = transactionsResult.data ?? [];
-
-    const attachments = attachmentsResult.data ?? []
-
-    return { lease, tenantName, propertyName, transactions, attachments };
+    return { leaseResult, transactionsResult, attachmentsResult };
   }, [id]);
+
+  const error = fetchError ?? value?.attachmentsResult.error ?? value?.leaseResult.error ?? value?.transactionsResult.error
+
+  const data: LeaseAgreementData = {
+    attachments: value?.attachmentsResult.data ?? [],
+    leaseAgreement: value?.leaseResult.data ?? null,
+    transactions: value?.transactionsResult.data ?? []
+  }
+
 
   const handleRetry = useCallback((): void => {
     window.location.reload();
   }, []);
 
-  const state: SlaveDataState<LeaseAgreementData> =
+  const dataMode: DataMode<LeaseAgreementData> =
     loading ?
       { tag: 'pending' } :
-      error !== undefined ?
+      error ?
         { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data: value! };
+        { tag: 'fulfilled', data: data };
 
   return (
     <DetailViewComponent
-      state={state}
+      dataMode={dataMode}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}
       getTransactionUrl={getTransactionUrl}

@@ -75,11 +75,12 @@ export type SlaveAsyncProps<T> = {
 // ──────────────────────────────────────────────
 
 /**
- * Three-state prop passed from master to data-displaying slaves.
- * The slave matches on `tag` and renders the appropriate view.
- * Replaces separate loading/error/data props — guaranteed exhaustive.
+ * Three-state discriminated union for async data lifecycle.
+ * Passed as the `dataMode` prop from master to slaves.
+ * Masters derive this from `useAsync` output; slaves match on `tag`
+ * and render the appropriate view — guaranteed exhaustive.
  */
-export type SlaveDataState<T> =
+export type DataMode<T> =
   | { readonly tag: 'pending' }
   | { readonly tag: 'rejected'; readonly message: string; readonly onRetry: () => void }
   | { readonly tag: 'fulfilled'; readonly data: T };

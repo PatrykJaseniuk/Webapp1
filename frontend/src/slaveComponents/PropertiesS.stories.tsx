@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { PropertiesS } from './PropertiesS';
 import type { EnrichedPropertyRow } from '@/masterComponents/PropertiesM';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 
 const property: EnrichedPropertyRow = {
   id: '1',
@@ -29,9 +29,9 @@ const manyProperties: readonly EnrichedPropertyRow[] = [
 
 const noop = (): void => { };
 
-const pendingState: SlaveDataState<readonly EnrichedPropertyRow[]> = { tag: 'pending' };
+const pendingDataMode: DataMode<readonly EnrichedPropertyRow[]> = { tag: 'pending' };
 
-const rejectedState: SlaveDataState<readonly EnrichedPropertyRow[]> = {
+const rejectedDataMode: DataMode<readonly EnrichedPropertyRow[]> = {
   tag: 'rejected',
   message: 'Błąd sieci',
   onRetry: noop,

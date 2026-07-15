@@ -1,6 +1,6 @@
 import { useParams, useLocation } from 'react-router-dom';
-import { LeaseAgreementDetail } from '@/masterComponents/LeaseAgreementM';
-import { LeaseAgreementDetailView } from '@/slaveComponents/LeaseAgreementS';
+import { LeaseAgreementDetailM } from '@/masterComponents/LeaseAgreementM';
+import { LeaseAgreementDetailS } from '@/slaveComponents/LeaseAgreementS';
 
 export const LeaseAgreementDetailPage = (): JSX.Element => {
   const { id } = useParams<{ readonly id: string }>();
@@ -16,8 +16,8 @@ export const LeaseAgreementDetailPage = (): JSX.Element => {
   const getBackUrl = (): string => `#${leasesPath}`;
 
   return (
-    <LeaseAgreementDetail
-      DetailViewComponent={LeaseAgreementDetailView}
+    <LeaseAgreementDetailM
+      DetailViewComponent={LeaseAgreementDetailS}
       id={id!}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}

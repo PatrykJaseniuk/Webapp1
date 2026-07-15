@@ -1,6 +1,6 @@
 import { match } from 'ts-pattern';
 import type { EnrichedLeaseAgreementRow } from '@/masterComponents/LeaseAgreementsM';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
@@ -20,7 +20,7 @@ const leaseStatusPillClass = (status: string): string =>
       `${pillClass} bg-red-50 text-red-700`;
 
 type Props = {
-  readonly state: SlaveDataState<readonly EnrichedLeaseAgreementRow[]>;
+  readonly dataMode: DataMode<readonly EnrichedLeaseAgreementRow[]>;
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;

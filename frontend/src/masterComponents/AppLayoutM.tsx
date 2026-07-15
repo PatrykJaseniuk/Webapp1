@@ -2,7 +2,7 @@ import type { ReactNode, ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, type AuthState } from '@/hooks/AuthContext';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import type { SlaveDataState, LinkComponent } from '@/generic';
+import type { DataMode, LinkComponent } from '@/generic';
 
 // ── Auth data extracted for the shell ──
 
@@ -15,7 +15,7 @@ export type AuthContextData = Readonly<{
 
 export type AppLayoutSProps = {
   readonly navItems: Readonly<Record<string, string>>;
-  readonly authState: SlaveDataState<AuthContextData>;
+  readonly dataMode: DataMode<AuthContextData>;
   readonly children: ReactNode;
   readonly LinkComponent: LinkComponent;
   readonly activeTo: string;
@@ -32,10 +32,10 @@ type Props = {
   readonly loginTo: string;
 };
 
-const toSlaveDataState = (
+const toDataMode = (
   auth: AuthState,
   onLogout: () => void,
-): SlaveDataState<AuthContextData> =>
+): DataMode<AuthContextData> =>
   auth.tag === 'loading' ?
     { tag: 'pending' } :
     auth.tag === 'authenticated' ?
@@ -63,7 +63,7 @@ export const AppLayout = ({
   return (
     <Shell
       navItems={navItems}
-      authState={toSlaveDataState(authState, handleLogout)}
+      dataMode={toDataMode(authState, handleLogout)}
       LinkComponent={LinkComponent}
       activeTo={activeTo}
     >

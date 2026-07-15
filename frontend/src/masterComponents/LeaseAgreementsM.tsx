@@ -3,9 +3,11 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { SlaveDataState, LeaseSummary } from '@/generic';
+import type { DataMode, LeaseSummary } from '@/generic';
 
 export type EnrichedLeaseAgreementRow = LeaseSummary;
+
+
 
 const enrich = (row: Database['public']['Views']['active_leases']['Row']): EnrichedLeaseAgreementRow => ({
   id: row.id ?? '',
@@ -21,7 +23,7 @@ const enrich = (row: Database['public']['Views']['active_leases']['Row']): Enric
 });
 
 type TableProps = {
-  readonly state: SlaveDataState<readonly EnrichedLeaseAgreementRow[]>;
+  readonly dataMode: DataMode<readonly EnrichedLeaseAgreementRow[]>;
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
@@ -52,7 +54,7 @@ export const LeaseAgreementsList = ({
     window.location.reload();
   }, []);
 
-  const state: SlaveDataState<readonly EnrichedLeaseAgreementRow[]> =
+  const dataMode: DataMode<readonly EnrichedLeaseAgreementRow[]> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
@@ -61,7 +63,7 @@ export const LeaseAgreementsList = ({
 
   return (
     <TableComponent
-      state={state}
+      dataMode={dataMode}
       getDetailUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}

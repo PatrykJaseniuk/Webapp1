@@ -110,7 +110,7 @@ const DetailContent = ({
 
 export const TransactionDetailView = (props: TransactionDetailViewProps): JSX.Element => (
   <div className="min-h-[400px]">
-    {match(props.state)
+    {match(props.dataMode)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

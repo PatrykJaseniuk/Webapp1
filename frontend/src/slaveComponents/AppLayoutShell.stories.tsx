@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { ComponentType, ReactNode } from 'react';
 import { AppLayoutShell } from './AppLayouS';
-import type { SlaveDataState } from '@/generic';
+import type { DataMode } from '@/generic';
 import type { AuthContextData } from '@/masterComponents/AppLayoutM';
 
 const navItems = {
@@ -25,12 +25,12 @@ const MockLink: ComponentType<LinkProps> = ({
   <a className={className}>{children}</a>
 );
 
-const fulfilledAuth: SlaveDataState<AuthContextData> = {
+const fulfilledDataMode: DataMode<AuthContextData> = {
   tag: 'fulfilled',
   data: { email: 'admin@example.com', onLogout: noop },
 };
 
-const fulfilledAuthLongEmail: SlaveDataState<AuthContextData> = {
+const fulfilledAuthLongEmail: DataMode<AuthContextData> = {
   tag: 'fulfilled',
   data: { email: 'very.long.email.address@example.com', onLogout: noop },
 };
