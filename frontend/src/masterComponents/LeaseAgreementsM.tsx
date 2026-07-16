@@ -12,10 +12,11 @@ type LeaseAgreementRow = LeaseAgreementDbRow & {
 };
 
 type Url = {
-  readonly getDetailUrl: (id: string) => string;
+  readonly getLeaseAgreementUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 }
+
 
 export type LeaseAgreementsSProps = {
   readonly asyncData: AsyncData<readonly LeaseAgreementRow[]>;
@@ -29,7 +30,7 @@ type Props = {
 
 export const LeaseAgreementsM = ({
   Slave,
-  getDetailUrl,
+  getLeaseAgreementUrl,
   getTenantUrl,
   getPropertyUrl,
 }: Props): JSX.Element => {
@@ -56,7 +57,7 @@ export const LeaseAgreementsM = ({
   return (
     <Slave
       asyncData={asyncData}
-      getDetailUrl={getDetailUrl}
+      getLeaseAgreementUrl={getLeaseAgreementUrl}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}
     />

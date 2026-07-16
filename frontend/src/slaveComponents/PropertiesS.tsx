@@ -46,12 +46,12 @@ const TableBody = ({
           </thead>
           <tbody>
             {properties.map((p) => (
-              <tr key={p.id ?? ''} className="border-b border-gray-100 text-sm">
-                <td className="py-3 pr-4 font-medium text-gray-900">
-                  <a href={getDetailUrl(p.id ?? '')} className="text-blue-600 hover:text-blue-800 hover:underline">
-                    {p.name}
-                  </a>
-                </td>
+              <tr
+                key={p.id ?? ''}
+                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+                onClick={() => { window.location.href = getDetailUrl(p.id ?? ''); }}
+              >
+                <td className="py-3 pr-4 font-medium text-gray-900">{p.name}</td>
                 <td className="py-3 pr-4 text-gray-600">{p.address}</td>
                 <td className="py-3 pr-4 text-gray-600">
                   {p.property_type !== null ?
@@ -62,6 +62,7 @@ const TableBody = ({
                   {p.current_tenant_name !== null && p.tenant_id !== null ?
                     <a
                       href={getTenantUrl(p.tenant_id)}
+                      onClick={(e) => { e.stopPropagation(); }}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                     >
                       {p.current_tenant_name}

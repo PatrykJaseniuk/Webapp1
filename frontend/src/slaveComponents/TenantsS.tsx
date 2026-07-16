@@ -14,14 +14,17 @@ export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freez
 
 type Props = {
   readonly asyncData: TenantsSProps['asyncData'];
+  readonly getDetailUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 };
 
 const TableBody = ({
   tenants,
+  getDetailUrl,
   getPropertyUrl,
 }: {
   readonly tenants: readonly Row[];
+  readonly getDetailUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 }): JSX.Element =>
   tenants.length === 0 ?
@@ -41,7 +44,11 @@ const TableBody = ({
           </thead>
           <tbody>
             {tenants.map((t) => (
-              <tr key={t.id} className="border-b border-gray-100 text-sm">
+              <tr
+                key={t.id}
+                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+                onClick={() => { window.location.href = getDetailUrl(t.id); }}
+              >
                 <td className="py-3 pr-4 font-medium text-gray-900">{t.lastName}</td>
                 <td className="py-3 pr-4 text-gray-600">{t.firstName}</td>
                 <td className="py-3 pr-4 text-gray-600">{t.email}</td>
@@ -55,6 +62,7 @@ const TableBody = ({
                           <a
                             key={propId || idx}
                             href={getPropertyUrl(propId)}
+                            onClick={(e) => { e.stopPropagation(); }}
                             className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
                           >
                             {propName}
@@ -72,7 +80,7 @@ const TableBody = ({
       </div>
     );
 
-export const TenantsS = ({ asyncData, getPropertyUrl }: Props): JSX.Element => (
+export const TenantsS = ({ asyncData, getDetailUrl, getPropertyUrl }: Props): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -80,7 +88,7 @@ export const TenantsS = ({ asyncData, getPropertyUrl }: Props): JSX.Element => (
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
-        <TableBody tenants={data} getPropertyUrl={getPropertyUrl} />
+        <TableBody tenants={data} getDetailUrl={getDetailUrl} getPropertyUrl={getPropertyUrl} />
       ))
       .exhaustive()}
   </div>

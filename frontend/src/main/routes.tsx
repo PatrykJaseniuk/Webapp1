@@ -19,6 +19,7 @@ import { TenantDetailPage } from "@/pages/TenantP";
 import { LeaseAgreementsListPage } from "@/pages/LeaseAgreementsP";
 import { LeaseAgreementDetailPage } from "@/pages/LeaseAgreementP";
 import { TransactionDetailPage } from "@/pages/TransactionPage";
+import { TransactionsListPage } from "@/pages/TransactionsP";
 import { createHashRouter, Navigate } from "react-router-dom";
 
 
@@ -84,6 +85,10 @@ export const router = createHashRouter(
               path: 'transactions',
               children: [
                 {
+                  index: true,
+                  Component: TransactionsListPage,
+                },
+                {
                   path: ':id',
                   Component: TransactionDetailPage,
                 },
@@ -141,6 +146,10 @@ export const router = createHashRouter(
             {
               path: 'transactions',
               children: [
+                {
+                  index: true,
+                  Component: TransactionsListPage,
+                },
                 {
                   path: ':id',
                   Component: TransactionDetailPage,

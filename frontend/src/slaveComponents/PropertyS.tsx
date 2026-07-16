@@ -232,22 +232,26 @@ const DetailContent = ({
               </thead>
               <tbody>
                 {data.transactions.map((tx) => (
-                  <tr key={tx.id} className="border-b border-gray-100">
+                  <tr
+                    key={tx.id}
+                    className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                    onClick={() => { window.location.href = getTransactionUrl(tx.id); }}
+                  >
                     <td className="py-2 pr-4 text-gray-600">{tx.due_date}</td>
                     <td className="py-2 pr-4 text-gray-600">
                       {TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}
                     </td>
-                    <td className="py-2 pr-4 text-gray-600">
-                      <a href={getTransactionUrl(tx.id)} className="text-blue-600 hover:text-blue-800 hover:underline">
-                        {tx.description}
-                      </a>
-                    </td>
+                    <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
                     <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
                       {tx.amount.toLocaleString('pl-PL')} zł
                     </td>
                     <td className="py-2 pr-4">
                       {tx.lease_id !== null ?
-                        <a href={getLeaseUrl(tx.lease_id)} className="text-blue-600 hover:text-blue-800 hover:underline">
+                        <a
+                          href={getLeaseUrl(tx.lease_id)}
+                          onClick={(e) => { e.stopPropagation(); }}
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
                           Umowa
                         </a> :
                         <span className="text-gray-400">—</span>}
@@ -282,19 +286,22 @@ const DetailContent = ({
               </thead>
               <tbody>
                 {data.leases.map((l) => (
-                  <tr key={l.id} className="border-b border-gray-100">
+                  <tr
+                    key={l.id}
+                    className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                    onClick={() => { window.location.href = getLeaseUrl(l.id); }}
+                  >
                     <td className="py-2 pr-4">
                       <a
                         href={getTenantUrl(l.tenant_id)}
+                        onClick={(e) => { e.stopPropagation(); }}
                         className="text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         {l.tenants.first_name} {l.tenants.last_name}
                       </a>
                     </td>
-                    <td className="py-2 pr-4">
-                      <a href={getLeaseUrl(l.id)} className="text-blue-600 hover:text-blue-800 hover:underline">
-                        {l.start_date}
-                      </a>
+                    <td className="py-2 pr-4 text-gray-600">
+                      {l.start_date}
                     </td>
                     <td className="py-2 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
                     <td className="py-2 pr-4 text-right text-gray-900">

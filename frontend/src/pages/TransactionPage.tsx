@@ -11,7 +11,7 @@ export const TransactionDetailPage = (): JSX.Element => {
 
   const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
   const getLeaseUrl = (leaseId: string): string => `#${rolePrefix}/leases/${leaseId}`;
-  const getBackUrl = (): string => '#'; // default, nadpisywane przez caller
+  const getBackUrl = (): string => `#${txnPath}`;
 
   return (
     <TransactionDetail

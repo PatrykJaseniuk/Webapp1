@@ -160,20 +160,21 @@ const DetailContent = ({
               </thead>
               <tbody>
                 {data.leases.map((l) => (
-                  <tr key={l.id} className="border-b border-gray-100">
+                  <tr
+                    key={l.id}
+                    className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                    onClick={() => { window.location.href = getLeaseUrl(l.id); }}
+                  >
                     <td className="py-2 pr-4">
                       <a
                         href={getPropertyUrl(l.propertyId)}
+                        onClick={(e) => { e.stopPropagation(); }}
                         className="text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         {l.propertyName}
                       </a>
                     </td>
-                    <td className="py-2 pr-4">
-                      <a href={getLeaseUrl(l.id)} className="text-blue-600 hover:text-blue-800 hover:underline">
-                        {l.startDate}
-                      </a>
-                    </td>
+                    <td className="py-2 pr-4 text-gray-600">{l.startDate}</td>
                     <td className="py-2 pr-4 text-gray-600">{l.endDate ?? '—'}</td>
                     <td className="py-2 pr-4 text-right text-gray-900">
                       {l.monthlyRent.toLocaleString('pl-PL')} zł
@@ -208,16 +209,16 @@ const DetailContent = ({
               </thead>
               <tbody>
                 {data.transactions.map((tx) => (
-                  <tr key={tx.id} className="border-b border-gray-100">
+                  <tr
+                    key={tx.id}
+                    className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
+                    onClick={() => { window.location.href = getTransactionUrl(tx.id); }}
+                  >
                     <td className="py-2 pr-4 text-gray-600">{tx.dueDate}</td>
                     <td className="py-2 pr-4 text-gray-600">
                       {TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}
                     </td>
-                    <td className="py-2 pr-4 text-gray-600">
-                      <a href={getTransactionUrl(tx.id)} className="text-blue-600 hover:text-blue-800 hover:underline">
-                        {tx.description}
-                      </a>
-                    </td>
+                    <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
                     <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
                       {tx.amount.toLocaleString('pl-PL')} zł
                     </td>

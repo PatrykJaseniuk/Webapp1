@@ -30,10 +30,12 @@ const TableBody = ({
   leases,
   getTenantUrl,
   getPropertyUrl,
+  getDetailUrl,
 }: {
   readonly leases: readonly Row[];
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
+  readonly getDetailUrl: (id: string) => string;
 }): JSX.Element =>
   leases.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
@@ -52,10 +54,15 @@ const TableBody = ({
           </thead>
           <tbody>
             {leases.map((l) => (
-              <tr key={l.id} className="border-b border-gray-100 text-sm">
+              <tr
+                key={l.id}
+                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+                onClick={() => { window.location.href = getDetailUrl(l.id); }}
+              >
                 <td className="py-3 pr-4">
                   <a
                     href={getTenantUrl(l.tenant_id)}
+                    onClick={(e) => { e.stopPropagation(); }}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     {tenantDisplayName(l)}
@@ -64,6 +71,7 @@ const TableBody = ({
                 <td className="py-3 pr-4">
                   <a
                     href={getPropertyUrl(l.property_id)}
+                    onClick={(e) => { e.stopPropagation(); }}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     {l.properties?.name ?? ''}
@@ -86,7 +94,7 @@ const TableBody = ({
       </div>
     );
 
-export const LeaseAgreementsTable = ({ asyncData, getTenantUrl, getPropertyUrl }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getLeaseAgreementUrl: getDetailUrl }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -98,6 +106,7 @@ export const LeaseAgreementsTable = ({ asyncData, getTenantUrl, getPropertyUrl }
           leases={data}
           getTenantUrl={getTenantUrl}
           getPropertyUrl={getPropertyUrl}
+          getDetailUrl={getDetailUrl}
         />
       ))
       .exhaustive()}

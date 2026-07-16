@@ -7,7 +7,9 @@ import { AccessGateS } from '@/slaveComponents/AccessGateS';
 const links = {
   dashboard: '/admin',
   properties: '/admin/properties',
-  tenants: '/admin/tenants'
+  tenants: '/admin/tenants',
+  leases: '/admin/leases',
+  transactions: '/admin/transactions',
 }
 
 export const AdminLayoutPage = (): JSX.Element => {

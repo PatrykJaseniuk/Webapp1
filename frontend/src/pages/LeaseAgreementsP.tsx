@@ -1,6 +1,6 @@
 import { useLocation } from 'react-router-dom';
 import { LeaseAgreementsM } from '@/masterComponents/LeaseAgreementsM';
-import { LeaseAgreementsTable } from '@/slaveComponents/LeaseAgreementsS';
+import { LeaseAgreementsS } from '@/slaveComponents/LeaseAgreementsS';
 
 export const LeaseAgreementsListPage = (): JSX.Element => {
   const { pathname } = useLocation();
@@ -14,8 +14,8 @@ export const LeaseAgreementsListPage = (): JSX.Element => {
 
   return (
     <LeaseAgreementsM
-      Slave={LeaseAgreementsTable}
-      getDetailUrl={getDetailUrl}
+      Slave={LeaseAgreementsS}
+      getLeaseAgreementUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}
     />

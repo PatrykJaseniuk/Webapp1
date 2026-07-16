@@ -8,6 +8,8 @@ const links = {
   dashboard: '/landlord',
   properties: '/landlord/properties',
   tenants: '/landlord/tenants',
+  leases: '/landlord/leases',
+  transactions: '/landlord/transactions',
 };
 
 export const LandlordLayoutPage = (): JSX.Element => {
