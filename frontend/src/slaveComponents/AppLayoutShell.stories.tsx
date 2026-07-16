@@ -1,8 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { ComponentType, ReactNode } from 'react';
 import { AppLayoutShell } from './AppLayouS';
-import type { DataMode } from '@/generic';
-import type { AuthContextData } from '@/masterComponents/AppLayoutM';
+import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 
 const navItems = {
   dashboard: '/admin',
@@ -12,27 +10,14 @@ const navItems = {
 
 const noop = (): void => { };
 
-type LinkProps = {
-  readonly to: string | { readonly pathname: string };
-  readonly children: ReactNode;
-  readonly className?: string;
+const fulfilledDataMode: AppLayoutSProps['asyncData'] = {
+  tag: 'fulfilled',
+  data: { email: 'admin@example.com' },
 };
 
-const MockLink: ComponentType<LinkProps> = ({
-  children,
-  className,
-}: LinkProps): JSX.Element => (
-  <a className={className}>{children}</a>
-);
-
-const fulfilledDataMode: DataMode<AuthContextData> = {
+const fulfilledLongEmail: AppLayoutSProps['asyncData'] = {
   tag: 'fulfilled',
-  data: { email: 'admin@example.com', onLogout: noop },
-};
-
-const fulfilledLongEmail: DataMode<AuthContextData> = {
-  tag: 'fulfilled',
-  data: { email: 'very.long.email.address@example.com', onLogout: noop },
+  data: { email: 'very.long.email.address@example.com' },
 };
 
 const meta: Meta<typeof AppLayoutShell> = {
@@ -40,8 +25,8 @@ const meta: Meta<typeof AppLayoutShell> = {
   component: AppLayoutShell,
   args: {
     navItems,
-    dataMode: fulfilledDataMode,
-    LinkComponent: MockLink,
+    asyncData: fulfilledDataMode,
+    onLogout: noop,
     activeTo: '/admin',
   },
 };
@@ -57,7 +42,7 @@ export const Default: Story = {
 
 export const LongEmail: Story = {
   args: {
-    dataMode: fulfilledLongEmail,
+    asyncData: fulfilledLongEmail,
     children: <p className="p-4 text-gray-600">Content area</p>,
   },
 };

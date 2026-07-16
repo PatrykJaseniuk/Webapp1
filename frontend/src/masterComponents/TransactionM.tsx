@@ -3,7 +3,7 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { DataMode } from '@/generic';
+import type { AsyncData } from '@/generic';
 
 type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -14,7 +14,7 @@ export type TransactionDetailData = Readonly<{
 }>;
 
 export type TransactionDetailViewProps = {
-  readonly dataMode: DataMode<TransactionDetailData>;
+  readonly asyncData: AsyncData<TransactionDetailData>;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getBackUrl: () => string;
@@ -70,7 +70,7 @@ export const TransactionDetail = ({
     window.location.reload();
   }, []);
 
-  const dataMode: DataMode<TransactionDetailData> =
+  const asyncData: AsyncData<TransactionDetailData> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
@@ -79,7 +79,7 @@ export const TransactionDetail = ({
 
   return (
     <DetailViewComponent
-      dataMode={dataMode}
+      asyncData={asyncData}
       getPropertyUrl={getPropertyUrl}
       getLeaseUrl={getLeaseUrl}
       getBackUrl={getBackUrl}

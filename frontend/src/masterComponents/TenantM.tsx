@@ -3,7 +3,38 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { DataMode, LeaseSummary, TransactionSummary, AttachmentSummary } from '@/generic';
+import type { AsyncData } from '@/generic';
+
+export type LeaseSummary = Readonly<{
+  id: string;
+  propertyName: string;
+  propertyId: string;
+  tenantName: string;
+  tenantId: string;
+  startDate: string;
+  endDate: string | null;
+  monthlyRent: number;
+  depositAmount: number;
+  leaseStatus: string;
+}>;
+
+export type TransactionSummary = Readonly<{
+  id: string;
+  type: string;
+  description: string | null;
+  amount: number;
+  dueDate: string;
+  transactionStatus: string;
+}>;
+
+export type AttachmentSummary = Readonly<{
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileType: string | null;
+  fileSize: number | null;
+  description: string | null;
+}>;
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
@@ -23,7 +54,7 @@ type Url = {
 };
 
 export type TenantSProps = {
-  readonly dataMode: DataMode<TenantDetailData>;
+  readonly asyncData: AsyncData<TenantDetailData>;
 } & Url;
 
 type Props = {
@@ -101,7 +132,7 @@ export const TenantDetailM = ({
     window.location.reload();
   }, []);
 
-  const dataMode: DataMode<TenantDetailData> =
+  const asyncData: AsyncData<TenantDetailData> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
@@ -110,7 +141,7 @@ export const TenantDetailM = ({
 
   return (
     <DetailViewComponent
-      dataMode={dataMode}
+      asyncData={asyncData}
       getPropertyUrl={getPropertyUrl}
       getLeaseUrl={getLeaseUrl}
       getTransactionUrl={getTransactionUrl}

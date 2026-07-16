@@ -3,7 +3,7 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { DataMode as DataFetchMode } from '@/generic';
+import type { AsyncData as DataFetchMode } from '@/generic';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row']
 
@@ -13,7 +13,7 @@ type Url = {
 };
 
 export type PropertiesSProps = {
-  readonly dataMode: DataFetchMode<readonly PropertyOccupancyRow[]>;
+  readonly asyncData: DataFetchMode<readonly PropertyOccupancyRow[]>;
 } & Url;
 
 type Props = {
@@ -39,7 +39,7 @@ export const PropertiesM = ({
     window.location.reload();
   }, []);
 
-  const dataMode: DataFetchMode<readonly PropertyOccupancyRow[]> =
+  const asyncData: DataFetchMode<readonly PropertyOccupancyRow[]> =
     loading ?
       { tag: 'pending' } :
       error ?
@@ -48,7 +48,7 @@ export const PropertiesM = ({
 
   return (
     <Slave
-      dataMode={dataMode}
+      asyncData={asyncData}
       getDetailUrl={getDetailUrl}
       getTenantUrl={getTenantUrl}
     />

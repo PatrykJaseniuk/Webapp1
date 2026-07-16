@@ -3,7 +3,7 @@ import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Row = Extract<PropertiesSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<PropertiesSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type PropertyStatus = NonNullable<Row['property_status']>;
 type PropertyType = NonNullable<Row['property_type']>;
 
@@ -83,9 +83,9 @@ const TableBody = ({
       </div>
     );
 
-export const PropertiesS = ({ dataMode, getDetailUrl, getTenantUrl }: PropertiesSProps): JSX.Element => (
+export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
-    {match(dataMode)
+    {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

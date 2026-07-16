@@ -3,7 +3,7 @@ import type { TenantSProps } from '@/masterComponents/TenantM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Data = Extract<TenantSProps['dataMode'], { tag: 'fulfilled' }>['data'];
+type Data = Extract<TenantSProps['asyncData'], { tag: 'fulfilled' }>['data'];
 type TenantStatusKey = Data['tenant']['tenant_status'];
 type LeaseStatusKey = Data['leases'][number]['leaseStatus'];
 type TxnTypeKey = Data['transactions'][number]['type'];
@@ -268,7 +268,7 @@ const DetailContent = ({
 
 export const TenantDetailS = (props: TenantSProps): JSX.Element => (
   <div className="min-h-[400px]">
-    {match(props.dataMode)
+    {match(props.asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

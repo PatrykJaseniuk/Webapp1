@@ -1,7 +1,11 @@
 import { match } from 'ts-pattern';
-import type { AppLayoutSProps, AuthContextData } from '@/masterComponents/AppLayoutM';
+import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
+
+// ── Inferred type from slave props ──
+
+type AuthData = Extract<AppLayoutSProps['asyncData'], { tag: 'fulfilled' }>['data'];
 
 // ── Display labels (human-readable strings owned by the slave) ──
 
@@ -26,14 +30,14 @@ const sidebarLinkClass = (isActive: boolean): string =>
 const AuthenticatedShell = ({
   navItems,
   authData,
+  onLogout,
   children,
-  LinkComponent,
   activeTo,
 }: {
   readonly navItems: Readonly<Record<string, string>>;
-  readonly authData: AuthContextData;
+  readonly authData: AuthData;
+  readonly onLogout: () => void;
   readonly children: import('react').ReactNode;
-  readonly LinkComponent: import('@/generic').LinkComponent;
   readonly activeTo: string;
 }): JSX.Element => {
   const entries = Object.entries(navItems);
@@ -48,13 +52,13 @@ const AuthenticatedShell = ({
 
         <nav className="flex-1 space-y-1 px-4 py-4">
           {entries.map(([key, to]) => (
-            <LinkComponent
+            <a
               key={key}
-              to={to}
+              href={to}
               className={sidebarLinkClass(to === activeTo)}
             >
               {LABELS[key] ?? key}
-            </LinkComponent>
+            </a>
           ))}
         </nav>
 
@@ -63,7 +67,7 @@ const AuthenticatedShell = ({
           <span className="block truncate text-sm text-gray-600">{authData.email}</span>
           <button
             type="button"
-            onClick={authData.onLogout}
+            onClick={onLogout}
             className="mt-2 w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Wyloguj
@@ -83,13 +87,13 @@ const AuthenticatedShell = ({
 
 export const AppLayoutShell = ({
   navItems,
-  dataMode,
+  asyncData,
+  onLogout,
   children,
-  LinkComponent,
   activeTo,
 }: AppLayoutSProps): JSX.Element => (
   <div className="min-h-screen">
-    {match(dataMode)
+    {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
@@ -98,7 +102,7 @@ export const AppLayoutShell = ({
         <AuthenticatedShell
           navItems={navItems}
           authData={data}
-          LinkComponent={LinkComponent}
+          onLogout={onLogout}
           activeTo={activeTo}
         >
           {children}

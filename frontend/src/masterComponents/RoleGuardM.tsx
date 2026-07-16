@@ -1,7 +1,7 @@
 import type { Database } from '@/backendConnector';
 import { useAuth, type AuthState } from '@/hooks/AuthContext';
 import type { ReactNode, ComponentType } from 'react';
-import type { DataMode } from '@/generic';
+import type { AsyncData } from '@/generic';
 
 export type AuthoriseRequirement =
   | { readonly isAuthenticated: false }
@@ -25,7 +25,7 @@ export type AuthorisationResult = Readonly<{
 // ── Slave props (defined here so slave can import from master) ──
 
 export type AccessGateSlaveProps = {
-  readonly dataMode: DataMode<AuthorisationResult>;
+  readonly asyncData: AsyncData<AuthorisationResult>;
   readonly children: ReactNode;
 };
 
@@ -44,10 +44,10 @@ export const AuthorisationGuard = ({
 
   const isAuthorised: boolean = computeAuthorisation(authState, authoriseRequirement);
 
-  const dataMode: DataMode<AuthorisationResult> =
+  const asyncData: AsyncData<AuthorisationResult> =
     authState.tag === 'loading' ?
       { tag: 'pending' } :
       { tag: 'fulfilled', data: { isAuthorised } };
 
-  return <Slave dataMode={dataMode}>{children}</Slave>;
+  return <Slave asyncData={asyncData}>{children}</Slave>;
 };

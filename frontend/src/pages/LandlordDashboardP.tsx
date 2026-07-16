@@ -1,6 +1,4 @@
-import { NavLink } from 'react-router-dom';
-import type { LinkComponent } from '@/generic';
-import { DashboardSummaryData } from '@/masterComponents/DashboardSummaryM';
+import { DashboardSummaryM } from '@/masterComponents/DashboardSummaryM';
 import { LandlordDashboard } from '@/slaveComponents/LandlordDashboardS';
 
 const cards = [
@@ -10,12 +8,11 @@ const cards = [
 ];
 
 export const LandlordDashboardPage = (): JSX.Element => (
-  <DashboardSummaryData
-    SummaryComponent={({ dataMode }) => (
+  <DashboardSummaryM
+    Slave={({ asyncData }) => (
       <LandlordDashboard
-        LinkComponent={NavLink as unknown as LinkComponent}
         cards={cards}
-        dataMode={dataMode}
+        asyncData={asyncData}
       />
     )}
   />

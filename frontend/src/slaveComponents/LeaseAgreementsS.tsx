@@ -3,7 +3,7 @@ import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM'
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Row = Extract<LeaseAgreementsSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<LeaseAgreementsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type LeaseStatus = Row['lease_status'];
 
 const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatus, string>> = Object.freeze({
@@ -86,9 +86,9 @@ const TableBody = ({
       </div>
     );
 
-export const LeaseAgreementsTable = ({ dataMode, getTenantUrl, getPropertyUrl }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsTable = ({ asyncData, getTenantUrl, getPropertyUrl }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
-    {match(dataMode)
+    {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

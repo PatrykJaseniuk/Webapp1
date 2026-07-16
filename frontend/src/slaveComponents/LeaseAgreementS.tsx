@@ -3,7 +3,7 @@ import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type LeaseAgreementData = NonNullable<Extract<LeaseAgreementSProps['dataMode'], { tag: 'fulfilled' }>['data']>;
+type LeaseAgreementData = NonNullable<Extract<LeaseAgreementSProps['asyncData'], { tag: 'fulfilled' }>['data']>;
 
 type LeaseStatusKey = NonNullable<LeaseAgreementData['leaseAgreement']>['lease_status'];
 type TransactionTypeKey = LeaseAgreementData['transactions'][number]['type'];
@@ -229,7 +229,7 @@ const DetailContent = ({
 
 export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => (
   <div className="min-h-[400px]">
-    {match(props.dataMode)
+    {match(props.asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

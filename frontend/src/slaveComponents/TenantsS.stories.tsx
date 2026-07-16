@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TenantsS } from './TenantsS';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
-import type { DataMode } from '@/generic';
 
-type Row = Extract<TenantsSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 
 const makeTenant = (overrides?: Partial<Row>): Row => ({
   id: '00000000-0000-0000-0000-000000000001',
@@ -26,9 +25,9 @@ const makeTenant = (overrides?: Partial<Row>): Row => ({
 
 const noop = (): void => { };
 
-const pendingDataMode: DataMode<readonly Row[]> = { tag: 'pending' };
+const pendingDataMode: TenantsSProps['asyncData'] = { tag: 'pending' };
 
-const rejectedDataMode: DataMode<readonly Row[]> = {
+const rejectedDataMode: TenantsSProps['asyncData'] = {
   tag: 'rejected',
   message: 'Błąd sieci',
   onRetry: noop,
@@ -47,20 +46,20 @@ export default meta;
 type Story = StoryObj<typeof TenantsS>;
 
 export const Pending: Story = {
-  args: { dataMode: pendingDataMode },
+  args: { asyncData: pendingDataMode },
 };
 
 export const Rejected: Story = {
-  args: { dataMode: rejectedDataMode },
+  args: { asyncData: rejectedDataMode },
 };
 
 export const Empty: Story = {
-  args: { dataMode: { tag: 'fulfilled', data: [] } },
+  args: { asyncData: { tag: 'fulfilled', data: [] } },
 };
 
 export const WithRows: Story = {
   args: {
-    dataMode: {
+    asyncData: {
       tag: 'fulfilled',
       data: [
         makeTenant({ id: '1', firstName: 'Jan', lastName: 'Kowalski', tenantStatus: 'active', currentPropertyNames: 'Apartament Centrum', currentPropertyIds: ['prop-1'] }),

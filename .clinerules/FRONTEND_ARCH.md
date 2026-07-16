@@ -32,7 +32,7 @@
 - Every master component's **export name** ends with letter 'M' : 'LeaseAgreementDetailM', 'PropertiesListM', etc.
 - Shared prop types between `Props` and `<Name>SProps` may use a DRY intersection alias:
     type Url = { readonly getXUrl: ...; readonly getYUrl: ...; };
-    export type LeaseAgreementSProps = { readonly dataMode: DataMode<...>; } & Url;
+    export type LeaseAgreementSProps = { readonly asyncData: AsyncData<...>; } & Url;
     type Props = { readonly DetailViewComponent: ...; readonly id: string; } & Url;
 - When fetching multiple related queries in parallel (e.g. lease + transactions + attachments),
   return raw Supabase results from `useAsync`, derive the unioned error in-band via `??` chain,
@@ -52,11 +52,11 @@
 - Define rendering functionality
 - Pure functions. Zero side effects. Zero DB knowledge. Zero application knowledge.
   Zero local React state (`useState`, `useReducer`, `useRef` for data storage).
-  Internal state is only allowed through the `DataMode` prop (see §2a).
+  Internal state is only allowed through the `asyncData` prop (see §2a).
 - Import exactly ONE type from its master: the slave props interface
   (e.g. `LeaseAgreementSProps`). Never import data-internal types from the master.
 - Derive the fulfilled-data type inline from the slave props:
-    type Data = Extract<SlaveProps['state'], { tag: 'fulfilled' }>['data'];
+    type Data = Extract<SlaveProps['asyncData'], { tag: 'fulfilled' }>['data'];
 - Derive strict enum-key types from the data shape and use them for all
   lookup objects and helper function signatures. Never use loose
   `Record<string, string>` or `(x: string)` for enum-based values.
@@ -65,7 +65,7 @@
     type TxnType = Data['transactions'][number]['type'];
     const LABELS: Readonly<Record<LeaseStatus, string>> = { ... };
     const pillClass = (status: LeaseStatus): string => ...;
-- Import types ONLY from: `react` + `@/generic` + their master.
+- Import types ONLY from: `react` + their master.
 - Types are not defined in slave component's file (the single inline
   derivation above is the only exception).
 - May import pure-render sibling slave components (e.g. `LoadingSpinner`, `ErrorMessage`)
@@ -78,14 +78,13 @@
 # 2a. SLAVE THREE-STATE PATTERN
 # ───────────────────────────────────────────────────────────────
 
-- Every slave that receives fetched data MUST handle three states: pending, rejected, fulfilled.
-- Accept a single `dataMode: DataMode<T>` prop (from `@/generic`) instead of separate
+- Every slave that receives async data MUST handle three states: pending, rejected, fulfilled.
+- Accept a single `asyncData: AsyncData<T>` prop (from their master's SProps) instead of separate
   `isLoading`, `error`, `data` props.
 - Use `match(state).with({ tag: 'pending' }, ...).with({ tag: 'rejected' }, ...).with({ tag: 'fulfilled' }, ...).exhaustive()`
   to guarantee every state is rendered. This is the ONLY kind of "state" slaves handle —
   it models the data-fetch lifecycle, not application state.
-- The master converts `useAsync` output into `DataMode<T>` and passes it down.
-- The master does NOT switch between Loading/Error/Data components — the slave does.
+- The master converts `useAsync` output into `AsyncData<T>` and passes it down.
 - All three state renderings must share the same wrapper container with a stable minimum
   height (e.g. `min-h-[300px]` for tables, `min-h-[400px]` for forms) to prevent
   layout shifts when transitioning between states.
@@ -108,7 +107,7 @@
   invokes the master's `onSubmit` callback with the extracted data.
 - Example signature:
     export type LeaseAgreementFormSlaveProps = {
-      readonly dataMode: DataMode<LeaseAgreementDetailData>;
+      readonly asyncData: AsyncData<LeaseAgreementDetailData>;
       readonly initialData: LeaseAgreementDetailData;   // for defaultValue population
       readonly onSubmit: (data: LeaseAgreementFormInput) => void;
       readonly getCancelUrl: () => string;
@@ -156,6 +155,7 @@ Components per table:
 # ANTI-PATTERNS
 # ───────────────────────────────────────────────────────────────
 
+# ❌ Slave imports `@/generic`
 # ❌ Slave imports `@/backendConnector` or `Database`
 # ❌ Slave uses `useNavigate`, `useAsync`, `useAsyncFn`
 # ❌ Slave imports more than one type from its master

@@ -1,6 +1,8 @@
 import { match } from 'ts-pattern';
-import type { LinkComponent, DataMode, DashboardSummary } from '@/generic';
+import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
+
+type DashboardSummary = Extract<DashboardSummarySProps['asyncData'], { tag: 'fulfilled' }>['data'];
 
 type DashboardCard = {
   readonly to: string;
@@ -9,9 +11,8 @@ type DashboardCard = {
 };
 
 type Props = {
-  readonly LinkComponent: LinkComponent;
   readonly cards: ReadonlyArray<DashboardCard>;
-  readonly dataMode: DataMode<DashboardSummary>;
+  readonly asyncData: DashboardSummarySProps['asyncData'];
 };
 
 const dashboardCardClass =
@@ -53,16 +54,15 @@ const StatCards = ({ summary }: { readonly summary: DashboardSummary }): JSX.Ele
 );
 
 export const AdminDashboard = ({
-  LinkComponent,
   cards,
-  dataMode,
+  asyncData,
 }: Props): JSX.Element => (
   <div className="flex flex-col items-center justify-center py-16">
     <h1 className="mb-2 text-3xl font-bold text-gray-900">Panel Administratora</h1>
     <p className="text-gray-500">System zarządzania najmem</p>
 
     <div className="mt-6 w-full max-w-3xl">
-      {match(dataMode)
+      {match(asyncData)
         .with({ tag: 'pending' }, () => <LoadingSpinner />)
         .with({ tag: 'rejected' }, () => undefined)
         .with({ tag: 'fulfilled' }, ({ data }) => <StatCards summary={data} />)
@@ -71,14 +71,14 @@ export const AdminDashboard = ({
 
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
       {cards.map((card) => (
-        <LinkComponent
+        <a
           key={card.to}
-          to={card.to}
+          href={card.to}
           className={dashboardCardClass}
         >
           <p className="text-lg font-semibold text-gray-800">{card.title}</p>
           <p className="mt-1 text-sm text-gray-500">{card.subtitle}</p>
-        </LinkComponent>
+        </a>
       ))}
     </div>
   </div>

@@ -3,7 +3,7 @@ import type { PropertySProps } from '@/masterComponents/PropertyM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Data = Extract<PropertySProps['dataMode'], { tag: 'fulfilled' }>['data'];
+type Data = Extract<PropertySProps['asyncData'], { tag: 'fulfilled' }>['data'];
 type PropertyData = NonNullable<Data['property']>;
 type PropertyStatusKey = PropertyData['property_status'];
 type PropertyTypeKey = PropertyData['property_type'];
@@ -155,6 +155,17 @@ const DetailContent = ({
               </a> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
+          <div>
+            <p className={labelClass}>Aktualna umowa</p>
+            {occupancy?.current_lease_id !== null && occupancy?.current_lease_id !== undefined ?
+              <a
+                href={getLeaseUrl(occupancy.current_lease_id)}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+              >
+                Umowa najmu
+              </a> :
+              <p className={`${valueClass} text-gray-400`}>—</p>}
+          </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div>
@@ -215,6 +226,7 @@ const DetailContent = ({
                   <th className="py-2 pr-4 font-medium">Typ</th>
                   <th className="py-2 pr-4 font-medium">Opis</th>
                   <th className="py-2 pr-4 font-medium text-right">Kwota</th>
+                  <th className="py-2 pr-4 font-medium">Umowa</th>
                   <th className="py-2 pr-4 font-medium">Status</th>
                 </tr>
               </thead>
@@ -232,6 +244,13 @@ const DetailContent = ({
                     </td>
                     <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
                       {tx.amount.toLocaleString('pl-PL')} zł
+                    </td>
+                    <td className="py-2 pr-4">
+                      {tx.lease_id !== null ?
+                        <a href={getLeaseUrl(tx.lease_id)} className="text-blue-600 hover:text-blue-800 hover:underline">
+                          Umowa
+                        </a> :
+                        <span className="text-gray-400">—</span>}
                     </td>
                     <td className="py-2 pr-4">
                       <span className={txnStatusPillClass(tx.transaction_status)}>
@@ -328,7 +347,7 @@ const DetailContent = ({
 
 export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
   <div className="min-h-[400px]">
-    {match(props.dataMode)
+    {match(props.asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />

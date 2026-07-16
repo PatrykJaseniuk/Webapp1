@@ -1,9 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { PropertiesS } from './PropertiesS';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
-import type { DataMode } from '@/generic';
 
-type Row = Extract<PropertiesSProps['dataMode'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<PropertiesSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 
 const property: Row = {
   id: '1',
@@ -35,9 +34,9 @@ const manyProperties: readonly Row[] = [
 
 const noop = (): void => { };
 
-const pendingDataMode: DataMode<readonly Row[]> = { tag: 'pending' };
+const pendingDataMode: PropertiesSProps['asyncData'] = { tag: 'pending' };
 
-const rejectedDataMode: DataMode<readonly Row[]> = {
+const rejectedDataMode: PropertiesSProps['asyncData'] = {
   tag: 'rejected',
   message: 'Błąd sieci',
   onRetry: noop,
@@ -56,21 +55,21 @@ export default meta;
 type Story = StoryObj<typeof PropertiesS>;
 
 export const Pending: Story = {
-  args: { dataMode: pendingDataMode },
+  args: { asyncData: pendingDataMode },
 };
 
 export const Rejected: Story = {
-  args: { dataMode: rejectedDataMode },
+  args: { asyncData: rejectedDataMode },
 };
 
 export const Empty: Story = {
-  args: { dataMode: { tag: 'fulfilled', data: [] } },
+  args: { asyncData: { tag: 'fulfilled', data: [] } },
 };
 
 export const Single: Story = {
-  args: { dataMode: { tag: 'fulfilled', data: [property] } },
+  args: { asyncData: { tag: 'fulfilled', data: [property] } },
 };
 
 export const Many: Story = {
-  args: { dataMode: { tag: 'fulfilled', data: manyProperties } },
+  args: { asyncData: { tag: 'fulfilled', data: manyProperties } },
 };

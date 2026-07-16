@@ -1,23 +1,22 @@
 import type { ReactNode, ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, type AuthState } from '@/hooks/AuthContext';
+import { useAuth } from '@/hooks/AuthContext';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import type { DataMode, LinkComponent } from '@/generic';
+import type { AsyncData } from '@/generic';
 
 // ── Auth data extracted for the shell ──
 
-export type AuthContextData = Readonly<{
+type AuthData = Readonly<{
   email: string;
-  onLogout: () => void;
 }>;
 
 // ── Shell props (defined here so slave can import from master) ──
 
 export type AppLayoutSProps = {
   readonly navItems: Readonly<Record<string, string>>;
-  readonly dataMode: DataMode<AuthContextData>;
+  readonly asyncData: AsyncData<AuthData>;
+  readonly onLogout: () => void;
   readonly children: ReactNode;
-  readonly LinkComponent: LinkComponent;
   readonly activeTo: string;
 };
 
@@ -25,28 +24,16 @@ export type AppLayoutSProps = {
 
 type Props = {
   readonly children: ReactNode;
-  readonly SlaveComponent: ComponentType<AppLayoutSProps>;
+  readonly Slave: ComponentType<AppLayoutSProps>;
   readonly navItems: Readonly<Record<string, string>>;
-  readonly LinkComponent: LinkComponent;
   readonly activeTo: string;
   readonly loginTo: string;
 };
 
-const toDataMode = (
-  auth: AuthState,
-  onLogout: () => void,
-): DataMode<AuthContextData> =>
-  auth.tag === 'loading' ?
-    { tag: 'pending' } :
-    auth.tag === 'authenticated' ?
-      { tag: 'fulfilled', data: { email: auth.email, onLogout } } :
-      { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
-
-export const AppLayout = ({
+export const AppLayoutM = ({
   children,
-  SlaveComponent: Shell,
+  Slave,
   navItems,
-  LinkComponent,
   activeTo,
   loginTo,
 }: Props): JSX.Element => {
@@ -60,14 +47,21 @@ export const AppLayout = ({
     });
   };
 
+  const asyncData: AsyncData<AuthData> =
+    authState.tag === 'loading' ?
+      { tag: 'pending' } :
+    authState.tag === 'authenticated' ?
+      { tag: 'fulfilled', data: { email: authState.email } } :
+      { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
+
   return (
-    <Shell
+    <Slave
       navItems={navItems}
-      dataMode={toDataMode(authState, handleLogout)}
-      LinkComponent={LinkComponent}
+      asyncData={asyncData}
+      onLogout={handleLogout}
       activeTo={activeTo}
     >
       {children}
-    </Shell>
+    </Slave>
   );
 };

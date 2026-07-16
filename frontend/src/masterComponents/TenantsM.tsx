@@ -3,7 +3,7 @@ import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { DataMode } from '@/generic';
+import type { AsyncData } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
@@ -79,7 +79,7 @@ type Url = {
 };
 
 export type TenantsSProps = {
-  readonly dataMode: DataMode<readonly EnrichedTenantRow[]>;
+  readonly asyncData: AsyncData<readonly EnrichedTenantRow[]>;
 } & Url;
 
 type Props = {
@@ -105,7 +105,7 @@ export const TenantsM = ({
     window.location.reload();
   }, []);
 
-  const dataMode: DataMode<readonly EnrichedTenantRow[]> =
+  const asyncData: AsyncData<readonly EnrichedTenantRow[]> =
     loading ?
       { tag: 'pending' } :
       error !== undefined ?
@@ -114,7 +114,7 @@ export const TenantsM = ({
 
   return (
     <TableComponent
-      dataMode={dataMode}
+      asyncData={asyncData}
       getDetailUrl={getDetailUrl}
       getPropertyUrl={getPropertyUrl}
     />
