@@ -1,5 +1,5 @@
 import type { ReactNode, ComponentType } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/AuthContext';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { AsyncData } from '@/generic';
@@ -10,11 +10,11 @@ type AuthData = Readonly<{
   email: string;
 }>;
 
-// ── Navigation item: pre-built Link + URL string for active matching ──
+// ── Navigation item: raw data, slave renders NavLink ──
 
 export type NavItem = Readonly<{
   to: string;
-  link: ReactNode;
+  label: string;
 }>;
 
 // ── Shell props (defined here so slave can import from master) ──
@@ -24,7 +24,6 @@ export type AppLayoutSProps = {
   readonly asyncData: AsyncData<AuthData>;
   readonly onLogout: () => void;
   readonly children: ReactNode;
-  readonly activeTo: string;
 };
 
 // ── Display labels for nav keys ──
@@ -35,6 +34,8 @@ const LABELS: Readonly<Record<string, string>> = {
   tenants: 'Tenants',
   leases: 'Leases',
   transactions: 'Transakcje',
+  contracts: 'Umowy',
+  payments: 'Płatności',
 };
 
 // ── Component ──
@@ -43,7 +44,6 @@ type Props = {
   readonly children: ReactNode;
   readonly Slave: ComponentType<AppLayoutSProps>;
   readonly navItems: Readonly<Record<string, string>>;
-  readonly activeTo: string;
   readonly loginTo: string;
 };
 
@@ -51,7 +51,6 @@ export const AppLayoutM = ({
   children,
   Slave,
   navItems,
-  activeTo,
   loginTo,
 }: Props): JSX.Element => {
   const authState = useAuth();
@@ -72,10 +71,7 @@ export const AppLayoutM = ({
       { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
 
   const builtNavItems: readonly NavItem[] = Object.entries(navItems).map(
-    ([key, to]) => ({
-      to,
-      link: <Link to={to}>{LABELS[key] ?? key}</Link>,
-    }),
+    ([key, to]) => ({ to, label: LABELS[key] ?? key }),
   );
 
   return (
@@ -83,7 +79,6 @@ export const AppLayoutM = ({
       navItems={builtNavItems}
       asyncData={asyncData}
       onLogout={handleLogout}
-      activeTo={activeTo}
     >
       {children}
     </Slave>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -20,15 +21,19 @@ export const TYPE_LABEL: Readonly<Record<PropertyType, string>> = Object.freeze(
   room: 'Pokój',
 });
 
+type TableBodyProps = {
+  readonly properties: readonly Row[];
+  readonly getDetailUrl: (id: string) => string;
+  readonly getTenantUrl: (tenantId: string) => string;
+  readonly navigateTo: (url: string) => void;
+};
+
 const TableBody = ({
   properties,
   getDetailUrl,
   getTenantUrl,
-}: {
-  readonly properties: readonly Row[];
-  readonly getDetailUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
-}): JSX.Element =>
+  navigateTo,
+}: TableBodyProps): JSX.Element =>
   properties.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p> :
     (
@@ -49,7 +54,7 @@ const TableBody = ({
               <tr
                 key={p.id ?? ''}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { window.location.href = getDetailUrl(p.id ?? ''); }}
+                onClick={() => { navigateTo(getDetailUrl(p.id ?? '')); }}
               >
                 <td className="py-3 pr-4 font-medium text-gray-900">{p.name}</td>
                 <td className="py-3 pr-4 text-gray-600">{p.address}</td>
@@ -60,13 +65,13 @@ const TableBody = ({
                 </td>
                 <td className="py-3 pr-4 text-gray-600">
                   {p.current_tenant_name !== null && p.tenant_id !== null ?
-                    <a
-                      href={getTenantUrl(p.tenant_id)}
+                    <Link
+                      to={getTenantUrl(p.tenant_id)}
                       onClick={(e) => { e.stopPropagation(); }}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                     >
                       {p.current_tenant_name}
-                    </a> :
+                    </Link> :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className="py-3 pr-4 text-gray-600">
@@ -84,7 +89,7 @@ const TableBody = ({
       </div>
     );
 
-export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl }: PropertiesSProps): JSX.Element => (
+export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl, navigateTo }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -92,7 +97,12 @@ export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl }: Propertie
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
-        <TableBody properties={data} getDetailUrl={getDetailUrl} getTenantUrl={getTenantUrl} />
+        <TableBody
+          properties={data}
+          getDetailUrl={getDetailUrl}
+          getTenantUrl={getTenantUrl}
+          navigateTo={navigateTo}
+        />
       ))
       .exhaustive()}
   </div>

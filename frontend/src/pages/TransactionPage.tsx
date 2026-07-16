@@ -9,9 +9,9 @@ export const TransactionDetailPage = (): JSX.Element => {
   const txnPath = pathname.replace(/\/[^/]+$/, '');
   const rolePrefix = txnPath.replace(/\/transactions$/, '');
 
-  const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
-  const getLeaseUrl = (leaseId: string): string => `#${rolePrefix}/leases/${leaseId}`;
-  const getBackUrl = (): string => `#${txnPath}`;
+  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
+  const getLeaseUrl = (leaseId: string): string => `${rolePrefix}/leases/${leaseId}`;
+  const getBackUrl = (): string => `${txnPath}`;
 
   return (
     <TransactionDetail

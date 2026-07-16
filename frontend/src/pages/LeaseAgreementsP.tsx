@@ -8,9 +8,9 @@ export const LeaseAgreementsListPage = (): JSX.Element => {
   const basePath = pathname.endsWith('/leases') ? pathname : pathname.replace(/\/+$/, '');
   const rolePrefix = basePath.replace(/\/leases$/, '');
 
-  const getDetailUrl = (id: string): string => `#${basePath}/${id}`;
-  const getTenantUrl = (tenantId: string): string => `#${rolePrefix}/tenants/${tenantId}`;
-  const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
+  const getDetailUrl = (id: string): string => `${basePath}/${id}`;
+  const getTenantUrl = (tenantId: string): string => `${rolePrefix}/tenants/${tenantId}`;
+  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
 
   return (
     <LeaseAgreementsM

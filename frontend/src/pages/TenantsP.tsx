@@ -8,8 +8,8 @@ export const TenantsListPage = (): JSX.Element => {
   const basePath = pathname.endsWith('/tenants') ? pathname : pathname.replace(/\/+$/, '');
   const rolePrefix = basePath.replace(/\/tenants$/, '');
 
-  const getDetailUrl = (id: string): string => `#${basePath}/${id}`;
-  const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
+  const getDetailUrl = (id: string): string => `${basePath}/${id}`;
+  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
 
   return (
     <TenantsM

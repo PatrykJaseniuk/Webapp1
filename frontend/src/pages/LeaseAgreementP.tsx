@@ -9,11 +9,11 @@ export const LeaseAgreementDetailPage = (): JSX.Element => {
   const leasesPath = pathname.replace(/\/[^/]+$/, '');
   const rolePrefix = leasesPath.replace(/\/leases$/, '');
 
-  const getTenantUrl = (tenantId: string): string => `#${rolePrefix}/tenants/${tenantId}`;
-  const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
-  const getTransactionUrl = (transactionId: string): string => `#${rolePrefix}/transactions/${transactionId}`;
-  const getEditUrl = (): string => `#${rolePrefix}/leases/${id}/edit`;
-  const getBackUrl = (): string => `#${leasesPath}`;
+  const getTenantUrl = (tenantId: string): string => `${rolePrefix}/tenants/${tenantId}`;
+  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
+  const getTransactionUrl = (transactionId: string): string => `${rolePrefix}/transactions/${transactionId}`;
+  const getEditUrl = (): string => `${rolePrefix}/leases/${id}/edit`;
+  const getBackUrl = (): string => `${leasesPath}`;
 
   return (
     <LeaseAgreementDetailM

@@ -8,9 +8,9 @@ export const TransactionsListPage = (): JSX.Element => {
   const basePath = pathname.endsWith('/transactions') ? pathname : pathname.replace(/\/+$/, '');
   const rolePrefix = basePath.replace(/\/transactions$/, '');
 
-  const getTransactionUrl = (id: string): string => `#${basePath}/${id}`;
-  const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
-  const getLeaseUrl = (leaseId: string): string => `#${rolePrefix}/leases/${leaseId}`;
+  const getTransactionUrl = (id: string): string => `${basePath}/${id}`;
+  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
+  const getLeaseUrl = (leaseId: string): string => `${rolePrefix}/leases/${leaseId}`;
 
   return (
     <TransactionsM

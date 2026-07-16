@@ -1,4 +1,5 @@
 import type { FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import type { SignupFormProps, SignupInput } from '@/masterComponents/SignupM';
 
 export const extractSignupInput = (formData: FormData): SignupInput => ({
@@ -103,12 +104,12 @@ export const SignupForm = ({
 
         <p className="mt-4 text-center text-sm text-gray-500">
           Masz już konto?{' '}
-          <a
-            href={loginUrl}
+          <Link
+            to={loginUrl}
             className="font-medium text-blue-600 hover:text-blue-500"
           >
             Zaloguj się
-          </a>
+          </Link>
         </p>
       </div>
     </div>

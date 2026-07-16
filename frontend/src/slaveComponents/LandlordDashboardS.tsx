@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -71,14 +72,14 @@ export const LandlordDashboard = ({
 
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
       {cards.map((card) => (
-        <a
+        <Link
           key={card.to}
-          href={card.to}
+          to={card.to}
           className={dashboardCardClass}
         >
           <p className="text-lg font-semibold text-gray-800">{card.title}</p>
           <p className="mt-1 text-sm text-gray-500">{card.subtitle}</p>
-        </a>
+        </Link>
       ))}
     </div>
   </div>

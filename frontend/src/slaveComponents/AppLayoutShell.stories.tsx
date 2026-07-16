@@ -1,13 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import type { ReactNode } from 'react';
 import { AppLayoutShell } from './AppLayouS';
 import type { AppLayoutSProps, NavItem } from '@/masterComponents/AppLayoutM';
 
 const navItems: readonly NavItem[] = [
-  { to: '/admin', link: <a href="/admin">Dashboard</a> as ReactNode },
-  { to: '/admin/properties', link: <a href="/admin/properties">Properties</a> as ReactNode },
-  { to: '/admin/tenants', link: <a href="/admin/tenants">Tenants</a> as ReactNode },
-  { to: '/admin/leases', link: <a href="/admin/leases">Leases</a> as ReactNode },
+  { to: '/admin', label: 'Dashboard' },
+  { to: '/admin/properties', label: 'Properties' },
+  { to: '/admin/tenants', label: 'Tenants' },
+  { to: '/admin/leases', label: 'Leases' },
 ];
 
 const noop = (): void => { };
@@ -29,7 +28,6 @@ const meta: Meta<typeof AppLayoutShell> = {
     navItems,
     asyncData: fulfilledDataMode,
     onLogout: noop,
-    activeTo: '/admin',
   },
 };
 export default meta;

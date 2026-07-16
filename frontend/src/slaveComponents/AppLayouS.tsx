@@ -1,5 +1,6 @@
+import { NavLink } from 'react-router-dom';
 import { match } from 'ts-pattern';
-import type { AppLayoutSProps, NavItem } from '@/masterComponents/AppLayoutM';
+import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
@@ -17,19 +18,19 @@ const sidebarLinkClass = (isActive: boolean): string =>
 
 // ── Authenticated shell (inner) ──
 
+type AuthenticatedShellProps = {
+  readonly navItems: AppLayoutSProps['navItems'];
+  readonly authData: AuthData;
+  readonly onLogout: () => void;
+  readonly children: import('react').ReactNode;
+};
+
 const AuthenticatedShell = ({
   navItems,
   authData,
   onLogout,
   children,
-  activeTo,
-}: {
-  readonly navItems: readonly NavItem[];
-  readonly authData: AuthData;
-  readonly onLogout: () => void;
-  readonly children: import('react').ReactNode;
-  readonly activeTo: string;
-}): JSX.Element => (
+}: AuthenticatedShellProps): JSX.Element => (
   <div className="flex h-screen bg-gray-50">
     {/* Sidebar */}
     <aside className="flex w-64 flex-col border-r border-gray-200 bg-white">
@@ -38,14 +39,15 @@ const AuthenticatedShell = ({
       </div>
 
       <nav className="flex-1 space-y-1 px-4 py-4">
-        {navItems.map(({ to, link }) => (
-          <div
+        {navItems.map(({ to, label }) => (
+          <NavLink
             key={to}
-            className={sidebarLinkClass(to === activeTo)}
+            to={to}
+            end
+            className={({ isActive }) => sidebarLinkClass(isActive)}
           >
-
-          {link}
-          </div>
+            {label}
+          </NavLink>
         ))}
       </nav>
 
@@ -76,7 +78,6 @@ export const AppLayoutShell = ({
   asyncData,
   onLogout,
   children,
-  activeTo,
 }: AppLayoutSProps): JSX.Element => (
   <div className="min-h-screen">
     {match(asyncData)
@@ -89,7 +90,6 @@ export const AppLayoutShell = ({
           navItems={navItems}
           authData={data}
           onLogout={onLogout}
-          activeTo={activeTo}
         >
           {children}
         </AuthenticatedShell>

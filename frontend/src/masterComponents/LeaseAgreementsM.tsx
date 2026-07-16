@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useAsync } from 'react-use';
+import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
@@ -20,6 +21,7 @@ type Url = {
 
 export type LeaseAgreementsSProps = {
   readonly asyncData: AsyncData<readonly LeaseAgreementRow[]>;
+  readonly navigateTo: (url: string) => void;
 } &
   Url;
 
@@ -34,6 +36,8 @@ export const LeaseAgreementsM = ({
   getTenantUrl,
   getPropertyUrl,
 }: Props): JSX.Element => {
+  const navigate = useNavigate();
+
   const { loading, error: fetchError, value } = useAsync(
     async () => await backendConnector
       .from('lease_agreements')
@@ -47,6 +51,10 @@ export const LeaseAgreementsM = ({
     window.location.reload();
   }, []);
 
+  const navigateTo = useCallback((url: string): void => {
+    navigate(url);
+  }, [navigate]);
+
   const asyncData: AsyncData<readonly LeaseAgreementRow[]> =
     loading ?
       { tag: 'pending' } :
@@ -57,6 +65,7 @@ export const LeaseAgreementsM = ({
   return (
     <Slave
       asyncData={asyncData}
+      navigateTo={navigateTo}
       getLeaseAgreementUrl={getLeaseAgreementUrl}
       getTenantUrl={getTenantUrl}
       getPropertyUrl={getPropertyUrl}

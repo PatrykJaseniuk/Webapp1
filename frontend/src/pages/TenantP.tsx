@@ -9,11 +9,11 @@ export const TenantDetailPage = (): JSX.Element => {
   const tenantsPath = pathname.replace(/\/[^/]+$/, '');
   const rolePrefix = tenantsPath.replace(/\/tenants$/, '');
 
-  const getPropertyUrl = (propertyId: string): string => `#${rolePrefix}/properties/${propertyId}`;
-  const getLeaseUrl = (leaseId: string): string => `#${rolePrefix}/leases/${leaseId}`;
-  const getTransactionUrl = (transactionId: string): string => `#${rolePrefix}/transactions/${transactionId}`;
-  const getEditUrl = (): string => `#${pathname}/edit`;
-  const getBackUrl = (): string => `#${tenantsPath}`;
+  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
+  const getLeaseUrl = (leaseId: string): string => `${rolePrefix}/leases/${leaseId}`;
+  const getTransactionUrl = (transactionId: string): string => `${rolePrefix}/transactions/${transactionId}`;
+  const getEditUrl = (): string => `${pathname}/edit`;
+  const getBackUrl = (): string => `${tenantsPath}`;
 
   return (
     <TenantDetailM

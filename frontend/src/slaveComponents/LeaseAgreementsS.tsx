@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -26,17 +27,21 @@ const tenantDisplayName = (r: Row): string =>
     `${r.tenants.first_name ?? ''} ${r.tenants.last_name ?? ''}`.trim() :
     '';
 
+type TableBodyProps = {
+  readonly leases: readonly Row[];
+  readonly getTenantUrl: (tenantId: string) => string;
+  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly getDetailUrl: (id: string) => string;
+  readonly navigateTo: (url: string) => void;
+};
+
 const TableBody = ({
   leases,
   getTenantUrl,
   getPropertyUrl,
   getDetailUrl,
-}: {
-  readonly leases: readonly Row[];
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getDetailUrl: (id: string) => string;
-}): JSX.Element =>
+  navigateTo,
+}: TableBodyProps): JSX.Element =>
   leases.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
     (
@@ -57,25 +62,25 @@ const TableBody = ({
               <tr
                 key={l.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { window.location.href = getDetailUrl(l.id); }}
+                onClick={() => { navigateTo(getDetailUrl(l.id)); }}
               >
                 <td className="py-3 pr-4">
-                  <a
-                    href={getTenantUrl(l.tenant_id)}
+                  <Link
+                    to={getTenantUrl(l.tenant_id)}
                     onClick={(e) => { e.stopPropagation(); }}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     {tenantDisplayName(l)}
-                  </a>
+                  </Link>
                 </td>
                 <td className="py-3 pr-4">
-                  <a
-                    href={getPropertyUrl(l.property_id)}
+                  <Link
+                    to={getPropertyUrl(l.property_id)}
                     onClick={(e) => { e.stopPropagation(); }}
                     className="text-blue-600 hover:text-blue-800 hover:underline"
                   >
                     {l.properties?.name ?? ''}
-                  </a>
+                  </Link>
                 </td>
                 <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
                 <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
@@ -94,7 +99,7 @@ const TableBody = ({
       </div>
     );
 
-export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getLeaseAgreementUrl: getDetailUrl }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getLeaseAgreementUrl: getDetailUrl, navigateTo }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -107,6 +112,7 @@ export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getL
           getTenantUrl={getTenantUrl}
           getPropertyUrl={getPropertyUrl}
           getDetailUrl={getDetailUrl}
+          navigateTo={navigateTo}
         />
       ))
       .exhaustive()}

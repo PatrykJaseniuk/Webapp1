@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { useAsync } from 'react-use';
+import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
@@ -80,6 +81,7 @@ type Url = {
 
 export type TenantsSProps = {
   readonly asyncData: AsyncData<readonly EnrichedTenantRow[]>;
+  readonly navigateTo: (url: string) => void;
 } & Url;
 
 type Props = {
@@ -91,6 +93,8 @@ export const TenantsM = ({
   getDetailUrl,
   getPropertyUrl,
 }: Props): JSX.Element => {
+  const navigate = useNavigate();
+
   const { loading, error, value } = useAsync(async (): Promise<readonly EnrichedTenantRow[]> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error: dbError } = await (backendConnector as any)
@@ -105,6 +109,10 @@ export const TenantsM = ({
     window.location.reload();
   }, []);
 
+  const navigateTo = useCallback((url: string): void => {
+    navigate(url);
+  }, [navigate]);
+
   const asyncData: AsyncData<readonly EnrichedTenantRow[]> =
     loading ?
       { tag: 'pending' } :
@@ -115,6 +123,7 @@ export const TenantsM = ({
   return (
     <TableComponent
       asyncData={asyncData}
+      navigateTo={navigateTo}
       getDetailUrl={getDetailUrl}
       getPropertyUrl={getPropertyUrl}
     />

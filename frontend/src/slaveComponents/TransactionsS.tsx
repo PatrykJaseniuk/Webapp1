@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -35,17 +36,21 @@ const txnStatusPillClass = (status: TxnStatus): string =>
 const txnAmountClass = (amount: number): string =>
   `text-sm font-medium ${amount >= 0 ? 'text-green-700' : 'text-red-700'}`;
 
+type TableBodyProps = {
+  readonly transactions: readonly Row[];
+  readonly getTransactionUrl: (id: string) => string;
+  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly getLeaseUrl: (leaseId: string) => string;
+  readonly navigateTo: (url: string) => void;
+};
+
 const TableBody = ({
   transactions,
   getTransactionUrl,
   getPropertyUrl,
   getLeaseUrl,
-}: {
-  readonly transactions: readonly Row[];
-  readonly getTransactionUrl: (id: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-}): JSX.Element =>
+  navigateTo,
+}: TableBodyProps): JSX.Element =>
   transactions.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak transakcji.</p> :
     (
@@ -67,7 +72,7 @@ const TableBody = ({
               <tr
                 key={tx.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { window.location.href = getTransactionUrl(tx.id); }}
+                onClick={() => { navigateTo(getTransactionUrl(tx.id)); }}
               >
                 <td className="py-3 pr-4 text-gray-600">{tx.due_date}</td>
                 <td className="py-3 pr-4 text-gray-600">
@@ -78,24 +83,24 @@ const TableBody = ({
                 </td>
                 <td className="py-3 pr-4">
                   {tx.property_id !== null && tx.properties?.name !== null ?
-                    <a
-                      href={getPropertyUrl(tx.property_id)}
+                    <Link
+                      to={getPropertyUrl(tx.property_id)}
                       onClick={(e) => { e.stopPropagation(); }}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                     >
-                      {tx.properties.name}
-                    </a> :
+                      {tx.properties?.name}
+                    </Link> :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className="py-3 pr-4">
                   {tx.lease_id !== null ?
-                    <a
-                      href={getLeaseUrl(tx.lease_id)}
+                    <Link
+                      to={getLeaseUrl(tx.lease_id)}
                       onClick={(e) => { e.stopPropagation(); }}
                       className="text-blue-600 hover:text-blue-800 hover:underline"
                     >
                       Umowa
-                    </a> :
+                    </Link> :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className={`py-3 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
@@ -118,6 +123,7 @@ export const TransactionsS = ({
   getTransactionUrl,
   getPropertyUrl,
   getLeaseUrl,
+  navigateTo,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
@@ -131,6 +137,7 @@ export const TransactionsS = ({
           getTransactionUrl={getTransactionUrl}
           getPropertyUrl={getPropertyUrl}
           getLeaseUrl={getLeaseUrl}
+          navigateTo={navigateTo}
         />
       ))
       .exhaustive()}
