@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 import { PropertiesS } from './PropertiesS';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 
@@ -45,6 +46,13 @@ const rejectedDataMode: PropertiesSProps['asyncData'] = {
 const meta: Meta<typeof PropertiesS> = {
   title: 'slave/PropertiesS',
   component: PropertiesS,
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     getDetailUrl: (id: string) => `#/properties/${id}`,
     getTenantUrl: (tenantId: string) => `#/tenants/${tenantId}`,

@@ -1,6 +1,7 @@
 import { useAsyncFn } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 
 export type LoginInput = {
   readonly email: string;
@@ -16,10 +17,11 @@ export type LoginSProps = {
 
 type Props = {
   readonly SlaveComponent: ComponentType<LoginSProps>;
-  readonly signupUrl: string;
 };
 
-export const Login = ({ SlaveComponent, signupUrl }: Props): JSX.Element => {
+export const Login = ({ SlaveComponent }: Props): JSX.Element => {
+  const { url } = useUrls();
+
   const [loginState, login] = useAsyncFn(
     async (input: LoginInput) => {
       const result = await backendConnector.auth.signInWithPassword({
@@ -40,7 +42,7 @@ export const Login = ({ SlaveComponent, signupUrl }: Props): JSX.Element => {
         loginState.value?.error?.message ??
         null
       }
-      signupUrl={signupUrl}
+      signupUrl={url.signup()}
     />
   );
 };

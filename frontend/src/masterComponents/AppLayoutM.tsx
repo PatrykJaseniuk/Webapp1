@@ -1,6 +1,6 @@
 import type { ReactNode, ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/AuthContext';
+import { useAuth, type AppRole } from '@/hooks/AuthContext';
 import { useUrls } from '@/hooks/useUrls';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { AsyncData } from '@/generic';
@@ -39,18 +39,35 @@ const LABELS: Readonly<Record<string, string>> = {
   payments: 'Płatności',
 };
 
+// ── Per-role nav key sets ──
+
+const ADMIN_LANDLORD_KEYS: readonly string[] = [
+  'dashboard',
+  'properties',
+  'tenants',
+  'leases',
+  'transactions',
+];
+
+const TENANT_KEYS: readonly string[] = [
+  'dashboard',
+  'contracts',
+  'payments',
+];
+
+const navKeys = (role: AppRole): readonly string[] =>
+  role === 'tenant' ? TENANT_KEYS : ADMIN_LANDLORD_KEYS;
+
 // ── Component ──
 
 type Props = {
   readonly children: ReactNode;
   readonly Slave: ComponentType<AppLayoutSProps>;
-  readonly navItems: Readonly<Record<string, string>>;
 };
 
 export const AppLayoutM = ({
   children,
   Slave,
-  navItems,
 }: Props): JSX.Element => {
   const authState = useAuth();
   const { url } = useUrls();
@@ -70,8 +87,21 @@ export const AppLayoutM = ({
       { tag: 'fulfilled', data: { email: authState.email } } :
       { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
 
-  const builtNavItems: readonly NavItem[] = Object.entries(navItems).map(
-    ([key, to]) => ({ to, label: LABELS[key] ?? key }),
+  const role: AppRole =
+    authState.tag === 'authenticated' ? authState.role : 'tenant';
+
+  const navKeyToUrl: Readonly<Record<string, string>> = {
+    dashboard: url.dashboard(),
+    properties: url.propertiesList(),
+    tenants: url.tenantsList(),
+    leases: url.leasesList(),
+    transactions: url.transactionsList(),
+    contracts: url.leasesList(),
+    payments: url.transactionsList(),
+  };
+
+  const builtNavItems: readonly NavItem[] = navKeys(role).map(
+    (key) => ({ to: navKeyToUrl[key] ?? `/${role}`, label: LABELS[key] ?? key }),
   );
 
   return (

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AppLayoutShell } from './AppLayouS';
 import type { AppLayoutSProps, NavItem } from '@/masterComponents/AppLayoutM';
 
@@ -24,6 +25,13 @@ const fulfilledLongEmail: AppLayoutSProps['asyncData'] = {
 const meta: Meta<typeof AppLayoutShell> = {
   title: 'slave/AppLayoutShell',
   component: AppLayoutShell,
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     navItems,
     asyncData: fulfilledDataMode,

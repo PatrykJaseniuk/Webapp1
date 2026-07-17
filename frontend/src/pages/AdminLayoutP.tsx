@@ -4,14 +4,6 @@ import { AppLayoutM } from '@/masterComponents/AppLayoutM';
 import { AppLayoutShell } from '@/slaveComponents/AppLayouS';
 import { AccessGateS } from '@/slaveComponents/AccessGateS';
 
-const links = {
-  dashboard: '/admin',
-  properties: '/admin/properties',
-  tenants: '/admin/tenants',
-  leases: '/admin/leases',
-  transactions: '/admin/transactions',
-}
-
 export const AdminLayoutPage = (): JSX.Element => (
   <AuthorisationGuard
     authoriseRequirement={{
@@ -20,10 +12,7 @@ export const AdminLayoutPage = (): JSX.Element => (
     }}
     Slave={AccessGateS}
   >
-    <AppLayoutM
-      Slave={AppLayoutShell}
-      navItems={links}
-    >
+    <AppLayoutM Slave={AppLayoutShell}>
       <Outlet />
     </AppLayoutM>
   </AuthorisationGuard>

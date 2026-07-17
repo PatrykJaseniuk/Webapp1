@@ -1,7 +1,8 @@
 import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 import type { AsyncData } from '@/generic';
 
 type DashboardSummary = Readonly<{
@@ -13,8 +14,15 @@ type DashboardSummary = Readonly<{
   overdueItems: number;
 }>;
 
+export type DashboardCard = Readonly<{
+  to: string;
+  title: string;
+  subtitle: string;
+}>;
+
 export type DashboardSummarySProps = {
   readonly asyncData: AsyncData<DashboardSummary>;
+  readonly cards: readonly DashboardCard[];
 };
 
 type Props = {
@@ -24,6 +32,7 @@ type Props = {
 export const DashboardSummaryM = ({
   Slave,
 }: Props): JSX.Element => {
+  const { url } = useUrls();
   const { loading, error: fetchError, value } = useAsync(async () => {
     const [propertiesCountResult, tenantsCountResult, unpaidResult, occupiedCountResult, activeTenantsCountResult] = await Promise.all([
       backendConnector
@@ -75,6 +84,12 @@ export const DashboardSummaryM = ({
     0,
   );
 
+  const cards: readonly DashboardCard[] = useMemo(() => [
+    { to: url.propertiesList(), title: 'Nieruchomości', subtitle: 'Zarządzaj nieruchomościami' },
+    { to: url.tenantsList(), title: 'Najemcy', subtitle: 'Zarządzaj najemcami' },
+    { to: url.leasesList(), title: 'Umowy najmu', subtitle: 'Zarządzaj umowami' },
+  ], [url]);
+
   const handleRetry = useCallback((): void => {
     window.location.reload();
   }, []);
@@ -95,5 +110,5 @@ export const DashboardSummaryM = ({
           }
         };
 
-  return <Slave asyncData={asyncData} />;
+  return <Slave asyncData={asyncData} cards={cards} />;
 };

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 import { AdminDashboard } from './AdminDashboardS';
 
 const cards = [
@@ -18,6 +19,13 @@ const mockSummary = {
 const meta: Meta<typeof AdminDashboard> = {
   title: 'slave/AdminDashboard',
   component: AdminDashboard,
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     cards,
     asyncData: { tag: 'fulfilled', data: mockSummary },

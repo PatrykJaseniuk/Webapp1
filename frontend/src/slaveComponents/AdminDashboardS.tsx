@@ -5,16 +5,7 @@ import { LoadingSpinner } from './LoadingSpinnerS';
 
 type DashboardSummary = Extract<DashboardSummarySProps['asyncData'], { tag: 'fulfilled' }>['data'];
 
-type DashboardCard = {
-  readonly to: string;
-  readonly title: string;
-  readonly subtitle: string;
-};
-
-type Props = {
-  readonly cards: ReadonlyArray<DashboardCard>;
-  readonly asyncData: DashboardSummarySProps['asyncData'];
-};
+type Props = DashboardSummarySProps;
 
 const dashboardCardClass =
   'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow';

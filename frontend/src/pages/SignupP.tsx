@@ -5,6 +5,6 @@ import { LoadingSpinner } from "@/slaveComponents/LoadingSpinnerS";
 
 export const SignupPage = (): JSX.Element => (
     <RoleRedirect LoadingComponent={<LoadingSpinner />}>
-        <Signup Form={SignupForm} loginUrl="/login" />
+        <Signup Form={SignupForm} />
     </RoleRedirect>
 );

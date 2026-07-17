@@ -1,12 +1,21 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { MemoryRouter } from 'react-router-dom';
 import { fn, userEvent, within, expect } from 'storybook/test';
 import { LoginForm } from './LoginFormS';
 
 const meta: Meta<typeof LoginForm> = {
   title: 'slave/LoginForm',
   component: LoginForm,
+  decorators: [
+    (Story) => (
+      <MemoryRouter>
+        <Story />
+      </MemoryRouter>
+    ),
+  ],
   args: {
     onSubmit: fn(),
+    signupUrl: '/signup',
   },
 };
 export default meta;
