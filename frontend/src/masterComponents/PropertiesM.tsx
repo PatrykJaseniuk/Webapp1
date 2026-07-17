@@ -1,33 +1,27 @@
 import { useCallback } from 'react';
 import { useAsync } from 'react-use';
-import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import type { AsyncData as DataFetchMode } from '@/generic';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row']
 
-type Url = {
+export type PropertiesSProps = {
+  readonly asyncData: DataFetchMode<readonly PropertyOccupancyRow[]>;
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
 };
 
-export type PropertiesSProps = {
-  readonly asyncData: DataFetchMode<readonly PropertyOccupancyRow[]>;
-  readonly navigateTo: (url: string) => void;
-} & Url;
-
 type Props = {
   readonly Slave: ComponentType<PropertiesSProps>;
-} & Url;
+};
 
 export const PropertiesM = ({
   Slave,
-  getDetailUrl,
-  getTenantUrl,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
+  const { url } = useUrls();
 
   const { loading, error: FetchError, value } = useAsync(async () =>
     await backendConnector
@@ -43,10 +37,6 @@ export const PropertiesM = ({
     window.location.reload();
   }, []);
 
-  const navigateTo = useCallback((url: string): void => {
-    navigate(url);
-  }, [navigate]);
-
   const asyncData: DataFetchMode<readonly PropertyOccupancyRow[]> =
     loading ?
       { tag: 'pending' } :
@@ -57,9 +47,8 @@ export const PropertiesM = ({
   return (
     <Slave
       asyncData={asyncData}
-      navigateTo={navigateTo}
-      getDetailUrl={getDetailUrl}
-      getTenantUrl={getTenantUrl}
+      getDetailUrl={url.propertyDetail}
+      getTenantUrl={url.tenantDetail}
     />
   );
 };

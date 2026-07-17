@@ -1,29 +1,8 @@
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { TenantDetailM } from '@/masterComponents/TenantM';
 import { TenantDetailS } from '@/slaveComponents/TenantS';
 
 export const TenantDetailPage = (): JSX.Element => {
   const { id } = useParams<{ readonly id: string }>();
-  const { pathname } = useLocation();
-
-  const tenantsPath = pathname.replace(/\/[^/]+$/, '');
-  const rolePrefix = tenantsPath.replace(/\/tenants$/, '');
-
-  const getPropertyUrl = (propertyId: string): string => `${rolePrefix}/properties/${propertyId}`;
-  const getLeaseUrl = (leaseId: string): string => `${rolePrefix}/leases/${leaseId}`;
-  const getTransactionUrl = (transactionId: string): string => `${rolePrefix}/transactions/${transactionId}`;
-  const getEditUrl = (): string => `${pathname}/edit`;
-  const getBackUrl = (): string => `${tenantsPath}`;
-
-  return (
-    <TenantDetailM
-      DetailViewComponent={TenantDetailS}
-      id={id!}
-      getPropertyUrl={getPropertyUrl}
-      getLeaseUrl={getLeaseUrl}
-      getTransactionUrl={getTransactionUrl}
-      getEditUrl={getEditUrl}
-      getBackUrl={getBackUrl}
-    />
-  );
+  return <TenantDetailM DetailViewComponent={TenantDetailS} id={id!} />;
 };

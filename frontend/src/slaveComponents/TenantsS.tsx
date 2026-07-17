@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -17,16 +17,15 @@ type TableBodyProps = {
   readonly tenants: readonly Row[];
   readonly getDetailUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
-  readonly navigateTo: (url: string) => void;
 };
 
 const TableBody = ({
   tenants,
   getDetailUrl,
   getPropertyUrl,
-  navigateTo,
-}: TableBodyProps): JSX.Element =>
-  tenants.length === 0 ?
+}: TableBodyProps): JSX.Element => {
+  const navigate = useNavigate();
+  return tenants.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak najemców.</p> :
     (
       <div className="overflow-x-auto">
@@ -46,7 +45,7 @@ const TableBody = ({
               <tr
                 key={t.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigateTo(getDetailUrl(t.id)); }}
+                onClick={() => { navigate(getDetailUrl(t.id)); }}
               >
                 <td className="py-3 pr-4 font-medium text-gray-900">{t.lastName}</td>
                 <td className="py-3 pr-4 text-gray-600">{t.firstName}</td>
@@ -78,8 +77,9 @@ const TableBody = ({
         </table>
       </div>
     );
+};
 
-export const TenantsS = ({ asyncData, getDetailUrl, getPropertyUrl, navigateTo }: TenantsSProps): JSX.Element => (
+export const TenantsS = ({ asyncData, getDetailUrl, getPropertyUrl }: TenantsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -91,7 +91,6 @@ export const TenantsS = ({ asyncData, getDetailUrl, getPropertyUrl, navigateTo }
           tenants={data}
           getDetailUrl={getDetailUrl}
           getPropertyUrl={getPropertyUrl}
-          navigateTo={navigateTo}
         />
       ))
       .exhaustive()}

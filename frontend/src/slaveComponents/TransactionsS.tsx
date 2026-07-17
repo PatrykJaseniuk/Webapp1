@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -41,7 +41,6 @@ type TableBodyProps = {
   readonly getTransactionUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
-  readonly navigateTo: (url: string) => void;
 };
 
 const TableBody = ({
@@ -49,9 +48,9 @@ const TableBody = ({
   getTransactionUrl,
   getPropertyUrl,
   getLeaseUrl,
-  navigateTo,
-}: TableBodyProps): JSX.Element =>
-  transactions.length === 0 ?
+}: TableBodyProps): JSX.Element => {
+  const navigate = useNavigate();
+  return transactions.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak transakcji.</p> :
     (
       <div className="overflow-x-auto">
@@ -72,7 +71,7 @@ const TableBody = ({
               <tr
                 key={tx.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigateTo(getTransactionUrl(tx.id)); }}
+                onClick={() => { navigate(getTransactionUrl(tx.id)); }}
               >
                 <td className="py-3 pr-4 text-gray-600">{tx.due_date}</td>
                 <td className="py-3 pr-4 text-gray-600">
@@ -117,13 +116,13 @@ const TableBody = ({
         </table>
       </div>
     );
+};
 
 export const TransactionsS = ({
   asyncData,
   getTransactionUrl,
   getPropertyUrl,
   getLeaseUrl,
-  navigateTo,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
@@ -137,7 +136,6 @@ export const TransactionsS = ({
           getTransactionUrl={getTransactionUrl}
           getPropertyUrl={getPropertyUrl}
           getLeaseUrl={getLeaseUrl}
-          navigateTo={navigateTo}
         />
       ))
       .exhaustive()}

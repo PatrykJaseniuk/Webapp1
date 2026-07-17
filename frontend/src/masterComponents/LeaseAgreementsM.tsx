@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useAsync } from 'react-use';
-import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -12,31 +12,22 @@ type LeaseAgreementRow = LeaseAgreementDbRow & {
   readonly properties: { readonly name: string; };
 };
 
-type Url = {
-  readonly getLeaseAgreementUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-}
-
 
 export type LeaseAgreementsSProps = {
   readonly asyncData: AsyncData<readonly LeaseAgreementRow[]>;
-  readonly navigateTo: (url: string) => void;
-} &
-  Url;
+  readonly getLeaseAgreementUrl: (id: string) => string;
+  readonly getTenantUrl: (tenantId: string) => string;
+  readonly getPropertyUrl: (propertyId: string) => string;
+};
 
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementsSProps>;
-} &
-  Url;
+};
 
 export const LeaseAgreementsM = ({
   Slave,
-  getLeaseAgreementUrl,
-  getTenantUrl,
-  getPropertyUrl,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
+  const { url } = useUrls();
 
   const { loading, error: fetchError, value } = useAsync(
     async () => await backendConnector
@@ -51,10 +42,6 @@ export const LeaseAgreementsM = ({
     window.location.reload();
   }, []);
 
-  const navigateTo = useCallback((url: string): void => {
-    navigate(url);
-  }, [navigate]);
-
   const asyncData: AsyncData<readonly LeaseAgreementRow[]> =
     loading ?
       { tag: 'pending' } :
@@ -65,10 +52,9 @@ export const LeaseAgreementsM = ({
   return (
     <Slave
       asyncData={asyncData}
-      navigateTo={navigateTo}
-      getLeaseAgreementUrl={getLeaseAgreementUrl}
-      getTenantUrl={getTenantUrl}
-      getPropertyUrl={getPropertyUrl}
+      getLeaseAgreementUrl={url.leaseDetail}
+      getTenantUrl={url.tenantDetail}
+      getPropertyUrl={url.propertyDetail}
     />
   );
 };

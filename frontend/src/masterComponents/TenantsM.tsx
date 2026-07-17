@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import { useAsync } from 'react-use';
-import { useNavigate } from 'react-router-dom';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -74,26 +74,20 @@ const enrich = (row: TenantWithLeases): EnrichedTenantRow => {
   };
 };
 
-type Url = {
+export type TenantsSProps = {
+  readonly asyncData: AsyncData<readonly EnrichedTenantRow[]>;
   readonly getDetailUrl: (id: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
 };
 
-export type TenantsSProps = {
-  readonly asyncData: AsyncData<readonly EnrichedTenantRow[]>;
-  readonly navigateTo: (url: string) => void;
-} & Url;
-
 type Props = {
   readonly TableComponent: ComponentType<TenantsSProps>;
-} & Url;
+};
 
 export const TenantsM = ({
   TableComponent,
-  getDetailUrl,
-  getPropertyUrl,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
+  const { url } = useUrls();
 
   const { loading, error, value } = useAsync(async (): Promise<readonly EnrichedTenantRow[]> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -109,10 +103,6 @@ export const TenantsM = ({
     window.location.reload();
   }, []);
 
-  const navigateTo = useCallback((url: string): void => {
-    navigate(url);
-  }, [navigate]);
-
   const asyncData: AsyncData<readonly EnrichedTenantRow[]> =
     loading ?
       { tag: 'pending' } :
@@ -123,9 +113,8 @@ export const TenantsM = ({
   return (
     <TableComponent
       asyncData={asyncData}
-      navigateTo={navigateTo}
-      getDetailUrl={getDetailUrl}
-      getPropertyUrl={getPropertyUrl}
+      getDetailUrl={url.tenantDetail}
+      getPropertyUrl={url.propertyDetail}
     />
   );
 };

@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -23,7 +24,8 @@ type PropertyWithRelationships = Readonly<{
   attachments: readonly AttachmentDbRow[];
 }>;
 
-type Url = {
+export type PropertySProps = {
+  readonly asyncData: AsyncData<PropertyWithRelationships>;
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getLeaseUrl: (leaseId: string) => string;
   readonly getTransactionUrl: (transactionId: string) => string;
@@ -31,26 +33,16 @@ type Url = {
   readonly getBackUrl: () => string;
 };
 
-export type PropertySProps = {
-  readonly asyncData: AsyncData<PropertyWithRelationships>;
-} &
-  Url;
-
 type Props = {
   readonly Slave: ComponentType<PropertySProps>;
   readonly id: string;
-} &
-  Url;
+};
 
 export const PropertyDetailM = ({
   Slave,
   id,
-  getTenantUrl,
-  getLeaseUrl,
-  getTransactionUrl,
-  getEditUrl,
-  getBackUrl,
 }: Props): JSX.Element => {
+  const { url } = useUrls();
   const { loading, error: fetchError, value } = useAsync(async () => {
     const [propertyResult, occupancyResult, leasesResult, transactionsResult, financialResult, attachmentsResult] =
       await Promise.all([
@@ -111,11 +103,11 @@ export const PropertyDetailM = ({
   return (
     <Slave
       asyncData={asyncData}
-      getTenantUrl={getTenantUrl}
-      getLeaseUrl={getLeaseUrl}
-      getTransactionUrl={getTransactionUrl}
-      getEditUrl={getEditUrl}
-      getBackUrl={getBackUrl}
+      getTenantUrl={url.tenantDetail}
+      getLeaseUrl={url.leaseDetail}
+      getTransactionUrl={url.transactionDetail}
+      getEditUrl={() => `${url.propertyDetail(id)}/edit`}
+      getBackUrl={url.propertiesList}
     />
   );
 };

@@ -23,7 +23,6 @@ export const LandlordLayoutPage = (): JSX.Element => (
     <AppLayoutM
       Slave={AppLayoutShell}
       navItems={links}
-      loginTo="/login"
     >
       <Outlet />
     </AppLayoutM>

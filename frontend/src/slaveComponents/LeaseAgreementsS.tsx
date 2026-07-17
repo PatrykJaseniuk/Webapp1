@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -32,7 +32,6 @@ type TableBodyProps = {
   readonly getTenantUrl: (tenantId: string) => string;
   readonly getPropertyUrl: (propertyId: string) => string;
   readonly getDetailUrl: (id: string) => string;
-  readonly navigateTo: (url: string) => void;
 };
 
 const TableBody = ({
@@ -40,9 +39,9 @@ const TableBody = ({
   getTenantUrl,
   getPropertyUrl,
   getDetailUrl,
-  navigateTo,
-}: TableBodyProps): JSX.Element =>
-  leases.length === 0 ?
+}: TableBodyProps): JSX.Element => {
+  const navigate = useNavigate();
+  return leases.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
     (
       <div className="overflow-x-auto">
@@ -62,7 +61,7 @@ const TableBody = ({
               <tr
                 key={l.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigateTo(getDetailUrl(l.id)); }}
+                onClick={() => { navigate(getDetailUrl(l.id)); }}
               >
                 <td className="py-3 pr-4">
                   <Link
@@ -98,8 +97,9 @@ const TableBody = ({
         </table>
       </div>
     );
+};
 
-export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getLeaseAgreementUrl: getDetailUrl, navigateTo }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getLeaseAgreementUrl: getDetailUrl }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -112,7 +112,6 @@ export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getL
           getTenantUrl={getTenantUrl}
           getPropertyUrl={getPropertyUrl}
           getDetailUrl={getDetailUrl}
-          navigateTo={navigateTo}
         />
       ))
       .exhaustive()}

@@ -23,7 +23,6 @@ export const AdminLayoutPage = (): JSX.Element => (
     <AppLayoutM
       Slave={AppLayoutShell}
       navItems={links}
-      loginTo="/login"
     >
       <Outlet />
     </AppLayoutM>

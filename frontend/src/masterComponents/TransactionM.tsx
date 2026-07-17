@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useAsync } from 'react-use';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
+import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -23,18 +24,14 @@ export type TransactionDetailViewProps = {
 type Props = {
   readonly DetailViewComponent: ComponentType<TransactionDetailViewProps>;
   readonly id: string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getBackUrl: () => string;
 };
 
 export const TransactionDetail = ({
   DetailViewComponent,
   id,
-  getPropertyUrl,
-  getLeaseUrl,
-  getBackUrl,
 }: Props): JSX.Element => {
+  const { url } = useUrls();
+
   const { loading, error, value } = useAsync(async (): Promise<TransactionDetailData> => {
     const { data: txn, error: txnError } = await backendConnector
       .from('transactions')
@@ -80,9 +77,9 @@ export const TransactionDetail = ({
   return (
     <DetailViewComponent
       asyncData={asyncData}
-      getPropertyUrl={getPropertyUrl}
-      getLeaseUrl={getLeaseUrl}
-      getBackUrl={getBackUrl}
+      getPropertyUrl={url.propertyDetail}
+      getLeaseUrl={url.leaseDetail}
+      getBackUrl={url.transactionsList}
     />
   );
 };

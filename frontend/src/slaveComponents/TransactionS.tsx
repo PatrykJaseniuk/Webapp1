@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { TransactionDetailData, TransactionDetailViewProps } from '@/masterComponents/TransactionM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -32,24 +33,26 @@ const statusPillClass = (status: string): string =>
       `${pillClass} bg-red-50 text-red-700` :
       `${pillClass} bg-yellow-50 text-yellow-700`;
 
+type DetailContentProps = {
+  readonly data: TransactionDetailData;
+  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly getLeaseUrl: (leaseId: string) => string;
+  readonly getBackUrl: () => string;
+};
+
 const DetailContent = ({
   data,
   getPropertyUrl,
   getLeaseUrl,
   getBackUrl,
-}: {
-  readonly data: TransactionDetailData;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getBackUrl: () => string;
-}): JSX.Element => {
+}: DetailContentProps): JSX.Element => {
   const t = data.transaction;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div>
-        <a href={getBackUrl()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+        <Link to={getBackUrl()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
           ← Powrót
-        </a>
+        </Link>
         <h1 className="mt-1 text-2xl font-bold text-gray-900">Transakcja</h1>
       </div>
 
@@ -79,23 +82,23 @@ const DetailContent = ({
           {t.property_id !== null && data.propertyName !== null ?
             <div>
               <p className={labelClass}>Nieruchomość</p>
-              <a
-                href={getPropertyUrl(t.property_id)}
+              <Link
+                to={getPropertyUrl(t.property_id)}
                 className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
               >
                 {data.propertyName}
-              </a>
+              </Link>
             </div> :
             undefined}
           {t.lease_id !== null && data.leaseDescription !== null ?
             <div>
               <p className={labelClass}>Umowa</p>
-              <a
-                href={getLeaseUrl(t.lease_id)}
+              <Link
+                to={getLeaseUrl(t.lease_id)}
                 className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
               >
                 {data.leaseDescription}
-              </a>
+              </Link>
             </div> :
             undefined}
         </div>

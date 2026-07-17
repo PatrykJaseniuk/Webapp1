@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -25,16 +25,15 @@ type TableBodyProps = {
   readonly properties: readonly Row[];
   readonly getDetailUrl: (id: string) => string;
   readonly getTenantUrl: (tenantId: string) => string;
-  readonly navigateTo: (url: string) => void;
 };
 
 const TableBody = ({
   properties,
   getDetailUrl,
   getTenantUrl,
-  navigateTo,
-}: TableBodyProps): JSX.Element =>
-  properties.length === 0 ?
+}: TableBodyProps): JSX.Element => {
+  const navigate = useNavigate();
+  return properties.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p> :
     (
       <div className="overflow-x-auto">
@@ -54,7 +53,7 @@ const TableBody = ({
               <tr
                 key={p.id ?? ''}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigateTo(getDetailUrl(p.id ?? '')); }}
+                onClick={() => { navigate(getDetailUrl(p.id ?? '')); }}
               >
                 <td className="py-3 pr-4 font-medium text-gray-900">{p.name}</td>
                 <td className="py-3 pr-4 text-gray-600">{p.address}</td>
@@ -88,8 +87,9 @@ const TableBody = ({
         </table>
       </div>
     );
+};
 
-export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl, navigateTo }: PropertiesSProps): JSX.Element => (
+export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -101,7 +101,6 @@ export const PropertiesS = ({ asyncData, getDetailUrl, getTenantUrl, navigateTo 
           properties={data}
           getDetailUrl={getDetailUrl}
           getTenantUrl={getTenantUrl}
-          navigateTo={navigateTo}
         />
       ))
       .exhaustive()}

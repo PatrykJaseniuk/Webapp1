@@ -1,6 +1,7 @@
 import type { ReactNode, ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/AuthContext';
+import { useUrls } from '@/hooks/useUrls';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -44,22 +45,21 @@ type Props = {
   readonly children: ReactNode;
   readonly Slave: ComponentType<AppLayoutSProps>;
   readonly navItems: Readonly<Record<string, string>>;
-  readonly loginTo: string;
 };
 
 export const AppLayoutM = ({
   children,
   Slave,
   navItems,
-  loginTo,
 }: Props): JSX.Element => {
   const authState = useAuth();
+  const { url } = useUrls();
 
   const navigate = useNavigate();
 
   const handleLogout = (): void => {
     void backendConnector.auth.signOut().then(() => {
-      navigate(loginTo);
+      navigate(url.login());
     });
   };
 

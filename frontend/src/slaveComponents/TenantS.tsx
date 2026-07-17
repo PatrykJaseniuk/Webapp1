@@ -1,3 +1,4 @@
+import { Link, useNavigate } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { TenantSProps } from '@/masterComponents/TenantM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -67,6 +68,15 @@ const txnStatusPillClass = (status: TxnStatusKey): string =>
 const txnAmountClass = (amount: number): string =>
   `text-sm font-medium ${amount >= 0 ? 'text-green-700' : 'text-red-700'}`;
 
+type DetailContentProps = {
+  readonly data: Data;
+  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly getLeaseUrl: (leaseId: string) => string;
+  readonly getTransactionUrl: (transactionId: string) => string;
+  readonly getEditUrl: () => string;
+  readonly getBackUrl: () => string;
+};
+
 const DetailContent = ({
   data,
   getPropertyUrl,
@@ -74,34 +84,28 @@ const DetailContent = ({
   getTransactionUrl,
   getEditUrl,
   getBackUrl,
-}: {
-  readonly data: Data;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
-}): JSX.Element => {
+}: DetailContentProps): JSX.Element => {
+  const navigate = useNavigate();
   const t = data.tenant;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <a href={getBackUrl()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+          <Link to={getBackUrl()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
             ← Powrót do listy
-          </a>
+          </Link>
           <h1 className="mt-1 text-2xl font-bold text-gray-900">
             {t.first_name} {t.last_name}
           </h1>
         </div>
         <div className="flex gap-2">
-          <a
-            href={getEditUrl()}
+          <Link
+            to={getEditUrl()}
             className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
           >
             Edytuj
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -163,16 +167,16 @@ const DetailContent = ({
                   <tr
                     key={l.id}
                     className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                    onClick={() => { window.location.href = getLeaseUrl(l.id); }}
+                    onClick={() => { navigate(getLeaseUrl(l.id)); }}
                   >
                     <td className="py-2 pr-4">
-                      <a
-                        href={getPropertyUrl(l.propertyId)}
+                      <Link
+                        to={getPropertyUrl(l.propertyId)}
                         onClick={(e) => { e.stopPropagation(); }}
                         className="text-blue-600 hover:text-blue-800 hover:underline"
                       >
                         {l.propertyName}
-                      </a>
+                      </Link>
                     </td>
                     <td className="py-2 pr-4 text-gray-600">{l.startDate}</td>
                     <td className="py-2 pr-4 text-gray-600">{l.endDate ?? '—'}</td>
@@ -212,7 +216,7 @@ const DetailContent = ({
                   <tr
                     key={tx.id}
                     className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                    onClick={() => { window.location.href = getTransactionUrl(tx.id); }}
+                    onClick={() => { navigate(getTransactionUrl(tx.id)); }}
                   >
                     <td className="py-2 pr-4 text-gray-600">{tx.dueDate}</td>
                     <td className="py-2 pr-4 text-gray-600">
