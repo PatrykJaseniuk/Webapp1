@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
-import { useAsync } from 'react-use';
+import { match } from 'ts-pattern';
+import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
-import type { AsyncData } from '@/generic';
+import { toAsyncData, type AsyncData } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row']
 type LeaseAgreementRow = LeaseAgreementDbRow & {
@@ -27,34 +27,37 @@ type Props = {
 export const LeaseAgreementsM = ({
   Slave,
 }: Props): JSX.Element => {
-  const { url } = useUrls();
+  const urls = useUrls();
 
-  const { loading, error: fetchError, value } = useAsync(
-    async () => await backendConnector
-      .from('lease_agreements')
-      .select('*, tenants(first_name,last_name), properties(name)')
-    , []);
+  const query = useQuery({
+    queryKey: ['lease_agreements'],
+    queryFn: async (): Promise<readonly LeaseAgreementRow[]> => {
+      const r = await backendConnector
+        .from('lease_agreements')
+        .select('*, tenants(first_name,last_name), properties(name)');
+      if (r.error !== null) throw r.error;
+      return r.data ?? [];
+    },
+  });
 
-  const error = fetchError ?? value?.error
-  const data = value?.data ?? [];
+  const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const handleRetry = useCallback((): void => {
-    window.location.reload();
-  }, []);
-
-  const asyncData: AsyncData<readonly LeaseAgreementRow[]> =
-    loading ?
-      { tag: 'pending' } :
-      error ?
-        { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data };
-
-  return (
-    <Slave
-      asyncData={asyncData}
-      getLeaseAgreementUrl={url.leaseDetail}
-      getTenantUrl={url.tenantDetail}
-      getPropertyUrl={url.propertyDetail}
-    />
-  );
+  return match(urls)
+    .with({ tag: 'pending' }, () => (
+      <Slave
+        asyncData={{ tag: 'pending' }}
+        getLeaseAgreementUrl={() => ''}
+        getTenantUrl={() => ''}
+        getPropertyUrl={() => ''}
+      />
+    ))
+    .with({ tag: 'ready' }, ({ url }) => (
+      <Slave
+        asyncData={asyncData}
+        getLeaseAgreementUrl={url.leaseDetail}
+        getTenantUrl={url.tenantDetail}
+        getPropertyUrl={url.propertyDetail}
+      />
+    ))
+    .exhaustive();
 };

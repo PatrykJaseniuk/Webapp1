@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
-import { useAsync } from 'react-use';
+import { match } from 'ts-pattern';
+import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
-import type { AsyncData } from '@/generic';
+import { toAsyncData, type AsyncData } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
@@ -37,59 +37,66 @@ export const LeaseAgreementDetailM = ({
   Slave,
   id,
 }: Props): JSX.Element => {
-  const { url } = useUrls();
+  const urls = useUrls();
 
-  const { loading, error: fetchError, value } = useAsync(async () => {
-    const [leaseResult, transactionsResult, attachmentsResult] = await Promise.all([
-      backendConnector
-        .from('lease_agreements')
-        .select('*, tenants(first_name,last_name), properties(name)')
-        .eq('id', id)
-        .single(),
-      backendConnector
-        .from('transactions')
-        .select('*')
-        .eq('lease_id', id)
-        .order('due_date', { ascending: false })
-        .limit(30),
-      backendConnector
-        .from('attachments')
-        .select('*')
-        .eq('related_to_type', 'lease')
-        .eq('related_to_id', id),
-    ]);
+  const query = useQuery({
+    queryKey: ['leaseAgreement', id],
+    queryFn: async (): Promise<LeaseAgreementWithRelationships> => {
+      const [leaseResult, transactionsResult, attachmentsResult] = await Promise.all([
+        backendConnector
+          .from('lease_agreements')
+          .select('*, tenants(first_name,last_name), properties(name)')
+          .eq('id', id)
+          .single(),
+        backendConnector
+          .from('transactions')
+          .select('*')
+          .eq('lease_id', id)
+          .order('due_date', { ascending: false })
+          .limit(30),
+        backendConnector
+          .from('attachments')
+          .select('*')
+          .eq('related_to_type', 'lease')
+          .eq('related_to_id', id),
+      ]);
 
-    return { leaseResult, transactionsResult, attachmentsResult };
-  }, [id]);
+      const combinedError =
+        leaseResult.error ??
+        transactionsResult.error ??
+        attachmentsResult.error;
+      if (combinedError !== null) throw combinedError;
 
-  const error = fetchError ?? value?.attachmentsResult.error ?? value?.leaseResult.error ?? value?.transactionsResult.error
+      return {
+        attachments: attachmentsResult.data ?? [],
+        leaseAgreement: leaseResult.data ?? null,
+        transactions: transactionsResult.data ?? [],
+      };
+    },
+  });
 
-  const data: LeaseAgreementWithRelationships = {
-    attachments: value?.attachmentsResult.data ?? [],
-    leaseAgreement: value?.leaseResult.data ?? null,
-    transactions: value?.transactionsResult.data ?? []
-  }
+  const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-
-  const handleRetry = useCallback((): void => {
-    window.location.reload();
-  }, []);
-
-  const asyncData: AsyncData<LeaseAgreementWithRelationships> =
-    loading ?
-      { tag: 'pending' } :
-      error ?
-        { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data: data };
-
-  return (
-    <Slave
-      asyncData={asyncData}
-      getTenantUrl={url.tenantDetail}
-      getPropertyUrl={url.propertyDetail}
-      getTransactionUrl={url.transactionDetail}
-      getEditUrl={() => `${url.leaseDetail(id)}/edit`}
-      getBackUrl={url.leasesList}
-    />
-  );
+  return match(urls)
+    .with({ tag: 'pending' }, () => (
+      <Slave
+        asyncData={{ tag: 'pending' }}
+        getTenantUrl={() => ''}
+        getPropertyUrl={() => ''}
+        getTransactionUrl={() => ''}
+        getEditUrl={() => ''}
+        getBackUrl={() => ''}
+      />
+    ))
+    .with({ tag: 'ready' }, ({ url }) => (
+      <Slave
+        asyncData={asyncData}
+        getTenantUrl={url.tenantDetail}
+        getPropertyUrl={url.propertyDetail}
+        getTransactionUrl={url.transactionDetail}
+        getEditUrl={() => `${url.leaseDetail(id)}/edit`}
+        getBackUrl={url.leasesList}
+      />
+    ))
+    .exhaustive();
 };

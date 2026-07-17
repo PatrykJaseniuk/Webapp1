@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
-import { useAsync } from 'react-use';
+import { match } from 'ts-pattern';
+import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
-import type { AsyncData } from '@/generic';
+import { toAsyncData, type AsyncData } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 
@@ -87,34 +87,38 @@ type Props = {
 export const TenantsM = ({
   TableComponent,
 }: Props): JSX.Element => {
-  const { url } = useUrls();
+  const urls = useUrls();
 
-  const { loading, error, value } = useAsync(async (): Promise<readonly EnrichedTenantRow[]> => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error: dbError } = await (backendConnector as any)
-      .from('tenants')
-      .select('*, lease_agreements(property_id, lease_status, properties(id, name))')
-      .order('last_name')
-      .order('first_name');
-    return dbError !== null ? [] : ((data ?? []) as TenantWithLeases[]).map(enrich);
-  }, []);
+  const query = useQuery({
+    queryKey: ['tenants'],
+    queryFn: async (): Promise<readonly EnrichedTenantRow[]> => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error: dbError } = await (backendConnector as any)
+        .from('tenants')
+        .select('*, lease_agreements(property_id, lease_status, properties(id, name))')
+        .order('last_name')
+        .order('first_name');
+      if (dbError !== null) throw dbError;
+      return ((data ?? []) as TenantWithLeases[]).map(enrich);
+    },
+  });
 
-  const handleRetry = useCallback((): void => {
-    window.location.reload();
-  }, []);
+  const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const asyncData: AsyncData<readonly EnrichedTenantRow[]> =
-    loading ?
-      { tag: 'pending' } :
-      error !== undefined ?
-        { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data: value ?? [] };
-
-  return (
-    <TableComponent
-      asyncData={asyncData}
-      getDetailUrl={url.tenantDetail}
-      getPropertyUrl={url.propertyDetail}
-    />
-  );
+  return match(urls)
+    .with({ tag: 'pending' }, () => (
+      <TableComponent
+        asyncData={{ tag: 'pending' }}
+        getDetailUrl={() => ''}
+        getPropertyUrl={() => ''}
+      />
+    ))
+    .with({ tag: 'ready' }, ({ url }) => (
+      <TableComponent
+        asyncData={asyncData}
+        getDetailUrl={url.tenantDetail}
+        getPropertyUrl={url.propertyDetail}
+      />
+    ))
+    .exhaustive();
 };

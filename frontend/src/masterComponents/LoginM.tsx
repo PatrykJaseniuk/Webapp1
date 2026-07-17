@@ -1,4 +1,5 @@
-import { useAsyncFn } from 'react-use';
+import { match } from 'ts-pattern';
+import { useMutation } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { useUrls } from '@/hooks/useUrls';
@@ -20,29 +21,30 @@ type Props = {
 };
 
 export const Login = ({ SlaveComponent }: Props): JSX.Element => {
-  const { url } = useUrls();
+  const urls = useUrls();
 
-  const [loginState, login] = useAsyncFn(
-    async (input: LoginInput) => {
+  const mutation = useMutation({
+    mutationFn: async (input: LoginInput) => {
       const result = await backendConnector.auth.signInWithPassword({
         email: input.email,
         password: input.password,
       });
-
-      return result;
+      if (result.error !== null) throw result.error;
+      return result.data;
     },
-  );
+  });
 
-  return (
-    <SlaveComponent
-      onSubmit={login}
-      isLoading={loginState.loading}
-      error={
-        loginState.error?.message ??
-        loginState.value?.error?.message ??
-        null
-      }
-      signupUrl={url.signup()}
-    />
-  );
+  const error: string | null = mutation.error?.message ?? null;
+
+  return match(urls)
+    .with({ tag: 'pending' }, () => <SlaveComponent onSubmit={() => {}} isLoading signupUrl="" error={null} />)
+    .with({ tag: 'ready' }, ({ url }) => (
+      <SlaveComponent
+        onSubmit={(input) => { mutation.mutate(input); }}
+        isLoading={mutation.isPending}
+        error={error}
+        signupUrl={url.signup()}
+      />
+    ))
+    .exhaustive();
 };

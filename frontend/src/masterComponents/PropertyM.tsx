@@ -1,10 +1,10 @@
-import { useCallback } from 'react';
-import { useAsync } from 'react-use';
+import { match } from 'ts-pattern';
+import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
-import type { AsyncData } from '@/generic';
+import { toAsyncData, type AsyncData } from '@/generic';
 
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
@@ -42,72 +42,83 @@ export const PropertyDetailM = ({
   Slave,
   id,
 }: Props): JSX.Element => {
-  const { url } = useUrls();
-  const { loading, error: fetchError, value } = useAsync(async () => {
-    const [propertyResult, occupancyResult, leasesResult, transactionsResult, financialResult, attachmentsResult] =
-      await Promise.all([
-        backendConnector.from('properties').select('*').eq('id', id).single(),
-        backendConnector
-          .from('property_occupancy')
-          .select('*')
-          .eq('id', id)
-          .single(),
-        backendConnector
-          .from('lease_agreements')
-          .select('*, tenants(first_name,last_name)')
-          .eq('property_id', id)
-          .order('start_date', { ascending: false }),
-        backendConnector
-          .from('transactions')
-          .select('*')
-          .eq('property_id', id)
-          .order('due_date', { ascending: false })
-          .limit(30),
-        backendConnector
-          .from('property_financial_summary')
-          .select('*')
-          .eq('property_id', id)
-          .single(),
-        backendConnector
-          .from('attachments')
-          .select('*')
-          .eq('related_to_type', 'property')
-          .eq('related_to_id', id),
-      ]);
+  const urls = useUrls();
+  const query = useQuery({
+    queryKey: ['property', id],
+    queryFn: async (): Promise<PropertyWithRelationships> => {
+      const [propertyResult, occupancyResult, leasesResult, transactionsResult, financialResult, attachmentsResult] =
+        await Promise.all([
+          backendConnector.from('properties').select('*').eq('id', id).single(),
+          backendConnector
+            .from('property_occupancy')
+            .select('*')
+            .eq('id', id)
+            .single(),
+          backendConnector
+            .from('lease_agreements')
+            .select('*, tenants(first_name,last_name)')
+            .eq('property_id', id)
+            .order('start_date', { ascending: false }),
+          backendConnector
+            .from('transactions')
+            .select('*')
+            .eq('property_id', id)
+            .order('due_date', { ascending: false })
+            .limit(30),
+          backendConnector
+            .from('property_financial_summary')
+            .select('*')
+            .eq('property_id', id)
+            .single(),
+          backendConnector
+            .from('attachments')
+            .select('*')
+            .eq('related_to_type', 'property')
+            .eq('related_to_id', id),
+        ]);
 
-    return { propertyResult, occupancyResult, leasesResult, transactionsResult, financialResult, attachmentsResult };
-  }, [id]);
+      const combinedError =
+        propertyResult.error ??
+        occupancyResult.error ??
+        leasesResult.error ??
+        transactionsResult.error ??
+        financialResult.error ??
+        attachmentsResult.error;
+      if (combinedError !== null) throw combinedError;
 
-  const error = fetchError ?? value?.propertyResult.error ?? value?.occupancyResult.error ?? value?.leasesResult.error ?? value?.transactionsResult.error ?? value?.financialResult.error ?? value?.attachmentsResult.error;
+      return {
+        property: propertyResult.data ?? null,
+        occupancy: occupancyResult.data ?? null,
+        leases: leasesResult.data ?? [],
+        transactions: transactionsResult.data ?? [],
+        financial: financialResult.data ?? null,
+        attachments: attachmentsResult.data ?? [],
+      };
+    },
+  });
 
-  const data: PropertyWithRelationships = {
-    property: value?.propertyResult.data ?? null,
-    occupancy: value?.occupancyResult.data ?? null,
-    leases: value?.leasesResult.data ?? [],
-    transactions: value?.transactionsResult.data ?? [],
-    financial: value?.financialResult.data ?? null,
-    attachments: value?.attachmentsResult.data ?? [],
-  };
+  const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const handleRetry = useCallback((): void => {
-    window.location.reload();
-  }, []);
-
-  const asyncData: AsyncData<PropertyWithRelationships> =
-    loading ?
-      { tag: 'pending' } :
-      error ?
-        { tag: 'rejected', message: error.message, onRetry: handleRetry } :
-        { tag: 'fulfilled', data };
-
-  return (
-    <Slave
-      asyncData={asyncData}
-      getTenantUrl={url.tenantDetail}
-      getLeaseUrl={url.leaseDetail}
-      getTransactionUrl={url.transactionDetail}
-      getEditUrl={() => `${url.propertyDetail(id)}/edit`}
-      getBackUrl={url.propertiesList}
-    />
-  );
+  return match(urls)
+    .with({ tag: 'pending' }, () => (
+      <Slave
+        asyncData={{ tag: 'pending' }}
+        getTenantUrl={() => ''}
+        getLeaseUrl={() => ''}
+        getTransactionUrl={() => ''}
+        getEditUrl={() => ''}
+        getBackUrl={() => ''}
+      />
+    ))
+    .with({ tag: 'ready' }, ({ url }) => (
+      <Slave
+        asyncData={asyncData}
+        getTenantUrl={url.tenantDetail}
+        getLeaseUrl={url.leaseDetail}
+        getTransactionUrl={url.transactionDetail}
+        getEditUrl={() => `${url.propertyDetail(id)}/edit`}
+        getBackUrl={url.propertiesList}
+      />
+    ))
+    .exhaustive();
 };

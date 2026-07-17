@@ -1,3 +1,4 @@
+import { match } from 'ts-pattern';
 import type { ReactNode, ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth, type AppRole } from '@/hooks/AuthContext';
@@ -70,47 +71,59 @@ export const AppLayoutM = ({
   Slave,
 }: Props): JSX.Element => {
   const authState = useAuth();
-  const { url } = useUrls();
-
+  const urls = useUrls();
   const navigate = useNavigate();
-
-  const handleLogout = (): void => {
-    void backendConnector.auth.signOut().then(() => {
-      navigate(url.login());
-    });
-  };
 
   const asyncData: AsyncData<AuthData> =
     authState.tag === 'loading' ?
       { tag: 'pending' } :
-    authState.tag === 'authenticated' ?
-      { tag: 'fulfilled', data: { email: authState.email } } :
-      { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
+      authState.tag === 'authenticated' ?
+        { tag: 'fulfilled', data: { email: authState.email } } :
+        { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
 
   const role: AppRole =
     authState.tag === 'authenticated' ? authState.role : 'tenant';
 
-  const navKeyToUrl: Readonly<Record<string, string>> = {
-    dashboard: url.dashboard(),
-    properties: url.propertiesList(),
-    tenants: url.tenantsList(),
-    leases: url.leasesList(),
-    transactions: url.transactionsList(),
-    contracts: url.leasesList(),
-    payments: url.transactionsList(),
-  };
+  return match(urls)
+    .with({ tag: 'pending' }, () => (
+      <Slave
+        navItems={[]}
+        asyncData={asyncData}
+        onLogout={() => {}}
+      >
+        {children}
+      </Slave>
+    ))
+    .with({ tag: 'ready' }, ({ url }) => {
+      const handleLogout = (): void => {
+        void backendConnector.auth.signOut().then(() => {
+          navigate(url.login());
+        });
+      };
 
-  const builtNavItems: readonly NavItem[] = navKeys(role).map(
-    (key) => ({ to: navKeyToUrl[key] ?? `/${role}`, label: LABELS[key] ?? key }),
-  );
+      const navKeyToUrl: Readonly<Record<string, string>> = {
+        dashboard: url.dashboard(),
+        properties: url.propertiesList(),
+        tenants: url.tenantsList(),
+        leases: url.leasesList(),
+        transactions: url.transactionsList(),
+        contracts: url.leasesList(),
+        payments: url.transactionsList(),
+      };
 
-  return (
-    <Slave
-      navItems={builtNavItems}
-      asyncData={asyncData}
-      onLogout={handleLogout}
-    >
-      {children}
-    </Slave>
-  );
+      const builtNavItems: readonly NavItem[] = navKeys(role).map(
+        (key) => ({ to: navKeyToUrl[key] ?? `/${role}`, label: LABELS[key] ?? key }),
+      );
+
+      return (
+        <Slave
+          navItems={builtNavItems}
+          asyncData={asyncData}
+          onLogout={handleLogout}
+        >
+          {children}
+        </Slave>
+      );
+    })
+    .exhaustive();
 };
