@@ -75,7 +75,7 @@ const propertiesListRoute = createRoute({
   component: PropertiesListPage,
 });
 
-const propertyDetailRoute = createRoute({
+export const propertyDetailRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: '/properties/$id',
   component: PropertyDetailPage,
@@ -87,7 +87,7 @@ const tenantsListRoute = createRoute({
   component: TenantsListPage,
 });
 
-const tenantDetailRoute = createRoute({
+export const tenantDetailRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: '/tenants/$id',
   component: TenantDetailPage,
@@ -99,7 +99,7 @@ const leasesListRoute = createRoute({
   component: LeaseAgreementsListPage,
 });
 
-const leaseDetailRoute = createRoute({
+export const leaseDetailRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: '/leases/$id',
   component: LeaseAgreementDetailPage,
@@ -111,7 +111,7 @@ const transactionsListRoute = createRoute({
   component: TransactionsListPage,
 });
 
-const transactionDetailRoute = createRoute({
+export const transactionDetailRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: '/transactions/$id',
   component: TransactionDetailPage,

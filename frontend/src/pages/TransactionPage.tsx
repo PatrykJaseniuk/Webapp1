@@ -1,12 +1,8 @@
-import { useParams } from '@tanstack/react-router';
+import { transactionDetailRoute } from '@/main/routes';
 import { TransactionDetail } from '@/masterComponents/TransactionM';
 import { TransactionDetailView } from '@/slaveComponents/TransactionS';
 
-type Params = Readonly<{
-  id: string;
-}>;
-
 export const TransactionDetailPage = (): JSX.Element => {
-  const { id } = useParams({ strict: false }) as Params;
+  const { id } = transactionDetailRoute.useParams();
   return <TransactionDetail DetailViewComponent={TransactionDetailView} id={id} />;
 };
