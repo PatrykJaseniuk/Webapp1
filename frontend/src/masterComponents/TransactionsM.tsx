@@ -47,10 +47,10 @@ export const TransactionsM = ({
   };
 
   const renderPropertyLink = (propertyId: string): ReactNode =>
-    <Link to="/app/properties/$id" params={{ id: propertyId }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+    <Link to="/app/properties/$id" params={{ id: propertyId }} />;
 
   const renderLeaseLink = (leaseId: string): ReactNode =>
-    <Link to="/app/leases/$id" params={{ id: leaseId }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+    <Link to="/app/leases/$id" params={{ id: leaseId }} />;
 
   return (
     <Slave

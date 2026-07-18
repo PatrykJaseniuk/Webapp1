@@ -29,7 +29,7 @@ const AuthenticatedShell = ({
         <h1 className="text-lg font-bold text-gray-900">WebApp</h1>
       </div>
 
-      <nav className="flex-1 space-y-1 px-4 py-4">
+      <nav className="flex-1 space-y-1 px-4 py-4 [&_a]:block [&_a]:rounded-md [&_a]:px-3 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-gray-700 hover:[&_a]:bg-gray-100 hover:[&_a]:text-gray-900">
         {sidebarLinks}
       </nav>
 

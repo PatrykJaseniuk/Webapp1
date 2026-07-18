@@ -49,7 +49,7 @@ const DetailContent = ({
   const t = data.transaction;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
-      <div>
+      <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
         {backLink}
         <h1 className="mt-1 text-2xl font-bold text-gray-900">Transakcja</h1>
       </div>
@@ -62,10 +62,10 @@ const DetailContent = ({
           <div><p className={labelClass}>Kwota</p><p className={`text-sm font-semibold ${t.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{t.amount.toLocaleString('pl-PL')} zł</p></div>
           <div><p className={labelClass}>Termin płatności</p><p className={valueClass}>{t.due_date}</p></div>
           {t.property_id !== null && data.propertyName !== null ?
-            <div><p className={labelClass}>Nieruchomość</p>{propertyLink}</div> :
+            <div><p className={labelClass}>Nieruchomość</p><span className="[&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{propertyLink}</span></div> :
             undefined}
           {t.lease_id !== null && data.leaseDescription !== null ?
-            <div><p className={labelClass}>Umowa</p>{leaseLink}</div> :
+            <div><p className={labelClass}>Umowa</p><span className="[&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{leaseLink}</span></div> :
             undefined}
         </div>
         <div className="mt-4"><p className={labelClass}>Opis</p><p className={`${valueClass} mt-1`}>{t.description}</p></div>

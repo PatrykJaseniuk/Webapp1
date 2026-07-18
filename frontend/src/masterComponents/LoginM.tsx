@@ -20,7 +20,7 @@ type Props = {
 };
 
 const signupLinkPlaceholder = (
-  <span className="font-medium text-blue-600 hover:text-blue-500">Zarejestruj się</span>
+  <span>Zarejestruj się</span>
 );
 
 export const Login = ({ SlaveComponent }: Props): JSX.Element => {

@@ -65,9 +65,9 @@ export const TransactionDetail = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const propertyLink: ReactNode = <Link to="/app/properties/$id" params={{ id }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
-  const leaseLink: ReactNode = <Link to="/app/leases/$id" params={{ id }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
-  const backLink: ReactNode = <Link to="/app/transactions" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">← Powrót</Link>;
+  const propertyLink: ReactNode = <Link to="/app/properties/$id" params={{ id }} />;
+  const leaseLink: ReactNode = <Link to="/app/leases/$id" params={{ id }} />;
+  const backLink: ReactNode = <Link to="/app/transactions">← Powrót</Link>;
 
   return (
     <DetailViewComponent

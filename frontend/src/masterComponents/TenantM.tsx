@@ -137,8 +137,8 @@ export const TenantDetailM = ({
   const onLeaseClick = (leaseId: string) => { navigate({ to: '/app/leases/$id', params: { id: leaseId } }); };
   const onTransactionClick = (transactionId: string) => { navigate({ to: '/app/transactions/$id', params: { id: transactionId } }); };
 
-  const editLink: ReactNode = <Link to="/app/tenants/$id" params={{ id }} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Edytuj</Link>;
-  const backLink: ReactNode = <Link to="/app/tenants" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">← Powrót do listy</Link>;
+  const editLink: ReactNode = <Link to="/app/tenants/$id" params={{ id }}>Edytuj</Link>;
+  const backLink: ReactNode = <Link to="/app/tenants">← Powrót do listy</Link>;
 
   return (
     <DetailViewComponent

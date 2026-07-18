@@ -82,8 +82,8 @@ export const LeaseAgreementDetailM = ({
     toTenant: (tenantId: string) => { navigate({ to: '/app/tenants/$id', params: { id: tenantId } }); },
     toProperty: (propertyId: string) => { navigate({ to: '/app/properties/$id', params: { id: propertyId } }); },
     toTransaction: (transactionId: string) => { navigate({ to: '/app/transactions/$id', params: { id: transactionId } }); },
-    editLink: <Link to="/app/leases/$id" params={{ id }} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Edytuj</Link>,
-    backLink: <Link to="/app/leases" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">← Powrót do listy</Link>,
+    editLink: <Link to="/app/leases/$id" params={{ id }}>Edytuj</Link>,
+    backLink: <Link to="/app/leases">← Powrót do listy</Link>,
   } as const;
 
   return (

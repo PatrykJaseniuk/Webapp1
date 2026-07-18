@@ -89,11 +89,11 @@ const DetailContent = ({
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
           {backLink}
           <h1 className="mt-1 text-2xl font-bold text-gray-900">{t.first_name} {t.last_name}</h1>
         </div>
-        <div className="flex gap-2">{editLink}</div>
+        <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">{editLink}</div>
       </div>
 
       <div className={sectionClass}>

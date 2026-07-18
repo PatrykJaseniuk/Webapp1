@@ -89,9 +89,9 @@ export const DashboardSummaryM = ({
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
   const cards: readonly DashboardCard[] = [
-    { link: <Link to="/app/properties" className="block h-full">Nieruchomości<br />Zarządzaj nieruchomościami</Link> },
-    { link: <Link to="/app/tenants" className="block h-full">Najemcy<br />Zarządzaj najemcami</Link> },
-    { link: <Link to="/app/leases" className="block h-full">Umowy najmu<br />Zarządzaj umowami</Link> },
+    { link: <Link to="/app/properties">Nieruchomości<br />Zarządzaj nieruchomościami</Link> },
+    { link: <Link to="/app/tenants">Najemcy<br />Zarządzaj najemcami</Link> },
+    { link: <Link to="/app/leases">Umowy najmu<br />Zarządzaj umowami</Link> },
   ];
 
   return <Slave asyncData={asyncData} cards={cards} />;

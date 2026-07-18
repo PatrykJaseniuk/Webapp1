@@ -75,12 +75,12 @@ const TableBody = ({
                 <td className="py-3 pr-4 text-gray-600">{tx.due_date}</td>
                 <td className="py-3 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
                 <td className="py-3 pr-4 text-gray-600">{tx.description ?? '—'}</td>
-                <td className="py-3 pr-4">
+                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                   {tx.property_id !== null && tx.properties?.name !== null ?
                     renderPropertyLink(tx.property_id, tx.properties!.name!) :
                     <span className="text-gray-400">—</span>}
                 </td>
-                <td className="py-3 pr-4">
+                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                   {tx.lease_id !== null ?
                     renderLeaseLink(tx.lease_id) :
                     <span className="text-gray-400">—</span>}

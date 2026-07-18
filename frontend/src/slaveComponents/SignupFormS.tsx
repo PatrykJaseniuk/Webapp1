@@ -101,7 +101,7 @@ export const SignupForm = ({
           </button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500">
+        <p className="mt-4 text-center text-sm text-gray-500 [&_a]:font-medium [&_a]:text-blue-600 hover:[&_a]:text-blue-500">
           Masz już konto?{' '}
           {loginLink}
         </p>

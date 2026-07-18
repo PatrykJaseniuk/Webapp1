@@ -57,8 +57,8 @@ const TableBody = ({
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
                 onClick={() => { onDetailClick(l.id); }}
               >
-                <td className="py-3 pr-4">{renderTenantLink(l.tenant_id)}</td>
-                <td className="py-3 pr-4">{renderPropertyLink(l.property_id)}</td>
+                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{renderTenantLink(l.tenant_id)}</td>
+                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{renderPropertyLink(l.property_id)}</td>
                 <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
                 <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
                 <td className="py-3 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>

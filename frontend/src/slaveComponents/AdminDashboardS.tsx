@@ -7,7 +7,7 @@ type DashboardSummary = Extract<DashboardSummarySProps['asyncData'], { tag: 'ful
 type Props = DashboardSummarySProps;
 
 const dashboardCardClass =
-  'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow';
+  'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow [&>a]:block [&>a]:h-full';
 
 const statCardClass = 'rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm';
 const statValueClass = 'text-2xl font-bold';

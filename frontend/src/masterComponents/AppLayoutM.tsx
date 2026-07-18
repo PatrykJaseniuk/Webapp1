@@ -52,8 +52,6 @@ const navKeys = (role: AppRole): readonly string[] =>
 
 // ── Sidebar link class (pure, shared with slave — master provides it via Link className) ──
 
-const sidebarLinkClass = 'block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900';
-
 // ── Nav key → absolute URL ──
 
 const navKeyToUrl: Readonly<Record<string, string>> = {
@@ -101,7 +99,6 @@ export const AppLayoutM = ({
       <Link
         key={key}
         to={navKeyToUrl[key] ?? '/app'}
-        className={sidebarLinkClass}
       >
         {LABELS[key] ?? key}
       </Link>

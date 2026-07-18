@@ -61,7 +61,7 @@ const TableBody = ({
                     TYPE_LABEL[p.property_type] :
                     <span className="text-gray-400">—</span>}
                 </td>
-                <td className="py-3 pr-4 text-gray-600">
+                <td className="py-3 pr-4 text-gray-600 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                   {p.current_tenant_name !== null && p.tenant_id !== null ?
                     renderTenantLink(p.tenant_id) :
                     <span className="text-gray-400">—</span>}

@@ -52,7 +52,7 @@ const TableBody = ({
                 <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
                 <td className="py-3 pr-4 text-gray-600">
                   {t.currentPropertyIds.length > 0 ?
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 [&_a]:inline-block [&_a]:rounded-full [&_a]:bg-blue-50 [&_a]:px-2 [&_a]:py-0.5 [&_a]:text-xs [&_a]:font-medium [&_a]:text-blue-700 hover:[&_a]:bg-blue-100">
                       {t.currentPropertyIds.map((propId: string) =>
                         renderPropertyLink(propId)
                       )}

@@ -109,7 +109,7 @@ export const TenantsM = ({
   };
 
   const renderPropertyLink = (propertyId: string): ReactNode =>
-    <Link to="/app/properties/$id" params={{ id: propertyId }} className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100" />;
+    <Link to="/app/properties/$id" params={{ id: propertyId }} />;
 
   return <TableComponent asyncData={asyncData} onDetailClick={onDetailClick} renderPropertyLink={renderPropertyLink} />;
 };

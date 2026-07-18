@@ -41,7 +41,7 @@ export const PropertiesM = ({
   };
 
   const renderTenantLink = (tenantId: string): ReactNode =>
-    <Link to="/app/tenants/$id" params={{ id: tenantId }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+    <Link to="/app/tenants/$id" params={{ id: tenantId }} />;
 
   return <Slave asyncData={asyncData} onDetailClick={onDetailClick} renderTenantLink={renderTenantLink} />;
 };
