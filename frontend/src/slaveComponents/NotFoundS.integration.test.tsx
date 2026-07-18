@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { NotFound } from './NotFoundS';
 
 describe('NotFound', () => {
   it('renders 404 heading', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <NotFound />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('404')).toBeInTheDocument();
@@ -16,9 +16,9 @@ describe('NotFound', () => {
 
   it('renders the descriptive message', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <NotFound />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('Page not found')).toBeInTheDocument();
@@ -29,9 +29,9 @@ describe('NotFound', () => {
 
   it('renders a link to login', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <NotFound />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     const link = screen.getByText('Go to login');

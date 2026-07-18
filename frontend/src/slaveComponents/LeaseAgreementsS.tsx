@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -22,26 +22,20 @@ const leaseStatusPillClass = (status: LeaseStatus): string =>
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-red-50 text-red-700`;
 
-const tenantDisplayName = (r: Row): string =>
-  r.tenants ?
-    `${r.tenants.first_name ?? ''} ${r.tenants.last_name ?? ''}`.trim() :
-    '';
-
 type TableBodyProps = {
   readonly leases: readonly Row[];
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getDetailUrl: (id: string) => string;
+  readonly renderTenantLink: (tenantId: string) => ReactNode;
+  readonly renderPropertyLink: (propertyId: string) => ReactNode;
+  readonly onDetailClick: (id: string) => void;
 };
 
 const TableBody = ({
   leases,
-  getTenantUrl,
-  getPropertyUrl,
-  getDetailUrl,
-}: TableBodyProps): JSX.Element => {
-  const navigate = useNavigate();
-  return leases.length === 0 ?
+  renderTenantLink,
+  renderPropertyLink,
+  onDetailClick,
+}: TableBodyProps): JSX.Element =>
+  leases.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
     (
       <div className="overflow-x-auto">
@@ -61,31 +55,13 @@ const TableBody = ({
               <tr
                 key={l.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigate(getDetailUrl(l.id)); }}
+                onClick={() => { onDetailClick(l.id); }}
               >
-                <td className="py-3 pr-4">
-                  <Link
-                    to={getTenantUrl(l.tenant_id)}
-                    onClick={(e) => { e.stopPropagation(); }}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {tenantDisplayName(l)}
-                  </Link>
-                </td>
-                <td className="py-3 pr-4">
-                  <Link
-                    to={getPropertyUrl(l.property_id)}
-                    onClick={(e) => { e.stopPropagation(); }}
-                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {l.properties?.name ?? ''}
-                  </Link>
-                </td>
+                <td className="py-3 pr-4">{renderTenantLink(l.tenant_id)}</td>
+                <td className="py-3 pr-4">{renderPropertyLink(l.property_id)}</td>
                 <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
                 <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
-                <td className="py-3 pr-4 text-right text-gray-900">
-                  {l.monthly_rent.toLocaleString('pl-PL')} zł
-                </td>
+                <td className="py-3 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
                 <td className="py-3 pr-4">
                   <span className={leaseStatusPillClass(l.lease_status)}>
                     {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
@@ -97,9 +73,8 @@ const TableBody = ({
         </table>
       </div>
     );
-};
 
-export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getLeaseAgreementUrl: getDetailUrl }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, onDetailClick, renderTenantLink, renderPropertyLink }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -109,9 +84,9 @@ export const LeaseAgreementsS = ({ asyncData, getTenantUrl, getPropertyUrl, getL
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           leases={data}
-          getTenantUrl={getTenantUrl}
-          getPropertyUrl={getPropertyUrl}
-          getDetailUrl={getDetailUrl}
+          onDetailClick={onDetailClick}
+          renderTenantLink={renderTenantLink}
+          renderPropertyLink={renderPropertyLink}
         />
       ))
       .exhaustive()}

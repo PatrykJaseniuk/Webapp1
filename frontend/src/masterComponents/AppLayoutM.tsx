@@ -1,8 +1,6 @@
-import { match } from 'ts-pattern';
 import type { ReactNode, ComponentType } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useAuth, type AppRole } from '@/hooks/AuthContext';
-import { useUrls } from '@/hooks/useUrls';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -12,17 +10,10 @@ type AuthData = Readonly<{
   email: string;
 }>;
 
-// ── Navigation item: raw data, slave renders NavLink ──
-
-export type NavItem = Readonly<{
-  to: string;
-  label: string;
-}>;
-
 // ── Shell props (defined here so slave can import from master) ──
 
 export type AppLayoutSProps = {
-  readonly navItems: readonly NavItem[];
+  readonly sidebarLinks: readonly JSX.Element[];
   readonly asyncData: AsyncData<AuthData>;
   readonly onLogout: () => void;
   readonly children: ReactNode;
@@ -59,6 +50,22 @@ const TENANT_KEYS: readonly string[] = [
 const navKeys = (role: AppRole): readonly string[] =>
   role === 'tenant' ? TENANT_KEYS : ADMIN_LANDLORD_KEYS;
 
+// ── Sidebar link class (pure, shared with slave — master provides it via Link className) ──
+
+const sidebarLinkClass = 'block rounded-md px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900';
+
+// ── Nav key → absolute URL ──
+
+const navKeyToUrl: Readonly<Record<string, string>> = {
+  dashboard: '/app',
+  properties: '/app/properties',
+  tenants: '/app/tenants',
+  leases: '/app/leases',
+  transactions: '/app/transactions',
+  contracts: '/app/leases',
+  payments: '/app/transactions',
+};
+
 // ── Component ──
 
 type Props = {
@@ -71,8 +78,13 @@ export const AppLayoutM = ({
   Slave,
 }: Props): JSX.Element => {
   const authState = useAuth();
-  const urls = useUrls();
   const navigate = useNavigate();
+
+  const handleLogout = (): void => {
+    void backendConnector.auth.signOut().then(() => {
+      navigate({ to: '/login' });
+    });
+  };
 
   const asyncData: AsyncData<AuthData> =
     authState.tag === 'loading' ?
@@ -84,46 +96,24 @@ export const AppLayoutM = ({
   const role: AppRole =
     authState.tag === 'authenticated' ? authState.role : 'tenant';
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <Slave
-        navItems={[]}
-        asyncData={asyncData}
-        onLogout={() => {}}
+  const sidebarLinks: readonly JSX.Element[] =
+    navKeys(role).map((key) => (
+      <Link
+        key={key}
+        to={navKeyToUrl[key] ?? '/app'}
+        className={sidebarLinkClass}
       >
-        {children}
-      </Slave>
-    ))
-    .with({ tag: 'ready' }, ({ url }) => {
-      const handleLogout = (): void => {
-        void backendConnector.auth.signOut().then(() => {
-          navigate(url.login());
-        });
-      };
+        {LABELS[key] ?? key}
+      </Link>
+    ));
 
-      const navKeyToUrl: Readonly<Record<string, string>> = {
-        dashboard: url.dashboard(),
-        properties: url.propertiesList(),
-        tenants: url.tenantsList(),
-        leases: url.leasesList(),
-        transactions: url.transactionsList(),
-        contracts: url.leasesList(),
-        payments: url.transactionsList(),
-      };
-
-      const builtNavItems: readonly NavItem[] = navKeys(role).map(
-        (key) => ({ to: navKeyToUrl[key] ?? `/${role}`, label: LABELS[key] ?? key }),
-      );
-
-      return (
-        <Slave
-          navItems={builtNavItems}
-          asyncData={asyncData}
-          onLogout={handleLogout}
-        >
-          {children}
-        </Slave>
-      );
-    })
-    .exhaustive();
+  return (
+    <Slave
+      sidebarLinks={sidebarLinks}
+      asyncData={asyncData}
+      onLogout={handleLogout}
+    >
+      {children}
+    </Slave>
+  );
 };

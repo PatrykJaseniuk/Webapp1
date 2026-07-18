@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { NotFound } from './NotFoundS';
 
 const meta: Meta<typeof NotFound> = {
@@ -7,9 +7,9 @@ const meta: Meta<typeof NotFound> = {
   component: NotFound,
   decorators: [
     (Story) => (
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <Story />
-      </MemoryRouter>
+      </MemoryRouterProvider>
     ),
   ],
 };

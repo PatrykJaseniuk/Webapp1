@@ -1,4 +1,3 @@
-import { NavLink } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -8,25 +7,17 @@ import { ErrorMessage } from './ErrorMessageS';
 
 type AuthData = Extract<AppLayoutSProps['asyncData'], { tag: 'fulfilled' }>['data'];
 
-// ── Tailwind classes ──
-
-const sidebarLinkClass = (isActive: boolean): string =>
-  `block rounded-md px-3 py-2 text-sm font-medium ${isActive ?
-    'bg-blue-100 text-blue-700' :
-    'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-  }`;
-
 // ── Authenticated shell (inner) ──
 
 type AuthenticatedShellProps = {
-  readonly navItems: AppLayoutSProps['navItems'];
+  readonly sidebarLinks: AppLayoutSProps['sidebarLinks'];
   readonly authData: AuthData;
   readonly onLogout: () => void;
   readonly children: import('react').ReactNode;
 };
 
 const AuthenticatedShell = ({
-  navItems,
+  sidebarLinks,
   authData,
   onLogout,
   children,
@@ -39,16 +30,7 @@ const AuthenticatedShell = ({
       </div>
 
       <nav className="flex-1 space-y-1 px-4 py-4">
-        {navItems.map(({ to, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end
-            className={({ isActive }) => sidebarLinkClass(isActive)}
-          >
-            {label}
-          </NavLink>
-        ))}
+        {sidebarLinks}
       </nav>
 
       {/* User info — bottom of sidebar */}
@@ -74,7 +56,7 @@ const AuthenticatedShell = ({
 // ── Component ──
 
 export const AppLayoutShell = ({
-  navItems,
+  sidebarLinks,
   asyncData,
   onLogout,
   children,
@@ -87,7 +69,7 @@ export const AppLayoutShell = ({
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <AuthenticatedShell
-          navItems={navItems}
+          sidebarLinks={sidebarLinks}
           authData={data}
           onLogout={onLogout}
         >

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -38,19 +38,18 @@ const txnAmountClass = (amount: number): string =>
 
 type TableBodyProps = {
   readonly transactions: readonly Row[];
-  readonly getTransactionUrl: (id: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
+  readonly onTransactionClick: (id: string) => void;
+  readonly renderPropertyLink: (propertyId: string, name: string) => ReactNode;
+  readonly renderLeaseLink: (leaseId: string) => ReactNode;
 };
 
 const TableBody = ({
   transactions,
-  getTransactionUrl,
-  getPropertyUrl,
-  getLeaseUrl,
-}: TableBodyProps): JSX.Element => {
-  const navigate = useNavigate();
-  return transactions.length === 0 ?
+  onTransactionClick,
+  renderPropertyLink,
+  renderLeaseLink,
+}: TableBodyProps): JSX.Element =>
+  transactions.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak transakcji.</p> :
     (
       <div className="overflow-x-auto">
@@ -71,40 +70,22 @@ const TableBody = ({
               <tr
                 key={tx.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigate(getTransactionUrl(tx.id)); }}
+                onClick={() => { onTransactionClick(tx.id); }}
               >
                 <td className="py-3 pr-4 text-gray-600">{tx.due_date}</td>
-                <td className="py-3 pr-4 text-gray-600">
-                  {TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}
-                </td>
-                <td className="py-3 pr-4 text-gray-600">
-                  {tx.description ?? '—'}
-                </td>
+                <td className="py-3 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
+                <td className="py-3 pr-4 text-gray-600">{tx.description ?? '—'}</td>
                 <td className="py-3 pr-4">
                   {tx.property_id !== null && tx.properties?.name !== null ?
-                    <Link
-                      to={getPropertyUrl(tx.property_id)}
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      {tx.properties?.name}
-                    </Link> :
+                    renderPropertyLink(tx.property_id, tx.properties!.name!) :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className="py-3 pr-4">
                   {tx.lease_id !== null ?
-                    <Link
-                      to={getLeaseUrl(tx.lease_id)}
-                      onClick={(e) => { e.stopPropagation(); }}
-                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      Umowa
-                    </Link> :
+                    renderLeaseLink(tx.lease_id) :
                     <span className="text-gray-400">—</span>}
                 </td>
-                <td className={`py-3 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
-                  {tx.amount.toLocaleString('pl-PL')} zł
-                </td>
+                <td className={`py-3 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
                 <td className="py-3 pr-4">
                   <span className={txnStatusPillClass(tx.transaction_status)}>
                     {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
@@ -116,13 +97,12 @@ const TableBody = ({
         </table>
       </div>
     );
-};
 
 export const TransactionsS = ({
   asyncData,
-  getTransactionUrl,
-  getPropertyUrl,
-  getLeaseUrl,
+  onTransactionClick,
+  renderPropertyLink,
+  renderLeaseLink,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
@@ -133,9 +113,9 @@ export const TransactionsS = ({
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           transactions={data}
-          getTransactionUrl={getTransactionUrl}
-          getPropertyUrl={getPropertyUrl}
-          getLeaseUrl={getLeaseUrl}
+          onTransactionClick={onTransactionClick}
+          renderPropertyLink={renderPropertyLink}
+          renderLeaseLink={renderLeaseLink}
         />
       ))
       .exhaustive()}

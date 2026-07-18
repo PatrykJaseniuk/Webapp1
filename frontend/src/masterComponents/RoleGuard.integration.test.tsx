@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { AuthorisationGuard } from './RoleGuardM';
 import type { AuthoriseRequirement, AccessGateSlaveProps } from './RoleGuardM';
 import type { AuthState } from '@/hooks/AuthContext';
@@ -61,14 +61,14 @@ describe('AuthorisationGuard (integration)', () => {
       const req: AuthoriseRequirement = { isAuthenticated: true, roles: ['admin'] };
 
       render(
-        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <MemoryRouterProvider>
           <AuthorisationGuard
             authoriseRequirement={req}
             Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
-        </MemoryRouter>,
+        </MemoryRouterProvider>,
       );
 
       expect(screen.getByText('Loading…')).toBeInTheDocument();
@@ -83,14 +83,14 @@ describe('AuthorisationGuard (integration)', () => {
       mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
       render(
-        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <MemoryRouterProvider>
           <AuthorisationGuard
             authoriseRequirement={req}
             Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
-        </MemoryRouter>,
+        </MemoryRouterProvider>,
       );
 
       expect(screen.getByText('Authorised Content')).toBeInTheDocument();
@@ -105,14 +105,14 @@ describe('AuthorisationGuard (integration)', () => {
       });
 
       render(
-        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <MemoryRouterProvider>
           <AuthorisationGuard
             authoriseRequirement={req}
             Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
-        </MemoryRouter>,
+        </MemoryRouterProvider>,
       );
 
       expect(screen.getByText('Authorised Content')).toBeInTheDocument();
@@ -131,14 +131,14 @@ describe('AuthorisationGuard (integration)', () => {
       });
 
       render(
-        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <MemoryRouterProvider>
           <AuthorisationGuard
             authoriseRequirement={req}
             Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
-        </MemoryRouter>,
+        </MemoryRouterProvider>,
       );
 
       expect(screen.getByText('Authorised Content')).toBeInTheDocument();
@@ -153,14 +153,14 @@ describe('AuthorisationGuard (integration)', () => {
       });
 
       render(
-        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <MemoryRouterProvider>
           <AuthorisationGuard
             authoriseRequirement={req}
             Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
-        </MemoryRouter>,
+        </MemoryRouterProvider>,
       );
 
       expect(screen.getByText('Access Denied')).toBeInTheDocument();
@@ -171,14 +171,14 @@ describe('AuthorisationGuard (integration)', () => {
       mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
       render(
-        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <MemoryRouterProvider>
           <AuthorisationGuard
             authoriseRequirement={req}
             Slave={MockAccessGate}
           >
             {Content}
           </AuthorisationGuard>
-        </MemoryRouter>,
+        </MemoryRouterProvider>,
       );
 
       expect(screen.getByText('Access Denied')).toBeInTheDocument();

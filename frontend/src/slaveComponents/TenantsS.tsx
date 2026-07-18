@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -15,17 +15,16 @@ export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freez
 
 type TableBodyProps = {
   readonly tenants: readonly Row[];
-  readonly getDetailUrl: (id: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly onDetailClick: (id: string) => void;
+  readonly renderPropertyLink: (propertyId: string) => ReactNode;
 };
 
 const TableBody = ({
   tenants,
-  getDetailUrl,
-  getPropertyUrl,
-}: TableBodyProps): JSX.Element => {
-  const navigate = useNavigate();
-  return tenants.length === 0 ?
+  onDetailClick,
+  renderPropertyLink,
+}: TableBodyProps): JSX.Element =>
+  tenants.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak najemców.</p> :
     (
       <div className="overflow-x-auto">
@@ -45,7 +44,7 @@ const TableBody = ({
               <tr
                 key={t.id}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { navigate(getDetailUrl(t.id)); }}
+                onClick={() => { onDetailClick(t.id); }}
               >
                 <td className="py-3 pr-4 font-medium text-gray-900">{t.lastName}</td>
                 <td className="py-3 pr-4 text-gray-600">{t.firstName}</td>
@@ -54,19 +53,9 @@ const TableBody = ({
                 <td className="py-3 pr-4 text-gray-600">
                   {t.currentPropertyIds.length > 0 ?
                     <div className="flex flex-wrap gap-1">
-                      {t.currentPropertyNames.split(', ').map((propName: string, idx: number) => {
-                        const propId = t.currentPropertyIds[idx] ?? '';
-                        return (
-                          <Link
-                            key={propId || idx}
-                            to={getPropertyUrl(propId)}
-                            onClick={(e) => { e.stopPropagation(); }}
-                            className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
-                          >
-                            {propName}
-                          </Link>
-                        );
-                      })}
+                      {t.currentPropertyIds.map((propId: string) =>
+                        renderPropertyLink(propId)
+                      )}
                     </div> :
                     <span className="text-gray-400">—</span>}
                 </td>
@@ -77,9 +66,8 @@ const TableBody = ({
         </table>
       </div>
     );
-};
 
-export const TenantsS = ({ asyncData, getDetailUrl, getPropertyUrl }: TenantsSProps): JSX.Element => (
+export const TenantsS = ({ asyncData, onDetailClick, renderPropertyLink }: TenantsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -89,8 +77,8 @@ export const TenantsS = ({ asyncData, getDetailUrl, getPropertyUrl }: TenantsSPr
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           tenants={data}
-          getDetailUrl={getDetailUrl}
-          getPropertyUrl={getPropertyUrl}
+          onDetailClick={onDetailClick}
+          renderPropertyLink={renderPropertyLink}
         />
       ))
       .exhaustive()}

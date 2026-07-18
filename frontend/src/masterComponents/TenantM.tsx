@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import { useNavigate, Link } from '@tanstack/react-router';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
 
@@ -48,11 +47,11 @@ type TenantDetailData = Readonly<{
 
 export type TenantSProps = {
   readonly asyncData: AsyncData<TenantDetailData>;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
+  readonly onPropertyClick: (propertyId: string) => void;
+  readonly onLeaseClick: (leaseId: string) => void;
+  readonly onTransactionClick: (transactionId: string) => void;
+  readonly editLink: ReactNode;
+  readonly backLink: ReactNode;
 };
 
 type Props = {
@@ -64,7 +63,7 @@ export const TenantDetailM = ({
   DetailViewComponent,
   id,
 }: Props): JSX.Element => {
-  const urls = useUrls();
+  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ['tenant', id],
@@ -134,26 +133,21 @@ export const TenantDetailM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <DetailViewComponent
-        asyncData={{ tag: 'pending' }}
-        getPropertyUrl={() => ''}
-        getLeaseUrl={() => ''}
-        getTransactionUrl={() => ''}
-        getEditUrl={() => ''}
-        getBackUrl={() => ''}
-      />
-    ))
-    .with({ tag: 'ready' }, ({ url }) => (
-      <DetailViewComponent
-        asyncData={asyncData}
-        getPropertyUrl={url.propertyDetail}
-        getLeaseUrl={url.leaseDetail}
-        getTransactionUrl={url.transactionDetail}
-        getEditUrl={() => `${url.tenantDetail(id)}/edit`}
-        getBackUrl={url.tenantsList}
-      />
-    ))
-    .exhaustive();
+  const onPropertyClick = (propertyId: string) => { navigate({ to: '/app/properties/$id', params: { id: propertyId } }); };
+  const onLeaseClick = (leaseId: string) => { navigate({ to: '/app/leases/$id', params: { id: leaseId } }); };
+  const onTransactionClick = (transactionId: string) => { navigate({ to: '/app/transactions/$id', params: { id: transactionId } }); };
+
+  const editLink: ReactNode = <Link to="/app/tenants/$id" params={{ id }} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Edytuj</Link>;
+  const backLink: ReactNode = <Link to="/app/tenants" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">← Powrót do listy</Link>;
+
+  return (
+    <DetailViewComponent
+      asyncData={asyncData}
+      onPropertyClick={onPropertyClick}
+      onLeaseClick={onLeaseClick}
+      onTransactionClick={onTransactionClick}
+      editLink={editLink}
+      backLink={backLink}
+    />
+  );
 };

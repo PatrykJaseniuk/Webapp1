@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { fn, userEvent, within, expect } from 'storybook/test';
 import { SignupForm } from './SignupFormS';
 
@@ -8,9 +8,9 @@ const meta: Meta<typeof SignupForm> = {
   component: SignupForm,
   decorators: [
     (Story) => (
-      <MemoryRouter>
+      <MemoryRouterProvider>
         <Story />
-      </MemoryRouter>
+      </MemoryRouterProvider>
     ),
   ],
   args: {

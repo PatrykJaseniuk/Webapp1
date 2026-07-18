@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { ErrorDisplay } from './ErrorDisplayS';
 
 const meta: Meta<typeof ErrorDisplay> = {
@@ -7,9 +7,9 @@ const meta: Meta<typeof ErrorDisplay> = {
   component: ErrorDisplay,
   decorators: [
     (Story) => (
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <Story />
-      </MemoryRouter>
+      </MemoryRouterProvider>
     ),
   ],
 };

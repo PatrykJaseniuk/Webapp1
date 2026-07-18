@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import { toAsyncData, type AsyncData } from '@/generic';
 
 type DashboardSummary = Readonly<{
@@ -15,9 +14,7 @@ type DashboardSummary = Readonly<{
 }>;
 
 export type DashboardCard = Readonly<{
-  to: string;
-  title: string;
-  subtitle: string;
+  link: ReactNode;
 }>;
 
 export type DashboardSummarySProps = {
@@ -32,8 +29,6 @@ type Props = {
 export const DashboardSummaryM = ({
   Slave,
 }: Props): JSX.Element => {
-  const urls = useUrls();
-
   const query = useQuery({
     queryKey: ['dashboardSummary'],
     queryFn: async (): Promise<DashboardSummary> => {
@@ -93,16 +88,11 @@ export const DashboardSummaryM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => <Slave asyncData={{ tag: 'pending' }} cards={[]} />)
-    .with({ tag: 'ready' }, ({ url }) => {
-      const cards: readonly DashboardCard[] = [
-        { to: url.propertiesList(), title: 'Nieruchomości', subtitle: 'Zarządzaj nieruchomościami' },
-        { to: url.tenantsList(), title: 'Najemcy', subtitle: 'Zarządzaj najemcami' },
-        { to: url.leasesList(), title: 'Umowy najmu', subtitle: 'Zarządzaj umowami' },
-      ];
+  const cards: readonly DashboardCard[] = [
+    { link: <Link to="/app/properties" className="block h-full">Nieruchomości<br />Zarządzaj nieruchomościami</Link> },
+    { link: <Link to="/app/tenants" className="block h-full">Najemcy<br />Zarządzaj najemcami</Link> },
+    { link: <Link to="/app/leases" className="block h-full">Umowy najmu<br />Zarządzaj umowami</Link> },
+  ];
 
-      return <Slave asyncData={asyncData} cards={cards} />;
-    })
-    .exhaustive();
+  return <Slave asyncData={asyncData} cards={cards} />;
 };

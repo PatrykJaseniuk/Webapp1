@@ -1,5 +1,4 @@
 import type { FormEvent } from 'react';
-import { Link } from 'react-router-dom';
 import type { SignupFormProps, SignupInput } from '@/masterComponents/SignupM';
 
 export const extractSignupInput = (formData: FormData): SignupInput => ({
@@ -21,7 +20,7 @@ export const SignupForm = ({
   onSubmit,
   isLoading,
   error,
-  loginUrl,
+  loginLink,
 }: SignupFormProps): JSX.Element => {
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -104,12 +103,7 @@ export const SignupForm = ({
 
         <p className="mt-4 text-center text-sm text-gray-500">
           Masz już konto?{' '}
-          <Link
-            to={loginUrl}
-            className="font-medium text-blue-600 hover:text-blue-500"
-          >
-            Zaloguj się
-          </Link>
+          {loginLink}
         </p>
       </div>
     </div>

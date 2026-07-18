@@ -1,31 +1,25 @@
-import { AppRole, useAuth } from "@/hooks/AuthContext"
 import { type ReactNode } from "react"
-import { Navigate } from "react-router-dom"
-
-export const DEFAULT_REDIRECT_MAP: Readonly<Record<AppRole, string>> = Object.freeze({
-    admin: '/admin',
-    landlord: '/landlord',
-    tenant: '/tenant',
-});
+import { useNavigate } from "@tanstack/react-router"
+import { useAuth } from "@/hooks/AuthContext"
 
 type Props = {
     readonly children: ReactNode,
-    readonly redirectMap?: Record<AppRole, string>,
     readonly LoadingComponent: ReactNode
 }
 
 export const RoleRedirect = ({
     children,
-    redirectMap = DEFAULT_REDIRECT_MAP,
     LoadingComponent,
-}: Props) => {
-
+}: Props): JSX.Element => {
     const auth = useAuth()
+    const navigate = useNavigate()
 
     return auth.tag === 'loading' ?
         <>{LoadingComponent}</> :
         auth.tag === 'unauthenticated' ?
             <>{children}</> :
-            <Navigate to={redirectMap[auth.role]} replace />
-
+            (() => {
+                navigate({ to: '/app', replace: true });
+                return <>{LoadingComponent}</>;
+            })()
 }

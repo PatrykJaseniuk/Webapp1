@@ -1,14 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { AccessDenied } from './AccessDeniedS';
 
 describe('AccessDenied', () => {
   it('renders the access denied heading', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <AccessDenied />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('Access Denied')).toBeInTheDocument();
@@ -16,9 +16,9 @@ describe('AccessDenied', () => {
 
   it('renders the descriptive message', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <AccessDenied />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(
@@ -28,9 +28,9 @@ describe('AccessDenied', () => {
 
   it('renders a link to login', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <AccessDenied />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     const link = screen.getByText('Go to login');

@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
+import { useNavigate, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
 
@@ -12,12 +11,11 @@ type LeaseAgreementRow = LeaseAgreementDbRow & {
   readonly properties: { readonly name: string; };
 };
 
-
 export type LeaseAgreementsSProps = {
   readonly asyncData: AsyncData<readonly LeaseAgreementRow[]>;
-  readonly getLeaseAgreementUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly onDetailClick: (id: string) => void;
+  readonly renderTenantLink: (tenantId: string) => ReactNode;
+  readonly renderPropertyLink: (propertyId: string) => ReactNode;
 };
 
 type Props = {
@@ -27,7 +25,7 @@ type Props = {
 export const LeaseAgreementsM = ({
   Slave,
 }: Props): JSX.Element => {
-  const urls = useUrls();
+  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ['lease_agreements'],
@@ -42,22 +40,22 @@ export const LeaseAgreementsM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <Slave
-        asyncData={{ tag: 'pending' }}
-        getLeaseAgreementUrl={() => ''}
-        getTenantUrl={() => ''}
-        getPropertyUrl={() => ''}
-      />
-    ))
-    .with({ tag: 'ready' }, ({ url }) => (
-      <Slave
-        asyncData={asyncData}
-        getLeaseAgreementUrl={url.leaseDetail}
-        getTenantUrl={url.tenantDetail}
-        getPropertyUrl={url.propertyDetail}
-      />
-    ))
-    .exhaustive();
+  const onDetailClick = (id: string): void => {
+    navigate({ to: '/app/leases/$id', params: { id } });
+  };
+
+  const renderTenantLink = (tenantId: string): ReactNode =>
+    <Link to="/app/tenants/$id" params={{ id: tenantId }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+
+  const renderPropertyLink = (propertyId: string): ReactNode =>
+    <Link to="/app/properties/$id" params={{ id: propertyId }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+
+  return (
+    <Slave
+      asyncData={asyncData}
+      onDetailClick={onDetailClick}
+      renderTenantLink={renderTenantLink}
+      renderPropertyLink={renderPropertyLink}
+    />
+  );
 };

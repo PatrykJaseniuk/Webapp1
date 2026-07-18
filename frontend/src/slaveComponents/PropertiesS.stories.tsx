@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { PropertiesS } from './PropertiesS';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 
@@ -48,9 +48,9 @@ const meta: Meta<typeof PropertiesS> = {
   component: PropertiesS,
   decorators: [
     (Story) => (
-      <MemoryRouter>
+      <MemoryRouterProvider>
         <Story />
-      </MemoryRouter>
+      </MemoryRouterProvider>
     ),
   ],
   args: {

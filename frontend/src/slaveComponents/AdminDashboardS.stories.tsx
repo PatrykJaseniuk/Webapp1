@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { AdminDashboard } from './AdminDashboardS';
 
 const cards = [
@@ -21,9 +21,9 @@ const meta: Meta<typeof AdminDashboard> = {
   component: AdminDashboard,
   decorators: [
     (Story) => (
-      <MemoryRouter>
+      <MemoryRouterProvider>
         <Story />
-      </MemoryRouter>
+      </MemoryRouterProvider>
     ),
   ],
   args: {

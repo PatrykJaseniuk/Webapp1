@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import { useNavigate, Link } from '@tanstack/react-router';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
 
@@ -76,8 +75,8 @@ const enrich = (row: TenantWithLeases): EnrichedTenantRow => {
 
 export type TenantsSProps = {
   readonly asyncData: AsyncData<readonly EnrichedTenantRow[]>;
-  readonly getDetailUrl: (id: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
+  readonly onDetailClick: (id: string) => void;
+  readonly renderPropertyLink: (propertyId: string) => ReactNode;
 };
 
 type Props = {
@@ -87,7 +86,7 @@ type Props = {
 export const TenantsM = ({
   TableComponent,
 }: Props): JSX.Element => {
-  const urls = useUrls();
+  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ['tenants'],
@@ -105,20 +104,12 @@ export const TenantsM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <TableComponent
-        asyncData={{ tag: 'pending' }}
-        getDetailUrl={() => ''}
-        getPropertyUrl={() => ''}
-      />
-    ))
-    .with({ tag: 'ready' }, ({ url }) => (
-      <TableComponent
-        asyncData={asyncData}
-        getDetailUrl={url.tenantDetail}
-        getPropertyUrl={url.propertyDetail}
-      />
-    ))
-    .exhaustive();
+  const onDetailClick = (id: string): void => {
+    navigate({ to: '/app/tenants/$id', params: { id } });
+  };
+
+  const renderPropertyLink = (propertyId: string): ReactNode =>
+    <Link to="/app/properties/$id" params={{ id: propertyId }} className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 hover:bg-blue-100" />;
+
+  return <TableComponent asyncData={asyncData} onDetailClick={onDetailClick} renderPropertyLink={renderPropertyLink} />;
 };

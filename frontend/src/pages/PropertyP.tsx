@@ -1,8 +1,12 @@
-import { useParams } from 'react-router-dom';
+import { useParams } from '@tanstack/react-router';
 import { PropertyDetailM } from '@/masterComponents/PropertyM';
 import { PropertyDetailS } from '@/slaveComponents/PropertyS';
 
+type Params = Readonly<{
+  id: string;
+}>;
+
 export const PropertyDetailPage = (): JSX.Element => {
-  const { id } = useParams<{ readonly id: string }>();
-  return <PropertyDetailM Slave={PropertyDetailS} id={id!} />;
+  const { id } = useParams({ strict: false }) as Params;
+  return <PropertyDetailM Slave={PropertyDetailS} id={id} />;
 };

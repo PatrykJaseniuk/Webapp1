@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
+import { Link } from '@tanstack/react-router';
 import { useMutation } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 
 export type SignupInput = {
   readonly email: string;
@@ -15,16 +14,18 @@ export type SignupFormProps = {
   readonly onSubmit: (input: SignupInput) => void;
   readonly isLoading: boolean;
   readonly error: string | null;
-  readonly loginUrl: string;
+  readonly loginLink: ReactNode;
 };
 
 type Props = {
   readonly Form: ComponentType<SignupFormProps>;
 };
 
-export const Signup = ({ Form }: Props): JSX.Element => {
-  const urls = useUrls();
+const loginLinkPlaceholder = (
+  <span className="font-medium text-blue-600 hover:text-blue-500">Zaloguj się</span>
+);
 
+export const Signup = ({ Form }: Props): JSX.Element => {
   const mutation = useMutation({
     mutationFn: async (input: SignupInput) => {
       const result = await backendConnector.auth.signUp({
@@ -44,15 +45,12 @@ export const Signup = ({ Form }: Props): JSX.Element => {
 
   const error: string | null = mutation.error?.message ?? null;
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => <Form onSubmit={() => {}} isLoading loginUrl="" error={null} />)
-    .with({ tag: 'ready' }, ({ url }) => (
-      <Form
-        onSubmit={(input) => { mutation.mutate(input); }}
-        isLoading={mutation.isPending}
-        error={error}
-        loginUrl={url.login()}
-      />
-    ))
-    .exhaustive();
+  return (
+    <Form
+      onSubmit={(input) => { mutation.mutate(input); }}
+      isLoading={mutation.isPending}
+      error={error}
+      loginLink={<Link to="/login">{loginLinkPlaceholder}</Link>}
+    />
+  );
 };

@@ -1,6 +1,6 @@
 import { DashboardSummaryM } from '@/masterComponents/DashboardSummaryM';
 import { AdminDashboard } from '@/slaveComponents/AdminDashboardS';
 
-export const AdminDashboardPage = (): JSX.Element => (
+export const DashboardPage = (): JSX.Element => (
   <DashboardSummaryM Slave={AdminDashboard} />
 );

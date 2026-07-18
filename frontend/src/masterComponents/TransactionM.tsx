@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
 
@@ -16,9 +15,9 @@ export type TransactionDetailData = Readonly<{
 
 export type TransactionDetailViewProps = {
   readonly asyncData: AsyncData<TransactionDetailData>;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getBackUrl: () => string;
+  readonly propertyLink: ReactNode;
+  readonly leaseLink: ReactNode;
+  readonly backLink: ReactNode;
 };
 
 type Props = {
@@ -30,8 +29,6 @@ export const TransactionDetail = ({
   DetailViewComponent,
   id,
 }: Props): JSX.Element => {
-  const urls = useUrls();
-
   const query = useQuery({
     queryKey: ['transaction', id],
     queryFn: async (): Promise<TransactionDetailData> => {
@@ -68,22 +65,16 @@ export const TransactionDetail = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <DetailViewComponent
-        asyncData={{ tag: 'pending' }}
-        getPropertyUrl={() => ''}
-        getLeaseUrl={() => ''}
-        getBackUrl={() => ''}
-      />
-    ))
-    .with({ tag: 'ready' }, ({ url }) => (
-      <DetailViewComponent
-        asyncData={asyncData}
-        getPropertyUrl={url.propertyDetail}
-        getLeaseUrl={url.leaseDetail}
-        getBackUrl={url.transactionsList}
-      />
-    ))
-    .exhaustive();
+  const propertyLink: ReactNode = <Link to="/app/properties/$id" params={{ id }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+  const leaseLink: ReactNode = <Link to="/app/leases/$id" params={{ id }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+  const backLink: ReactNode = <Link to="/app/transactions" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">← Powrót</Link>;
+
+  return (
+    <DetailViewComponent
+      asyncData={asyncData}
+      propertyLink={propertyLink}
+      leaseLink={leaseLink}
+      backLink={backLink}
+    />
+  );
 };

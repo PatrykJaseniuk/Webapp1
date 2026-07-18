@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { AppLayoutShell } from './AppLayouS';
 import type { AppLayoutSProps, NavItem } from '@/masterComponents/AppLayoutM';
 
@@ -27,9 +27,9 @@ const meta: Meta<typeof AppLayoutShell> = {
   component: AppLayoutShell,
   decorators: [
     (Story) => (
-      <MemoryRouter>
+      <MemoryRouterProvider>
         <Story />
-      </MemoryRouter>
+      </MemoryRouterProvider>
     ),
   ],
   args: {

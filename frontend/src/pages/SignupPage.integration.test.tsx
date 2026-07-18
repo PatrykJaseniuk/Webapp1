@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import type { AuthState } from '@/hooks/AuthContext';
 
 // ──────────────────────────────────────────────────────────────
@@ -51,9 +51,9 @@ describe('SignupPage (integration)', () => {
 
   it('renders the signup form for unauthenticated users', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <SignupPage />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('Zarejestruj się')).toBeInTheDocument();
@@ -66,9 +66,9 @@ describe('SignupPage (integration)', () => {
 
   it('renders the login link', () => {
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <SignupPage />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     const loginLink = screen.getByText('Zaloguj się');
@@ -80,9 +80,9 @@ describe('SignupPage (integration)', () => {
     mockSignUp.mockResolvedValue({ data: {}, error: null });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <SignupPage />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     const user = userEvent.setup();
@@ -113,9 +113,9 @@ describe('SignupPage (integration)', () => {
     });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <SignupPage />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     const user = userEvent.setup();
@@ -136,9 +136,9 @@ describe('SignupPage (integration)', () => {
     );
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <SignupPage />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     const user = userEvent.setup();
@@ -157,9 +157,9 @@ describe('SignupPage (integration)', () => {
     mockUseAuth.mockReturnValue({ tag: 'loading' });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <SignupPage />
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();

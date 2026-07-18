@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouterProvider } from '@/test-router-utils';
 import { RoleRedirect } from './RoleRedirectM';
 import type { AuthState } from '@/hooks/AuthContext';
 
@@ -31,11 +31,11 @@ describe('RoleRedirect (integration)', () => {
     mockUseAuth.mockReturnValue({ tag: 'loading' });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('Loading…')).toBeInTheDocument();
@@ -46,11 +46,11 @@ describe('RoleRedirect (integration)', () => {
     mockUseAuth.mockReturnValue({ tag: 'unauthenticated' });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.getByText('Content')).toBeInTheDocument();
@@ -65,11 +65,11 @@ describe('RoleRedirect (integration)', () => {
     });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     // Navigated away, so content is not present
@@ -85,11 +85,11 @@ describe('RoleRedirect (integration)', () => {
     });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.queryByText('Content')).not.toBeInTheDocument();
@@ -104,11 +104,11 @@ describe('RoleRedirect (integration)', () => {
     });
 
     render(
-      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <MemoryRouterProvider>
         <RoleRedirect LoadingComponent={<span>Loading…</span>}>
           <p>Content</p>
         </RoleRedirect>
-      </MemoryRouter>,
+      </MemoryRouterProvider>,
     );
 
     expect(screen.queryByText('Content')).not.toBeInTheDocument();

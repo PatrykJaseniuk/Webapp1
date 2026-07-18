@@ -1,14 +1,14 @@
-import { Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type LeaseAgreementData = NonNullable<Extract<LeaseAgreementSProps['asyncData'], { tag: 'fulfilled' }>['data']>;
-
-type LeaseStatusKey = NonNullable<LeaseAgreementData['leaseAgreement']>['lease_status'];
-type TransactionTypeKey = LeaseAgreementData['transactions'][number]['type'];
-type TransactionStatusKey = LeaseAgreementData['transactions'][number]['transaction_status'];
+type Data = Extract<LeaseAgreementSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type LeaseAgreementData = NonNullable<Data['leaseAgreement']>;
+type LeaseStatusKey = LeaseAgreementData['lease_status'];
+type TransactionTypeKey = Data['transactions'][number]['type'];
+type TransactionStatusKey = Data['transactions'][number]['transaction_status'];
 
 const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatusKey, string>> = Object.freeze({
   active: 'Aktywna',
@@ -56,23 +56,22 @@ const txnAmountClass = (amount: number): string =>
   `text-sm font-medium ${amount >= 0 ? 'text-green-700' : 'text-red-700'}`;
 
 type DetailContentProps = {
-  readonly data: LeaseAgreementData;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
+  readonly data: Data;
+  readonly onTenantClick: (tenantId: string) => void;
+  readonly onPropertyClick: (propertyId: string) => void;
+  readonly onTransactionClick: (transactionId: string) => void;
+  readonly editLink: ReactNode;
+  readonly backLink: ReactNode;
 };
 
 const DetailContent = ({
   data,
-  getTenantUrl,
-  getPropertyUrl,
-  getTransactionUrl,
-  getEditUrl,
-  getBackUrl,
+  onTenantClick,
+  onPropertyClick,
+  onTransactionClick,
+  editLink,
+  backLink,
 }: DetailContentProps): JSX.Element => {
-  const navigate = useNavigate();
   const l = data.leaseAgreement;
   return l === null ?
     (
@@ -82,172 +81,80 @@ const DetailContent = ({
     ) :
     (
       <div className="mx-auto max-w-4xl space-y-6 py-8">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <Link to={getBackUrl()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
-              ← Powrót do listy
-            </Link>
-            <h1 className="mt-1 text-2xl font-bold text-gray-900">
-              Umowa najmu: {l.properties?.name ?? ''}
-            </h1>
+            {backLink}
+            <h1 className="mt-1 text-2xl font-bold text-gray-900">Umowa najmu: {l.properties?.name ?? ''}</h1>
           </div>
-          <div className="flex gap-2">
-            <Link
-              to={getEditUrl()}
-              className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-            >
-              Edytuj
-            </Link>
-          </div>
+          <div className="flex gap-2">{editLink}</div>
         </div>
 
-        {/* Lease Data */}
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Dane umowy</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div>
-              <p className={labelClass}>Najemca</p>
-              <Link
-                to={getTenantUrl(l.tenant_id)}
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                {l.tenants ? `${l.tenants.first_name ?? ''} ${l.tenants.last_name ?? ''}`.trim() : ''}
-              </Link>
-            </div>
-            <div>
-              <p className={labelClass}>Nieruchomość</p>
-              <Link
-                to={getPropertyUrl(l.property_id)}
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                {l.properties?.name ?? ''}
-              </Link>
-            </div>
-            <div>
-              <p className={labelClass}>Status</p>
-              <span className={leaseStatusPillClass(l.lease_status)}>
-                {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
-              </span>
-            </div>
-            <div>
-              <p className={labelClass}>Data rozpoczęcia</p>
-              <p className={valueClass}>{l.start_date}</p>
-            </div>
-            <div>
-              <p className={labelClass}>Data zakończenia</p>
-              <p className={valueClass}>{l.end_date ?? 'Bezterminowo'}</p>
-            </div>
-            <div>
-              <p className={labelClass}>Czynsz miesięczny</p>
-              <p className={valueClass}>{l.monthly_rent.toLocaleString('pl-PL')} zł</p>
-            </div>
-            <div>
-              <p className={labelClass}>Kaucja</p>
-              <p className={valueClass}>{l.deposit_amount.toLocaleString('pl-PL')} zł</p>
-            </div>
+            <div><p className={labelClass}>Najemca</p><button type="button" onClick={() => { onTenantClick(l.tenant_id); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">{(l.tenants ? `${l.tenants.first_name ?? ''} ${l.tenants.last_name ?? ''}`.trim() : '')}</button></div>
+            <div><p className={labelClass}>Nieruchomość</p><button type="button" onClick={() => { onPropertyClick(l.property_id); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">{l.properties?.name ?? ''}</button></div>
+            <div><p className={labelClass}>Status</p><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></div>
+            <div><p className={labelClass}>Data rozpoczęcia</p><p className={valueClass}>{l.start_date}</p></div>
+            <div><p className={labelClass}>Data zakończenia</p><p className={valueClass}>{l.end_date ?? 'Bezterminowo'}</p></div>
+            <div><p className={labelClass}>Czynsz miesięczny</p><p className={valueClass}>{l.monthly_rent.toLocaleString('pl-PL')} zł</p></div>
+            <div><p className={labelClass}>Kaucja</p><p className={valueClass}>{l.deposit_amount.toLocaleString('pl-PL')} zł</p></div>
           </div>
-          {l.notes !== null ?
-            <div className="mt-4">
-              <p className={labelClass}>Notatki</p>
-              <p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{l.notes}</p>
-            </div> :
-            undefined}
+          {l.notes !== null ? <div className="mt-4"><p className={labelClass}>Notatki</p><p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{l.notes}</p></div> : undefined}
         </div>
 
-        {/* Transactions */}
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Transakcje</h2>
           {data.transactions.length === 0 ?
             <p className="text-sm text-gray-500">Brak transakcji.</p> :
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200 text-gray-500">
-                    <th className="py-2 pr-4 font-medium">Data</th>
-                    <th className="py-2 pr-4 font-medium">Typ</th>
-                    <th className="py-2 pr-4 font-medium">Opis</th>
-                    <th className="py-2 pr-4 font-medium text-right">Kwota</th>
-                    <th className="py-2 pr-4 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.transactions.map((tx) => (
-                    <tr
-                      key={tx.id}
-                      className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                      onClick={() => { navigate(getTransactionUrl(tx.id)); }}
-                    >
-                      <td className="py-2 pr-4 text-gray-600">{tx.due_date}</td>
-                      <td className="py-2 pr-4 text-gray-600">
-                        {TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}
-                      </td>
-                      <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
-                      <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
-                        {tx.amount.toLocaleString('pl-PL')} zł
-                      </td>
-                      <td className="py-2 pr-4">
-                        <span className={txnStatusPillClass(tx.transaction_status)}>
-                          {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>}
+            <div className="overflow-x-auto"><table className="w-full border-collapse text-left text-sm">
+              <thead><tr className="border-b border-gray-200 text-gray-500"><th className="py-2 pr-4 font-medium">Data</th><th className="py-2 pr-4 font-medium">Typ</th><th className="py-2 pr-4 font-medium">Opis</th><th className="py-2 pr-4 font-medium text-right">Kwota</th><th className="py-2 pr-4 font-medium">Status</th></tr></thead>
+              <tbody>{data.transactions.map((tx) => (
+                <tr key={tx.id} className="cursor-pointer border-b border-gray-100 hover:bg-blue-50" onClick={() => { onTransactionClick(tx.id); }}>
+                  <td className="py-2 pr-4 text-gray-600">{tx.due_date}</td>
+                  <td className="py-2 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
+                  <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
+                  <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
+                  <td className="py-2 pr-4"><span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span></td>
+                </tr>
+              ))}</tbody>
+            </table></div>}
         </div>
 
-        {/* Attachments */}
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Załączniki</h2>
           {data.attachments.length === 0 ?
             <p className="text-sm text-gray-500">Brak załączników.</p> :
-            <div className="space-y-2">
-              {data.attachments.map((a) => (
-                <div key={a.id} className="flex items-center justify-between rounded border border-gray-100 px-4 py-2">
-                  <div>
-                    <a
-                      href={a.file_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                    >
-                      {a.file_name}
-                    </a>
-                    {a.description !== null ?
-                      <p className="text-xs text-gray-500">{a.description}</p> :
-                      undefined}
-                  </div>
-                  <span className="text-xs text-gray-400">
-                    {a.file_type ?? 'inny'}
-                    {a.file_size !== null ? ` · ${(a.file_size / 1024).toFixed(0)} KB` : ''}
-                  </span>
-                </div>
-              ))}
-            </div>}
+            <div className="space-y-2">{data.attachments.map((a) => (
+              <div key={a.id} className="flex items-center justify-between rounded border border-gray-100 px-4 py-2">
+                <div><a href={a.file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">{a.file_name}</a>{a.description !== null ? <p className="text-xs text-gray-500">{a.description}</p> : undefined}</div>
+                <span className="text-xs text-gray-400">{a.file_type ?? 'inny'}{a.file_size !== null ? ` · ${(a.file_size / 1024).toFixed(0)} KB` : ''}</span>
+              </div>
+            ))}</div>}
         </div>
       </div>
     );
 };
 
-export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => (
-  <div className="min-h-[400px]">
-    {match(props.asyncData)
-      .with({ tag: 'pending' }, () => <LoadingSpinner />)
-      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
-        <ErrorMessage message={message} onRetry={onRetry} />
-      ))
-      .with({ tag: 'fulfilled' }, ({ data }) => (
-        <DetailContent
-          data={data}
-          getTenantUrl={props.getTenantUrl}
-          getPropertyUrl={props.getPropertyUrl}
-          getTransactionUrl={props.getTransactionUrl}
-          getEditUrl={props.getEditUrl}
-          getBackUrl={props.getBackUrl}
-        />
-      ))
-      .exhaustive()}
-  </div>
-);
+export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => {
+  const { asyncData, nav } = props;
+
+  return (
+    <div className="min-h-[400px]">
+      {match(asyncData)
+        .with({ tag: 'pending' }, () => <LoadingSpinner />)
+        .with({ tag: 'rejected' }, ({ message, onRetry }) => (<ErrorMessage message={message} onRetry={onRetry} />))
+        .with({ tag: 'fulfilled' }, ({ data }) => (
+          <DetailContent
+            data={data}
+            onTenantClick={nav.toTenant}
+            onPropertyClick={nav.toProperty}
+            onTransactionClick={nav.toTransaction}
+            editLink={nav.editLink}
+            backLink={nav.backLink}
+          />
+        ))
+        .exhaustive()}
+    </div>
+  );
+};

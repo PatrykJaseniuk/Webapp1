@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { PropertySProps } from '@/masterComponents/PropertyM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -83,188 +83,93 @@ const financialValueClass = 'text-lg font-semibold';
 type DetailContentProps = {
   readonly data: Data;
   readonly property: PropertyData;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getLeaseUrl: (leaseId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
+  readonly onTenantClick: (tenantId: string) => void;
+  readonly onLeaseClick: (leaseId: string) => void;
+  readonly onTransactionClick: (transactionId: string) => void;
+  readonly editLink: ReactNode;
+  readonly backLink: ReactNode;
 };
 
 const DetailContent = ({
   data,
   property: p,
-  getTenantUrl,
-  getLeaseUrl,
-  getTransactionUrl,
-  getEditUrl,
-  getBackUrl,
+  onTenantClick,
+  onLeaseClick,
+  onTransactionClick,
+  editLink,
+  backLink,
 }: DetailContentProps): JSX.Element => {
-  const navigate = useNavigate();
   const occupancy = data.occupancy;
   const financial = data.financial;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <Link to={getBackUrl()} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
-            ← Powrót do listy
-          </Link>
+          {backLink}
           <h1 className="mt-1 text-2xl font-bold text-gray-900">{p.name}</h1>
         </div>
         <div className="flex gap-2">
-          <Link
-            to={getEditUrl()}
-            className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            Edytuj
-          </Link>
+          {editLink}
         </div>
       </div>
 
-      {/* Property Data */}
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Dane nieruchomości</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div>
-            <p className={labelClass}>Adres</p>
-            <p className={valueClass}>{p.address}</p>
-          </div>
-          <div>
-            <p className={labelClass}>Typ</p>
-            <p className={valueClass}>{TYPE_LABEL[p.property_type] ?? p.property_type}</p>
-          </div>
-          <div>
-            <p className={labelClass}>Status</p>
-            <span className={statusPillClass(p.property_status)}>
-              {STATUS_LABEL[p.property_status]}
-            </span>
-          </div>
-          <div>
-            <p className={labelClass}>Powierzchnia</p>
-            <p className={valueClass}>{p.size_sqm !== null ? `${p.size_sqm} m²` : '—'}</p>
-          </div>
-          <div>
-            <p className={labelClass}>Sypialnie</p>
-            <p className={valueClass}>{p.bedrooms ?? '—'}</p>
-          </div>
+          <div><p className={labelClass}>Adres</p><p className={valueClass}>{p.address}</p></div>
+          <div><p className={labelClass}>Typ</p><p className={valueClass}>{TYPE_LABEL[p.property_type] ?? p.property_type}</p></div>
+          <div><p className={labelClass}>Status</p><span className={statusPillClass(p.property_status)}>{STATUS_LABEL[p.property_status]}</span></div>
+          <div><p className={labelClass}>Powierzchnia</p><p className={valueClass}>{p.size_sqm !== null ? `${p.size_sqm} m²` : '—'}</p></div>
+          <div><p className={labelClass}>Sypialnie</p><p className={valueClass}>{p.bedrooms ?? '—'}</p></div>
           <div>
             <p className={labelClass}>Aktualny najemca</p>
             {occupancy?.current_tenant_name !== null && occupancy?.current_tenant_name !== undefined && occupancy?.tenant_id !== null && occupancy?.tenant_id !== undefined ?
-              <Link
-                to={getTenantUrl(occupancy.tenant_id)}
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                {occupancy.current_tenant_name}
-              </Link> :
+              <button type="button" onClick={() => { onTenantClick(occupancy.tenant_id!); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">{occupancy.current_tenant_name}</button> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
           <div>
             <p className={labelClass}>Aktualna umowa</p>
             {occupancy?.current_lease_id !== null && occupancy?.current_lease_id !== undefined ?
-              <Link
-                to={getLeaseUrl(occupancy.current_lease_id)}
-                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
-              >
-                Umowa najmu
-              </Link> :
+              <button type="button" onClick={() => { onLeaseClick(occupancy.current_lease_id!); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">Umowa najmu</button> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
         </div>
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div>
-            <p className={labelClass}>Czynsz miesięczny</p>
-            <p className={valueClass}>{p.monthly_rent.toLocaleString('pl-PL')} zł</p>
-          </div>
-          <div>
-            <p className={labelClass}>Kaucja</p>
-            <p className={valueClass}>{p.deposit_amount.toLocaleString('pl-PL')} zł</p>
-          </div>
+          <div><p className={labelClass}>Czynsz miesięczny</p><p className={valueClass}>{p.monthly_rent.toLocaleString('pl-PL')} zł</p></div>
+          <div><p className={labelClass}>Kaucja</p><p className={valueClass}>{p.deposit_amount.toLocaleString('pl-PL')} zł</p></div>
         </div>
-        {p.notes !== null ?
-          <div className="mt-4">
-            <p className={labelClass}>Notatki</p>
-            <p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{p.notes}</p>
-          </div> :
-          undefined}
+        {p.notes !== null ? <div className="mt-4"><p className={labelClass}>Notatki</p><p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{p.notes}</p></div> : undefined}
       </div>
 
-      {/* Financial Summary */}
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Podsumowanie finansowe</h2>
         <div className="grid grid-cols-3 gap-6">
-          <div className="rounded-lg bg-green-50 p-4 text-center">
-            <p className={financialLabelClass}>Przychody</p>
-            <p className={`${financialValueClass} text-green-700`}>
-              {(financial?.total_income ?? 0).toLocaleString('pl-PL')} zł
-            </p>
-          </div>
-          <div className="rounded-lg bg-red-50 p-4 text-center">
-            <p className={financialLabelClass}>Wydatki</p>
-            <p className={`${financialValueClass} text-red-700`}>
-              {(financial?.total_expenses ?? 0).toLocaleString('pl-PL')} zł
-            </p>
-          </div>
-          <div className="rounded-lg bg-blue-50 p-4 text-center">
-            <p className={financialLabelClass}>Bilans</p>
-            <p
-              className={`${financialValueClass} ${(financial?.net_profit ?? 0) >= 0 ? 'text-blue-700' : 'text-red-700'
-                }`}
-            >
-              {(financial?.net_profit ?? 0).toLocaleString('pl-PL')} zł
-            </p>
-          </div>
+          <div className="rounded-lg bg-green-50 p-4 text-center"><p className={financialLabelClass}>Przychody</p><p className={`${financialValueClass} text-green-700`}>{(financial?.total_income ?? 0).toLocaleString('pl-PL')} zł</p></div>
+          <div className="rounded-lg bg-red-50 p-4 text-center"><p className={financialLabelClass}>Wydatki</p><p className={`${financialValueClass} text-red-700`}>{(financial?.total_expenses ?? 0).toLocaleString('pl-PL')} zł</p></div>
+          <div className="rounded-lg bg-blue-50 p-4 text-center"><p className={financialLabelClass}>Bilans</p><p className={`${financialValueClass} ${(financial?.net_profit ?? 0) >= 0 ? 'text-blue-700' : 'text-red-700'}`}>{(financial?.net_profit ?? 0).toLocaleString('pl-PL')} zł</p></div>
         </div>
       </div>
 
-      {/* Transactions */}
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Ostatnie transakcje</h2>
         {data.transactions.length === 0 ?
           <p className="text-sm text-gray-500">Brak transakcji.</p> :
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="py-2 pr-4 font-medium">Data</th>
-                  <th className="py-2 pr-4 font-medium">Typ</th>
-                  <th className="py-2 pr-4 font-medium">Opis</th>
-                  <th className="py-2 pr-4 font-medium text-right">Kwota</th>
-                  <th className="py-2 pr-4 font-medium">Umowa</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                </tr>
-              </thead>
+              <thead><tr className="border-b border-gray-200 text-gray-500"><th className="py-2 pr-4 font-medium">Data</th><th className="py-2 pr-4 font-medium">Typ</th><th className="py-2 pr-4 font-medium">Opis</th><th className="py-2 pr-4 font-medium text-right">Kwota</th><th className="py-2 pr-4 font-medium">Umowa</th><th className="py-2 pr-4 font-medium">Status</th></tr></thead>
               <tbody>
                 {data.transactions.map((tx) => (
-                  <tr
-                    key={tx.id}
-                    className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                    onClick={() => { navigate(getTransactionUrl(tx.id)); }}
-                  >
+                  <tr key={tx.id} className="cursor-pointer border-b border-gray-100 hover:bg-blue-50" onClick={() => { onTransactionClick(tx.id); }}>
                     <td className="py-2 pr-4 text-gray-600">{tx.due_date}</td>
-                    <td className="py-2 pr-4 text-gray-600">
-                      {TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}
-                    </td>
+                    <td className="py-2 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
                     <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
-                    <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>
-                      {tx.amount.toLocaleString('pl-PL')} zł
-                    </td>
+                    <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
                     <td className="py-2 pr-4">
                       {tx.lease_id !== null ?
-                        <Link
-                          to={getLeaseUrl(tx.lease_id)}
-                          onClick={(e) => { e.stopPropagation(); }}
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
-                        >
-                          Umowa
-                        </Link> :
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onLeaseClick(tx.lease_id!); }} className="text-blue-600 hover:text-blue-800 hover:underline">Umowa</button> :
                         <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="py-2 pr-4">
-                      <span className={txnStatusPillClass(tx.transaction_status)}>
-                        {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
-                      </span>
-                    </td>
+                    <td className="py-2 pr-4"><span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -272,50 +177,21 @@ const DetailContent = ({
           </div>}
       </div>
 
-      {/* Leases */}
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Historia najmu</h2>
         {data.leases.length === 0 ?
           <p className="text-sm text-gray-500">Brak umów najmu.</p> :
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 text-gray-500">
-                  <th className="py-2 pr-4 font-medium">Najemca</th>
-                  <th className="py-2 pr-4 font-medium">Od</th>
-                  <th className="py-2 pr-4 font-medium">Do</th>
-                  <th className="py-2 pr-4 font-medium text-right">Czynsz</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                </tr>
-              </thead>
+              <thead><tr className="border-b border-gray-200 text-gray-500"><th className="py-2 pr-4 font-medium">Najemca</th><th className="py-2 pr-4 font-medium">Od</th><th className="py-2 pr-4 font-medium">Do</th><th className="py-2 pr-4 font-medium text-right">Czynsz</th><th className="py-2 pr-4 font-medium">Status</th></tr></thead>
               <tbody>
                 {data.leases.map((l) => (
-                  <tr
-                    key={l.id}
-                    className="cursor-pointer border-b border-gray-100 hover:bg-blue-50"
-                    onClick={() => { navigate(getLeaseUrl(l.id)); }}
-                  >
-                    <td className="py-2 pr-4">
-                      <Link
-                        to={getTenantUrl(l.tenant_id)}
-                        onClick={(e) => { e.stopPropagation(); }}
-                        className="text-blue-600 hover:text-blue-800 hover:underline"
-                      >
-                        {l.tenants.first_name} {l.tenants.last_name}
-                      </Link>
-                    </td>
-                    <td className="py-2 pr-4 text-gray-600">
-                      {l.start_date}
-                    </td>
+                  <tr key={l.id} className="cursor-pointer border-b border-gray-100 hover:bg-blue-50" onClick={() => { onLeaseClick(l.id); }}>
+                    <td className="py-2 pr-4"><button type="button" onClick={(e) => { e.stopPropagation(); onTenantClick(l.tenant_id); }} className="text-blue-600 hover:text-blue-800 hover:underline">{l.tenants.first_name} {l.tenants.last_name}</button></td>
+                    <td className="py-2 pr-4 text-gray-600">{l.start_date}</td>
                     <td className="py-2 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
-                    <td className="py-2 pr-4 text-right text-gray-900">
-                      {l.monthly_rent.toLocaleString('pl-PL')} zł
-                    </td>
-                    <td className="py-2 pr-4">
-                      <span className={leaseStatusPillClass(l.lease_status)}>
-                        {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
-                      </span>
-                    </td>
+                    <td className="py-2 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
+                    <td className="py-2 pr-4"><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></td>
                   </tr>
                 ))}
               </tbody>
@@ -323,34 +199,16 @@ const DetailContent = ({
           </div>}
       </div>
 
-      {/* Attachments */}
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Załączniki</h2>
         {data.attachments.length === 0 ?
           <p className="text-sm text-gray-500">Brak załączników.</p> :
-          <div className="space-y-2">
-            {data.attachments.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded border border-gray-100 px-4 py-2">
-                <div>
-                  <a
-                    href={a.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                  >
-                    {a.file_name}
-                  </a>
-                  {a.description !== null ?
-                    <p className="text-xs text-gray-500">{a.description}</p> :
-                    undefined}
-                </div>
-                <span className="text-xs text-gray-400">
-                  {a.file_type ?? 'inny'}
-                  {a.file_size !== null ? ` · ${(a.file_size / 1024).toFixed(0)} KB` : ''}
-                </span>
-              </div>
-            ))}
-          </div>}
+          <div className="space-y-2">{data.attachments.map((a) => (
+            <div key={a.id} className="flex items-center justify-between rounded border border-gray-100 px-4 py-2">
+              <div><a href={a.file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">{a.file_name}</a>{a.description !== null ? <p className="text-xs text-gray-500">{a.description}</p> : undefined}</div>
+              <span className="text-xs text-gray-400">{a.file_type ?? 'inny'}{a.file_size !== null ? ` · ${(a.file_size / 1024).toFixed(0)} KB` : ''}</span>
+            </div>
+          ))}</div>}
       </div>
     </div>
   );
@@ -360,23 +218,19 @@ export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
   <div className="min-h-[400px]">
     {match(props.asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
-      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
-        <ErrorMessage message={message} onRetry={onRetry} />
-      ))
+      .with({ tag: 'rejected' }, ({ message, onRetry }) => (<ErrorMessage message={message} onRetry={onRetry} />))
       .with({ tag: 'fulfilled' }, ({ data }) =>
         data.property !== null ?
           <DetailContent
             data={data}
             property={data.property}
-            getTenantUrl={props.getTenantUrl}
-            getLeaseUrl={props.getLeaseUrl}
-            getTransactionUrl={props.getTransactionUrl}
-            getEditUrl={props.getEditUrl}
-            getBackUrl={props.getBackUrl}
+            onTenantClick={props.onTenantClick}
+            onLeaseClick={props.onLeaseClick}
+            onTransactionClick={props.onTransactionClick}
+            editLink={props.editLink}
+            backLink={props.backLink}
           /> :
-          <div className="flex items-center justify-center">
-            <p className="text-sm text-gray-500">Property not found.</p>
-          </div>
+          <div className="flex items-center justify-center"><p className="text-sm text-gray-500">Property not found.</p></div>
       )
       .exhaustive()}
   </div>

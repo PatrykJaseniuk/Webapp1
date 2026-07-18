@@ -63,7 +63,7 @@
     const LABELS: Readonly<Record<LeaseStatus, string>> = { ... };
     const pillClass = (status: LeaseStatus): string => ...;
 - Import types ONLY from: `react` + their master.
-  EXCEPTION: may import from `react-router-dom` (see §2c).
+  EXCEPTION: may import from `@tanstack/react-router` (see §2c).
 - Types are not defined in slave component's file (the single inline
   derivation above is the only exception).
 - May import pure-render sibling slave components (e.g. `LoadingSpinner`, `ErrorMessage`)
@@ -114,24 +114,25 @@
 # 2c. SLAVE NAVIGATION
 # ───────────────────────────────────────────────────────────────
 
-- Slaves MAY import and use these from `react-router-dom`:
-    `Link`       — declarative navigation (replaces `<a href>`)
-    `NavLink`    — declarative navigation with active-state styling
-    `useNavigate` — imperative navigation in onClick handlers (row clicks, buttons)
-- `Link` and `NavLink` are stateless render components — they read router context.
-- `useNavigate` is a context consumer, not application state. It is the ONLY hook
-  allowed in slaves alongside `match` from `ts-pattern`.
+- Slaves are ROUTING-SYSTEM AGNOSTIC. They NEVER import `Link`, `useNavigate`,
+  or anything from `@tanstack/react-router`.
+- All navigation is provided by the master via props:
+    • Declarative links  → masters pass pre-built JSX elements (`<Link>...</Link>`)
+    • Imperative clicks → masters pass `onClick` callbacks
+    • Row clicks        → masters pass `onRowClick(id)` callbacks
+- This is the only architectural approach — no exceptions.
 
-  Declarative:
-    <Link to={getDetailUrl(id)} className="...">Label</Link>
+  Declarative (slave receives a pre-built link element):
+    {props.editLink}    <!-- master built <Link to={url}>Edytuj</Link> -->
 
-  Imperative (table rows):
-    const navigate = useNavigate();
-    <tr onClick={() => { navigate(getDetailUrl(row.id)); }}>
+  Imperative (slave receives a callback from master):
+    <button onClick={() => { props.onTenantClick(tenantId); }}>Najemca</button>
 
 - NEVER: `window.location.href = url` or `<a href={url}>` for internal navigation
   (these bypass the router and break SPA behavior). External links
   (file URLs, `target="_blank"`) may still use raw `<a>`.
+- NEVER: importing `Link`, `useNavigate`, `NavLink` from `@tanstack/react-router`
+  in any slave component.
 
 # ───────────────────────────────────────────────────────────────
 # 3. PAGE (pages/) — WIRING

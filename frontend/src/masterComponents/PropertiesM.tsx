@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import { useNavigate, Link } from '@tanstack/react-router';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData as DataFetchMode } from '@/generic';
 
@@ -10,8 +9,8 @@ type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['R
 
 export type PropertiesSProps = {
   readonly asyncData: DataFetchMode<readonly PropertyOccupancyRow[]>;
-  readonly getDetailUrl: (id: string) => string;
-  readonly getTenantUrl: (tenantId: string) => string;
+  readonly onDetailClick: (id: string) => void;
+  readonly renderTenantLink: (tenantId: string) => ReactNode;
 };
 
 type Props = {
@@ -21,7 +20,7 @@ type Props = {
 export const PropertiesM = ({
   Slave,
 }: Props): JSX.Element => {
-  const urls = useUrls();
+  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ['properties'],
@@ -37,20 +36,12 @@ export const PropertiesM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <Slave
-        asyncData={{ tag: 'pending' }}
-        getDetailUrl={() => ''}
-        getTenantUrl={() => ''}
-      />
-    ))
-    .with({ tag: 'ready' }, ({ url }) => (
-      <Slave
-        asyncData={asyncData}
-        getDetailUrl={url.propertyDetail}
-        getTenantUrl={url.tenantDetail}
-      />
-    ))
-    .exhaustive();
+  const onDetailClick = (id: string): void => {
+    navigate({ to: '/app/properties/$id', params: { id } });
+  };
+
+  const renderTenantLink = (tenantId: string): ReactNode =>
+    <Link to="/app/tenants/$id" params={{ id: tenantId }} className="text-blue-600 hover:text-blue-800 hover:underline" />;
+
+  return <Slave asyncData={asyncData} onDetailClick={onDetailClick} renderTenantLink={renderTenantLink} />;
 };

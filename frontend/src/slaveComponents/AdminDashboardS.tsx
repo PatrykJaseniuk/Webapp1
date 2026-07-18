@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { match } from 'ts-pattern';
 import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -62,15 +61,10 @@ export const AdminDashboard = ({
     </div>
 
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      {cards.map((card) => (
-        <Link
-          key={card.to}
-          to={card.to}
-          className={dashboardCardClass}
-        >
-          <p className="text-lg font-semibold text-gray-800">{card.title}</p>
-          <p className="mt-1 text-sm text-gray-500">{card.subtitle}</p>
-        </Link>
+      {cards.map((card, idx) => (
+        <div key={idx} className={dashboardCardClass}>
+          {card.link}
+        </div>
       ))}
     </div>
   </div>

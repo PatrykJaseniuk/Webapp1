@@ -1,8 +1,7 @@
-import { match } from 'ts-pattern';
+import { useNavigate, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { useUrls } from '@/hooks/useUrls';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
 
@@ -21,11 +20,13 @@ type LeaseAgreementWithRelationships = Readonly<{
 
 export type LeaseAgreementSProps = {
   readonly asyncData: AsyncData<LeaseAgreementWithRelationships>;
-  readonly getTenantUrl: (tenantId: string) => string;
-  readonly getPropertyUrl: (propertyId: string) => string;
-  readonly getTransactionUrl: (transactionId: string) => string;
-  readonly getEditUrl: () => string;
-  readonly getBackUrl: () => string;
+  readonly nav: Readonly<{
+    readonly toTenant: (tenantId: string) => void;
+    readonly toProperty: (propertyId: string) => void;
+    readonly toTransaction: (transactionId: string) => void;
+    readonly editLink: ReactNode;
+    readonly backLink: ReactNode;
+  }>;
 };
 
 type Props = {
@@ -37,7 +38,7 @@ export const LeaseAgreementDetailM = ({
   Slave,
   id,
 }: Props): JSX.Element => {
-  const urls = useUrls();
+  const navigate = useNavigate();
 
   const query = useQuery({
     queryKey: ['leaseAgreement', id],
@@ -77,26 +78,18 @@ export const LeaseAgreementDetailM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  return match(urls)
-    .with({ tag: 'pending' }, () => (
-      <Slave
-        asyncData={{ tag: 'pending' }}
-        getTenantUrl={() => ''}
-        getPropertyUrl={() => ''}
-        getTransactionUrl={() => ''}
-        getEditUrl={() => ''}
-        getBackUrl={() => ''}
-      />
-    ))
-    .with({ tag: 'ready' }, ({ url }) => (
-      <Slave
-        asyncData={asyncData}
-        getTenantUrl={url.tenantDetail}
-        getPropertyUrl={url.propertyDetail}
-        getTransactionUrl={url.transactionDetail}
-        getEditUrl={() => `${url.leaseDetail(id)}/edit`}
-        getBackUrl={url.leasesList}
-      />
-    ))
-    .exhaustive();
+  const nav = {
+    toTenant: (tenantId: string) => { navigate({ to: '/app/tenants/$id', params: { id: tenantId } }); },
+    toProperty: (propertyId: string) => { navigate({ to: '/app/properties/$id', params: { id: propertyId } }); },
+    toTransaction: (transactionId: string) => { navigate({ to: '/app/transactions/$id', params: { id: transactionId } }); },
+    editLink: <Link to="/app/leases/$id" params={{ id }} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">Edytuj</Link>,
+    backLink: <Link to="/app/leases" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">← Powrót do listy</Link>,
+  } as const;
+
+  return (
+    <Slave
+      asyncData={asyncData}
+      nav={nav}
+    />
+  );
 };
