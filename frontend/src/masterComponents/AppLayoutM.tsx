@@ -1,6 +1,6 @@
 import type { ReactNode, ComponentType } from 'react';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useAuth, type AppRole } from '@/hooks/AuthContext';
+import { useAuth } from '@/hooks/AuthContext';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { AsyncData } from '@/generic';
 
@@ -31,27 +31,6 @@ const LABELS: Readonly<Record<string, string>> = {
   payments: 'Płatności',
 };
 
-// ── Per-role nav key sets ──
-
-const ADMIN_LANDLORD_KEYS: readonly string[] = [
-  'dashboard',
-  'properties',
-  'tenants',
-  'leases',
-  'transactions',
-];
-
-const TENANT_KEYS: readonly string[] = [
-  'dashboard',
-  'contracts',
-  'payments',
-];
-
-const navKeys = (role: AppRole): readonly string[] =>
-  role === 'tenant' ? TENANT_KEYS : ADMIN_LANDLORD_KEYS;
-
-// ── Sidebar link class (pure, shared with slave — master provides it via Link className) ──
-
 // ── Nav key → absolute URL ──
 
 const navKeyToUrl: Readonly<Record<string, string>> = {
@@ -69,11 +48,13 @@ const navKeyToUrl: Readonly<Record<string, string>> = {
 type Props = {
   readonly children: ReactNode;
   readonly Slave: ComponentType<AppLayoutSProps>;
+  readonly navKeys: readonly string[];
 };
 
 export const AppLayoutM = ({
   children,
   Slave,
+  navKeys,
 }: Props): JSX.Element => {
   const authState = useAuth();
   const navigate = useNavigate();
@@ -91,11 +72,8 @@ export const AppLayoutM = ({
         { tag: 'fulfilled', data: { email: authState.email } } :
         { tag: 'rejected', message: 'Unauthenticated', onRetry: () => window.location.reload() };
 
-  const role: AppRole =
-    authState.tag === 'authenticated' ? authState.role : 'tenant';
-
   const sidebarLinks: readonly JSX.Element[] =
-    navKeys(role).map((key) => (
+    navKeys.map((key) => (
       <Link
         key={key}
         to={navKeyToUrl[key] ?? '/app'}

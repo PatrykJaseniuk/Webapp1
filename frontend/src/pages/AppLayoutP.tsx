@@ -1,19 +1,33 @@
 import { Outlet } from '@tanstack/react-router';
-import { AuthorisationGuard } from '@/masterComponents/RoleGuardM';
+import { useAuth } from '@/hooks/AuthContext';
 import { AppLayoutM } from '@/masterComponents/AppLayoutM';
 import { AppLayoutShell } from '@/slaveComponents/AppLayouS';
-import { AccessGateS } from '@/slaveComponents/AccessGateS';
 
-export const AppLayoutPage = (): JSX.Element => (
-  <AuthorisationGuard
-    authoriseRequirement={{
-      isAuthenticated: true,
-      roles: ['admin', 'landlord', 'tenant'],
-    }}
-    Slave={AccessGateS}
-  >
-    <AppLayoutM Slave={AppLayoutShell}>
+const ADMIN_LANDLORD_KEYS: readonly string[] = [
+  'dashboard',
+  'properties',
+  'tenants',
+  'leases',
+  'transactions',
+];
+
+const TENANT_KEYS: readonly string[] = [
+  'dashboard',
+  'contracts',
+  'payments',
+];
+
+export const AppLayoutPage = (): JSX.Element => {
+  const authState = useAuth();
+
+  const navKeys: readonly string[] =
+    authState.tag === 'authenticated' && authState.role === 'tenant' ?
+      TENANT_KEYS :
+      ADMIN_LANDLORD_KEYS;
+
+  return (
+    <AppLayoutM Slave={AppLayoutShell} navKeys={navKeys}>
       <Outlet />
     </AppLayoutM>
-  </AuthorisationGuard>
-);
+  );
+};
