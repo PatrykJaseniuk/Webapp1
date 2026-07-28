@@ -1,19 +1,25 @@
-import type { ComponentType } from 'react';
+import { match } from 'ts-pattern';
 import { useAuth } from '@/hooks/AuthContext';
-import { DashboardSummaryM, type DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
+import { DashboardSummaryM } from '@/masterComponents/DashboardSummaryM';
 import { AdminDashboard } from '@/slaveComponents/AdminDashboardS';
 import { LandlordDashboard } from '@/slaveComponents/LandlordDashboardS';
 import { TenantDashboardS } from '@/slaveComponents/TenantDashboardS';
+import { LoadingSpinner } from '@/slaveComponents/LoadingSpinnerS';
 
 export const DashboardPage = (): JSX.Element => {
   const authState = useAuth();
 
-  const DashboardSlave: ComponentType<DashboardSummarySProps> =
-    authState.tag === 'authenticated' && authState.role === 'admin' ?
-      AdminDashboard as ComponentType<DashboardSummarySProps> :
-      authState.tag === 'authenticated' && authState.role === 'landlord' ?
-        LandlordDashboard as unknown as ComponentType<DashboardSummarySProps> :
-        TenantDashboardS as unknown as ComponentType<DashboardSummarySProps>;
-
-  return <DashboardSummaryM Slave={DashboardSlave} />;
+  return match(authState)
+    .with({ tag: 'authenticated', role: 'admin' }, () => (
+      <DashboardSummaryM Slave={AdminDashboard} />
+    ))
+    .with({ tag: 'authenticated', role: 'landlord' }, () => (
+      <DashboardSummaryM Slave={LandlordDashboard} />
+    ))
+    .with({ tag: 'authenticated', role: 'tenant' }, () => (
+      <DashboardSummaryM Slave={TenantDashboardS} />
+    ))
+    .with({ tag: 'loading' }, () => <LoadingSpinner />)
+    .with({ tag: 'unauthenticated' }, () => <></>)
+    .exhaustive();
 };

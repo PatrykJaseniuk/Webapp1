@@ -1,11 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { LandlordDashboard } from './LandlordDashboardS';
+import type { NavLink } from '@/generic/utils';
 
-const cards = [
-  { to: '/landlord/properties', title: 'Nieruchomości', subtitle: 'Zarządzaj nieruchomościami' },
-  { to: '/landlord/tenants', title: 'Najemcy', subtitle: 'Zarządzaj najemcami' },
-];
+const mockNavLink: NavLink = ({ content, style }) => (
+  <span style={style}>{content}</span>
+);
 
 const mockSummary = {
   totalProperties: 12,
@@ -27,7 +27,11 @@ const meta: Meta<typeof LandlordDashboard> = {
     ),
   ],
   args: {
-    cards,
+    navLinkTo: {
+      leases: mockNavLink,
+      tenants: mockNavLink,
+      properties: mockNavLink,
+    },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },
 };

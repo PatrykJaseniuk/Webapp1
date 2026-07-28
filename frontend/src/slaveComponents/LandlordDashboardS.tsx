@@ -1,27 +1,9 @@
 import { match } from 'ts-pattern';
-import { Link } from '@tanstack/react-router';
-import type { AsyncData } from '@/generic';
+import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 
-type Card = Readonly<{
-  to: string;
-  title: string;
-  subtitle: string;
-}>;
-
-type DashboardSummary = Readonly<{
-  totalProperties: number;
-  occupiedProperties: number;
-  totalTenants: number;
-  activeTenants: number;
-  totalUnpaidAmount: number;
-  overdueItems: number;
-}>;
-
-type Props = {
-  readonly cards: readonly Card[];
-  readonly asyncData: AsyncData<DashboardSummary>;
-};
+type Props = DashboardSummarySProps;
+type DashboardSummary = Extract<Props['asyncData'], { tag: 'fulfilled' }>['data'];
 
 const cardLinkClass =
   'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow';
@@ -61,9 +43,18 @@ const StatCards = ({ summary }: { readonly summary: DashboardSummary }): JSX.Ele
   </div>
 );
 
+const navCardStyle = (): React.CSSProperties => ({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem',
+  height: '100%',
+});
+
 export const LandlordDashboard = ({
-  cards,
   asyncData,
+  navLinkTo,
 }: Props): JSX.Element => (
   <div className="flex flex-col items-center justify-center py-16">
     <h1 className="mb-2 text-3xl font-bold text-gray-900">Panel Wynajmującego</h1>
@@ -78,12 +69,12 @@ export const LandlordDashboard = ({
     </div>
 
     <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      {cards.map((card) => (
-        <Link key={card.to} to={card.to} className={cardLinkClass}>
-          <span className="text-lg font-semibold text-gray-900">{card.title}</span>
-          <span className="mt-1 block text-sm text-gray-500">{card.subtitle}</span>
-        </Link>
-      ))}
+      <div className={cardLinkClass}>
+        {navLinkTo.leases({ style: navCardStyle(), content: 'Umowy' })}
+      </div>
+      <div className={cardLinkClass}>
+        {navLinkTo.tenants({ style: navCardStyle(), content: 'Najemcy' })}
+      </div>
     </div>
   </div>
 );
