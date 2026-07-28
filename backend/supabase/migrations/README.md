@@ -39,7 +39,7 @@ The migrations are organized in dependency order with clear separation of concer
 - `handle_new_user()` - Auto-assign 'tenant' role on registration
 - ~20 triggers applied to tables
 
-### **5. Security** (`20260124000400_security.sql`)
+### **5. Authorization** (`20260124000400_authorization.sql`)
 **Purpose**: Row Level Security (RLS) and access control
 **Contains**:
 - Enable RLS on all 12 tables
@@ -74,7 +74,7 @@ Migrations are executed in timestamp order (000000 → 000700):
 2. Indexes (optimize queries)
 3. Constraints (validate data)
 4. Functions & Triggers (automation)
-5. Security (access control)
+5. Authorization (access control)
 6. Views (computed data)
 7. Seed Data (initial data)
 
@@ -191,11 +191,11 @@ ALTER TABLE properties ADD COLUMN parking_spots integer DEFAULT 0;
 
 **Error: "function does not exist"**
 - Check function names match exactly (case-sensitive)
-- Ensure security.sql ran before policies
+- Ensure authorization.sql ran before policies
 
 **Error: "RLS policy violation"**
 - Check user has correct role assigned
-- Verify policy logic in security.sql
+- Verify policy logic in authorization.sql
 
 **Error: "constraint violation"**
 - Check data meets constraints (positive amounts, valid dates)

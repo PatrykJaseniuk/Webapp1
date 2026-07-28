@@ -1,5 +1,5 @@
 -- ================================================
--- RENTAL MANAGEMENT SYSTEM - SECURITY
+-- RENTAL MANAGEMENT SYSTEM - AUTHORIZATION
 -- ================================================
 -- Row Level Security (RLS) setup with helper functions and policies
 -- Defines access control for landlords, tenants, and admins
@@ -382,6 +382,8 @@ CREATE POLICY "Landlords can delete attachments"
 -- ================================================
 
 -- Consolidated SELECT policy for all authenticated users
+-- Tenants see transactions linked to any of their leases (past or present).
+-- Property-level transactions (lease_id IS NULL) are landlord-only — no tenant access.
 CREATE POLICY "Authenticated users can read transactions"
     ON public.transactions
     FOR SELECT
@@ -389,9 +391,7 @@ CREATE POLICY "Authenticated users can read transactions"
     USING (
         is_landlord()
         OR
-        (lease_id = ANY(get_tenant_lease_ids()))
-        OR
-        (lease_id IS NULL AND property_id = ANY(get_tenant_visible_property_ids()))
+        lease_id = ANY(get_tenant_lease_ids())
     );
 
 -- Landlords can insert transactions
