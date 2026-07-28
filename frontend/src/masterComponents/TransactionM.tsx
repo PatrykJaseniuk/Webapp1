@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
+import type { AppRole } from '@/hooks/AuthContext';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink, NavLinkWithId } from '@/generic/utils';
+import type { NavLink, NavLinkWithId } from '@/generic/utils';
 
 type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -28,11 +29,13 @@ export type TransactionSProps = {
 type Props = {
   readonly Slave: ComponentType<TransactionSProps>;
   readonly id: string;
+  readonly role: AppRole;
 };
 
 export const TransactionDetailM = ({
   Slave,
   id,
+  role: _role,
 }: Props): JSX.Element => {
   const query = useQuery({
     queryKey: ['transaction', id],
@@ -68,7 +71,7 @@ export const TransactionDetailM = ({
     },
   });
 
-  const asyncData = toAsyncData(query, () => { query.refetch(); });
+  const asyncData = toAsyncData(query, () => { void query.refetch(); });
 
   const navLinkTo: NavLinkTo = {
     toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,

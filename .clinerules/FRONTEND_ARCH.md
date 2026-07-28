@@ -1,113 +1,143 @@
 # Frontend Architecture — Master/Slave Component Rules
 # ======================================================
 
-# Apply to every masterComponent and slaveComponent you generate or modify.
+# Apply to every masterComponent, slaveComponent and page you generate or modify.
 # Layers on top of FUNCTIONAL_TS.md and FUNCTIONAL_TSX.md.
+#
+# PRECEDENCE (resolve any conflict in this order):
+#   FRONTEND_ARCH.md > FUNCTIONAL_TSX.md > FUNCTIONAL_TS.md
+# KEYWORDS: MUST / SHOULD / NEVER carry RFC 2119 semantics.
+# Formatting is owned entirely by Prettier — these rules never prescribe layout style.
 
 # ───────────────────────────────────────────────────────────────
-# FILE STRUCTURE
+# 0. FILE STRUCTURE & CANONICAL LOCATIONS
 # ───────────────────────────────────────────────────────────────
 
 # src/
-# ├── main/               App bootstrap + routing + URL definitions
+# ├── main/               App bootstrap + route tree (routes.tsx) + router
 # ├── backendConnector/   Supabase client + generated DB types
-# ├── generic/            Zero-domain-knowledge shared types
-# ├── hooks/              Auth context + useUrls + role hooks
+# ├── generic/            Zero-domain-knowledge shared types & helpers
+# ├── hooks/              Auth context (useAuth, AppRole)
 # ├── masterComponents/   CONTAINERS — logic, data, side effects
 # ├── slaveComponents/    PURE RENDER — UI only, no logic
 # └── pages/              WIRING — connect master + slave
+
+# Canonical imports — each symbol has exactly ONE source of truth:
+#   AsyncData, toAsyncData, NavLink, NavLinkWithId  →  '@/generic'
+#   backendConnector (Supabase client)              →  '@/backendConnector/backendConnector'
+#   Database (generated DB types)                   →  '@/backendConnector'
+#   useAuth, AppRole                                →  '@/hooks/AuthContext'
+#   route objects (xxxDetailRoute), router          →  '@/main/routes'
 
 # ───────────────────────────────────────────────────────────────
 # 1. MASTER (masterComponents/) — CONTAINER
 # ───────────────────────────────────────────────────────────────
 
-- Own all side effects: `useAsync`, `useAsyncFn`, `useNavigate` (for logout redirects etc.).
-- Own URL generation: call `useUrls()` from `@/hooks/useUrls` to build all URLs.
+- Own ALL side effects. Data fetching ONLY via TanStack Query:
+  `useQuery` for reads, `useMutation` for writes, `useNavigate` for redirects.
+  NEVER fetch inside `useEffect`; NEVER hand-roll promise/loading state.
+
+- Query conventions:
+  - `queryKey: ['<entity>', ...identifiers]` — first element is the table/entity
+    name; include `role` in the key when the result depends on it.
+
+    
+- Own ALL navigation and link building. Render `<Link>` from
+  `@tanstack/react-router` inside render-props typed `NavLink` / `NavLinkWithId`
+  (types imported by the MASTER from `@/generic`) and pass them down via SProps
+  (convention: a single `navLinkTo` object). Route paths come from
+  `main/routes.tsx`.
+
 - Define and export exactly ONE type — the slave's props interface
-  (e.g. `LeaseAgreementSProps`). All data-internal types (data shapes,
-  helpers, nested row types) are private to the master.
-- Do not define rendering functionality
-- Receive slave components as argument, do not import from slaves
-- Do not read url params
-- Every master component's **file name** ends with letter 'M' : 'AppLayoutM.tsx', 'LeaseAgreementM.tsx', etc.
-- Every master component's **export name** ends with letter 'M' : 'LeaseAgreementDetailM', 'PropertiesListM', etc.
-- When fetching multiple related queries in parallel (e.g. lease + transactions + attachments),
-  return raw Supabase results from `useAsync`, derive the unioned error in-band via `??` chain,
-  and construct the data object with `??` fallbacks. Never wrap the returned data type in an
-  outer `| null` — only nested fields may be `| null` (e.g. `leaseAgreement: T | null` for "not found").
-    const { loading, error: fetchError, value } = useAsync(async () => {
-      const [a, b, c] = await Promise.all([...]);
-      return { a, b, c };
-    }, [deps]);
-    const error = fetchError ?? value?.a.error ?? value?.b.error;
-    const data: Data = { fieldA: value?.a.data ?? null, fieldB: value?.b.data ?? [] };
+  (e.g. `LeaseAgreementSProps`). Exception: a form master MAY additionally
+  export its form-input type (e.g. `LoginInput`) when it is referenced by
+  `SProps['onSubmit']`. All other data-internal types stay private to the file.
+- Derive DB row types from the generated schema, never hand-write them:
+      type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
+- Receive the slave as a prop: `Slave: ComponentType<LeaseAgreementSProps>`.
+  NEVER import slaves or pages.
+- NEVER read URL params and NEVER call `useAuth`. Receive `id`, `role`, etc.
+  as plain props from the Page.
+- Do not define rendering functionality (no JSX beyond the single `<Slave .../>`
+  return and inline `<Link>` elements inside navLinkTo render-props).
+- Every master's file name and export name ends with 'M':
+  'LeaseAgreementM.tsx', `LeaseAgreementDetailM`.
 
 # ───────────────────────────────────────────────────────────────
 # 2. SLAVE (slaveComponents/) — PURE RENDER
 # ───────────────────────────────────────────────────────────────
 
-- Define rendering functionality
-- Pure functions. Zero side effects. Zero DB knowledge. Zero application knowledge.
-  Zero local React state (`useState`, `useReducer`, `useRef` for data storage).
-  Internal state is only allowed through the `asyncData` prop (see §2a).
-- Import exactly ONE type from its master: the slave props interface
-  (e.g. `LeaseAgreementSProps`). Never import data-internal types from the master.
-- Derive the fulfilled-data type inline from the slave props:
-    type Data = Extract<SlaveProps['asyncData'], { tag: 'fulfilled' }>['data'];
-- Derive strict enum-key types from the data shape and use them for all
-  lookup objects and helper function signatures. Never use loose
-  `Record<string, string>` or `(x: string)` for enum-based values.
-  Example:
-    type LeaseStatus = Data['lease']['lease_status'];
-    type TxnType = Data['transactions'][number]['type'];
-    const LABELS: Readonly<Record<LeaseStatus, string>> = { ... };
+- Pure functions. Zero side effects. Zero DB knowledge. Zero application
+  knowledge. Zero local React state (`useState`, `useReducer`, `useRef` for
+  data). The only "state" a slave knows is the `asyncData` prop (see §2a).
+
+- Imports — whitelist:
+  - TYPE imports: exactly ONE from its master — the slave props interface
+    (e.g. `LeaseAgreementSProps`). Form slaves MAY additionally import the
+    form-input type (e.g. `LoginInput`). Never import data-internal types.
+  - VALUE imports: `ts-pattern`, sibling pure-render slaves
+    (`LoadingSpinnerS`, `ErrorMessageS`, ...), React type helpers.
+  - NEVER import: `@/backendConnector`, `@/generic`, `@/hooks`, `@/pages`,
+    `@/main`, `@tanstack/react-router`, `@tanstack/react-query`, other masters,
+    domain slaves that should arrive via props.
+
+- Derive every data type inline from the slave props — never redefine them:
+
+    type Data = Extract<LeaseAgreementSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+    type LeaseStatus = NonNullable<Data['leaseAgreement']>['lease_status'];
+    const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatus, string>> = { ... };
     const pillClass = (status: LeaseStatus): string => ...;
-- Import types ONLY from: `react` + their master.
-  EXCEPTION: may import from `@tanstack/react-router` (see §2c).
-- Types are not defined in slave component's file (the single inline
-  derivation above is the only exception).
-- May import pure-render sibling slave components (e.g. `LoadingSpinner`, `ErrorMessage`)
-  but NEVER masters, pages, or `@/backendConnector`.
-- NEVER: `@/backendConnector`, `Database`, `useAsync`, `useAsyncFn`, `useUrls`.
-- Every slave component's name ends with letter 'S' : 'AppLayoutS.tsx', 'LeaseAgreementS.tsx', etc.
+
+- Never use loose `Record<string, string>` or `(x: string)` for enum-based
+  lookups/helpers — derive tight key types from the data shape as above.
+- Every slave's file name and export name ends with 'S':
+  'LeaseAgreementS.tsx', `LeaseAgreementDetailS`.
 
 # ───────────────────────────────────────────────────────────────
 # 2a. SLAVE THREE-STATE PATTERN
 # ───────────────────────────────────────────────────────────────
 
-- Every slave that receives async data MUST handle three states: pending, rejected, fulfilled.
-- Accept a single `asyncData: AsyncData<T>` prop (from their master's SProps) instead of separate
-  `isLoading`, `error`, `data` props.
-- Use `match(state).with({ tag: 'pending' }, ...).with({ tag: 'rejected' }, ...).with({ tag: 'fulfilled' }, ...).exhaustive()`
-  to guarantee every state is rendered. This is the ONLY kind of "state" slaves handle —
-  it models the data-fetch lifecycle, not application state.
-- The master converts `useAsync` output into `AsyncData<T>` and passes it down.
-- All three state renderings must share the same wrapper container with a stable minimum
-  height (e.g. `min-h-[300px]` for tables, `min-h-[400px]` for forms) to prevent
-  layout shifts when transitioning between states.
-  `LoadingSpinner` and `ErrorMessage` must fill their parent container
+- Every slave that receives async data MUST render all three states of
+  `AsyncData<T>` (defined in `@/generic`):
+
+    type AsyncData<T> =
+      | { tag: 'pending' }
+      | { tag: 'rejected'; message: string; onRetry: () => void }
+      | { tag: 'fulfilled'; data: T };
+
+- Accept a single `asyncData: AsyncData<T>` prop — never separate
+  `isLoading` / `error` / `data` props.
+- Render via `match(asyncData).with({ tag: 'pending' }, ...).with({ tag: 'rejected' }, ...).with({ tag: 'fulfilled' }, ...).exhaustive()`.
+- The `rejected` branch MUST offer retry via the provided `onRetry` callback
+  (e.g. `ErrorMessage` with a retry button).
+- All three branches MUST share one wrapper container with a stable minimum
+  height (`min-h-[300px]` for tables, `min-h-[400px]` for forms) to prevent
+  layout shifts. `LoadingSpinner` / `ErrorMessage` fill their parent
   (`flex items-center justify-center`) without forcing their own height.
-- For list ("many") components: render an empty-state message inside the `fulfilled`
-  branch when the array is empty (e.g. "No leases found."). Do not create a separate
-  discriminated-union tag for empty data.
+- List ("many") slaves: render the empty-state message inside the `fulfilled`
+  branch when the array is empty. Never create a separate union tag for empty.
 
 # ───────────────────────────────────────────────────────────────
 # 2b. FORM PATTERN
 # ───────────────────────────────────────────────────────────────
 
-- Form slaves render uncontrolled inputs (`defaultValue`, never `value` + `onChange`).
-- The slave defines a pure `extractFormData` function that reads `FormData` from
-  the `<form>` element and returns a typed input object.
-- The master holds form lifecycle state (`useState` for submission status, validation
-  errors, etc.) and passes down an `onSubmit` callback.
-- The slave's `<form>` calls `e.preventDefault()`, extracts data via `FormData`, and
-  invokes the master's `onSubmit` callback with the extracted data.
+- Form slaves render uncontrolled inputs (`defaultValue`, never
+  `value` + `onChange`).
+- The slave defines a pure module-level `extractFormData(fd: FormData)`
+  function returning a typed input object, and exports it for reuse/tests.
+- The master owns the whole form lifecycle: submission via `useMutation`,
+  validation of the extracted input (validate at this boundary — a zod
+  schema is the recommended tool), and field/server error state. It passes
+  down `onSubmit` plus the mutation state inside `asyncData`.
+- The slave's `<form>` calls `e.preventDefault()`, extracts data via
+  `FormData`, and invokes the master's `onSubmit` with the extracted object.
 - Example signature:
-    export type LeaseAgreementFormSlaveProps = {
+
+    export type LeaseAgreementFormSProps = {
       readonly asyncData: AsyncData<LeaseAgreementDetailData>;
-      readonly initialData: LeaseAgreementDetailData;   // for defaultValue population
+      readonly initialData: LeaseAgreementDetailData;  // for defaultValue population
       readonly onSubmit: (data: LeaseAgreementFormInput) => void;
-      readonly getCancelUrl: () => string;
+      readonly navLinkTo: { readonly cancel: NavLink };
     };
 
 # ───────────────────────────────────────────────────────────────
@@ -115,20 +145,35 @@
 # ───────────────────────────────────────────────────────────────
 
 - Slaves are ROUTING-SYSTEM AGNOSTIC. They NEVER import `Link`, `useNavigate`,
-  or anything from `@tanstack/react-router`.
-- All navigation is provided by the master via props: {nav}
-    
+  or anything else from `@tanstack/react-router`. They NEVER use
+  `window.location` or raw `<a href>` for internal navigation.
+- All navigation arrives via `navLinkTo` render-props typed `NavLink` /
+  `NavLinkWithId` (from the master's SProps). The slave invokes them with
+  content and lets the master render the actual router `<Link>`:
+    {navLinkTo.tenant({ id: l.tenant_id, style: {}, content: tenantName })}
+    {navLinkTo.leases({ style: {}, content: '← Back to list' })}
 # ───────────────────────────────────────────────────────────────
-# 3. PAGE (pages/) — WIRING
+# 3. PAGE (pages/) — ROLE-ROUTER
 # ───────────────────────────────────────────────────────────────
 
-- Router endpoint
-- Read params from url (`useParams`) and send them to master as regular props
-- Import BOTH the master and the slave, then wire them together:
-  the page instantiates the master, passing the slave as a prop.
-- Return a single JSX tree. Zero rendering logic. Zero business logic. Zero side effects.
-- Zero URL building — URLs are generated by masters via `useUrls()`.
-- Every page component's name ends with letter 'P' : 'LoginP.tsx', 'LeaseAgreementP.tsx', etc.
+- Wire the system together: read route params + auth state, dispatch to the
+  correct Master. Zero data fetching, zero business logic.
+- Read URL params from the ROUTE OBJECT (type-safe), never from the global
+  hook:  `const { id } = leaseDetailRoute.useParams();`  — route objects are
+  exported from `@/main/routes` for this purpose.
+- Read auth state (`useAuth`) and route with `match(authState).with(...).exhaustive()`:
+  - `loading` → render `<LoadingSpinner />` directly
+  - `unauthenticated` → render `<AccessDenied loginLink={...} />`
+    (pages MAY build static links with `<Link>` from the router)
+  - `authenticated` with wrong role → render `<AccessDenied />`
+  - `authenticated` with correct role → `<Master Slave={S} id={id} role={role} />`
+- The Page is the ONLY place that reads `useAuth` for dispatching. Masters
+  receive `role` as a prop when their data depends on it.
+- Return a single JSX tree via `match().exhaustive()`.
+- Zero URL building beyond static links — navigation elements are generated
+  by masters.
+- Every page's file name and export name ends with 'P':
+  'LeaseAgreementP.tsx', `LeaseAgreementDetailPage`.
 
 # ───────────────────────────────────────────────────────────────
 # 4. CRUD
@@ -148,39 +193,50 @@ English noun and applying PascalCase.
     user_roles             | UserRole    | UserRoleM / ...   | UserRolesM / ...
 
 Components per table:
-- `<TableName>M`  — Master for a single record. Implements create, read, update functionality.
+- `<TableName>M`  — Master for a single record. Implements create, read, update.
 - `<TableName>S`  — Slave for a single record. Defines the GUI for its master.
 - `<TableName>P`  — Page for a single record.
-- `<TableNames>M` — Master for many records (note: 's' before 'M' = pluralized
-                     table name, e.g. "LeaseAgreements" + "M"). Implements read of many records.
+- `<TableNames>M` — Master for many records (pluralized name + 'M').
 - `<TableNames>S` — Slave for many records. Defines the GUI for its master.
 - `<TableNames>P` — Page for many records.
+
+COMPOSITE SCREENS: components that do not mirror a single table (dashboards,
+layout shells, summary widgets — e.g. `DashboardSummaryM` + `AdminDashboardS` /
+`LandlordDashboardS` / `TenantDashboardS`) still follow the SAME M/S/P
+discipline: a master owns their data (possibly aggregated from several
+tables), slaves stay pure render, a page wires them.
 
 # ───────────────────────────────────────────────────────────────
 # ANTI-PATTERNS
 # ───────────────────────────────────────────────────────────────
 
-# ❌ Slave imports `@/generic`
-# ❌ Slave imports `@/backendConnector` or `Database`
-# ❌ Slave uses `useAsync`, `useAsyncFn`, `useUrls`
-# ❌ Slave imports more than one type from its master
+# ❌ Slave imports `@/backendConnector`, `@/generic`, `@/hooks`, `@/pages`, `@/main`
+# ❌ Slave imports `@tanstack/react-router` or `@tanstack/react-query`
+# ❌ Slave imports more than one type from its master (form-input type excepted)
 # ❌ Slave imports data-internal types (e.g. `LeaseAgreementData`) from its master
 # ❌ Slave uses `Record<string, string>` or `(x: string)` for enum-based
-#     label lookups / helper functions — derive tight key types from the
-#     data shape inferred from `<Name>SProps` instead
-# ❌ Slave imports domain-specific components from other slaves that should
-#     come through props (e.g. a table-row component imported directly instead
-#     of being passed as a render-prop or children)
-# ❌ Slave holds `FormState` or any form lifecycle state
-# ❌ Controlled inputs (`value`+`onChange`) in form slaves — use uncontrolled
-#     (`defaultValue`) with `FormData` extraction instead (see §2b)
-# ❌ Slave imports anything from `pages/`
+#     label lookups / helper functions — derive tight key types from `<Name>SProps`
 # ❌ Slave uses `window.location.href` or raw `<a href>` for internal navigation —
-#     use `<Link>` or `useNavigate()` instead (see §2c)
-# ❌ Master exports data-internal types separately from slave props
-# ❌ Master switches between Loading/Error/Data components (delegate to slave)
+#     navigation arrives via `navLinkTo` render-props (see §2c)
+# ❌ Slave holds form lifecycle state, or uses controlled inputs
+#     (`value` + `onChange`) — uncontrolled + `FormData` extraction (see §2b)
+# ❌ Slave imports domain-specific components that should come through props
+# ❌ Master imports a slave or a page — the slave arrives via the `Slave` prop
+# ❌ Master reads URL params or calls `useAuth` — those are Page inputs, passed as props
+# ❌ Master fetches via `useEffect` / raw `fetch` — use `useQuery` / `useMutation`
+# ❌ Master exports data-internal types separately from the slave props
+# ❌ Master switches between Loading/Error/Data rendering — delegate to the slave's match
+# ❌ Master swallows query errors or returns rejected promises implicitly —
+#     throw the combined error inside `queryFn` (the one sanctioned throw)
+# ❌ Page fetches data or imports `@/backendConnector`
 # ❌ Page passes `LoadingComponent` or `ErrorComponent` to a master
 # ❌ Page conditionally renders different masters based on URL state —
 #     routing belongs in `main/routes.tsx`, not in pages
-# ❌ Page composes URLs or uses `useLocation()` for URL building —
-#     URL generation belongs in masters via `useUrls()`
+# ❌ Page composes navigation URLs for masters — masters own link building
+# ❌ Floating promises anywhere: `query.refetch()`, `navigate(...)`,
+#     `invalidateQueries(...)` MUST be awaited or prefixed with `void`
+#     (enforced by `@typescript-eslint/no-floating-promises`)
+
+# ───────────────────────────────────────────────────────────────
+# END OF RULES
+# ───────────────────────────────────────────────────────────────

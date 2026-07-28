@@ -61,7 +61,7 @@ export const AppLayoutM = ({
 
   const handleLogout = (): void => {
     void backendConnector.auth.signOut().then(() => {
-      navigate({ to: '/login' });
+      void navigate({ to: '/login' });
     });
   };
 

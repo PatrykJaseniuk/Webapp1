@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { TenantsS } from './TenantsS';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';

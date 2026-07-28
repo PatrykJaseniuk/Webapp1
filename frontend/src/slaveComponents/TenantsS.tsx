@@ -18,7 +18,7 @@ const activePropertyLinks = (row: Row, navLinkTo: NavLinkTo): readonly JSX.Eleme
   return activeLeases
     .filter((la) => la.properties !== null && la.properties.name !== null)
     .map((la) => {
-      const propName = la.properties!.name!;
+      const propName = la.properties?.name ?? '';
       return (
         <span
           key={la.property_id}

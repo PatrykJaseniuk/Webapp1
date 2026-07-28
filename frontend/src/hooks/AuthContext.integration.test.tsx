@@ -139,7 +139,7 @@ describe('AuthProvider', () => {
 
     // Trigger it and wait for re-render — wrap in act to batch state updates
     act(() => {
-      changeCallback!();
+      (changeCallback as () => void)();
     });
     // getSession is called again inside fetchAuth — it's async, so we wait
     await screen.findByText(/authenticated\|landlord\|landlord@test\.com/);

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink } from '@/generic/utils';
+import type { NavLink } from '@/generic/utils';
 
 type DashboardSummary = Readonly<{
   totalProperties: number;
@@ -89,7 +89,7 @@ export const DashboardSummaryM = ({
     },
   });
 
-  const asyncData = toAsyncData(query, () => { query.refetch(); });
+  const asyncData = toAsyncData(query, () => { void query.refetch(); });
 
   const navLinkTo: NavLinkTo = {
     leases: ({ content, style }) => <Link to='/app/leases' style={style}> {content}</Link>,

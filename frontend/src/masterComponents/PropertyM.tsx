@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink, NavLinkWithId } from '@/generic/utils';
+import type { NavLink, NavLinkWithId } from '@/generic/utils';
 
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
@@ -100,7 +100,7 @@ export const PropertyDetailM = ({
     },
   });
 
-  const asyncData = toAsyncData(query, () => { query.refetch(); });
+  const asyncData = toAsyncData(query, () => { void query.refetch(); });
 
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,

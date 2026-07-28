@@ -25,8 +25,10 @@ vi.mock('@/backendConnector/backendConnector', () => ({
 
 const mockUseAuth = vi.fn<() => AuthState>();
 
+import type * as AuthContextModule from '@/hooks/AuthContext';
+
 vi.mock('@/hooks/AuthContext', async () => {
-  const actual = await vi.importActual<typeof import('@/hooks/AuthContext')>('@/hooks/AuthContext');
+  const actual = await vi.importActual<typeof AuthContextModule>('@/hooks/AuthContext');
   return {
     ...actual,
     useAuth: () => mockUseAuth(),

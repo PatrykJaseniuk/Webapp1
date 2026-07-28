@@ -1,10 +1,12 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import type { ReactNode } from 'react';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
+import {
+  RouterContextProvider,
+  createRootRoute,
+  createRoute,
+  createRouter,
+} from '@tanstack/react-router';
 import { createMemoryHistory } from '@tanstack/history';
-
-const EMPTY_ROUTE_TREE = {} as never;
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 type MemoryRouterProviderProps = {
   readonly children: ReactNode;
@@ -19,11 +21,19 @@ export const MemoryRouterProvider = ({
     initialEntries: [...(initialEntries ?? ['/'])],
   });
 
-  const router = createRouter({
-    routeTree: EMPTY_ROUTE_TREE,
-    history,
-    context: undefined as never,
+  const rootRoute = createRootRoute();
+  const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/' });
+  const routeTree = rootRoute.addChildren([indexRoute]);
+
+  const router = createRouter({ routeTree, history });
+
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
 
-  return <RouterProvider router={router as never}>{children as never}</RouterProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <RouterContextProvider router={router}>{children}</RouterContextProvider>
+    </QueryClientProvider>
+  );
 };

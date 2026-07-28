@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { ReactNode } from 'react';
 import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
@@ -13,7 +14,7 @@ type AuthenticatedShellProps = {
   readonly sidebarLinks: AppLayoutSProps['sidebarLinks'];
   readonly authData: AuthData;
   readonly onLogout: () => void;
-  readonly children: import('react').ReactNode;
+  readonly children: ReactNode;
 };
 
 const AuthenticatedShell = ({

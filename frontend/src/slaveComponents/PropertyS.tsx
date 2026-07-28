@@ -116,13 +116,13 @@ const DetailContent = ({
           <div>
             <p className={labelClass}>Aktualny najemca</p>
             {occupancy?.current_tenant_name !== null && occupancy?.current_tenant_name !== undefined && occupancy?.tenant_id !== null && occupancy?.tenant_id !== undefined ?
-              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.tenant({ id: occupancy.tenant_id!, style: {}, content: occupancy.current_tenant_name })}</div> :
+              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.tenant({ id: occupancy.tenant_id as string, style: {}, content: occupancy.current_tenant_name })}</div> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
           <div>
             <p className={labelClass}>Aktualna umowa</p>
             {occupancy?.current_lease_id !== null && occupancy?.current_lease_id !== undefined ?
-              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.lease({ id: occupancy.current_lease_id!, style: {}, content: 'Umowa najmu' })}</div> :
+              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.lease({ id: occupancy.current_lease_id as string, style: {}, content: 'Umowa najmu' })}</div> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
         </div>
@@ -158,7 +158,7 @@ const DetailContent = ({
                     <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
                     <td className="py-2 pr-4">
                       {tx.lease_id !== null ?
-                        <div className="[&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.lease({ id: tx.lease_id!, style: {}, content: 'Umowa' })}</div> :
+                        <div className="[&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.lease({ id: tx.lease_id as string, style: {}, content: 'Umowa' })}</div> :
                         <span className="text-gray-400">—</span>}
                     </td>
                     <td className="py-2 pr-4"><span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span></td>

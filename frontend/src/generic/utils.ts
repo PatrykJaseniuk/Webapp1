@@ -1,4 +1,3 @@
-
 // ──────────────────────────────────────────────
 // Slave data state — three-state discriminated union
 // ──────────────────────────────────────────────
@@ -6,15 +5,22 @@
 /**
  * Three-state discriminated union for async data lifecycle.
  * Passed as the `asyncData` prop from master to slaves.
- * Masters derive this from `useAsync` output; slaves match on `tag`
- * and render the appropriate view — guaranteed exhaustive.
+ * Masters derive this from TanStack Query results via `toAsyncData`;
+ * slaves match on `tag` and render the appropriate view — guaranteed exhaustive.
  */
-import { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-export type NavLink = ((args: { readonly style: React.CSSProperties; readonly content: string }) => ReactNode)
+export type NavLink = (args: {
+  readonly style: CSSProperties;
+  readonly content: string;
+}) => ReactNode;
 
-export type NavLinkWithId = ((args: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) => ReactNode)
+export type NavLinkWithId = (args: {
+  readonly id: string;
+  readonly style: CSSProperties;
+  readonly content: string;
+}) => ReactNode;
 
 export type AsyncData<T> =
   | { readonly tag: 'pending' }
@@ -50,8 +56,6 @@ export const toAsyncData = <T>(
     }))
     .with('success', () => ({
       tag: 'fulfilled' as const,
-      data: result.data!,
+      data: result.data as T,
     }))
     .exhaustive();
-
-

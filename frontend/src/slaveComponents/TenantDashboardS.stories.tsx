@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TenantDashboardS } from './TenantDashboardS';
 
 const meta: Meta<typeof TenantDashboardS> = {
@@ -9,4 +9,6 @@ export default meta;
 
 type Story = StoryObj<typeof TenantDashboardS>;
 
-export const Default: Story = {};
+export const Default: Story = {
+  args: { asyncData: { tag: 'pending' } },
+};
