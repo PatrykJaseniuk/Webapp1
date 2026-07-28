@@ -1,9 +1,10 @@
-import { useNavigate, Link } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
+import { NavLink } from '@/generic/utils';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -11,11 +12,15 @@ type TransactionListRow = TransactionDbRow & {
   readonly properties: { readonly name: string } | null;
 };
 
+type NavLinkTo = Readonly<{
+  readonly transaction: NavLink;
+  readonly property: NavLink;
+  readonly lease: NavLink;
+}>;
+
 export type TransactionsSProps = {
   readonly asyncData: AsyncData<readonly TransactionListRow[]>;
-  readonly onTransactionClick: (id: string) => void;
-  readonly renderPropertyLink: (propertyId: string) => ReactNode;
-  readonly renderLeaseLink: (leaseId: string) => ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 type Props = {
@@ -25,8 +30,6 @@ type Props = {
 export const TransactionsM = ({
   Slave,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
-
   const query = useQuery({
     queryKey: ['transactions'],
     queryFn: async (): Promise<readonly TransactionListRow[]> => {
@@ -42,22 +45,16 @@ export const TransactionsM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const onTransactionClick = (id: string): void => {
-    navigate({ to: '/app/transactions/$id', params: { id } });
+  const navLinkTo: NavLinkTo = {
+    transaction: ({ id, content, style }) => <Link to="/app/transactions/$id" params={{ id }} style={style}>{content}</Link>,
+    property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
+    lease: ({ id, content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
   };
-
-  const renderPropertyLink = (propertyId: string): ReactNode =>
-    <Link to="/app/properties/$id" params={{ id: propertyId }} />;
-
-  const renderLeaseLink = (leaseId: string): ReactNode =>
-    <Link to="/app/leases/$id" params={{ id: leaseId }} />;
 
   return (
     <Slave
       asyncData={asyncData}
-      onTransactionClick={onTransactionClick}
-      renderPropertyLink={renderPropertyLink}
-      renderLeaseLink={renderLeaseLink}
+      navLinkTo={navLinkTo}
     />
   );
 };

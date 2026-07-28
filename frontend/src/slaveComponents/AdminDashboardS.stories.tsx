@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { MemoryRouterProvider } from '@/test-router-utils';
+import type { ReactNode, CSSProperties } from 'react';
 import { AdminDashboard } from './AdminDashboardS';
 
-const cards = [
-  { to: '/admin/properties', title: 'Nieruchomości', subtitle: 'Zarządzaj nieruchomościami' },
-  { to: '/admin/tenants', title: 'Najemcy', subtitle: 'Zarządzaj najemcami' },
-];
+const mockNavLink = (_content: string) =>
+  ({ style, content: c }: { readonly style: CSSProperties; readonly content: string }): ReactNode =>
+    <a href="#" style={style}>{c}</a>;
 
 const mockSummary = {
   totalProperties: 12,
@@ -19,15 +18,12 @@ const mockSummary = {
 const meta: Meta<typeof AdminDashboard> = {
   title: 'slave/AdminDashboard',
   component: AdminDashboard,
-  decorators: [
-    (Story) => (
-      <MemoryRouterProvider>
-        <Story />
-      </MemoryRouterProvider>
-    ),
-  ],
   args: {
-    cards,
+    navLinks: {
+      leases: mockNavLink('Umowy'),
+      tenants: mockNavLink('Najemcy'),
+      properties: mockNavLink('Nieruchomości'),
+    },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },
 };

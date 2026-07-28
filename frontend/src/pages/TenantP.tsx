@@ -4,5 +4,5 @@ import { TenantDetailS } from '@/slaveComponents/TenantS';
 
 export const TenantDetailPage = (): JSX.Element => {
   const { id } = tenantDetailRoute.useParams();
-  return <TenantDetailM DetailViewComponent={TenantDetailS} id={id} />;
+  return <TenantDetailM Slave={TenantDetailS} id={id} />;
 };

@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
 type Data = Extract<LeaseAgreementSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
 type LeaseAgreementData = NonNullable<Data['leaseAgreement']>;
 type LeaseStatusKey = LeaseAgreementData['lease_status'];
 type TransactionTypeKey = Data['transactions'][number]['type'];
@@ -57,20 +57,12 @@ const txnAmountClass = (amount: number): string =>
 
 type DetailContentProps = {
   readonly data: Data;
-  readonly onTenantClick: (tenantId: string) => void;
-  readonly onPropertyClick: (propertyId: string) => void;
-  readonly onTransactionClick: (transactionId: string) => void;
-  readonly editLink: ReactNode;
-  readonly backLink: ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 const DetailContent = ({
   data,
-  onTenantClick,
-  onPropertyClick,
-  onTransactionClick,
-  editLink,
-  backLink,
+  navLinkTo,
 }: DetailContentProps): JSX.Element => {
   const l = data.leaseAgreement;
   return l === null ?
@@ -83,17 +75,17 @@ const DetailContent = ({
       <div className="mx-auto max-w-4xl space-y-6 py-8">
         <div className="flex items-center justify-between">
           <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-            {backLink}
+            {navLinkTo.leases({ id: '', style: {}, content: '← Powrót do listy' })}
             <h1 className="mt-1 text-2xl font-bold text-gray-900">Umowa najmu: {l.properties?.name ?? ''}</h1>
           </div>
-          <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">{editLink}</div>
+          <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">{navLinkTo.edit({ id: '', style: {}, content: 'Edytuj' })}</div>
         </div>
 
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Dane umowy</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div><p className={labelClass}>Najemca</p><button type="button" onClick={() => { onTenantClick(l.tenant_id); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">{(l.tenants ? `${l.tenants.first_name ?? ''} ${l.tenants.last_name ?? ''}`.trim() : '')}</button></div>
-            <div><p className={labelClass}>Nieruchomość</p><button type="button" onClick={() => { onPropertyClick(l.property_id); }} className="text-sm text-blue-600 hover:text-blue-800 hover:underline">{l.properties?.name ?? ''}</button></div>
+            <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline"><p className={labelClass}>Najemca</p>{navLinkTo.tenant({ id: l.tenant_id, style: {}, content: (l.tenants ? `${l.tenants.first_name ?? ''} ${l.tenants.last_name ?? ''}`.trim() : '') })}</div>
+            <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline"><p className={labelClass}>Nieruchomość</p>{navLinkTo.property({ id: l.property_id, style: {}, content: l.properties?.name ?? '' })}</div>
             <div><p className={labelClass}>Status</p><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></div>
             <div><p className={labelClass}>Data rozpoczęcia</p><p className={valueClass}>{l.start_date}</p></div>
             <div><p className={labelClass}>Data zakończenia</p><p className={valueClass}>{l.end_date ?? 'Bezterminowo'}</p></div>
@@ -110,8 +102,8 @@ const DetailContent = ({
             <div className="overflow-x-auto"><table className="w-full border-collapse text-left text-sm">
               <thead><tr className="border-b border-gray-200 text-gray-500"><th className="py-2 pr-4 font-medium">Data</th><th className="py-2 pr-4 font-medium">Typ</th><th className="py-2 pr-4 font-medium">Opis</th><th className="py-2 pr-4 font-medium text-right">Kwota</th><th className="py-2 pr-4 font-medium">Status</th></tr></thead>
               <tbody>{data.transactions.map((tx) => (
-                <tr key={tx.id} className="cursor-pointer border-b border-gray-100 hover:bg-blue-50" onClick={() => { onTransactionClick(tx.id); }}>
-                  <td className="py-2 pr-4 text-gray-600">{tx.due_date}</td>
+                <tr key={tx.id} className="border-b border-gray-100 hover:bg-blue-50">
+                  <td className="py-2 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.transaction({ id: tx.id, style: {}, content: tx.due_date })}</td>
                   <td className="py-2 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
                   <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
                   <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
@@ -137,7 +129,7 @@ const DetailContent = ({
 };
 
 export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => {
-  const { asyncData, nav } = props;
+  const { asyncData, navLinkTo } = props;
 
   return (
     <div className="min-h-[400px]">
@@ -147,11 +139,7 @@ export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element 
         .with({ tag: 'fulfilled' }, ({ data }) => (
           <DetailContent
             data={data}
-            onTenantClick={nav.toTenant}
-            onPropertyClick={nav.toProperty}
-            onTransactionClick={nav.toTransaction}
-            editLink={nav.editLink}
-            backLink={nav.backLink}
+            navLinkTo={navLinkTo}
           />
         ))
         .exhaustive()}

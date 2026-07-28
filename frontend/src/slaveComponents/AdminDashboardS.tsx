@@ -6,8 +6,9 @@ type DashboardSummary = Extract<DashboardSummarySProps['asyncData'], { tag: 'ful
 
 type Props = DashboardSummarySProps;
 
-const dashboardCardClass =
-  'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow [&>a]:block [&>a]:h-full';
+const cardLinkClass =
+  'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow';
+const cardContentStyle: React.CSSProperties = { display: 'block', height: '100%' };
 
 const statCardClass = 'rounded-lg border border-gray-200 bg-white p-4 text-center shadow-sm';
 const statValueClass = 'text-2xl font-bold';
@@ -44,15 +45,24 @@ const StatCards = ({ summary }: { readonly summary: DashboardSummary }): JSX.Ele
   </div>
 );
 
+const navCardStyle = (): React.CSSProperties => ({
+  ...cardContentStyle,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.25rem',
+});
+
 export const AdminDashboard = ({
-  cards,
   asyncData,
+  navLinkTo
 }: Props): JSX.Element => (
   <div className="flex flex-col items-center justify-center py-16">
     <h1 className="mb-2 text-3xl font-bold text-gray-900">Panel Administratora</h1>
     <p className="text-gray-500">System zarządzania najmem</p>
 
-    <div className="mt-6 w-full max-w-3xl">
+    <div className="mt-6 w-full max-w-3xl min-h-[200px]">
       {match(asyncData)
         .with({ tag: 'pending' }, () => <LoadingSpinner />)
         .with({ tag: 'rejected' }, () => undefined)
@@ -60,12 +70,16 @@ export const AdminDashboard = ({
         .exhaustive()}
     </div>
 
-    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-      {cards.map((card, idx) => (
-        <div key={idx} className={dashboardCardClass}>
-          {card.link}
-        </div>
-      ))}
+    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className={cardLinkClass}>
+        {navLinkTo.leases({ id: '', style: navCardStyle(), content: 'Umowy' })}
+      </div>
+      <div className={cardLinkClass}>
+        {navLinkTo.tenants({ id: '', style: navCardStyle(), content: 'Najemcy' })}
+      </div>
+      <div className={cardLinkClass}>
+        {navLinkTo.properties({ id: '', style: navCardStyle(), content: 'Nieruchomości' })}
+      </div>
     </div>
   </div>
 );

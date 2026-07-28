@@ -1,32 +1,37 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
+import { NavLink } from '@/generic/utils';
 
 type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
-export type TransactionDetailData = Readonly<{
+type TransactionDetailData = Readonly<{
   transaction: TransactionRow;
   propertyName: string | null;
   leaseDescription: string | null;
 }>;
 
-export type TransactionDetailViewProps = {
+type NavLinkTo = Readonly<{
+  readonly toProperty: NavLink;
+  readonly toLease: NavLink;
+  readonly linkToTransactions: NavLink;
+}>;
+
+export type TransactionSProps = {
   readonly asyncData: AsyncData<TransactionDetailData>;
-  readonly propertyLink: ReactNode;
-  readonly leaseLink: ReactNode;
-  readonly backLink: ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 type Props = {
-  readonly DetailViewComponent: ComponentType<TransactionDetailViewProps>;
+  readonly Slave: ComponentType<TransactionSProps>;
   readonly id: string;
 };
 
-export const TransactionDetail = ({
-  DetailViewComponent,
+export const TransactionDetailM = ({
+  Slave,
   id,
 }: Props): JSX.Element => {
   const query = useQuery({
@@ -65,16 +70,16 @@ export const TransactionDetail = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const propertyLink: ReactNode = <Link to="/app/properties/$id" params={{ id }} />;
-  const leaseLink: ReactNode = <Link to="/app/leases/$id" params={{ id }} />;
-  const backLink: ReactNode = <Link to="/app/transactions">← Powrót</Link>;
+  const navLinkTo: NavLinkTo = {
+    toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
+    toLease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
+    linkToTransactions: ({ id: _id, content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
+  };
 
   return (
-    <DetailViewComponent
+    <Slave
       asyncData={asyncData}
-      propertyLink={propertyLink}
-      leaseLink={leaseLink}
-      backLink={backLink}
+      navLinkTo={navLinkTo}
     />
   );
 };

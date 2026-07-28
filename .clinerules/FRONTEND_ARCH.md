@@ -116,24 +116,8 @@
 
 - Slaves are ROUTING-SYSTEM AGNOSTIC. They NEVER import `Link`, `useNavigate`,
   or anything from `@tanstack/react-router`.
-- All navigation is provided by the master via props:
-    • Declarative links  → masters pass pre-built JSX elements (`<Link>...</Link>`)
-    • Imperative clicks → masters pass `onClick` callbacks
-    • Row clicks        → masters pass `onRowClick(id)` callbacks
-- This is the only architectural approach — no exceptions.
-
-  Declarative (slave receives a pre-built link element):
-    {props.editLink}    <!-- master built <Link to={url}>Edytuj</Link> -->
-
-  Imperative (slave receives a callback from master):
-    <button onClick={() => { props.onTenantClick(tenantId); }}>Najemca</button>
-
-- NEVER: `window.location.href = url` or `<a href={url}>` for internal navigation
-  (these bypass the router and break SPA behavior). External links
-  (file URLs, `target="_blank"`) may still use raw `<a>`.
-- NEVER: importing `Link`, `useNavigate`, `NavLink` from `@tanstack/react-router`
-  in any slave component.
-
+- All navigation is provided by the master via props: {nav}
+    
 # ───────────────────────────────────────────────────────────────
 # 3. PAGE (pages/) — WIRING
 # ───────────────────────────────────────────────────────────────

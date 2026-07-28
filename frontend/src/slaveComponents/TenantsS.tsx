@@ -1,11 +1,11 @@
-import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
 type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
-type TenantStatus = Row['tenantStatus'];
+type NavLinkTo = TenantsSProps['navLinkTo'];
+type TenantStatus = Row['tenant_status'];
 
 export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freeze({
   active: 'Aktywny',
@@ -13,16 +13,31 @@ export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freez
   applicant: 'Kandydat',
 });
 
+const activePropertyLinks = (row: Row, navLinkTo: NavLinkTo): readonly JSX.Element[] => {
+  const activeLeases = (row.lease_agreements ?? []).filter((la) => la.lease_status === 'active');
+  return activeLeases
+    .filter((la) => la.properties !== null && la.properties.name !== null)
+    .map((la) => {
+      const propName = la.properties!.name!;
+      return (
+        <span
+          key={la.property_id}
+          className="inline-block [&_a]:rounded-full [&_a]:bg-blue-50 [&_a]:px-2 [&_a]:py-0.5 [&_a]:text-xs [&_a]:font-medium [&_a]:text-blue-700 hover:[&_a]:bg-blue-100"
+        >
+          {navLinkTo.property({ id: la.property_id, style: {}, content: propName })}
+        </span>
+      );
+    });
+};
+
 type TableBodyProps = {
   readonly tenants: readonly Row[];
-  readonly onDetailClick: (id: string) => void;
-  readonly renderPropertyLink: (propertyId: string) => ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 const TableBody = ({
   tenants,
-  onDetailClick,
-  renderPropertyLink,
+  navLinkTo,
 }: TableBodyProps): JSX.Element =>
   tenants.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak najemców.</p> :
@@ -40,34 +55,34 @@ const TableBody = ({
             </tr>
           </thead>
           <tbody>
-            {tenants.map((t) => (
-              <tr
-                key={t.id}
-                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { onDetailClick(t.id); }}
-              >
-                <td className="py-3 pr-4 font-medium text-gray-900">{t.lastName}</td>
-                <td className="py-3 pr-4 text-gray-600">{t.firstName}</td>
-                <td className="py-3 pr-4 text-gray-600">{t.email}</td>
-                <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
-                <td className="py-3 pr-4 text-gray-600">
-                  {t.currentPropertyIds.length > 0 ?
-                    <div className="flex flex-wrap gap-1 [&_a]:inline-block [&_a]:rounded-full [&_a]:bg-blue-50 [&_a]:px-2 [&_a]:py-0.5 [&_a]:text-xs [&_a]:font-medium [&_a]:text-blue-700 hover:[&_a]:bg-blue-100">
-                      {t.currentPropertyIds.map((propId: string) =>
-                        renderPropertyLink(propId)
-                      )}
-                    </div> :
-                    <span className="text-gray-400">—</span>}
-                </td>
-                <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[t.tenantStatus]}</td>
-              </tr>
-            ))}
+            {tenants.map((t) => {
+              const propLinks = activePropertyLinks(t, navLinkTo);
+              return (
+                <tr
+                  key={t.id}
+                  className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+                >
+                  <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                    {navLinkTo.tenant({ id: t.id, style: {}, content: t.last_name })}
+                  </td>
+                  <td className="py-3 pr-4 text-gray-600">{t.first_name}</td>
+                  <td className="py-3 pr-4 text-gray-600">{t.email}</td>
+                  <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
+                  <td className="py-3 pr-4 text-gray-600">
+                    {propLinks.length > 0 ?
+                      <div className="flex flex-wrap gap-1">{propLinks}</div> :
+                      <span className="text-gray-400">—</span>}
+                  </td>
+                  <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[t.tenant_status]}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
     );
 
-export const TenantsS = ({ asyncData, onDetailClick, renderPropertyLink }: TenantsSProps): JSX.Element => (
+export const TenantsS = ({ asyncData, navLinkTo }: TenantsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -77,8 +92,7 @@ export const TenantsS = ({ asyncData, onDetailClick, renderPropertyLink }: Tenan
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           tenants={data}
-          onDetailClick={onDetailClick}
-          renderPropertyLink={renderPropertyLink}
+          navLinkTo={navLinkTo}
         />
       ))
       .exhaustive()}

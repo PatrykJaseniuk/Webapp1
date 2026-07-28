@@ -1,8 +1,8 @@
 import { transactionDetailRoute } from '@/main/routes';
-import { TransactionDetail } from '@/masterComponents/TransactionM';
-import { TransactionDetailView } from '@/slaveComponents/TransactionS';
+import { TransactionDetailM } from '@/masterComponents/TransactionM';
+import { TransactionDetailS } from '@/slaveComponents/TransactionS';
 
 export const TransactionDetailPage = (): JSX.Element => {
   const { id } = transactionDetailRoute.useParams();
-  return <TransactionDetail DetailViewComponent={TransactionDetailView} id={id} />;
+  return <TransactionDetailM Slave={TransactionDetailS} id={id} />;
 };

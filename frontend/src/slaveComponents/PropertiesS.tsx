@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
 type Row = Extract<PropertiesSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type NavLinkTo = PropertiesSProps['navLinkTo'];
 type PropertyStatus = NonNullable<Row['property_status']>;
 type PropertyType = NonNullable<Row['property_type']>;
 
@@ -23,14 +23,12 @@ export const TYPE_LABEL: Readonly<Record<PropertyType, string>> = Object.freeze(
 
 type TableBodyProps = {
   readonly properties: readonly Row[];
-  readonly onDetailClick: (id: string) => void;
-  readonly renderTenantLink: (tenantId: string) => ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 const TableBody = ({
   properties,
-  onDetailClick,
-  renderTenantLink,
+  navLinkTo,
 }: TableBodyProps): JSX.Element =>
   properties.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p> :
@@ -52,9 +50,10 @@ const TableBody = ({
               <tr
                 key={p.id ?? ''}
                 className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { onDetailClick(p.id ?? ''); }}
               >
-                <td className="py-3 pr-4 font-medium text-gray-900">{p.name}</td>
+                <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                  {navLinkTo.property({ id: p.id ?? '', style: {}, content: p.name ?? '' })}
+                </td>
                 <td className="py-3 pr-4 text-gray-600">{p.address}</td>
                 <td className="py-3 pr-4 text-gray-600">
                   {p.property_type !== null ?
@@ -63,7 +62,7 @@ const TableBody = ({
                 </td>
                 <td className="py-3 pr-4 text-gray-600 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                   {p.current_tenant_name !== null && p.tenant_id !== null ?
-                    renderTenantLink(p.tenant_id) :
+                    navLinkTo.tenant({ id: p.tenant_id, style: {}, content: p.current_tenant_name }) :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className="py-3 pr-4 text-gray-600">
@@ -81,7 +80,7 @@ const TableBody = ({
       </div>
     );
 
-export const PropertiesS = ({ asyncData, onDetailClick, renderTenantLink }: PropertiesSProps): JSX.Element => (
+export const PropertiesS = ({ asyncData, navLinkTo }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -91,8 +90,7 @@ export const PropertiesS = ({ asyncData, onDetailClick, renderTenantLink }: Prop
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           properties={data}
-          onDetailClick={onDetailClick}
-          renderTenantLink={renderTenantLink}
+          navLinkTo={navLinkTo}
         />
       ))
       .exhaustive()}

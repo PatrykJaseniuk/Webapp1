@@ -1,9 +1,10 @@
-import { useNavigate, Link } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
+import { NavLink } from '@/generic/utils';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
@@ -18,15 +19,17 @@ type LeaseAgreementWithRelationships = Readonly<{
   attachments: readonly AttachmentDbRow[];
 }>;
 
+type NavLinkTo = Readonly<{
+  readonly tenant: NavLink;
+  readonly property: NavLink;
+  readonly transaction: NavLink;
+  readonly edit: NavLink;
+  readonly leases: NavLink;
+}>;
+
 export type LeaseAgreementSProps = {
   readonly asyncData: AsyncData<LeaseAgreementWithRelationships>;
-  readonly nav: Readonly<{
-    readonly toTenant: (tenantId: string) => void;
-    readonly toProperty: (propertyId: string) => void;
-    readonly toTransaction: (transactionId: string) => void;
-    readonly editLink: ReactNode;
-    readonly backLink: ReactNode;
-  }>;
+  readonly navLinkTo: NavLinkTo;
 };
 
 type Props = {
@@ -38,8 +41,6 @@ export const LeaseAgreementDetailM = ({
   Slave,
   id,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
-
   const query = useQuery({
     queryKey: ['leaseAgreement', id],
     queryFn: async (): Promise<LeaseAgreementWithRelationships> => {
@@ -78,18 +79,18 @@ export const LeaseAgreementDetailM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const nav = {
-    toTenant: (tenantId: string) => { navigate({ to: '/app/tenants/$id', params: { id: tenantId } }); },
-    toProperty: (propertyId: string) => { navigate({ to: '/app/properties/$id', params: { id: propertyId } }); },
-    toTransaction: (transactionId: string) => { navigate({ to: '/app/transactions/$id', params: { id: transactionId } }); },
-    editLink: <Link to="/app/leases/$id" params={{ id }}>Edytuj</Link>,
-    backLink: <Link to="/app/leases">← Powrót do listy</Link>,
-  } as const;
+  const navLinkTo: NavLinkTo = {
+    tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,
+    property: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
+    transaction: ({ id: transactionId, content, style }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style}>{content}</Link>,
+    edit: ({ id: _id, content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
+    leases: ({ id: _id, content, style }) => <Link to="/app/leases" style={style}>{content}</Link>,
+  };
 
   return (
     <Slave
       asyncData={asyncData}
-      nav={nav}
+      navLinkTo={navLinkTo}
     />
   );
 };

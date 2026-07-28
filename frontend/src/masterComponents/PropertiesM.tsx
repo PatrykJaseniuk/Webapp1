@@ -1,16 +1,21 @@
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, Link } from '@tanstack/react-router';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { toAsyncData, type AsyncData as DataFetchMode } from '@/generic';
+import { toAsyncData, type AsyncData } from '@/generic';
+import { NavLink } from '@/generic/utils';
 
-type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row']
+type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
+
+type NavLinkTo = Readonly<{
+  readonly property: NavLink;
+  readonly tenant: NavLink;
+}>;
 
 export type PropertiesSProps = {
-  readonly asyncData: DataFetchMode<readonly PropertyOccupancyRow[]>;
-  readonly onDetailClick: (id: string) => void;
-  readonly renderTenantLink: (tenantId: string) => ReactNode;
+  readonly asyncData: AsyncData<readonly PropertyOccupancyRow[]>;
+  readonly navLinkTo: NavLinkTo;
 };
 
 type Props = {
@@ -20,8 +25,6 @@ type Props = {
 export const PropertiesM = ({
   Slave,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
-
   const query = useQuery({
     queryKey: ['properties'],
     queryFn: async (): Promise<readonly PropertyOccupancyRow[]> => {
@@ -36,12 +39,10 @@ export const PropertiesM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const onDetailClick = (id: string): void => {
-    navigate({ to: '/app/properties/$id', params: { id } });
+  const navLinkTo: NavLinkTo = {
+    property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
+    tenant: ({ id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  const renderTenantLink = (tenantId: string): ReactNode =>
-    <Link to="/app/tenants/$id" params={{ id: tenantId }} />;
-
-  return <Slave asyncData={asyncData} onDetailClick={onDetailClick} renderTenantLink={renderTenantLink} />;
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} />;
 };

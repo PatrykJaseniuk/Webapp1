@@ -1,8 +1,9 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
+import { NavLink } from '@/generic/utils';
 
 type DashboardSummary = Readonly<{
   totalProperties: number;
@@ -13,13 +14,15 @@ type DashboardSummary = Readonly<{
   overdueItems: number;
 }>;
 
-export type DashboardCard = Readonly<{
-  link: ReactNode;
-}>;
+type NavLinkTo=  {
+    leases:NavLink,
+    tenants:NavLink,
+    properties:NavLink
+  };
 
 export type DashboardSummarySProps = {
   readonly asyncData: AsyncData<DashboardSummary>;
-  readonly cards: readonly DashboardCard[];
+  navLinkTo:NavLinkTo  
 };
 
 type Props = {
@@ -88,11 +91,12 @@ export const DashboardSummaryM = ({
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const cards: readonly DashboardCard[] = [
-    { link: <Link to="/app/properties">Nieruchomości<br />Zarządzaj nieruchomościami</Link> },
-    { link: <Link to="/app/tenants">Najemcy<br />Zarządzaj najemcami</Link> },
-    { link: <Link to="/app/leases">Umowy najmu<br />Zarządzaj umowami</Link> },
-  ];
+  const navLinkTo: NavLinkTo = {
+    leases: ({ id: _id, content, style }) => <Link to='/app/leases' style={style}> {content}</Link>,
+    tenants: ({ id: _id, content, style }) => <Link to='/app/tenants' style={style}> {content}</Link>,
+    properties: ({ id: _id, content, style }) => <Link to='/app/properties' style={style}> {content}</Link>,
+  }
+  
 
-  return <Slave asyncData={asyncData} cards={cards} />;
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} />;
 };

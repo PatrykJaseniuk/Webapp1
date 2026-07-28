@@ -1,10 +1,10 @@
-import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
 type Row = Extract<TransactionsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type NavLinkTo = TransactionsSProps['navLinkTo'];
 type TxnType = Row['type'];
 type TxnStatus = Row['transaction_status'];
 
@@ -38,16 +38,12 @@ const txnAmountClass = (amount: number): string =>
 
 type TableBodyProps = {
   readonly transactions: readonly Row[];
-  readonly onTransactionClick: (id: string) => void;
-  readonly renderPropertyLink: (propertyId: string, name: string) => ReactNode;
-  readonly renderLeaseLink: (leaseId: string) => ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 const TableBody = ({
   transactions,
-  onTransactionClick,
-  renderPropertyLink,
-  renderLeaseLink,
+  navLinkTo,
 }: TableBodyProps): JSX.Element =>
   transactions.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak transakcji.</p> :
@@ -69,20 +65,21 @@ const TableBody = ({
             {transactions.map((tx) => (
               <tr
                 key={tx.id}
-                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { onTransactionClick(tx.id); }}
+                className="border-b border-gray-100 text-sm hover:bg-blue-50"
               >
-                <td className="py-3 pr-4 text-gray-600">{tx.due_date}</td>
+                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                  {navLinkTo.transaction({ id: tx.id, style: {}, content: tx.due_date })}
+                </td>
                 <td className="py-3 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
                 <td className="py-3 pr-4 text-gray-600">{tx.description ?? '—'}</td>
                 <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {tx.property_id !== null && tx.properties?.name !== null ?
-                    renderPropertyLink(tx.property_id, tx.properties!.name!) :
+                  {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
+                    navLinkTo.property({ id: tx.property_id, style: {}, content: tx.properties.name }) :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                   {tx.lease_id !== null ?
-                    renderLeaseLink(tx.lease_id) :
+                    navLinkTo.lease({ id: tx.lease_id, style: {}, content: 'Umowa' }) :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className={`py-3 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
@@ -100,9 +97,7 @@ const TableBody = ({
 
 export const TransactionsS = ({
   asyncData,
-  onTransactionClick,
-  renderPropertyLink,
-  renderLeaseLink,
+  navLinkTo,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
@@ -113,9 +108,7 @@ export const TransactionsS = ({
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           transactions={data}
-          onTransactionClick={onTransactionClick}
-          renderPropertyLink={renderPropertyLink}
-          renderLeaseLink={renderLeaseLink}
+          navLinkTo={navLinkTo}
         />
       ))
       .exhaustive()}

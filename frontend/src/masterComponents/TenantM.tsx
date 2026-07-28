@@ -1,70 +1,45 @@
+import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, Link } from '@tanstack/react-router';
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-
-export type LeaseSummary = Readonly<{
-  id: string;
-  propertyName: string;
-  propertyId: string;
-  tenantName: string;
-  tenantId: string;
-  startDate: string;
-  endDate: string | null;
-  monthlyRent: number;
-  depositAmount: number;
-  leaseStatus: string;
-}>;
-
-export type TransactionSummary = Readonly<{
-  id: string;
-  type: string;
-  description: string | null;
-  amount: number;
-  dueDate: string;
-  transactionStatus: string;
-}>;
-
-export type AttachmentSummary = Readonly<{
-  id: string;
-  fileName: string;
-  fileUrl: string;
-  fileType: string | null;
-  fileSize: number | null;
-  description: string | null;
-}>;
+import { NavLink } from '@/generic/utils';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
+type ActiveLeaseRow = Database['public']['Views']['active_leases']['Row'];
+type TransactionRow = Database['public']['Tables']['transactions']['Row'];
+type AttachmentRow = Database['public']['Tables']['attachments']['Row'];
 
 type TenantDetailData = Readonly<{
   tenant: TenantRow;
-  leases: readonly LeaseSummary[];
-  transactions: readonly TransactionSummary[];
-  attachments: readonly AttachmentSummary[];
+  leases: readonly ActiveLeaseRow[];
+  transactions: readonly TransactionRow[];
+  attachments: readonly AttachmentRow[];
+}>;
+
+type NavLinkTo = Readonly<{
+  readonly toProperty: NavLink;
+  readonly toLease: NavLink;
+  readonly toTransaction: NavLink;
+  readonly linkToEdit: NavLink;
+  readonly linkToTenants: NavLink;
 }>;
 
 export type TenantSProps = {
   readonly asyncData: AsyncData<TenantDetailData>;
-  readonly onPropertyClick: (propertyId: string) => void;
-  readonly onLeaseClick: (leaseId: string) => void;
-  readonly onTransactionClick: (transactionId: string) => void;
-  readonly editLink: ReactNode;
-  readonly backLink: ReactNode;
+  readonly navLinkTo: NavLinkTo;
 };
 
 type Props = {
-  readonly DetailViewComponent: ComponentType<TenantSProps>;
+  readonly Slave: ComponentType<TenantSProps>;
   readonly id: string;
 };
 
 export const TenantDetailM = ({
-  DetailViewComponent,
+  Slave,
   id,
 }: Props): JSX.Element => {
-  const navigate = useNavigate();
-
   const query = useQuery({
     queryKey: ['tenant', id],
     queryFn: async (): Promise<TenantDetailData> => {
@@ -95,59 +70,29 @@ export const TenantDetailM = ({
         transactionsResult.error;
       if (combinedError !== null) throw combinedError;
 
-      const tenant = tenantResult.data!;
-      const leases: readonly LeaseSummary[] = (leasesResult.data ?? []).map((l) => ({
-        id: l.id ?? '',
-        propertyName: l.property_name ?? '',
-        propertyId: l.property_id ?? '',
-        tenantName: l.tenant_name ?? '',
-        tenantId: l.tenant_id ?? '',
-        startDate: l.start_date ?? '',
-        endDate: l.end_date,
-        monthlyRent: l.monthly_rent ?? 0,
-        depositAmount: l.deposit_amount ?? 0,
-        leaseStatus: l.lease_status ?? 'active',
-      }));
-
-      const transactions: readonly TransactionSummary[] = (transactionsResult.data ?? []).map((t) => ({
-        id: t.id,
-        type: t.type,
-        description: t.description,
-        amount: t.amount,
-        dueDate: t.due_date,
-        transactionStatus: t.transaction_status,
-      }));
-
-      const attachments: readonly AttachmentSummary[] = (attachmentsResult.data ?? []).map((a) => ({
-        id: a.id,
-        fileName: a.file_name,
-        fileUrl: a.file_url,
-        fileType: a.file_type,
-        fileSize: a.file_size,
-        description: a.description,
-      }));
-
-      return { tenant, leases, transactions, attachments };
+      return {
+        attachments: attachmentsResult.data ?? [],
+        leases: leasesResult.data ?? [],
+        tenant: tenantResult.data!,
+        transactions: transactionsResult.data ?? [],
+      };
     },
   });
 
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
-  const onPropertyClick = (propertyId: string) => { navigate({ to: '/app/properties/$id', params: { id: propertyId } }); };
-  const onLeaseClick = (leaseId: string) => { navigate({ to: '/app/leases/$id', params: { id: leaseId } }); };
-  const onTransactionClick = (transactionId: string) => { navigate({ to: '/app/transactions/$id', params: { id: transactionId } }); };
-
-  const editLink: ReactNode = <Link to="/app/tenants/$id" params={{ id }}>Edytuj</Link>;
-  const backLink: ReactNode = <Link to="/app/tenants">← Powrót do listy</Link>;
+  const navLinkTo: NavLinkTo = {
+    toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
+    toLease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
+    toTransaction: ({ id: transactionId, content, style }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style}>{content}</Link>,
+    linkToEdit: ({ id: _id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
+    linkToTenants: ({ id: _id, content, style }) => <Link to="/app/tenants" style={style}>{content}</Link>,
+  };
 
   return (
-    <DetailViewComponent
+    <Slave
       asyncData={asyncData}
-      onPropertyClick={onPropertyClick}
-      onLeaseClick={onLeaseClick}
-      onTransactionClick={onTransactionClick}
-      editLink={editLink}
-      backLink={backLink}
+      navLinkTo={navLinkTo}
     />
   );
 };

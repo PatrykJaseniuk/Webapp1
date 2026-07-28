@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
+
+type NavLinkTo = LeaseAgreementsSProps['navLinkTo'];
 
 type Row = Extract<LeaseAgreementsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type LeaseStatus = Row['lease_status'];
@@ -24,16 +25,12 @@ const leaseStatusPillClass = (status: LeaseStatus): string =>
 
 type TableBodyProps = {
   readonly leases: readonly Row[];
-  readonly renderTenantLink: (tenantId: string) => ReactNode;
-  readonly renderPropertyLink: (propertyId: string) => ReactNode;
-  readonly onDetailClick: (id: string) => void;
+  readonly navLinkTo: NavLinkTo;
 };
 
 const TableBody = ({
   leases,
-  renderTenantLink,
-  renderPropertyLink,
-  onDetailClick,
+  navLinkTo,
 }: TableBodyProps): JSX.Element =>
   leases.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
@@ -48,17 +45,21 @@ const TableBody = ({
               <th className="py-3 pr-4 font-medium">Do</th>
               <th className="py-3 pr-4 font-medium text-right">Czynsz</th>
               <th className="py-3 pr-4 font-medium">Status</th>
+              <th className="py-3 pr-4 font-medium">Szczegóły</th>
             </tr>
           </thead>
           <tbody>
             {leases.map((l) => (
               <tr
                 key={l.id}
-                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                onClick={() => { onDetailClick(l.id); }}
+                className="border-b border-gray-100 text-sm"
               >
-                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{renderTenantLink(l.tenant_id)}</td>
-                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{renderPropertyLink(l.property_id)}</td>
+                <td className="py-3 pr-4">
+                  {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenants.first_name} ${l.tenants.last_name}`, style: { color: '#2563eb' } })}
+                </td>
+                <td className="py-3 pr-4">
+                  {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: { color: '#2563eb' } })}
+                </td>
                 <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
                 <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
                 <td className="py-3 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
@@ -67,6 +68,9 @@ const TableBody = ({
                     {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
                   </span>
                 </td>
+                <td className="py-3 pr-4">
+                  {navLinkTo.leaseAgreement({ id: l.id, content: 'Szczegóły', style: { color: '#2563eb' } })}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -74,7 +78,7 @@ const TableBody = ({
       </div>
     );
 
-export const LeaseAgreementsS = ({ asyncData, onDetailClick, renderTenantLink, renderPropertyLink }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, navLinkTo }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -84,9 +88,7 @@ export const LeaseAgreementsS = ({ asyncData, onDetailClick, renderTenantLink, r
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <TableBody
           leases={data}
-          onDetailClick={onDetailClick}
-          renderTenantLink={renderTenantLink}
-          renderPropertyLink={renderPropertyLink}
+          navLinkTo={navLinkTo}
         />
       ))
       .exhaustive()}
