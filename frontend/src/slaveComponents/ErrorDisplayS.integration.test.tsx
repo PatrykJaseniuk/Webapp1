@@ -7,7 +7,7 @@ describe('ErrorDisplay', () => {
   it('renders 404 heading when is404 is true', () => {
     render(
       <MemoryRouterProvider>
-        <ErrorDisplay is404={true} />
+        <ErrorDisplay is404={true} loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -17,7 +17,7 @@ describe('ErrorDisplay', () => {
   it('renders "Page not found" when is404 is true', () => {
     render(
       <MemoryRouterProvider>
-        <ErrorDisplay is404={true} />
+        <ErrorDisplay is404={true} loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -27,7 +27,7 @@ describe('ErrorDisplay', () => {
   it('renders a login link when is404 is true', () => {
     render(
       <MemoryRouterProvider>
-        <ErrorDisplay is404={true} />
+        <ErrorDisplay is404={true} loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -37,7 +37,7 @@ describe('ErrorDisplay', () => {
   it('renders generic error heading when is404 is false', () => {
     render(
       <MemoryRouterProvider>
-        <ErrorDisplay is404={false} />
+        <ErrorDisplay is404={false} loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -47,7 +47,7 @@ describe('ErrorDisplay', () => {
   it('renders a login link when is404 is false', () => {
     render(
       <MemoryRouterProvider>
-        <ErrorDisplay is404={false} />
+        <ErrorDisplay is404={false} loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 

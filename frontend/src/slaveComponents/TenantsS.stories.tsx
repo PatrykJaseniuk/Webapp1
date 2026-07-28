@@ -7,20 +7,19 @@ type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][num
 
 const makeTenant = (overrides?: Partial<Row>): Row => ({
   id: '00000000-0000-0000-0000-000000000001',
-  userId: null,
-  firstName: 'Jan',
-  lastName: 'Kowalski',
+  user_id: null,
+  first_name: 'Jan',
+  last_name: 'Kowalski',
   email: 'jan@example.com',
   phone: '123456789',
-  idDocumentNumber: 'ABC123456',
-  emergencyContactName: 'Anna Kowalska',
-  emergencyContactPhone: '987654321',
+  id_document_number: 'ABC123456',
+  emergency_contact_name: 'Anna Kowalska',
+  emergency_contact_phone: '987654321',
   notes: null,
-  tenantStatus: 'active',
-  createdAt: '2025-01-01T00:00:00Z',
-  updatedAt: '2025-01-01T00:00:00Z',
-  currentPropertyNames: '',
-  currentPropertyIds: [],
+  tenant_status: 'active',
+  created_at: '2025-01-01T00:00:00Z',
+  updated_at: '2025-01-01T00:00:00Z',
+  lease_agreements: null,
   ...overrides,
 });
 
@@ -34,6 +33,13 @@ const rejectedDataMode: TenantsSProps['asyncData'] = {
   onRetry: noop,
 };
 
+const navLinkTo = {
+  tenant: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
+    <a href={`#/tenants/${id}`} style={style}>{content}</a>,
+  property: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
+    <a href={`#/properties/${id}`} style={style}>{content}</a>,
+};
+
 const meta: Meta<typeof TenantsS> = {
   component: TenantsS,
   title: 'slaveComponents/TenantsS',
@@ -45,7 +51,7 @@ const meta: Meta<typeof TenantsS> = {
     ),
   ],
   args: {
-    getPropertyUrl: (propertyId: string): string => `#/properties/${propertyId}`,
+    navLinkTo,
   },
 };
 
@@ -70,9 +76,9 @@ export const WithRows: Story = {
     asyncData: {
       tag: 'fulfilled',
       data: [
-        makeTenant({ id: '1', firstName: 'Jan', lastName: 'Kowalski', tenantStatus: 'active', currentPropertyNames: 'Apartament Centrum', currentPropertyIds: ['prop-1'] }),
-        makeTenant({ id: '2', firstName: 'Anna', lastName: 'Nowak', tenantStatus: 'applicant', email: 'anna@example.com' }),
-        makeTenant({ id: '3', firstName: 'Piotr', lastName: 'Zieliński', tenantStatus: 'past', phone: '555555555' }),
+        makeTenant({ id: '1', first_name: 'Jan', last_name: 'Kowalski', tenant_status: 'active', lease_agreements: [] }),
+        makeTenant({ id: '2', first_name: 'Anna', last_name: 'Nowak', tenant_status: 'applicant', email: 'anna@example.com', lease_agreements: [] }),
+        makeTenant({ id: '3', first_name: 'Piotr', last_name: 'Zieliński', tenant_status: 'past', phone: '555555555', lease_agreements: [] }),
       ],
     },
   },

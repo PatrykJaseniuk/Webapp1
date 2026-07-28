@@ -15,7 +15,7 @@ const meta: Meta<typeof LoginForm> = {
   ],
   args: {
     onSubmit: fn(),
-    signupUrl: '/signup',
+    signupLink: <a href="/signup">Zarejestruj się</a>,
   },
 };
 export default meta;

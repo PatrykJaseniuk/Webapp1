@@ -19,7 +19,7 @@ const meta: Meta<typeof AdminDashboard> = {
   title: 'slave/AdminDashboard',
   component: AdminDashboard,
   args: {
-    navLinks: {
+    navLinkTo: {
       leases: mockNavLink('Umowy'),
       tenants: mockNavLink('Najemcy'),
       properties: mockNavLink('Nieruchomości'),

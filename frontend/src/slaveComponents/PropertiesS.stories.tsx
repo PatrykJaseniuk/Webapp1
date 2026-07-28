@@ -43,6 +43,13 @@ const rejectedDataMode: PropertiesSProps['asyncData'] = {
   onRetry: noop,
 };
 
+const navLinkTo = {
+  property: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
+    <a href={`#/properties/${id}`} style={style}>{content}</a>,
+  tenant: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
+    <a href={`#/tenants/${id}`} style={style}>{content}</a>,
+};
+
 const meta: Meta<typeof PropertiesS> = {
   title: 'slave/PropertiesS',
   component: PropertiesS,
@@ -54,8 +61,7 @@ const meta: Meta<typeof PropertiesS> = {
     ),
   ],
   args: {
-    getDetailUrl: (id: string) => `#/properties/${id}`,
-    getTenantUrl: (tenantId: string) => `#/tenants/${tenantId}`,
+    navLinkTo,
   },
 };
 export default meta;

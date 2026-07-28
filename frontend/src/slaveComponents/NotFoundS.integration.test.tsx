@@ -7,7 +7,7 @@ describe('NotFound', () => {
   it('renders 404 heading', () => {
     render(
       <MemoryRouterProvider>
-        <NotFound />
+        <NotFound loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -17,7 +17,7 @@ describe('NotFound', () => {
   it('renders the descriptive message', () => {
     render(
       <MemoryRouterProvider>
-        <NotFound />
+        <NotFound loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -30,7 +30,7 @@ describe('NotFound', () => {
   it('renders a link to login', () => {
     render(
       <MemoryRouterProvider>
-        <NotFound />
+        <NotFound loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 

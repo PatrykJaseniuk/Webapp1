@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { AppLayoutShell } from './AppLayouS';
-import type { AppLayoutSProps, NavItem } from '@/masterComponents/AppLayoutM';
+import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 
-const navItems: readonly NavItem[] = [
-  { to: '/admin', label: 'Dashboard' },
-  { to: '/admin/properties', label: 'Properties' },
-  { to: '/admin/tenants', label: 'Tenants' },
-  { to: '/admin/leases', label: 'Leases' },
+const sidebarLinks: readonly JSX.Element[] = [
+  <a key="dashboard" href="/app">Dashboard</a>,
+  <a key="properties" href="/app/properties">Properties</a>,
+  <a key="tenants" href="/app/tenants">Tenants</a>,
+  <a key="leases" href="/app/leases">Leases</a>,
 ];
 
 const noop = (): void => { };
@@ -33,7 +33,7 @@ const meta: Meta<typeof AppLayoutShell> = {
     ),
   ],
   args: {
-    navItems,
+    sidebarLinks,
     asyncData: fulfilledDataMode,
     onLogout: noop,
   },

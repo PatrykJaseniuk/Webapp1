@@ -7,7 +7,7 @@ describe('AccessDenied', () => {
   it('renders the access denied heading', () => {
     render(
       <MemoryRouterProvider>
-        <AccessDenied />
+        <AccessDenied loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -17,7 +17,7 @@ describe('AccessDenied', () => {
   it('renders the descriptive message', () => {
     render(
       <MemoryRouterProvider>
-        <AccessDenied />
+        <AccessDenied loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
@@ -29,7 +29,7 @@ describe('AccessDenied', () => {
   it('renders a link to login', () => {
     render(
       <MemoryRouterProvider>
-        <AccessDenied />
+        <AccessDenied loginLink={<a href="/login">Go to login</a>} />
       </MemoryRouterProvider>,
     );
 
