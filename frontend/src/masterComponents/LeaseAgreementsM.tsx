@@ -4,7 +4,7 @@ import type { ComponentType} from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink } from '@/generic/utils';
+import { NavLinkWithId } from '@/generic/utils';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row']
 type LeaseAgreementRow = LeaseAgreementDbRow & {
@@ -14,9 +14,9 @@ type LeaseAgreementRow = LeaseAgreementDbRow & {
 
 
 type NavLinkTo = Readonly<{
-  readonly leaseAgreement: NavLink,
-  readonly tenant: NavLink,
-  readonly property: NavLink
+  readonly leaseAgreement: NavLinkWithId,
+  readonly tenant: NavLinkWithId,
+  readonly property: NavLinkWithId
 }>
 
 export type LeaseAgreementsSProps = {

@@ -97,11 +97,11 @@ const DetailContent = ({
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div className="flex items-center justify-between">
         <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-          {navLinkTo.properties({ id: '', style: {}, content: '← Powrót do listy' })}
+          {navLinkTo.properties({ style: {}, content: '← Powrót do listy' })}
           <h1 className="mt-1 text-2xl font-bold text-gray-900">{p.name}</h1>
         </div>
         <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">
-          {navLinkTo.edit({ id: '', style: {}, content: 'Edytuj' })}
+          {navLinkTo.edit({ style: {}, content: 'Edytuj' })}
         </div>
       </div>
 

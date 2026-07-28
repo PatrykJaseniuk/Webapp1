@@ -72,13 +72,13 @@ export const AdminDashboard = ({
 
     <div className="mt-4 grid gap-4 sm:grid-cols-3">
       <div className={cardLinkClass}>
-        {navLinkTo.leases({ id: '', style: navCardStyle(), content: 'Umowy' })}
+        {navLinkTo.leases({ style: navCardStyle(), content: 'Umowy' })}
       </div>
       <div className={cardLinkClass}>
-        {navLinkTo.tenants({ id: '', style: navCardStyle(), content: 'Najemcy' })}
+        {navLinkTo.tenants({ style: navCardStyle(), content: 'Najemcy' })}
       </div>
       <div className={cardLinkClass}>
-        {navLinkTo.properties({ id: '', style: navCardStyle(), content: 'Nieruchomości' })}
+        {navLinkTo.properties({ style: navCardStyle(), content: 'Nieruchomości' })}
       </div>
     </div>
   </div>

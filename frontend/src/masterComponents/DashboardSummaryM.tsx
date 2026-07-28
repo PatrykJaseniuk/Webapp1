@@ -22,7 +22,7 @@ type NavLinkTo=  {
 
 export type DashboardSummarySProps = {
   readonly asyncData: AsyncData<DashboardSummary>;
-  navLinkTo:NavLinkTo  
+  readonly navLinkTo:NavLinkTo  
 };
 
 type Props = {
@@ -92,9 +92,9 @@ export const DashboardSummaryM = ({
   const asyncData = toAsyncData(query, () => { query.refetch(); });
 
   const navLinkTo: NavLinkTo = {
-    leases: ({ id: _id, content, style }) => <Link to='/app/leases' style={style}> {content}</Link>,
-    tenants: ({ id: _id, content, style }) => <Link to='/app/tenants' style={style}> {content}</Link>,
-    properties: ({ id: _id, content, style }) => <Link to='/app/properties' style={style}> {content}</Link>,
+    leases: ({ content, style }) => <Link to='/app/leases' style={style}> {content}</Link>,
+    tenants: ({ content, style }) => <Link to='/app/tenants' style={style}> {content}</Link>,
+    properties: ({ content, style }) => <Link to='/app/properties' style={style}> {content}</Link>,
   }
   
 

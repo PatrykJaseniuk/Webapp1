@@ -12,7 +12,9 @@
 import { ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
-export type NavLink = ((args: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) => ReactNode)
+export type NavLink = ((args: { readonly style: React.CSSProperties; readonly content: string }) => ReactNode)
+
+export type NavLinkWithId = ((args: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) => ReactNode)
 
 export type AsyncData<T> =
   | { readonly tag: 'pending' }

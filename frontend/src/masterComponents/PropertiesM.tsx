@@ -4,13 +4,13 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink } from '@/generic/utils';
+import { NavLinkWithId } from '@/generic/utils';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
 
 type NavLinkTo = Readonly<{
-  readonly property: NavLink;
-  readonly tenant: NavLink;
+  readonly property: NavLinkWithId;
+  readonly tenant: NavLinkWithId;
 }>;
 
 export type PropertiesSProps = {

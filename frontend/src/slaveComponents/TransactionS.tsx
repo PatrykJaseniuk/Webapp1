@@ -50,7 +50,7 @@ const DetailContent = ({
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-        {navLinkTo.linkToTransactions({ id: '', style: {}, content: '← Powrót' })}
+        {navLinkTo.linkToTransactions({ style: {}, content: '← Powrót' })}
         <h1 className="mt-1 text-2xl font-bold text-gray-900">Transakcja</h1>
       </div>
 

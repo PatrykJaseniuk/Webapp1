@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink } from '@/generic/utils';
+import { NavLinkWithId } from '@/generic/utils';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -13,9 +13,9 @@ type TransactionListRow = TransactionDbRow & {
 };
 
 type NavLinkTo = Readonly<{
-  readonly transaction: NavLink;
-  readonly property: NavLink;
-  readonly lease: NavLink;
+  readonly transaction: NavLinkWithId;
+  readonly property: NavLinkWithId;
+  readonly lease: NavLinkWithId;
 }>;
 
 export type TransactionsSProps = {

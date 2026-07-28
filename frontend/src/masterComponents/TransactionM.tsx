@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink } from '@/generic/utils';
+import { NavLink, NavLinkWithId } from '@/generic/utils';
 
 type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -15,8 +15,8 @@ type TransactionDetailData = Readonly<{
 }>;
 
 type NavLinkTo = Readonly<{
-  readonly toProperty: NavLink;
-  readonly toLease: NavLink;
+  readonly toProperty: NavLinkWithId;
+  readonly toLease: NavLinkWithId;
   readonly linkToTransactions: NavLink;
 }>;
 
@@ -73,7 +73,7 @@ export const TransactionDetailM = ({
   const navLinkTo: NavLinkTo = {
     toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
     toLease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
-    linkToTransactions: ({ id: _id, content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
+    linkToTransactions: ({ content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
   };
 
   return (

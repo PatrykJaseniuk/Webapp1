@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { toAsyncData, type AsyncData } from '@/generic';
-import { NavLink } from '@/generic/utils';
+import { NavLink, NavLinkWithId } from '@/generic/utils';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
@@ -20,9 +20,9 @@ type LeaseAgreementWithRelationships = Readonly<{
 }>;
 
 type NavLinkTo = Readonly<{
-  readonly tenant: NavLink;
-  readonly property: NavLink;
-  readonly transaction: NavLink;
+  readonly tenant: NavLinkWithId;
+  readonly property: NavLinkWithId;
+  readonly transaction: NavLinkWithId;
   readonly edit: NavLink;
   readonly leases: NavLink;
 }>;
@@ -83,8 +83,8 @@ export const LeaseAgreementDetailM = ({
     tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,
     property: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
     transaction: ({ id: transactionId, content, style }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style}>{content}</Link>,
-    edit: ({ id: _id, content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
-    leases: ({ id: _id, content, style }) => <Link to="/app/leases" style={style}>{content}</Link>,
+    edit: ({ content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
+    leases: ({ content, style }) => <Link to="/app/leases" style={style}>{content}</Link>,
   };
 
   return (
