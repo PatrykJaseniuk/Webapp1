@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { NotFound } from './NotFoundS';
@@ -12,6 +13,9 @@ const meta: Meta<typeof NotFound> = {
       </MemoryRouterProvider>
     ),
   ],
+  args: {
+    navLinkTo: { login: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a href="/login">{content}</a> },
+  },
 };
 export default meta;
 

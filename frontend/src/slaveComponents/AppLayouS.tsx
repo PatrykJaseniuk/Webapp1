@@ -8,17 +8,28 @@ import { ErrorMessage } from './ErrorMessageS';
 
 type AuthData = Extract<AppLayoutSProps['asyncData'], { tag: 'fulfilled' }>['data'];
 
+// ── Display labels for nav keys ──
+type UnionKeys<T> = T extends T ? keyof T : never;
+type NavKey = UnionKeys<AppLayoutSProps['navLinkTo']>;
+const NAV_LABEL: { readonly [K in NavKey]: string } = {
+  dashboard: 'Dashboard',
+  properties: 'Properties',
+  tenants: 'Tenants',
+  leases: 'Leases',
+  transactions: 'Transakcje'
+};
+
 // ── Authenticated shell (inner) ──
 
 type AuthenticatedShellProps = {
-  readonly sidebarLinks: AppLayoutSProps['sidebarLinks'];
+  readonly navLinksTo: AppLayoutSProps['navLinkTo'];
   readonly authData: AuthData;
   readonly onLogout: () => void;
   readonly children: ReactNode;
 };
 
 const AuthenticatedShell = ({
-  sidebarLinks,
+  navLinksTo,
   authData,
   onLogout,
   children,
@@ -31,7 +42,9 @@ const AuthenticatedShell = ({
       </div>
 
       <nav className="flex-1 space-y-1 px-4 py-4 [&_a]:block [&_a]:rounded-md [&_a]:px-3 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-gray-700 hover:[&_a]:bg-gray-100 hover:[&_a]:text-gray-900">
-        {sidebarLinks}
+        {Object.entries(navLinksTo).map(([key, navLink]) =>
+          navLink({ content: NAV_LABEL[key as NavKey] ?? key, style: {} }),
+        )}
       </nav>
 
       {/* User info — bottom of sidebar */}
@@ -57,7 +70,7 @@ const AuthenticatedShell = ({
 // ── Component ──
 
 export const AppLayoutShell = ({
-  sidebarLinks,
+  navLinkTo: navLinksTo,
   asyncData,
   onLogout,
   children,
@@ -70,7 +83,7 @@ export const AppLayoutShell = ({
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <AuthenticatedShell
-          sidebarLinks={sidebarLinks}
+          navLinksTo={navLinksTo}
           authData={data}
           onLogout={onLogout}
         >

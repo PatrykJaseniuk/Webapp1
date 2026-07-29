@@ -1,14 +1,16 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { AppLayoutShell } from './AppLayouS';
 import type { AppLayoutSProps } from '@/masterComponents/AppLayoutM';
 
-const sidebarLinks: readonly JSX.Element[] = [
-  <a key="dashboard" href="/app">Dashboard</a>,
-  <a key="properties" href="/app/properties">Properties</a>,
-  <a key="tenants" href="/app/tenants">Tenants</a>,
-  <a key="leases" href="/app/leases">Leases</a>,
-];
+const navLinksTo: AppLayoutSProps['navLinkTo'] = {
+  dashboard: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="dashboard" href="/app">{content}</a>,
+  properties: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="properties" href="/app/properties">{content}</a>,
+  tenants: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="tenants" href="/app/tenants">{content}</a>,
+  leases: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="leases" href="/app/leases">{content}</a>,
+  transactions: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="transactions" href="/app/transactions">{content}</a>,
+};
 
 const noop = (): void => { };
 
@@ -33,7 +35,7 @@ const meta: Meta<typeof AppLayoutShell> = {
     ),
   ],
   args: {
-    sidebarLinks,
+    navLinkTo: navLinksTo,
     asyncData: fulfilledDataMode,
     onLogout: noop,
   },

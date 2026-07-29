@@ -1,10 +1,11 @@
+import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
-import { AccessDenied } from './AccessDeniedS';
+import { AccessDeniedS } from './AccessDeniedS';
 
-const meta: Meta<typeof AccessDenied> = {
+const meta: Meta<typeof AccessDeniedS> = {
   title: 'slave/AccessDenied',
-  component: AccessDenied,
+  component: AccessDeniedS,
   decorators: [
     (Story) => (
       <MemoryRouterProvider>
@@ -12,9 +13,12 @@ const meta: Meta<typeof AccessDenied> = {
       </MemoryRouterProvider>
     ),
   ],
+  args: {
+    navLinkTo: { login: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a href="/login">{content}</a> },
+  },
 };
 export default meta;
 
-type Story = StoryObj<typeof AccessDenied>;
+type Story = StoryObj<typeof AccessDeniedS>;
 
 export const Default: Story = {};

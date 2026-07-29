@@ -1,13 +1,20 @@
+import type { CSSProperties } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { NotFound } from './NotFoundS';
 
+const navLinkTo = {
+  login: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => (
+    <a href="/login">{content}</a>
+  ),
+};
+
 describe('NotFound', () => {
   it('renders 404 heading', () => {
     render(
       <MemoryRouterProvider>
-        <NotFound loginLink={<a href="/login">Go to login</a>} />
+        <NotFound navLinkTo={navLinkTo} />
       </MemoryRouterProvider>,
     );
 
@@ -17,7 +24,7 @@ describe('NotFound', () => {
   it('renders the descriptive message', () => {
     render(
       <MemoryRouterProvider>
-        <NotFound loginLink={<a href="/login">Go to login</a>} />
+        <NotFound navLinkTo={navLinkTo} />
       </MemoryRouterProvider>,
     );
 
@@ -30,7 +37,7 @@ describe('NotFound', () => {
   it('renders a link to login', () => {
     render(
       <MemoryRouterProvider>
-        <NotFound loginLink={<a href="/login">Go to login</a>} />
+        <NotFound navLinkTo={navLinkTo} />
       </MemoryRouterProvider>,
     );
 

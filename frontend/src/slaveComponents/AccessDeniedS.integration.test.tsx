@@ -1,13 +1,20 @@
+import type { CSSProperties } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouterProvider } from '@/test-router-utils';
-import { AccessDenied } from './AccessDeniedS';
+import { AccessDeniedS } from './AccessDeniedS';
+
+const navLinkTo = {
+  login: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => (
+    <a href="/login">{content}</a>
+  ),
+};
 
 describe('AccessDenied', () => {
   it('renders the access denied heading', () => {
     render(
       <MemoryRouterProvider>
-        <AccessDenied loginLink={<a href="/login">Go to login</a>} />
+        <AccessDeniedS navLinkTo={navLinkTo} />
       </MemoryRouterProvider>,
     );
 
@@ -17,7 +24,7 @@ describe('AccessDenied', () => {
   it('renders the descriptive message', () => {
     render(
       <MemoryRouterProvider>
-        <AccessDenied loginLink={<a href="/login">Go to login</a>} />
+        <AccessDeniedS navLinkTo={navLinkTo} />
       </MemoryRouterProvider>,
     );
 
@@ -29,7 +36,7 @@ describe('AccessDenied', () => {
   it('renders a link to login', () => {
     render(
       <MemoryRouterProvider>
-        <AccessDenied loginLink={<a href="/login">Go to login</a>} />
+        <AccessDeniedS navLinkTo={navLinkTo} />
       </MemoryRouterProvider>,
     );
 
