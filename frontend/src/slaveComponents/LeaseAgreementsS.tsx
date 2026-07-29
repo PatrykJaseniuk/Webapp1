@@ -1,6 +1,5 @@
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
-import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
 type NavLinkTo = LeaseAgreementsSProps['navLinkTo'];
@@ -30,6 +29,7 @@ type SortHeaderProps = {
   readonly label: string;
   readonly sort: Sort;
   readonly align?: 'left' | 'right';
+  readonly className?: string;
 };
 
 const SortHeader = ({
@@ -37,6 +37,7 @@ const SortHeader = ({
   label,
   sort,
   align = 'left',
+  className = '',
 }: SortHeaderProps): JSX.Element => {
   const isActive = sort.config.column === column;
   const isAsc = isActive && sort.config.direction === 'asc';
@@ -44,7 +45,7 @@ const SortHeader = ({
   const alignClass = align === 'right' ? 'text-right' : 'text-left';
   return (
     <th
-      className={`cursor-pointer select-none py-3 pr-4 font-medium ${alignClass}`}
+      className={`${className} cursor-pointer select-none py-3 pr-4 font-medium whitespace-nowrap ${alignClass}`}
       onClick={() => sort.doSort(column)}
     >
       <span className="text-gray-500">{label}</span>
@@ -59,24 +60,69 @@ type TableProps = {
   readonly leases: readonly Row[];
   readonly navLinkTo: NavLinkTo;
   readonly sort: Sort;
+  readonly isFetching: boolean;
 };
+
+const FetchProgress = (): JSX.Element => (
+  <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
+    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
+  </div>
+);
+
+const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
+
+const HEADERS = (
+  <tr className="border-b border-gray-200 text-sm">
+    <th className="w-[18%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Najemca<span className="ml-1 inline-block w-3" /></th>
+    <th className="w-[18%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Nieruchomość<span className="ml-1 inline-block w-3" /></th>
+    <th className="w-[12%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Od<span className="ml-1 inline-block w-3" /></th>
+    <th className="w-[12%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Do<span className="ml-1 inline-block w-3" /></th>
+    <th className="w-[12%] py-3 pr-4 text-right font-medium whitespace-nowrap text-gray-500">Czynsz<span className="ml-1 inline-block w-3" /></th>
+    <th className="w-[14%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Status<span className="ml-1 inline-block w-3" /></th>
+    <th className="w-[14%] py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
+  </tr>
+);
+
+const SKELETON_ROWS = Array.from({ length: 4 }, (_, i) => (
+  <tr key={`skel-${i}`} className="border-b border-gray-100">
+    <td className="py-3 pr-4"><div className={`${skeletonBar} w-24`} /></td>
+    <td className="py-3 pr-4"><div className={`${skeletonBar} w-28`} /></td>
+    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="py-3 pr-4"><div className={`${skeletonBar} ml-auto w-16`} /></td>
+    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+  </tr>
+));
+
+const SkeletonTable = (): JSX.Element => (
+  <div className="relative overflow-x-auto">
+    <FetchProgress />
+    <table className="w-full min-w-[640px] table-fixed border-collapse text-left">
+      <thead>{HEADERS}</thead>
+      <tbody>{SKELETON_ROWS}</tbody>
+    </table>
+  </div>
+);
 
 const TableView = ({
   leases,
   navLinkTo,
   sort,
+  isFetching,
 }: TableProps): JSX.Element => (
-  <div className="overflow-x-auto">
-    <table className="w-full border-collapse text-left">
+  <div className="relative overflow-x-auto">
+    {isFetching && <FetchProgress />}
+    <table className="w-full min-w-[640px] table-fixed border-collapse text-left">
       <thead>
         <tr className="border-b border-gray-200 text-sm">
-          <SortHeader column="tenants" label="Najemca" sort={sort} />
-          <SortHeader column="properties" label="Nieruchomość" sort={sort} />
-          <SortHeader column="start_date" label="Od" sort={sort} />
-          <SortHeader column="end_date" label="Do" sort={sort} />
-          <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
-          <SortHeader column="lease_status" label="Status" sort={sort} />
-          <th className="py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
+          <SortHeader className="w-[18%]" column="tenants" label="Najemca" sort={sort} />
+          <SortHeader className="w-[18%]" column="properties" label="Nieruchomość" sort={sort} />
+          <SortHeader className="w-[12%]" column="start_date" label="Od" sort={sort} />
+          <SortHeader className="w-[12%]" column="end_date" label="Do" sort={sort} />
+          <SortHeader className="w-[12%]" column="monthly_rent" label="Czynsz" sort={sort} align="right" />
+          <SortHeader className="w-[14%]" column="lease_status" label="Status" sort={sort} />
+          <th className="w-[14%] py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
         </tr>
       </thead>
       <tbody>
@@ -115,24 +161,15 @@ const TableView = ({
   </div>
 );
 
-const FetchProgress = (): JSX.Element => (
-  <div className="h-0.5 w-full overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
-    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
-  </div>
-);
-
-export const LeaseAgreementsS = ({ asyncData, isFetching, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
-      .with({ tag: 'pending' }, () => <LoadingSpinner />)
+      .with({ tag: 'pending' }, () => <SkeletonTable />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
-      .with({ tag: 'fulfilled' }, ({ data }) => (
-        <>
-          {isFetching && <FetchProgress />}
-          <TableView leases={data} navLinkTo={navLinkTo} sort={sort} />
-        </>
+      .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
+        <TableView leases={data} navLinkTo={navLinkTo} sort={sort} isFetching={isFetching ?? false} />
       ))
       .exhaustive()}
   </div>
