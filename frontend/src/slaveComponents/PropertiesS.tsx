@@ -5,6 +5,8 @@ import { ErrorMessage } from './ErrorMessageS';
 
 type Row = Extract<PropertiesSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type NavLinkTo = PropertiesSProps['navLinkTo'];
+type Sort = PropertiesSProps['sort'];
+type SortColumn = Sort['config']['column'];
 type PropertyStatus = NonNullable<Row['property_status']>;
 type PropertyType = NonNullable<Row['property_type']>;
 
@@ -21,14 +23,46 @@ export const TYPE_LABEL: Readonly<Record<PropertyType, string>> = Object.freeze(
   room: 'Pokój',
 });
 
+type SortHeaderProps = {
+  readonly column: SortColumn;
+  readonly label: string;
+  readonly sort: Sort;
+  readonly align?: 'left' | 'right';
+};
+
+const SortHeader = ({
+  column,
+  label,
+  sort,
+  align = 'left',
+}: SortHeaderProps): JSX.Element => {
+  const isActive = sort.config.column === column;
+  const isAsc = isActive && sort.config.direction === 'asc';
+  const isDesc = isActive && sort.config.direction === 'desc';
+  const alignClass = align === 'right' ? 'text-right' : 'text-left';
+  return (
+    <th
+      className={`cursor-pointer select-none py-3 pr-4 font-medium ${alignClass}`}
+      onClick={() => sort.doSort(column)}
+    >
+      <span className="text-gray-500">{label}</span>
+      <span className="ml-1 inline-block w-3 text-xs text-gray-400">
+        {isAsc ? '▲' : isDesc ? '▼' : '△'}
+      </span>
+    </th>
+  );
+};
+
 type TableBodyProps = {
   readonly properties: readonly Row[];
   readonly navLinkTo: NavLinkTo;
+  readonly sort: Sort;
 };
 
 const TableBody = ({
   properties,
   navLinkTo,
+  sort,
 }: TableBodyProps): JSX.Element =>
   properties.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p> :
@@ -36,13 +70,13 @@ const TableBody = ({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-gray-200 text-sm text-gray-500">
-              <th className="py-3 pr-4 font-medium">Nazwa</th>
-              <th className="py-3 pr-4 font-medium">Adres</th>
-              <th className="py-3 pr-4 font-medium">Typ</th>
-              <th className="py-3 pr-4 font-medium">Najemca</th>
-              <th className="py-3 pr-4 font-medium">Status</th>
-              <th className="py-3 pr-4 font-medium text-right">Czynsz</th>
+            <tr className="border-b border-gray-200 text-sm">
+              <SortHeader column="name" label="Nazwa" sort={sort} />
+              <SortHeader column="address" label="Adres" sort={sort} />
+              <SortHeader column="property_type" label="Typ" sort={sort} />
+              <th className="py-3 pr-4 font-medium text-gray-500">Najemca</th>
+              <SortHeader column="property_status" label="Status" sort={sort} />
+              <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
             </tr>
           </thead>
           <tbody>
@@ -80,7 +114,7 @@ const TableBody = ({
       </div>
     );
 
-export const PropertiesS = ({ asyncData, navLinkTo }: PropertiesSProps): JSX.Element => (
+export const PropertiesS = ({ asyncData, navLinkTo, sort }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -91,6 +125,7 @@ export const PropertiesS = ({ asyncData, navLinkTo }: PropertiesSProps): JSX.Ele
         <TableBody
           properties={data}
           navLinkTo={navLinkTo}
+          sort={sort}
         />
       ))
       .exhaustive()}

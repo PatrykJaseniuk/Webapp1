@@ -5,6 +5,8 @@ import { ErrorMessage } from './ErrorMessageS';
 
 type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type NavLinkTo = TenantsSProps['navLinkTo'];
+type Sort = TenantsSProps['sort'];
+type SortColumn = Sort['config']['column'];
 type TenantStatus = Row['tenant_status'];
 
 export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freeze({
@@ -13,31 +15,46 @@ export const STATUS_LABEL: Readonly<Record<TenantStatus, string>> = Object.freez
   applicant: 'Kandydat',
 });
 
-const activePropertyLinks = (row: Row, navLinkTo: NavLinkTo): readonly JSX.Element[] => {
-  const activeLeases = (row.lease_agreements ?? []).filter((la) => la.lease_status === 'active');
-  return activeLeases
-    .filter((la) => la.properties !== null && la.properties.name !== null)
-    .map((la) => {
-      const propName = la.properties?.name ?? '';
-      return (
-        <span
-          key={la.property_id}
-          className="inline-block [&_a]:rounded-full [&_a]:bg-blue-50 [&_a]:px-2 [&_a]:py-0.5 [&_a]:text-xs [&_a]:font-medium [&_a]:text-blue-700 hover:[&_a]:bg-blue-100"
-        >
-          {navLinkTo.property({ id: la.property_id, style: {}, content: propName })}
-        </span>
-      );
-    });
+type SortHeaderProps = {
+  readonly column: SortColumn;
+  readonly label: string;
+  readonly sort: Sort;
+  readonly align?: 'left' | 'right';
+};
+
+const SortHeader = ({
+  column,
+  label,
+  sort,
+  align = 'left',
+}: SortHeaderProps): JSX.Element => {
+  const isActive = sort.config.column === column;
+  const isAsc = isActive && sort.config.direction === 'asc';
+  const isDesc = isActive && sort.config.direction === 'desc';
+  const alignClass = align === 'right' ? 'text-right' : 'text-left';
+  return (
+    <th
+      className={`cursor-pointer select-none py-3 pr-4 font-medium ${alignClass}`}
+      onClick={() => sort.doSort(column)}
+    >
+      <span className="text-gray-500">{label}</span>
+      <span className="ml-1 inline-block w-3 text-xs text-gray-400">
+        {isAsc ? '▲' : isDesc ? '▼' : '△'}
+      </span>
+    </th>
+  );
 };
 
 type TableBodyProps = {
   readonly tenants: readonly Row[];
   readonly navLinkTo: NavLinkTo;
+  readonly sort: Sort;
 };
 
 const TableBody = ({
   tenants,
   navLinkTo,
+  sort,
 }: TableBodyProps): JSX.Element =>
   tenants.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak najemców.</p> :
@@ -45,44 +62,35 @@ const TableBody = ({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-gray-200 text-sm text-gray-500">
-              <th className="py-3 pr-4 font-medium">Nazwisko</th>
-              <th className="py-3 pr-4 font-medium">Imię</th>
-              <th className="py-3 pr-4 font-medium">Email</th>
-              <th className="py-3 pr-4 font-medium">Telefon</th>
-              <th className="py-3 pr-4 font-medium">Nieruchomości</th>
-              <th className="py-3 pr-4 font-medium">Status</th>
+            <tr className="border-b border-gray-200 text-sm">
+              <SortHeader column="last_name" label="Nazwisko" sort={sort} />
+              <SortHeader column="first_name" label="Imię" sort={sort} />
+              <SortHeader column="email" label="Email" sort={sort} />
+              <th className="py-3 pr-4 font-medium text-gray-500">Telefon</th>
+              <SortHeader column="tenant_status" label="Status" sort={sort} />
             </tr>
           </thead>
           <tbody>
-            {tenants.map((t) => {
-              const propLinks = activePropertyLinks(t, navLinkTo);
-              return (
-                <tr
-                  key={t.id}
-                  className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-                >
-                  <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                    {navLinkTo.tenant({ id: t.id, style: {}, content: t.last_name })}
-                  </td>
-                  <td className="py-3 pr-4 text-gray-600">{t.first_name}</td>
-                  <td className="py-3 pr-4 text-gray-600">{t.email}</td>
-                  <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
-                  <td className="py-3 pr-4 text-gray-600">
-                    {propLinks.length > 0 ?
-                      <div className="flex flex-wrap gap-1">{propLinks}</div> :
-                      <span className="text-gray-400">—</span>}
-                  </td>
-                  <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[t.tenant_status]}</td>
-                </tr>
-              );
-            })}
+            {tenants.map((t) => (
+              <tr
+                key={t.id}
+                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+              >
+                <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                  {navLinkTo.tenant({ id: t.id, style: {}, content: t.last_name })}
+                </td>
+                <td className="py-3 pr-4 text-gray-600">{t.first_name}</td>
+                <td className="py-3 pr-4 text-gray-600">{t.email}</td>
+                <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
+                <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[t.tenant_status]}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
     );
 
-export const TenantsS = ({ asyncData, navLinkTo }: TenantsSProps): JSX.Element => (
+export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -93,6 +101,7 @@ export const TenantsS = ({ asyncData, navLinkTo }: TenantsSProps): JSX.Element =
         <TableBody
           tenants={data}
           navLinkTo={navLinkTo}
+          sort={sort}
         />
       ))
       .exhaustive()}

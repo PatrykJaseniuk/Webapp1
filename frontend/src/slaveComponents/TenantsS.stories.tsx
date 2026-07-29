@@ -19,11 +19,13 @@ const makeTenant = (overrides?: Partial<Row>): Row => ({
   tenant_status: 'active',
   created_at: '2025-01-01T00:00:00Z',
   updated_at: '2025-01-01T00:00:00Z',
-  lease_agreements: null,
   ...overrides,
 });
 
 const noop = (): void => { };
+
+type SortColumn = TenantsSProps['sort']['config']['column'];
+const sort = { config: { column: 'last_name' as SortColumn, direction: 'asc' as const }, doSort: noop };
 
 const pendingDataMode: TenantsSProps['asyncData'] = { tag: 'pending' };
 
@@ -52,6 +54,7 @@ const meta: Meta<typeof TenantsS> = {
   ],
   args: {
     navLinkTo,
+    sort,
   },
 };
 
@@ -76,9 +79,9 @@ export const WithRows: Story = {
     asyncData: {
       tag: 'fulfilled',
       data: [
-        makeTenant({ id: '1', first_name: 'Jan', last_name: 'Kowalski', tenant_status: 'active', lease_agreements: [] }),
-        makeTenant({ id: '2', first_name: 'Anna', last_name: 'Nowak', tenant_status: 'applicant', email: 'anna@example.com', lease_agreements: [] }),
-        makeTenant({ id: '3', first_name: 'Piotr', last_name: 'Zieliński', tenant_status: 'past', phone: '555555555', lease_agreements: [] }),
+        makeTenant({ id: '1', first_name: 'Jan', last_name: 'Kowalski', tenant_status: 'active' }),
+        makeTenant({ id: '2', first_name: 'Anna', last_name: 'Nowak', tenant_status: 'applicant', email: 'anna@example.com' }),
+        makeTenant({ id: '3', first_name: 'Piotr', last_name: 'Zieliński', tenant_status: 'past', phone: '555555555' }),
       ],
     },
   },

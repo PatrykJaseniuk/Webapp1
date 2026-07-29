@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { toAsyncData, type AsyncData } from '@/generic';
+import { toAsyncData, useSort, type AsyncData, type SortConfig } from '@/generic';
 import type { NavLinkWithId } from '@/generic/utils';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
@@ -13,9 +13,16 @@ type NavLinkTo = Readonly<{
   readonly tenant: NavLinkWithId;
 }>;
 
+type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
+type PropertySortColumn = Extract<keyof PropertyDbRow, 'name' | 'address' | 'property_type' | 'property_status' | 'monthly_rent'>;
+
 export type PropertiesSProps = {
   readonly asyncData: AsyncData<readonly PropertyOccupancyRow[]>;
   readonly navLinkTo: NavLinkTo;
+  readonly sort: {
+    readonly config: SortConfig<PropertySortColumn>;
+    readonly doSort: (column: PropertySortColumn) => void;
+  };
 };
 
 type Props = {
@@ -25,13 +32,17 @@ type Props = {
 export const PropertiesM = ({
   Slave,
 }: Props): JSX.Element => {
+  const [sortConfig, onSort] = useSort<PropertySortColumn>('name', 'asc');
+  const sort = { config: sortConfig, doSort: onSort };
+
   const query = useQuery({
-    queryKey: ['properties'],
+    queryKey: ['properties', sortConfig.column, sortConfig.direction],
     queryFn: async (): Promise<readonly PropertyOccupancyRow[]> => {
+      const ascending = sortConfig.direction === 'asc';
       const r = await backendConnector
         .from('property_occupancy')
         .select('*')
-        .order('name');
+        .order(sortConfig.column, { ascending });
       if (r.error !== null) throw r.error;
       return r.data ?? [];
     },
@@ -44,5 +55,5 @@ export const PropertiesM = ({
     tenant: ({ id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} />;
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} />;
 };

@@ -5,6 +5,8 @@ import { ErrorMessage } from './ErrorMessageS';
 
 type Row = Extract<TransactionsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type NavLinkTo = TransactionsSProps['navLinkTo'];
+type Sort = TransactionsSProps['sort'];
+type SortColumn = Sort['config']['column'];
 type TxnType = Row['type'];
 type TxnStatus = Row['transaction_status'];
 
@@ -36,14 +38,46 @@ const txnStatusPillClass = (status: TxnStatus): string =>
 const txnAmountClass = (amount: number): string =>
   `text-sm font-medium ${amount >= 0 ? 'text-green-700' : 'text-red-700'}`;
 
+type SortHeaderProps = {
+  readonly column: SortColumn;
+  readonly label: string;
+  readonly sort: Sort;
+  readonly align?: 'left' | 'right';
+};
+
+const SortHeader = ({
+  column,
+  label,
+  sort,
+  align = 'left',
+}: SortHeaderProps): JSX.Element => {
+  const isActive = sort.config.column === column;
+  const isAsc = isActive && sort.config.direction === 'asc';
+  const isDesc = isActive && sort.config.direction === 'desc';
+  const alignClass = align === 'right' ? 'text-right' : 'text-left';
+  return (
+    <th
+      className={`cursor-pointer select-none py-3 pr-4 font-medium ${alignClass}`}
+      onClick={() => sort.doSort(column)}
+    >
+      <span className="text-gray-500">{label}</span>
+      <span className="ml-1 inline-block w-3 text-xs text-gray-400">
+        {isAsc ? '▲' : isDesc ? '▼' : '△'}
+      </span>
+    </th>
+  );
+};
+
 type TableBodyProps = {
   readonly transactions: readonly Row[];
   readonly navLinkTo: NavLinkTo;
+  readonly sort: Sort;
 };
 
 const TableBody = ({
   transactions,
   navLinkTo,
+  sort,
 }: TableBodyProps): JSX.Element =>
   transactions.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak transakcji.</p> :
@@ -51,14 +85,14 @@ const TableBody = ({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-gray-200 text-sm text-gray-500">
-              <th className="py-3 pr-4 font-medium">Data</th>
-              <th className="py-3 pr-4 font-medium">Typ</th>
-              <th className="py-3 pr-4 font-medium">Opis</th>
-              <th className="py-3 pr-4 font-medium">Nieruchomość</th>
-              <th className="py-3 pr-4 font-medium">Umowa</th>
-              <th className="py-3 pr-4 font-medium text-right">Kwota</th>
-              <th className="py-3 pr-4 font-medium">Status</th>
+            <tr className="border-b border-gray-200 text-sm">
+              <SortHeader column="due_date" label="Data" sort={sort} />
+              <SortHeader column="type" label="Typ" sort={sort} />
+              <th className="py-3 pr-4 font-medium text-gray-500">Opis</th>
+              <SortHeader column="properties" label="Nieruchomość" sort={sort} />
+              <th className="py-3 pr-4 font-medium text-gray-500">Umowa</th>
+              <SortHeader column="amount" label="Kwota" sort={sort} align="right" />
+              <SortHeader column="transaction_status" label="Status" sort={sort} />
             </tr>
           </thead>
           <tbody>
@@ -98,6 +132,7 @@ const TableBody = ({
 export const TransactionsS = ({
   asyncData,
   navLinkTo,
+  sort,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
@@ -109,6 +144,7 @@ export const TransactionsS = ({
         <TableBody
           transactions={data}
           navLinkTo={navLinkTo}
+          sort={sort}
         />
       ))
       .exhaustive()}

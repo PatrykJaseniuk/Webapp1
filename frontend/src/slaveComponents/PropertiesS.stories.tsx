@@ -35,6 +35,9 @@ const manyProperties: readonly Row[] = [
 
 const noop = (): void => { };
 
+type SortColumn = PropertiesSProps['sort']['config']['column'];
+const sort = { config: { column: 'name' as SortColumn, direction: 'asc' as const }, doSort: noop };
+
 const pendingDataMode: PropertiesSProps['asyncData'] = { tag: 'pending' };
 
 const rejectedDataMode: PropertiesSProps['asyncData'] = {
@@ -62,6 +65,7 @@ const meta: Meta<typeof PropertiesS> = {
   ],
   args: {
     navLinkTo,
+    sort,
   },
 };
 export default meta;

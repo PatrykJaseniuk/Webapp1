@@ -4,6 +4,8 @@ import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
 type NavLinkTo = LeaseAgreementsSProps['navLinkTo'];
+type Sort = LeaseAgreementsSProps['sort'];
+type SortColumn = Sort['config']['column'];
 
 type Row = Extract<LeaseAgreementsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type LeaseStatus = Row['lease_status'];
@@ -23,14 +25,46 @@ const leaseStatusPillClass = (status: LeaseStatus): string =>
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-red-50 text-red-700`;
 
+type SortHeaderProps = {
+  readonly column: SortColumn;
+  readonly label: string;
+  readonly sort: Sort;
+  readonly align?: 'left' | 'right';
+};
+
+const SortHeader = ({
+  column,
+  label,
+  sort,
+  align = 'left',
+}: SortHeaderProps): JSX.Element => {
+  const isActive = sort.config.column === column;
+  const isAsc = isActive && sort.config.direction === 'asc';
+  const isDesc = isActive && sort.config.direction === 'desc';
+  const alignClass = align === 'right' ? 'text-right' : 'text-left';
+  return (
+    <th
+      className={`cursor-pointer select-none py-3 pr-4 font-medium ${alignClass}`}
+      onClick={() => sort.doSort(column)}
+    >
+      <span className="text-gray-500">{label}</span>
+      <span className="ml-1 inline-block w-3 text-xs text-gray-400">
+        {isAsc ? '▲' : isDesc ? '▼' : '△'}
+      </span>
+    </th>
+  );
+};
+
 type TableBodyProps = {
   readonly leases: readonly Row[];
   readonly navLinkTo: NavLinkTo;
+  readonly sort: Sort;
 };
 
 const TableBody = ({
   leases,
   navLinkTo,
+  sort,
 }: TableBodyProps): JSX.Element =>
   leases.length === 0 ?
     <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
@@ -38,14 +72,14 @@ const TableBody = ({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
-            <tr className="border-b border-gray-200 text-sm text-gray-500">
-              <th className="py-3 pr-4 font-medium">Najemca</th>
-              <th className="py-3 pr-4 font-medium">Nieruchomość</th>
-              <th className="py-3 pr-4 font-medium">Od</th>
-              <th className="py-3 pr-4 font-medium">Do</th>
-              <th className="py-3 pr-4 font-medium text-right">Czynsz</th>
-              <th className="py-3 pr-4 font-medium">Status</th>
-              <th className="py-3 pr-4 font-medium">Szczegóły</th>
+            <tr className="border-b border-gray-200 text-sm">
+              <SortHeader column="tenants" label="Najemca" sort={sort} />
+              <SortHeader column="properties" label="Nieruchomość" sort={sort} />
+              <SortHeader column="start_date" label="Od" sort={sort} />
+              <SortHeader column="end_date" label="Do" sort={sort} />
+              <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
+              <SortHeader column="lease_status" label="Status" sort={sort} />
+              <th className="py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
             </tr>
           </thead>
           <tbody>
@@ -78,7 +112,7 @@ const TableBody = ({
       </div>
     );
 
-export const LeaseAgreementsS = ({ asyncData, navLinkTo }: LeaseAgreementsSProps): JSX.Element => (
+export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -89,6 +123,7 @@ export const LeaseAgreementsS = ({ asyncData, navLinkTo }: LeaseAgreementsSProps
         <TableBody
           leases={data}
           navLinkTo={navLinkTo}
+          sort={sort}
         />
       ))
       .exhaustive()}

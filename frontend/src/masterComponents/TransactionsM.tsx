@@ -4,8 +4,8 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { toAsyncData, type AsyncData } from '@/generic';
-import type { NavLinkWithId } from '@/generic/utils';
+import { toAsyncData, useSort, type AsyncData, type SortConfig } from '@/generic';
+import type { NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -19,9 +19,23 @@ type NavLinkTo = Readonly<{
   readonly lease: NavLinkWithId;
 }>;
 
+type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'> | 'properties';
+
+const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.freeze({
+  due_date: 'due_date',
+  type: 'type',
+  amount: 'amount',
+  transaction_status: 'transaction_status',
+  properties: 'properties(name)',
+});
+
 export type TransactionsSProps = {
   readonly asyncData: AsyncData<readonly TransactionListRow[]>;
   readonly navLinkTo: NavLinkTo;
+  readonly sort: {
+    readonly config: SortConfig<TransactionSortColumn>;
+    readonly doSort: (column: TransactionSortColumn) => void;
+  };
 };
 
 type Props = {
@@ -33,13 +47,17 @@ export const TransactionsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
+  const [sortConfig, onSort] = useSort<TransactionSortColumn>('due_date', 'desc');
+  const sort = { config: sortConfig, doSort: onSort };
+
   const query = useQuery({
-    queryKey: ['transactions'],
+    queryKey: ['transactions', sortConfig.column, sortConfig.direction],
     queryFn: async (): Promise<readonly TransactionListRow[]> => {
+      const ascending = sortConfig.direction === 'asc';
       const r = await backendConnector
         .from('transactions')
         .select('*, properties(name)')
-        .order('due_date', { ascending: false })
+        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .limit(100);
       if (r.error !== null) throw r.error;
       return r.data ?? [];
@@ -58,6 +76,7 @@ export const TransactionsM = ({
     <Slave
       asyncData={asyncData}
       navLinkTo={navLinkTo}
+      sort={sort}
     />
   );
 };
