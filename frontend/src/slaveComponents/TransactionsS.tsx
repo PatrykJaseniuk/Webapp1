@@ -57,7 +57,7 @@ const SortHeader = ({
   const alignClass = align === 'right' ? 'text-right' : 'text-left';
   return (
     <th
-      className={`cursor-pointer select-none py-3 pr-4 font-medium ${alignClass}`}
+      className={`cursor-pointer select-none py-3 pr-4 font-medium whitespace-nowrap ${alignClass}`}
       onClick={() => sort.doSort(column)}
     >
       <span className="text-gray-500">{label}</span>
@@ -86,6 +86,7 @@ const TableBody = ({
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-gray-200 text-sm">
+              <th className="pl-4 w-8 py-3 pr-4" />
               <SortHeader column="due_date" label="Data" sort={sort} />
               <SortHeader column="type" label="Typ" sort={sort} />
               <th className="py-3 pr-4 font-medium text-gray-500">Opis</th>
@@ -99,11 +100,12 @@ const TableBody = ({
             {transactions.map((tx) => (
               <tr
                 key={tx.id}
-                className="border-b border-gray-100 text-sm hover:bg-blue-50"
+                className="group border-b border-gray-100 text-sm hover:bg-blue-50"
               >
-                <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {navLinkTo.transaction({ id: tx.id, style: {}, content: tx.due_date })}
+                <td className="pl-4 py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                  {navLinkTo.transaction({ id: tx.id, style: {}, content: '→', ariaLabel: 'Szczegóły transakcji' })}
                 </td>
+                <td className="py-3 pr-4 text-gray-600">{new Date(tx.due_date).toLocaleDateString('pl-PL')}</td>
                 <td className="py-3 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
                 <td className="py-3 pr-4 text-gray-600">{tx.description ?? '—'}</td>
                 <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
@@ -113,7 +115,7 @@ const TableBody = ({
                 </td>
                 <td className="py-3 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                   {tx.lease_id !== null ?
-                    navLinkTo.lease({ id: tx.lease_id, style: {}, content: 'Umowa' }) :
+                    navLinkTo.lease({ id: tx.lease_id, style: {}, content: tx.lease_agreements?.start_date !== null && tx.lease_agreements?.start_date !== undefined ? `Umowa od ${tx.lease_agreements.start_date}` : `Umowa #${tx.lease_id.slice(0, 8)}` }) :
                     <span className="text-gray-400">—</span>}
                 </td>
                 <td className={`py-3 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>

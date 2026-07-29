@@ -21,6 +21,7 @@ export type NavLinkWithId = (args: {
   readonly id: string;
   readonly style: CSSProperties;
   readonly content: string;
+  readonly ariaLabel?: string;
 }) => ReactNode;
 
 export type SortDirection = 'asc' | 'desc';

@@ -11,6 +11,7 @@ type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 
 type TransactionListRow = TransactionDbRow & {
   readonly properties: { readonly name: string } | null;
+  readonly lease_agreements: { readonly start_date: string } | null;
 };
 
 type NavLinkTo = Readonly<{
@@ -56,7 +57,7 @@ export const TransactionsM = ({
       const ascending = sortConfig.direction === 'asc';
       const r = await backendConnector
         .from('transactions')
-        .select('*, properties(name)')
+        .select('*, properties(name), lease_agreements(start_date)')
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .limit(100);
       if (r.error !== null) throw r.error;
@@ -67,7 +68,7 @@ export const TransactionsM = ({
   const asyncData = toAsyncData(query, () => { void query.refetch(); });
 
   const navLinkTo: NavLinkTo = {
-    transaction: ({ id, content, style }) => <Link to="/app/transactions/$id" params={{ id }} style={style}>{content}</Link>,
+    transaction: ({ id, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
     lease: ({ id, content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
   };
