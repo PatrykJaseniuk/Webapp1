@@ -18,6 +18,7 @@ type PropertySortColumn = Extract<keyof PropertyDbRow, 'name' | 'address' | 'pro
 
 export type PropertiesSProps = {
   readonly asyncData: AsyncData<readonly PropertyOccupancyRow[]>;
+  readonly isFetching: boolean;
   readonly navLinkTo: NavLinkTo;
   readonly sort: {
     readonly config: SortConfig<PropertySortColumn>;
@@ -46,6 +47,7 @@ export const PropertiesM = ({
       if (r.error !== null) throw r.error;
       return r.data ?? [];
     },
+    placeholderData: (prev) => prev,
   });
 
   const asyncData = toAsyncData(query, () => { void query.refetch(); });
@@ -55,5 +57,5 @@ export const PropertiesM = ({
     tenant: ({ id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} />;
+  return <Slave asyncData={asyncData} isFetching={query.isFetching} navLinkTo={navLinkTo} sort={sort} />;
 };

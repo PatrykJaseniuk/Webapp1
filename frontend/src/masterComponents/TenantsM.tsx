@@ -20,6 +20,7 @@ type TenantSortColumn = Extract<keyof TenantDbRow, 'last_name' | 'first_name' | 
 
 export type TenantsSProps = {
   readonly asyncData: AsyncData<readonly TenantListRow[]>;
+  readonly isFetching: boolean;
   readonly navLinkTo: NavLinkTo;
   readonly sort: {
     readonly config: SortConfig<TenantSortColumn>;
@@ -48,6 +49,7 @@ export const TenantsM = ({
       if (r.error !== null) throw r.error;
       return (r.data ?? []);
     },
+    placeholderData: (prev) => prev,
   });
 
   const asyncData = toAsyncData(query, () => { void query.refetch(); });
@@ -57,5 +59,5 @@ export const TenantsM = ({
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} />;
+  return <Slave asyncData={asyncData} isFetching={query.isFetching} navLinkTo={navLinkTo} sort={sort} />;
 };

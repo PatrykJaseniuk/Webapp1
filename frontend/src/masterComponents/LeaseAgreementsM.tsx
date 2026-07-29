@@ -32,6 +32,7 @@ const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Obje
 
 export type LeaseAgreementsSProps = {
   readonly asyncData: AsyncData<readonly LeaseAgreementRow[]>;
+  readonly isFetching: boolean;
   readonly navLinkTo: NavLinkTo;
   readonly sort: {
     readonly config: SortConfig<LeaseAgreementSortColumn>;
@@ -62,6 +63,7 @@ export const LeaseAgreementsM = ({
       if (r.error !== null) throw r.error;
       return r.data ?? [];
     },
+    placeholderData: (prev) => prev,
   });
 
   const asyncData = toAsyncData(query, () => { void query.refetch(); });
@@ -75,6 +77,7 @@ export const LeaseAgreementsM = ({
   return (
     <Slave
       asyncData={asyncData}
+      isFetching={query.isFetching}
       navLinkTo={navLinkTo}
       sort={sort}
     />

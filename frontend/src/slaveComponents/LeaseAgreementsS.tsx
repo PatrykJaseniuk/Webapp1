@@ -55,64 +55,73 @@ const SortHeader = ({
   );
 };
 
-type TableBodyProps = {
+type TableProps = {
   readonly leases: readonly Row[];
   readonly navLinkTo: NavLinkTo;
   readonly sort: Sort;
 };
 
-const TableBody = ({
+const TableView = ({
   leases,
   navLinkTo,
   sort,
-}: TableBodyProps): JSX.Element =>
-  leases.length === 0 ?
-    <p className="py-8 text-center text-gray-500">Brak umów najmu.</p> :
-    (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-gray-200 text-sm">
-              <SortHeader column="tenants" label="Najemca" sort={sort} />
-              <SortHeader column="properties" label="Nieruchomość" sort={sort} />
-              <SortHeader column="start_date" label="Od" sort={sort} />
-              <SortHeader column="end_date" label="Do" sort={sort} />
-              <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
-              <SortHeader column="lease_status" label="Status" sort={sort} />
-              <th className="py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
+}: TableProps): JSX.Element => (
+  <div className="overflow-x-auto">
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr className="border-b border-gray-200 text-sm">
+          <SortHeader column="tenants" label="Najemca" sort={sort} />
+          <SortHeader column="properties" label="Nieruchomość" sort={sort} />
+          <SortHeader column="start_date" label="Od" sort={sort} />
+          <SortHeader column="end_date" label="Do" sort={sort} />
+          <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
+          <SortHeader column="lease_status" label="Status" sort={sort} />
+          <th className="py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
+        </tr>
+      </thead>
+      <tbody>
+        {leases.length === 0 ?
+          <tr>
+            <td colSpan={7} className="py-8 text-center text-gray-500">
+              Brak umów najmu.
+            </td>
+          </tr> :
+          leases.map((l) => (
+            <tr
+              key={l.id}
+              className="border-b border-gray-100 text-sm"
+            >
+              <td className="py-3 pr-4">
+                {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenants.first_name} ${l.tenants.last_name}`, style: { color: '#2563eb' } })}
+              </td>
+              <td className="py-3 pr-4">
+                {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: { color: '#2563eb' } })}
+              </td>
+              <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
+              <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
+              <td className="py-3 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
+              <td className="py-3 pr-4">
+                <span className={leaseStatusPillClass(l.lease_status)}>
+                  {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
+                </span>
+              </td>
+              <td className="py-3 pr-4">
+                {navLinkTo.leaseAgreement({ id: l.id, content: 'Szczegóły', style: { color: '#2563eb' } })}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {leases.map((l) => (
-              <tr
-                key={l.id}
-                className="border-b border-gray-100 text-sm"
-              >
-                <td className="py-3 pr-4">
-                  {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenants.first_name} ${l.tenants.last_name}`, style: { color: '#2563eb' } })}
-                </td>
-                <td className="py-3 pr-4">
-                  {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: { color: '#2563eb' } })}
-                </td>
-                <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
-                <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
-                <td className="py-3 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
-                <td className="py-3 pr-4">
-                  <span className={leaseStatusPillClass(l.lease_status)}>
-                    {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
-                  </span>
-                </td>
-                <td className="py-3 pr-4">
-                  {navLinkTo.leaseAgreement({ id: l.id, content: 'Szczegóły', style: { color: '#2563eb' } })}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+          ))}
+      </tbody>
+    </table>
+  </div>
+);
 
-export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
+const FetchProgress = (): JSX.Element => (
+  <div className="h-0.5 w-full overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
+    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
+  </div>
+);
+
+export const LeaseAgreementsS = ({ asyncData, isFetching, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -120,11 +129,10 @@ export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreements
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
-        <TableBody
-          leases={data}
-          navLinkTo={navLinkTo}
-          sort={sort}
-        />
+        <>
+          {isFetching && <FetchProgress />}
+          <TableView leases={data} navLinkTo={navLinkTo} sort={sort} />
+        </>
       ))
       .exhaustive()}
   </div>

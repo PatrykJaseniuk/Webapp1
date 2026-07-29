@@ -45,52 +45,61 @@ const SortHeader = ({
   );
 };
 
-type TableBodyProps = {
+type TableProps = {
   readonly tenants: readonly Row[];
   readonly navLinkTo: NavLinkTo;
   readonly sort: Sort;
 };
 
-const TableBody = ({
+const TableView = ({
   tenants,
   navLinkTo,
   sort,
-}: TableBodyProps): JSX.Element =>
-  tenants.length === 0 ?
-    <p className="py-8 text-center text-gray-500">Brak najemców.</p> :
-    (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-gray-200 text-sm">
-              <SortHeader column="last_name" label="Nazwisko" sort={sort} />
-              <SortHeader column="first_name" label="Imię" sort={sort} />
-              <SortHeader column="email" label="Email" sort={sort} />
-              <th className="py-3 pr-4 font-medium text-gray-500">Telefon</th>
-              <SortHeader column="tenant_status" label="Status" sort={sort} />
+}: TableProps): JSX.Element => (
+  <div className="overflow-x-auto">
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr className="border-b border-gray-200 text-sm">
+          <SortHeader column="last_name" label="Nazwisko" sort={sort} />
+          <SortHeader column="first_name" label="Imię" sort={sort} />
+          <SortHeader column="email" label="Email" sort={sort} />
+          <th className="py-3 pr-4 font-medium text-gray-500">Telefon</th>
+          <SortHeader column="tenant_status" label="Status" sort={sort} />
+        </tr>
+      </thead>
+      <tbody>
+        {tenants.length === 0 ?
+          <tr>
+            <td colSpan={5} className="py-8 text-center text-gray-500">
+              Brak najemców.
+            </td>
+          </tr> :
+          tenants.map((t) => (
+            <tr
+              key={t.id}
+              className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+            >
+              <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                {navLinkTo.tenant({ id: t.id, style: {}, content: t.last_name })}
+              </td>
+              <td className="py-3 pr-4 text-gray-600">{t.first_name}</td>
+              <td className="py-3 pr-4 text-gray-600">{t.email}</td>
+              <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
+              <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[t.tenant_status]}</td>
             </tr>
-          </thead>
-          <tbody>
-            {tenants.map((t) => (
-              <tr
-                key={t.id}
-                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-              >
-                <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {navLinkTo.tenant({ id: t.id, style: {}, content: t.last_name })}
-                </td>
-                <td className="py-3 pr-4 text-gray-600">{t.first_name}</td>
-                <td className="py-3 pr-4 text-gray-600">{t.email}</td>
-                <td className="py-3 pr-4 text-gray-600">{t.phone}</td>
-                <td className="py-3 pr-4 text-gray-600">{STATUS_LABEL[t.tenant_status]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+          ))}
+      </tbody>
+    </table>
+  </div>
+);
 
-export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Element => (
+const FetchProgress = (): JSX.Element => (
+  <div className="h-0.5 w-full overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
+    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
+  </div>
+);
+
+export const TenantsS = ({ asyncData, isFetching, navLinkTo, sort }: TenantsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -98,11 +107,10 @@ export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Ele
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
-        <TableBody
-          tenants={data}
-          navLinkTo={navLinkTo}
-          sort={sort}
-        />
+        <>
+          {isFetching && <FetchProgress />}
+          <TableView tenants={data} navLinkTo={navLinkTo} sort={sort} />
+        </>
       ))
       .exhaustive()}
   </div>

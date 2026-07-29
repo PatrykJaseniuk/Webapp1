@@ -34,7 +34,7 @@ export type SortConfig<C extends string> = {
 export type AsyncData<T> =
   | { readonly tag: 'pending' }
   | { readonly tag: 'rejected'; readonly message: string; readonly onRetry: () => void }
-  | { readonly tag: 'fulfilled'; readonly data: T };
+  | { readonly tag: 'fulfilled'; readonly data: T; readonly isFetching?: boolean };
 
 // ──────────────────────────────────────────────
 // Sort hook
@@ -90,6 +90,7 @@ export const toAsyncData = <T>(
     readonly data: T | undefined;
   },
   onRetry: () => void,
+  isFetching?: boolean,
 ): AsyncData<T> =>
   match(result.status)
     .with('pending', () => ({ tag: 'pending' as const }))
@@ -101,5 +102,6 @@ export const toAsyncData = <T>(
     .with('success', () => ({
       tag: 'fulfilled' as const,
       data: result.data as T,
+      ...(isFetching === true && { isFetching }),
     }))
     .exhaustive();

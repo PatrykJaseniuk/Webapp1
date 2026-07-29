@@ -53,68 +53,77 @@ const SortHeader = ({
   );
 };
 
-type TableBodyProps = {
+type TableProps = {
   readonly properties: readonly Row[];
   readonly navLinkTo: NavLinkTo;
   readonly sort: Sort;
 };
 
-const TableBody = ({
+const TableView = ({
   properties,
   navLinkTo,
   sort,
-}: TableBodyProps): JSX.Element =>
-  properties.length === 0 ?
-    <p className="py-8 text-center text-gray-500">Brak nieruchomości.</p> :
-    (
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-gray-200 text-sm">
-              <SortHeader column="name" label="Nazwa" sort={sort} />
-              <SortHeader column="address" label="Adres" sort={sort} />
-              <SortHeader column="property_type" label="Typ" sort={sort} />
-              <th className="py-3 pr-4 font-medium text-gray-500">Najemca</th>
-              <SortHeader column="property_status" label="Status" sort={sort} />
-              <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
+}: TableProps): JSX.Element => (
+  <div className="overflow-x-auto">
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr className="border-b border-gray-200 text-sm">
+          <SortHeader column="name" label="Nazwa" sort={sort} />
+          <SortHeader column="address" label="Adres" sort={sort} />
+          <SortHeader column="property_type" label="Typ" sort={sort} />
+          <th className="py-3 pr-4 font-medium text-gray-500">Najemca</th>
+          <SortHeader column="property_status" label="Status" sort={sort} />
+          <SortHeader column="monthly_rent" label="Czynsz" sort={sort} align="right" />
+        </tr>
+      </thead>
+      <tbody>
+        {properties.length === 0 ?
+          <tr>
+            <td colSpan={6} className="py-8 text-center text-gray-500">
+              Brak nieruchomości.
+            </td>
+          </tr> :
+          properties.map((p) => (
+            <tr
+              key={p.id ?? ''}
+              className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
+            >
+              <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                {navLinkTo.property({ id: p.id ?? '', style: {}, content: p.name ?? '' })}
+              </td>
+              <td className="py-3 pr-4 text-gray-600">{p.address}</td>
+              <td className="py-3 pr-4 text-gray-600">
+                {p.property_type !== null ?
+                  TYPE_LABEL[p.property_type] :
+                  <span className="text-gray-400">—</span>}
+              </td>
+              <td className="py-3 pr-4 text-gray-600 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                {p.current_tenant_name !== null && p.tenant_id !== null ?
+                  navLinkTo.tenant({ id: p.tenant_id, style: {}, content: p.current_tenant_name }) :
+                  <span className="text-gray-400">—</span>}
+              </td>
+              <td className="py-3 pr-4 text-gray-600">
+                {p.property_status !== null ?
+                  STATUS_LABEL[p.property_status] :
+                  <span className="text-gray-400">—</span>}
+              </td>
+              <td className="py-3 pr-4 text-right text-gray-900">
+                {(p.monthly_rent ?? 0).toLocaleString('pl-PL')} zł
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {properties.map((p) => (
-              <tr
-                key={p.id ?? ''}
-                className="cursor-pointer border-b border-gray-100 text-sm hover:bg-blue-50"
-              >
-                <td className="py-3 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {navLinkTo.property({ id: p.id ?? '', style: {}, content: p.name ?? '' })}
-                </td>
-                <td className="py-3 pr-4 text-gray-600">{p.address}</td>
-                <td className="py-3 pr-4 text-gray-600">
-                  {p.property_type !== null ?
-                    TYPE_LABEL[p.property_type] :
-                    <span className="text-gray-400">—</span>}
-                </td>
-                <td className="py-3 pr-4 text-gray-600 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {p.current_tenant_name !== null && p.tenant_id !== null ?
-                    navLinkTo.tenant({ id: p.tenant_id, style: {}, content: p.current_tenant_name }) :
-                    <span className="text-gray-400">—</span>}
-                </td>
-                <td className="py-3 pr-4 text-gray-600">
-                  {p.property_status !== null ?
-                    STATUS_LABEL[p.property_status] :
-                    <span className="text-gray-400">—</span>}
-                </td>
-                <td className="py-3 pr-4 text-right text-gray-900">
-                  {(p.monthly_rent ?? 0).toLocaleString('pl-PL')} zł
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    );
+          ))}
+      </tbody>
+    </table>
+  </div>
+);
 
-export const PropertiesS = ({ asyncData, navLinkTo, sort }: PropertiesSProps): JSX.Element => (
+const FetchProgress = (): JSX.Element => (
+  <div className="h-0.5 w-full overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
+    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
+  </div>
+);
+
+export const PropertiesS = ({ asyncData, isFetching, navLinkTo, sort }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
@@ -122,11 +131,10 @@ export const PropertiesS = ({ asyncData, navLinkTo, sort }: PropertiesSProps): J
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data }) => (
-        <TableBody
-          properties={data}
-          navLinkTo={navLinkTo}
-          sort={sort}
-        />
+        <>
+          {isFetching && <FetchProgress />}
+          <TableView properties={data} navLinkTo={navLinkTo} sort={sort} />
+        </>
       ))
       .exhaustive()}
   </div>

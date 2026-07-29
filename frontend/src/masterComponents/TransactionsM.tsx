@@ -63,9 +63,10 @@ export const TransactionsM = ({
       if (r.error !== null) throw r.error;
       return r.data ?? [];
     },
+    placeholderData: (prev) => prev,
   });
 
-  const asyncData = toAsyncData(query, () => { void query.refetch(); });
+  const asyncData = toAsyncData(query, () => { void query.refetch(); }, query.isFetching);
 
   const navLinkTo: NavLinkTo = {
     transaction: ({ id, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
