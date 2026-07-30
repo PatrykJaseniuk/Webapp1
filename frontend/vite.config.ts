@@ -10,6 +10,21 @@ import { playwright } from '@vitest/browser-playwright';
 const dirname = typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
+
+// Create a plain object snapshot of env vars to avoid Vite 6 Proxy cloning issues
+// in Vitest browser mode (Storybook tests). See:
+// https://github.com/storybookjs/storybook/issues/29408
+const createEnvSnapshot = () => {
+  const entries: string[] = [];
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith('VITE_')) {
+      const value = JSON.stringify(process.env[key]);
+      entries.push(`${key}: ${value}`);
+    }
+  }
+  return `{ ${entries.join(', ')} }`;
+};
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -18,6 +33,11 @@ export default defineConfig({
     }
   },
   base: './',
+  // Replace Vite's Proxy-based import.meta.env with a plain object to prevent
+  // "Dynamic access of import.meta.env is not supported" errors in Storybook/Vitest browser tests.
+  define: {
+    'import.meta.env': createEnvSnapshot()
+  },
   server: {
     port: 5173
   },
