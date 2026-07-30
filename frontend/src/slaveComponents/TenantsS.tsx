@@ -1,11 +1,9 @@
 import { match } from 'ts-pattern';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { ErrorMessage } from './ErrorMessageS';
-import { FetchProgress } from './FetchProgressS';
-import { SortHeader, StaticHeaderCell, type ColumnDef } from './SortHeaderS';
+import { DataTableS, type ColumnDef } from './DataTableS';
 
 type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
-type NavLinkTo = TenantsSProps['navLinkTo'];
 type Sort = TenantsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type TenantStatus = Row['tenant_status'];
@@ -34,78 +32,59 @@ const COLUMNS: readonly ColumnDef<SortColumn>[] = [
   { key: 'tenant_status', label: 'Status', sortColumn: 'tenant_status', align: 'left', className: 'w-[14%] pr-4' },
 ];
 
-type TableProps = {
-  readonly tenants: readonly Row[];
-  readonly navLinkTo: NavLinkTo;
-  readonly sort: Sort;
-  readonly isFetching: boolean;
-};
-
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
-const SKELETON_ROWS = Array.from({ length: 6 }, (_, i) => (
-  <tr key={`skel-${i}`} className="border-b border-gray-100">
-    <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-36`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-  </tr>
-));
-
-const SkeletonTable = (): JSX.Element => (
-  <div className="relative overflow-x-auto">
-    <FetchProgress />
-    <table className="table-fixed border-collapse text-left">
-      <thead>
-        <tr className="border-b border-gray-200 text-sm">
-          {COLUMNS.map((col) => (
-            <StaticHeaderCell key={col.key} col={col} />
-          ))}
-        </tr>
-      </thead>
-      <tbody>{SKELETON_ROWS}</tbody>
-    </table>
-  </div>
+const SKELETON_ROWS = (
+  <>
+    {Array.from({ length: 6 }, (_, i) => (
+      <tr key={`skel-${i}`} className="border-b border-gray-100">
+        <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-36`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+      </tr>
+    ))}
+  </>
 );
 
-const TableView = ({
-  tenants,
-  navLinkTo,
-  sort,
-  isFetching,
-}: TableProps): JSX.Element => (
-  <div className="relative overflow-x-auto">
-    {isFetching && <FetchProgress />}
-    <table className="table-fixed border-collapse text-left">
-      <thead>
-        <tr className="border-b border-gray-200 text-sm">
-          {COLUMNS.map((col) =>
-            col.sortColumn !== null && col.label !== null ?
-              <SortHeader
-                key={col.key}
-                className={col.className}
-                column={col.sortColumn}
-                label={col.label}
-                sort={sort}
-                align={col.align}
-              /> :
-              <StaticHeaderCell key={col.key} col={col} />)}
-        </tr>
-      </thead>
-      <tbody>
-        {tenants.length === 0 ?
-          <tr>
-            <td colSpan={COLUMNS.length} className="py-12 text-center">
-              <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-              </svg>
-              <p className="text-sm font-medium text-gray-600">Brak najemców do wyświetlenia</p>
-              <p className="mt-1 text-xs text-gray-500">Dodaj pierwszego najemcę, aby zobaczyć go na liście.</p>
-            </td>
-          </tr> :
-          tenants.map((t) => (
+const EMPTY_STATE = (
+  <>
+    <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+    </svg>
+    <p className="text-sm font-medium text-gray-600">Brak najemców do wyświetlenia</p>
+    <p className="mt-1 text-xs text-gray-500">Dodaj pierwszego najemcę, aby zobaczyć go na liście.</p>
+  </>
+);
+
+export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Element => (
+  <div className="min-h-[300px]">
+    {match(asyncData)
+      .with({ tag: 'pending' }, () => (
+        <DataTableS
+          columns={COLUMNS}
+          sort={undefined}
+          isFetching={true}
+          rows={[]}
+          skeletonRows={SKELETON_ROWS}
+          emptyState={EMPTY_STATE}
+          renderRow={() => <></>}
+        />
+      ))
+      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+        <ErrorMessage message={message} onRetry={onRetry} />
+      ))
+      .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
+        <DataTableS
+          columns={COLUMNS}
+          sort={sort}
+          isFetching={isFetching ?? false}
+          rows={data}
+          skeletonRows={SKELETON_ROWS}
+          emptyState={EMPTY_STATE}
+          renderRow={(t) => (
             <tr
               key={t.id}
               className="group border-b border-gray-100 text-sm hover:bg-gray-50"
@@ -113,10 +92,8 @@ const TableView = ({
               <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
                 {navLinkTo.tenant({ id: t.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły najemcy: ${t.first_name} ${t.last_name}` })}
               </td>
-              <td className="h-12 py-0 pr-4 font-medium text-gray-900 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={t.last_name}>
-                <div className="truncate">
-                  {navLinkTo.tenant({ id: t.id, style: {}, content: t.last_name })}
-                </div>
+              <td className="h-12 py-0 pr-4 text-gray-900" title={t.last_name}>
+                <div className="truncate">{t.last_name}</div>
               </td>
               <td className="h-12 py-0 pr-4 text-gray-600" title={t.first_name}>
                 <div className="truncate">{t.first_name}</div>
@@ -133,21 +110,8 @@ const TableView = ({
                 </span>
               </td>
             </tr>
-          ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Element => (
-  <div className="min-h-[300px]">
-    {match(asyncData)
-      .with({ tag: 'pending' }, () => <SkeletonTable />)
-      .with({ tag: 'rejected' }, ({ message, onRetry }) => (
-        <ErrorMessage message={message} onRetry={onRetry} />
-      ))
-      .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
-        <TableView tenants={data} navLinkTo={navLinkTo} sort={sort} isFetching={isFetching ?? false} />
+          )}
+        />
       ))
       .exhaustive()}
   </div>

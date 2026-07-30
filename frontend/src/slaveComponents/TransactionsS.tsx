@@ -1,11 +1,9 @@
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { ErrorMessage } from './ErrorMessageS';
-import { FetchProgress } from './FetchProgressS';
-import { SortHeader, StaticHeaderCell, type ColumnDef } from './SortHeaderS';
+import { DataTableS, type ColumnDef } from './DataTableS';
 
 type Row = Extract<TransactionsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
-type NavLinkTo = TransactionsSProps['navLinkTo'];
 type Sort = TransactionsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type TxnType = Row['type'];
@@ -64,42 +62,33 @@ const COLUMNS: readonly ColumnDef<SortColumn>[] = [
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'w-[120px] pr-4' },
 ];
 
-type TableProps = {
-  readonly transactions: readonly Row[];
-  readonly navLinkTo: NavLinkTo;
-  readonly sort: Sort;
-  readonly isFetching: boolean;
-};
-
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
-const SKELETON_ROWS = Array.from({ length: 6 }, (_, i) => (
-  <tr key={`skel-${i}`} className="border-b border-gray-100">
-    <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
-  </tr>
-));
+const SKELETON_ROWS = (
+  <>
+    {Array.from({ length: 6 }, (_, i) => (
+      <tr key={`skel-${i}`} className="border-b border-gray-100">
+        <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
+      </tr>
+    ))}
+  </>
+);
 
-const SkeletonTable = (): JSX.Element => (
-  <div className="relative overflow-x-auto">
-    <FetchProgress />
-    <table className="table-fixed border-collapse text-left">
-      <thead>
-        <tr className="border-b border-gray-200 text-sm">
-          {COLUMNS.map((col) => (
-            <StaticHeaderCell key={col.key} col={col} />
-          ))}
-        </tr>
-      </thead>
-      <tbody>{SKELETON_ROWS}</tbody>
-    </table>
-  </div>
+const EMPTY_STATE = (
+  <>
+    <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
+    </svg>
+    <p className="text-sm font-medium text-gray-600">Brak transakcji do wyświetlenia</p>
+    <p className="mt-1 text-xs text-gray-500">Dodaj pierwszą transakcję, aby zobaczyć ją na liście.</p>
+  </>
 );
 
 const leaseLabel = (tx: Row): string => {
@@ -110,83 +99,6 @@ const leaseLabel = (tx: Row): string => {
     id8 !== undefined ? `Umowa #${id8}` : '—';
 };
 
-const TableView = ({
-  transactions,
-  navLinkTo,
-  sort,
-  isFetching,
-}: TableProps): JSX.Element => (
-  <div className="relative overflow-x-auto">
-      {isFetching && <FetchProgress />}
-      <table className="table-fixed border-collapse text-left">
-        <thead>
-          <tr className="border-b border-gray-200 text-sm">
-            {COLUMNS.map((col) =>
-              col.sortColumn !== null && col.label !== null ?
-                <SortHeader
-                  key={col.key}
-                  className={col.className}
-                  column={col.sortColumn}
-                  label={col.label}
-                  sort={sort}
-                  align={col.align}
-                /> :
-                <StaticHeaderCell key={col.key} col={col} />)}
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.length === 0 ?
-            <tr>
-              <td colSpan={COLUMNS.length} className="py-12 text-center">
-                <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                <p className="text-sm font-medium text-gray-600">Brak transakcji do wyświetlenia</p>
-                <p className="mt-1 text-xs text-gray-500">Dodaj pierwszą transakcję, aby zobaczyć ją na liście.</p>
-              </td>
-            </tr> :
-            transactions.map((tx) => (
-              <tr
-                key={tx.id}
-                className="group border-b border-gray-100 text-sm hover:bg-gray-50"
-              >
-                <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
-                  {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
-                </td>
-                <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{DATE_FMT.format(new Date(tx.due_date))}</td>
-                <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
-                <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
-                  <div className="truncate">
-                    {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
-                  </div>
-                </td>
-                <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.properties?.name ?? undefined}>
-                  <div className="truncate">
-                    {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
-                      navLinkTo.property({ id: tx.property_id, style: {}, content: tx.properties.name }) :
-                      <span className="text-gray-400">—</span>}
-                  </div>
-                </td>
-                <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.lease_id !== null ? leaseLabel(tx) : undefined}>
-                  <div className="truncate">
-                    {tx.lease_id !== null ?
-                      navLinkTo.lease({ id: tx.lease_id, style: {}, content: leaseLabel(tx) }) :
-                      <span className="text-gray-400">—</span>}
-                  </div>
-                </td>
-                <td className="h-12 py-0 pr-4">
-                  <span className={txnStatusPillClass(tx.transaction_status)}>
-                    {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
-                  </span>
-                </td>
-                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${txnAmountClass(tx.amount)}`}>{formatAmount(tx.amount)}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-    </div>
-);
-
 export const TransactionsS = ({
   asyncData,
   navLinkTo,
@@ -194,12 +106,66 @@ export const TransactionsS = ({
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     {match(asyncData)
-      .with({ tag: 'pending' }, () => <SkeletonTable />)
+      .with({ tag: 'pending' }, () => (
+        <DataTableS
+          columns={COLUMNS}
+          sort={undefined}
+          isFetching={true}
+          rows={[]}
+          skeletonRows={SKELETON_ROWS}
+          emptyState={EMPTY_STATE}
+          renderRow={() => <></>}
+        />
+      ))
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
       .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
-        <TableView transactions={data} navLinkTo={navLinkTo} sort={sort} isFetching={isFetching ?? false} />
+        <DataTableS
+          columns={COLUMNS}
+          sort={sort}
+          isFetching={isFetching ?? false}
+          rows={data}
+          skeletonRows={SKELETON_ROWS}
+          emptyState={EMPTY_STATE}
+          renderRow={(tx) => (
+            <tr
+              key={tx.id}
+              className="group border-b border-gray-100 text-sm hover:bg-gray-50"
+            >
+              <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
+                {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
+              </td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{DATE_FMT.format(new Date(tx.due_date))}</td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
+              <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
+                <div className="truncate">
+                  {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
+                </div>
+              </td>
+              <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.properties?.name ?? undefined}>
+                <div className="truncate">
+                  {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
+                    navLinkTo.property({ id: tx.property_id, style: {}, content: tx.properties.name }) :
+                    <span className="text-gray-400">—</span>}
+                </div>
+              </td>
+              <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.lease_id !== null ? leaseLabel(tx) : undefined}>
+                <div className="truncate">
+                  {tx.lease_id !== null ?
+                    navLinkTo.lease({ id: tx.lease_id, style: {}, content: leaseLabel(tx) }) :
+                    <span className="text-gray-400">—</span>}
+                </div>
+              </td>
+              <td className="h-12 py-0 pr-4">
+                <span className={txnStatusPillClass(tx.transaction_status)}>
+                  {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
+                </span>
+              </td>
+              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${txnAmountClass(tx.amount)}`}>{formatAmount(tx.amount)}</td>
+            </tr>
+          )}
+        />
       ))
       .exhaustive()}
   </div>
