@@ -45,21 +45,11 @@ const txnStatusPillClass = (status: TxnStatus): string =>
       `${pillClass} bg-red-50 text-red-700` :
       `${pillClass} bg-yellow-50 text-yellow-700`;
 
-const EXPENSE_TYPES: ReadonlySet<TxnType> = new Set(['expense', 'withdraw', 'fee']);
-const INCOME_TYPES: ReadonlySet<TxnType> = new Set(['payment', 'rent']);
+const txnAmountClass = (amount: number): string =>
+  amount >= 0 ? 'text-sm font-medium text-green-700' : 'text-sm font-medium text-red-700';
 
-const amountSign = (type: TxnType, amount: number): '+' | '−' =>
-  EXPENSE_TYPES.has(type) ? '−' :
-    INCOME_TYPES.has(type) ? '+' :
-      amount >= 0 ? '+' : '−';
-
-const txnAmountClass = (type: TxnType, amount: number): string =>
-  EXPENSE_TYPES.has(type) ? 'text-sm font-medium text-red-700' :
-    INCOME_TYPES.has(type) ? 'text-sm font-medium text-green-700' :
-      `text-sm font-medium ${amount >= 0 ? 'text-green-700' : 'text-red-700'}`;
-
-const formatAmount = (type: TxnType, amount: number): string =>
-  `${amountSign(type, amount)}${AMOUNT_FMT.format(Math.abs(amount))}`;
+const formatAmount = (amount: number): string =>
+  AMOUNT_FMT.format(amount);
 
 type ColumnDef = {
   readonly key: string;
@@ -164,8 +154,8 @@ const SKELETON_ROWS = Array.from({ length: 6 }, (_, i) => (
     <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
     <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
     <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-16`} /></td>
-    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
   </tr>
 ));
 
@@ -220,7 +210,7 @@ const TableView = ({
         <tbody>
           {transactions.length === 0 ?
             <tr>
-              <td colSpan={8} className="py-12 text-center">
+              <td colSpan={COLUMNS.length} className="py-12 text-center">
                 <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
                 </svg>
@@ -238,25 +228,31 @@ const TableView = ({
                 </td>
                 <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{DATE_FMT.format(new Date(tx.due_date))}</td>
                 <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
-                <td className="h-12 py-0 pr-4 text-gray-600 truncate" title={tx.description ?? undefined}>
-                  {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
+                <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
+                  <div className="truncate">
+                    {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
+                  </div>
                 </td>
-                <td className="h-12 py-0 pr-4 truncate [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.properties?.name ?? undefined}>
-                  {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
-                    navLinkTo.property({ id: tx.property_id, style: {}, content: tx.properties.name }) :
-                    <span className="text-gray-400">—</span>}
+                <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.properties?.name ?? undefined}>
+                  <div className="truncate">
+                    {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
+                      navLinkTo.property({ id: tx.property_id, style: {}, content: tx.properties.name }) :
+                      <span className="text-gray-400">—</span>}
+                  </div>
                 </td>
-                <td className="h-12 py-0 pr-4 truncate [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.lease_id !== null ? leaseLabel(tx) : undefined}>
-                  {tx.lease_id !== null ?
-                    navLinkTo.lease({ id: tx.lease_id, style: {}, content: leaseLabel(tx) }) :
-                    <span className="text-gray-400">—</span>}
+                <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.lease_id !== null ? leaseLabel(tx) : undefined}>
+                  <div className="truncate">
+                    {tx.lease_id !== null ?
+                      navLinkTo.lease({ id: tx.lease_id, style: {}, content: leaseLabel(tx) }) :
+                      <span className="text-gray-400">—</span>}
+                  </div>
                 </td>
                 <td className="h-12 py-0 pr-4">
                   <span className={txnStatusPillClass(tx.transaction_status)}>
                     {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
                   </span>
                 </td>
-                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${txnAmountClass(tx.type, tx.amount)}`}>{formatAmount(tx.type, tx.amount)}</td>
+                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${txnAmountClass(tx.amount)}`}>{formatAmount(tx.amount)}</td>
               </tr>
             ))}
         </tbody>
