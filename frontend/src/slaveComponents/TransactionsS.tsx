@@ -1,6 +1,8 @@
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { ErrorMessage } from './ErrorMessageS';
+import { FetchProgress } from './FetchProgressS';
+import { SortHeader, StaticHeaderCell, type ColumnDef } from './SortHeaderS';
 
 type Row = Extract<TransactionsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type NavLinkTo = TransactionsSProps['navLinkTo'];
@@ -51,15 +53,7 @@ const txnAmountClass = (amount: number): string =>
 const formatAmount = (amount: number): string =>
   AMOUNT_FMT.format(amount);
 
-type ColumnDef = {
-  readonly key: string;
-  readonly label: string | null;
-  readonly sortColumn: SortColumn | null;
-  readonly align: 'left' | 'right';
-  readonly className: string;
-};
-
-const COLUMNS: readonly ColumnDef[] = [
+const COLUMNS: readonly ColumnDef<SortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'w-[120px] pr-4' },
   { key: 'type', label: 'Typ', sortColumn: 'type', align: 'left', className: 'w-[100px] pr-4' },
@@ -70,79 +64,12 @@ const COLUMNS: readonly ColumnDef[] = [
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'w-[120px] pr-4' },
 ];
 
-const SortIcon = ({ direction }: { readonly direction: 'asc' | 'desc' | null }): JSX.Element => (
-  <svg
-    className={`ml-1 inline-block h-3 w-3 transition-opacity ${
-      direction === null ?
-        'opacity-30 group-hover:opacity-60 group-focus-visible:opacity-60' :
-        'text-blue-600 opacity-100'
-    } ${direction === 'desc' ? 'rotate-180' : ''}`}
-    viewBox="0 0 12 12"
-    fill="currentColor"
-    aria-hidden="true"
-  >
-    <path d="M6 3l4.5 6h-9z" />
-  </svg>
-);
-
-type SortHeaderProps = {
-  readonly column: SortColumn;
-  readonly label: string;
-  readonly sort: Sort;
-  readonly align?: 'left' | 'right';
-  readonly className?: string;
-};
-
-const SortHeader = ({
-  column,
-  label,
-  sort,
-  align = 'left',
-  className = '',
-}: SortHeaderProps): JSX.Element => {
-  const isActive = sort.config.column === column;
-  const direction: 'asc' | 'desc' | null = isActive ? sort.config.direction : null;
-  const ariaSort = isActive ? (direction === 'asc' ? 'ascending' as const : 'descending' as const) : 'none' as const;
-  const alignClass = align === 'right' ? 'text-right' : 'text-left';
-  return (
-    <th
-      scope="col"
-      aria-sort={ariaSort}
-      className={`${className} h-12 py-0 font-medium whitespace-nowrap ${alignClass}`}
-    >
-      <button
-        type="button"
-        className="group cursor-pointer select-none rounded-sm text-gray-500 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-        onClick={() => sort.doSort(column)}
-      >
-        {label}
-        <SortIcon direction={direction} />
-      </button>
-    </th>
-  );
-};
-
-const StaticHeaderCell = ({ col }: { readonly col: ColumnDef }): JSX.Element => (
-  <th
-    scope="col"
-    className={`${col.className} h-12 py-0 font-medium text-gray-500 ${col.align === 'right' ? 'text-right' : 'text-left'}`}
-  >
-    {col.label === null ? <span className="sr-only">Akcje</span> : col.label}
-  </th>
-);
-
 type TableProps = {
   readonly transactions: readonly Row[];
   readonly navLinkTo: NavLinkTo;
   readonly sort: Sort;
   readonly isFetching: boolean;
 };
-
-const FetchProgress = (): JSX.Element => (
-  <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
-    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
-  </div>
-);
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 

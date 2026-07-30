@@ -1,12 +1,13 @@
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { ErrorMessage } from './ErrorMessageS';
+import { FetchProgress } from './FetchProgressS';
+import { SortHeader, StaticHeaderCell, type ColumnDef } from './SortHeaderS';
 
+type Row = Extract<LeaseAgreementsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type NavLinkTo = LeaseAgreementsSProps['navLinkTo'];
 type Sort = LeaseAgreementsSProps['sort'];
 type SortColumn = Sort['config']['column'];
-
-type Row = Extract<LeaseAgreementsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
 type LeaseStatus = Row['lease_status'];
 
 const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatus, string>> = Object.freeze({
@@ -24,37 +25,15 @@ const leaseStatusPillClass = (status: LeaseStatus): string =>
       `${pillClass} bg-gray-50 text-gray-600` :
       `${pillClass} bg-red-50 text-red-700`;
 
-type SortHeaderProps = {
-  readonly column: SortColumn;
-  readonly label: string;
-  readonly sort: Sort;
-  readonly align?: 'left' | 'right';
-  readonly className?: string;
-};
-
-const SortHeader = ({
-  column,
-  label,
-  sort,
-  align = 'left',
-  className = '',
-}: SortHeaderProps): JSX.Element => {
-  const isActive = sort.config.column === column;
-  const isAsc = isActive && sort.config.direction === 'asc';
-  const isDesc = isActive && sort.config.direction === 'desc';
-  const alignClass = align === 'right' ? 'text-right' : 'text-left';
-  return (
-    <th
-      className={`${className} cursor-pointer select-none py-3 pr-4 font-medium whitespace-nowrap ${alignClass}`}
-      onClick={() => sort.doSort(column)}
-    >
-      <span className="text-gray-500">{label}</span>
-      <span className="ml-1 inline-block w-3 text-xs text-gray-400">
-        {isAsc ? '▲' : isDesc ? '▼' : '△'}
-      </span>
-    </th>
-  );
-};
+const COLUMNS: readonly ColumnDef<SortColumn>[] = [
+  { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
+  { key: 'tenants', label: 'Najemca', sortColumn: 'tenants', align: 'left', className: 'w-[17%] pr-4' },
+  { key: 'properties', label: 'Nieruchomość', sortColumn: 'properties', align: 'left', className: 'w-[17%] pr-4' },
+  { key: 'start_date', label: 'Od', sortColumn: 'start_date', align: 'left', className: 'w-[12%] pr-4' },
+  { key: 'end_date', label: 'Do', sortColumn: 'end_date', align: 'left', className: 'w-[12%] pr-4' },
+  { key: 'monthly_rent', label: 'Czynsz', sortColumn: 'monthly_rent', align: 'right', className: 'w-[12%] pr-4' },
+  { key: 'lease_status', label: 'Status', sortColumn: 'lease_status', align: 'left', className: 'w-[14%] pr-4' },
+];
 
 type TableProps = {
   readonly leases: readonly Row[];
@@ -63,43 +42,31 @@ type TableProps = {
   readonly isFetching: boolean;
 };
 
-const FetchProgress = (): JSX.Element => (
-  <div className="absolute top-0 left-0 right-0 h-0.5 overflow-hidden bg-blue-100" role="progressbar" aria-label="Ładowanie danych">
-    <div className="h-full animate-[indeterminate_1.5s_ease-in-out_infinite] bg-blue-500" />
-  </div>
-);
-
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
-const HEADERS = (
-  <tr className="border-b border-gray-200 text-sm">
-    <th className="w-[18%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Najemca<span className="ml-1 inline-block w-3" /></th>
-    <th className="w-[18%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Nieruchomość<span className="ml-1 inline-block w-3" /></th>
-    <th className="w-[12%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Od<span className="ml-1 inline-block w-3" /></th>
-    <th className="w-[12%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Do<span className="ml-1 inline-block w-3" /></th>
-    <th className="w-[12%] py-3 pr-4 text-right font-medium whitespace-nowrap text-gray-500">Czynsz<span className="ml-1 inline-block w-3" /></th>
-    <th className="w-[14%] py-3 pr-4 font-medium whitespace-nowrap text-gray-500">Status<span className="ml-1 inline-block w-3" /></th>
-    <th className="w-[14%] py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
-  </tr>
-);
-
-const SKELETON_ROWS = Array.from({ length: 4 }, (_, i) => (
+const SKELETON_ROWS = Array.from({ length: 6 }, (_, i) => (
   <tr key={`skel-${i}`} className="border-b border-gray-100">
-    <td className="py-3 pr-4"><div className={`${skeletonBar} w-24`} /></td>
-    <td className="py-3 pr-4"><div className={`${skeletonBar} w-28`} /></td>
-    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-    <td className="py-3 pr-4"><div className={`${skeletonBar} ml-auto w-16`} /></td>
-    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-    <td className="py-3 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-16`} /></td>
+    <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
   </tr>
 ));
 
 const SkeletonTable = (): JSX.Element => (
   <div className="relative overflow-x-auto">
     <FetchProgress />
-    <table className="w-full min-w-[640px] table-fixed border-collapse text-left">
-      <thead>{HEADERS}</thead>
+    <table className="table-fixed border-collapse text-left">
+      <thead>
+        <tr className="border-b border-gray-200 text-sm">
+          {COLUMNS.map((col) => (
+            <StaticHeaderCell key={col.key} col={col} />
+          ))}
+        </tr>
+      </thead>
       <tbody>{SKELETON_ROWS}</tbody>
     </table>
   </div>
@@ -113,46 +80,58 @@ const TableView = ({
 }: TableProps): JSX.Element => (
   <div className="relative overflow-x-auto">
     {isFetching && <FetchProgress />}
-    <table className="w-full min-w-[640px] table-fixed border-collapse text-left">
+    <table className="table-fixed border-collapse text-left">
       <thead>
         <tr className="border-b border-gray-200 text-sm">
-          <SortHeader className="w-[18%]" column="tenants" label="Najemca" sort={sort} />
-          <SortHeader className="w-[18%]" column="properties" label="Nieruchomość" sort={sort} />
-          <SortHeader className="w-[12%]" column="start_date" label="Od" sort={sort} />
-          <SortHeader className="w-[12%]" column="end_date" label="Do" sort={sort} />
-          <SortHeader className="w-[12%]" column="monthly_rent" label="Czynsz" sort={sort} align="right" />
-          <SortHeader className="w-[14%]" column="lease_status" label="Status" sort={sort} />
-          <th className="w-[14%] py-3 pr-4 font-medium text-gray-500">Szczegóły</th>
+          {COLUMNS.map((col) =>
+            col.sortColumn !== null && col.label !== null ?
+              <SortHeader
+                key={col.key}
+                className={col.className}
+                column={col.sortColumn}
+                label={col.label}
+                sort={sort}
+                align={col.align}
+              /> :
+              <StaticHeaderCell key={col.key} col={col} />)}
         </tr>
       </thead>
       <tbody>
         {leases.length === 0 ?
           <tr>
-            <td colSpan={7} className="py-8 text-center text-gray-500">
-              Brak umów najmu.
+            <td colSpan={COLUMNS.length} className="py-12 text-center">
+              <svg className="mx-auto mb-3 h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p className="text-sm font-medium text-gray-600">Brak umów do wyświetlenia</p>
+              <p className="mt-1 text-xs text-gray-500">Dodaj pierwszą umowę najmu, aby zobaczyć ją na liście.</p>
             </td>
           </tr> :
           leases.map((l) => (
             <tr
               key={l.id}
-              className="border-b border-gray-100 text-sm"
+              className="group border-b border-gray-100 text-sm hover:bg-gray-50"
             >
-              <td className="py-3 pr-4">
-                {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenants.first_name} ${l.tenants.last_name}`, style: { color: '#2563eb' } })}
+              <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
+                {navLinkTo.leaseAgreement({ id: l.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: l.tenants !== null ? `Szczegóły umowy: ${l.tenants.first_name} ${l.tenants.last_name}` : 'Szczegóły umowy' })}
               </td>
-              <td className="py-3 pr-4">
-                {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: { color: '#2563eb' } })}
+              <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={`${l.tenants.first_name} ${l.tenants.last_name}`}>
+                <div className="truncate">
+                  {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenants.first_name} ${l.tenants.last_name}`, style: {} })}
+                </div>
               </td>
-              <td className="py-3 pr-4 text-gray-600">{l.start_date}</td>
-              <td className="py-3 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
-              <td className="py-3 pr-4 text-right text-gray-900">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
-              <td className="py-3 pr-4">
+              <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={l.properties.name ?? undefined}>
+                <div className="truncate">
+                  {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: {} })}
+                </div>
+              </td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.start_date}</td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.end_date ?? '—'}</td>
+              <td className="h-12 py-0 pr-4 text-right text-gray-900 whitespace-nowrap">{l.monthly_rent.toLocaleString('pl-PL')} zł</td>
+              <td className="h-12 py-0 pr-4 whitespace-nowrap">
                 <span className={leaseStatusPillClass(l.lease_status)}>
                   {LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}
                 </span>
-              </td>
-              <td className="py-3 pr-4">
-                {navLinkTo.leaseAgreement({ id: l.id, content: 'Szczegóły', style: { color: '#2563eb' } })}
               </td>
             </tr>
           ))}
