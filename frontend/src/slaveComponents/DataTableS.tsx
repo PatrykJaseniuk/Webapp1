@@ -101,7 +101,7 @@ export const DataTableS = <TRow, SortColumn extends string>({
 }: DataTableSProps<TRow, SortColumn>): JSX.Element => (
   <div className="relative overflow-x-auto">
     {isFetching && <FetchProgress />}
-    <table className="table-fixed border-collapse text-left">
+    <table className="table-fixed border-collapse text-left w-max">
       <thead>
         <tr className="border-b border-gray-200 text-sm">
           {columns.map((col) =>
