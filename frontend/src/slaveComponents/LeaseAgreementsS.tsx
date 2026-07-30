@@ -63,6 +63,7 @@ const EMPTY_STATE = (
 
 export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
+    <h1 className="mb-4 text-xl font-semibold text-gray-900">Umowy najmu</h1>
     {match(asyncData)
       .with({ tag: 'pending' }, () => (
         <DataTableS

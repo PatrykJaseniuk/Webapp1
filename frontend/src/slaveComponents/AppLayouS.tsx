@@ -7,22 +7,33 @@ import { ErrorMessage } from './ErrorMessageS';
 // ── Inferred type from slave props ──
 
 type AuthData = Extract<AppLayoutSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type NavKey = AppLayoutSProps['activeNavKey'];
 
 // ── Display labels for nav keys ──
+
 type UnionKeys<T> = T extends T ? keyof T : never;
-type NavKey = UnionKeys<AppLayoutSProps['navLinkTo']>;
-const NAV_LABEL: { readonly [K in NavKey]: string } = {
+type LinkKey = UnionKeys<AppLayoutSProps['navLinkTo']>;
+const NAV_LABEL: { readonly [K in LinkKey]: string } = {
   dashboard: 'Dashboard',
   properties: 'Properties',
   tenants: 'Tenants',
   leases: 'Leases',
-  transactions: 'Transakcje'
+  transactions: 'Transakcje',
 };
+
+const NAV_KEY_ORDER: readonly LinkKey[] = [
+  'dashboard',
+  'properties',
+  'tenants',
+  'leases',
+  'transactions',
+];
 
 // ── Authenticated shell (inner) ──
 
 type AuthenticatedShellProps = {
   readonly navLinksTo: AppLayoutSProps['navLinkTo'];
+  readonly activeNavKey: NavKey;
   readonly authData: AuthData;
   readonly onLogout: () => void;
   readonly children: ReactNode;
@@ -30,6 +41,7 @@ type AuthenticatedShellProps = {
 
 const AuthenticatedShell = ({
   navLinksTo,
+  activeNavKey,
   authData,
   onLogout,
   children,
@@ -41,10 +53,28 @@ const AuthenticatedShell = ({
         <h1 className="text-lg font-bold text-gray-900">WebApp</h1>
       </div>
 
-      <nav className="flex-1 space-y-1 px-4 py-4 [&_a]:block [&_a]:rounded-md [&_a]:px-3 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-gray-700 hover:[&_a]:bg-gray-100 hover:[&_a]:text-gray-900">
-        {Object.entries(navLinksTo).map(([key, navLink]) =>
-          navLink({ content: NAV_LABEL[key as NavKey] ?? key, style: {} }),
-        )}
+      <nav className="flex-1 space-y-1 px-4 py-4 [&_a]:block [&_a]:rounded-md [&_a]:px-3 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium">
+        {NAV_KEY_ORDER.filter((k) => k in navLinksTo).map((key) => {
+          const navLink = navLinksTo[key as keyof typeof navLinksTo] as (
+            args: { readonly content: ReactNode; readonly style: Record<string, string> },
+          ) => JSX.Element;
+          const isActive = key === activeNavKey;
+          return (
+            <div
+              key={key}
+              className={
+                isActive ?
+                  '[&_a]:rounded-md [&_a]:bg-gray-100 [&_a]:text-gray-900 [&_a]:font-semibold' :
+                  '[&_a]:rounded-md [&_a]:text-gray-700 hover:[&_a]:bg-gray-100 hover:[&_a]:text-gray-900'
+              }
+            >
+              {navLink({
+                content: NAV_LABEL[key as LinkKey] ?? key,
+                style: {},
+              })}
+            </div>
+          );
+        })}
       </nav>
 
       {/* User info — bottom of sidebar */}
@@ -71,6 +101,7 @@ const AuthenticatedShell = ({
 
 export const AppLayoutShell = ({
   navLinkTo: navLinksTo,
+  activeNavKey,
   asyncData,
   onLogout,
   children,
@@ -84,6 +115,7 @@ export const AppLayoutShell = ({
       .with({ tag: 'fulfilled' }, ({ data }) => (
         <AuthenticatedShell
           navLinksTo={navLinksTo}
+          activeNavKey={activeNavKey}
           authData={data}
           onLogout={onLogout}
         >

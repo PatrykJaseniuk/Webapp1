@@ -71,6 +71,7 @@ const EMPTY_STATE = (
 
 export const PropertiesS = ({ asyncData, navLinkTo, sort }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
+    <h1 className="mb-4 text-xl font-semibold text-gray-900">Nieruchomości</h1>
     {match(asyncData)
       .with({ tag: 'pending' }, () => (
         <DataTableS

@@ -1,5 +1,5 @@
 import type { ReactNode, ComponentType } from 'react';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useNavigate, useLocation } from '@tanstack/react-router';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { AsyncData, NavLink } from '@/generic';
 import type { AppRole } from '@/hooks/AuthContext';
@@ -27,8 +27,11 @@ type TenantNavLInkTo = {
   transactions: NavLink,
 }
 
+type NavKey = 'dashboard' | 'properties' | 'tenants' | 'leases' | 'transactions';
+
 export type AppLayoutSProps = {
-  readonly navLinkTo: AdminLandlordNavLInkTo | TenantNavLInkTo
+  readonly navLinkTo: AdminLandlordNavLInkTo | TenantNavLInkTo;
+  readonly activeNavKey: NavKey;
   readonly asyncData: AsyncData<AuthData>;
   readonly onLogout: () => void;
   readonly children: ReactNode;
@@ -50,6 +53,18 @@ export const AppLayoutM = ({
   email,
 }: Props): JSX.Element => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const activeNavKey: NavKey = (
+    location.pathname === '/app' || location.pathname === '/app/' ?
+      'dashboard' :
+      location.pathname.startsWith('/app/properties') ?
+        'properties' :
+        location.pathname.startsWith('/app/tenants') ?
+          'tenants' :
+          location.pathname.startsWith('/app/leases') ?
+            'leases' :
+            'transactions');
 
   const handleLogout = (): void => {
     void backendConnector.auth.signOut().then(() => {
@@ -89,6 +104,7 @@ export const AppLayoutM = ({
   return (
     <Slave
       navLinkTo={navLinkTo}
+      activeNavKey={activeNavKey}
       asyncData={asyncData}
       onLogout={handleLogout}
     >
