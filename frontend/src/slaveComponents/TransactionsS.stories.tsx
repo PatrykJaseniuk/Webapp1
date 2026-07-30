@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
+import { within, expect } from 'storybook/test';
 import { TransactionsS } from './TransactionsS';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 
@@ -59,14 +60,27 @@ type Story = StoryObj<typeof TransactionsS>;
 
 export const Pending: Story = {
   args: { asyncData: { tag: 'pending' } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('progressbar')).toBeVisible();
+  },
 };
 
 export const Rejected: Story = {
   args: { asyncData: { tag: 'rejected', message: 'Błąd sieci', onRetry: noop } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Błąd sieci')).toBeVisible();
+    await expect(canvas.getByRole('button', { name: /spróbuj ponownie/i })).toBeVisible();
+  },
 };
 
 export const Empty: Story = {
   args: { asyncData: { tag: 'fulfilled', data: [], isFetching: false } },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText('Brak transakcji do wyświetlenia')).toBeVisible();
+  },
 };
 
 export const WithRows: Story = {
@@ -84,6 +98,12 @@ export const WithRows: Story = {
       ],
     },
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('row')).toHaveLength(7); // header + 6 data rows
+    const navLinks = canvas.getAllByRole('link', { name: /Szczegóły transakcji/i });
+    await expect(navLinks).toHaveLength(6);
+  },
 };
 
 export const Fetching: Story = {
@@ -97,6 +117,11 @@ export const Fetching: Story = {
       ],
     },
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole('progressbar')).toBeVisible();
+    await expect(canvas.getAllByRole('row')).toHaveLength(3); // header + 2 rows visible during refetch
+  },
 };
 
 export const SingleTransaction: Story = {
@@ -108,6 +133,10 @@ export const SingleTransaction: Story = {
         makeTransaction({ id: '1', type: 'rent', amount: 2500, transaction_status: 'paid', due_date: '2026-01-15' }),
       ],
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('row')).toHaveLength(2); // header + 1 row
   },
 };
 
@@ -126,5 +155,9 @@ export const AllTypes: Story = {
         makeTransaction({ id: '7', type: 'other', amount: -50, transaction_status: 'overdue', description: 'Inne (ujemne)' }),
       ],
     },
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getAllByRole('row')).toHaveLength(8); // header + 7 rows
   },
 };

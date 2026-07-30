@@ -17,14 +17,14 @@ const StatCards = ({ summary }: { readonly summary: DashboardSummary }): JSX.Ele
     <div className={statCardClass}>
       <p className={`${statValueClass} text-blue-700`}>
         {summary.totalProperties}
-        <span className="ml-1 text-sm font-normal text-gray-400">/ {summary.occupiedProperties} zajętych</span>
+        <span className="ml-1 text-sm font-normal text-gray-500">/ {summary.occupiedProperties} zajętych</span>
       </p>
       <p className={statLabelClass}>Nieruchomości</p>
     </div>
     <div className={statCardClass}>
       <p className={`${statValueClass} text-green-700`}>
         {summary.totalTenants}
-        <span className="ml-1 text-sm font-normal text-gray-400">/ {summary.activeTenants} aktywnych</span>
+        <span className="ml-1 text-sm font-normal text-gray-500">/ {summary.activeTenants} aktywnych</span>
       </p>
       <p className={statLabelClass}>Najemcy</p>
     </div>

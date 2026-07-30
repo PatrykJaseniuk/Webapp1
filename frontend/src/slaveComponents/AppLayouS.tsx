@@ -34,7 +34,7 @@ const AuthenticatedShell = ({
   onLogout,
   children,
 }: AuthenticatedShellProps): JSX.Element => (
-  <div className="flex h-screen bg-gray-50">
+  <div className="flex h-screen bg-white">
     {/* Sidebar */}
     <aside className="flex w-64 flex-col border-r border-gray-200 bg-white">
       <div className="border-b border-gray-200 px-6 py-4">

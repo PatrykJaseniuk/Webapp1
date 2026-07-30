@@ -76,16 +76,16 @@ const COLUMNS: readonly ColumnDef[] = [
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'w-[250px] pr-4' },
   { key: 'properties', label: 'Nieruchomość', sortColumn: 'properties', align: 'left', className: 'w-[200px] pr-4' },
   { key: 'lease', label: 'Umowa', sortColumn: null, align: 'left', className: 'w-[180px] pr-4' },
+  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'w-[120px] pr-4' },
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'w-[120px] pr-4' },
-  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'w-[140px] pr-4' },
 ];
 
 const SortIcon = ({ direction }: { readonly direction: 'asc' | 'desc' | null }): JSX.Element => (
   <svg
     className={`ml-1 inline-block h-3 w-3 transition-opacity ${
       direction === null ?
-        'opacity-0 group-hover:opacity-60 group-focus-visible:opacity-60' :
-        'text-blue-600'
+        'opacity-30 group-hover:opacity-60 group-focus-visible:opacity-60' :
+        'text-blue-600 opacity-100'
     } ${direction === 'desc' ? 'rotate-180' : ''}`}
     viewBox="0 0 12 12"
     fill="currentColor"
@@ -225,23 +225,21 @@ const TableView = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z" />
                 </svg>
                 <p className="text-sm font-medium text-gray-600">Brak transakcji do wyświetlenia</p>
-                <p className="mt-1 text-xs text-gray-400">Dodaj pierwszą transakcję, aby zobaczyć ją na liście.</p>
+                <p className="mt-1 text-xs text-gray-500">Dodaj pierwszą transakcję, aby zobaczyć ją na liście.</p>
               </td>
             </tr> :
             transactions.map((tx) => (
               <tr
                 key={tx.id}
-                className="group border-b border-gray-100 text-sm hover:bg-blue-50"
+                className="group border-b border-gray-100 text-sm hover:bg-gray-50"
               >
-                <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '4px' }, content: '→', ariaLabel: 'Szczegóły transakcji' })}
+                <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
+                  {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
                 </td>
                 <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{DATE_FMT.format(new Date(tx.due_date))}</td>
                 <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
-                <td className="h-12 py-0 pr-4 text-gray-600 truncate [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.description ?? undefined}>
-                  {tx.description !== null ?
-                    navLinkTo.transaction({ id: tx.id, style: {}, content: tx.description }) :
-                    <span className="text-gray-400">—</span>}
+                <td className="h-12 py-0 pr-4 text-gray-600 truncate" title={tx.description ?? undefined}>
+                  {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="h-12 py-0 pr-4 truncate [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.properties?.name ?? undefined}>
                   {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
@@ -253,12 +251,12 @@ const TableView = ({
                     navLinkTo.lease({ id: tx.lease_id, style: {}, content: leaseLabel(tx) }) :
                     <span className="text-gray-400">—</span>}
                 </td>
-                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap ${txnAmountClass(tx.type, tx.amount)}`}>{formatAmount(tx.type, tx.amount)}</td>
                 <td className="h-12 py-0 pr-4">
                   <span className={txnStatusPillClass(tx.transaction_status)}>
                     {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
                   </span>
                 </td>
+                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${txnAmountClass(tx.type, tx.amount)}`}>{formatAmount(tx.type, tx.amount)}</td>
               </tr>
             ))}
         </tbody>
