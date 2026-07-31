@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { toAsyncData, useSort, type AsyncData, type SortConfig } from '@/generic';
+import { toAsyncData, usePagination, useSort, type AsyncData, type SortConfig } from '@/generic';
 import type { NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
@@ -30,12 +30,23 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
   properties: 'properties(name)',
 });
 
+type TransactionsPageData = {
+  readonly rows: readonly TransactionListRow[];
+  readonly totalCount: number;
+};
+
 export type TransactionsSProps = {
-  readonly asyncData: AsyncData<readonly TransactionListRow[]>;
+  readonly asyncData: AsyncData<TransactionsPageData>;
   readonly navLinkTo: NavLinkTo;
   readonly sort: {
     readonly config: SortConfig<TransactionSortColumn>;
     readonly doSort: (column: TransactionSortColumn) => void;
+  };
+  readonly pagination: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly onPrev: () => void;
+    readonly onNext: () => void;
   };
 };
 
@@ -44,23 +55,40 @@ type Props = {
   readonly role: AppRole;
 };
 
+const PAGE_SIZE = 20;
+
 export const TransactionsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
   const [sortConfig, onSort] = useSort<TransactionSortColumn>('due_date', 'desc');
-  const sort = { config: sortConfig, doSort: onSort };
+  const [pagination, { goToPage, ...pageControls }] = usePagination(1, PAGE_SIZE);
+
+  const doSort = (column: TransactionSortColumn): void => {
+    onSort(column);
+    goToPage(1);
+  };
+  const sort = { config: sortConfig, doSort };
+
+  const paginationProps = {
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    onPrev: pageControls.prevPage,
+    onNext: pageControls.nextPage,
+  };
 
   const query = useQuery({
-    queryKey: ['transactions', sortConfig.column, sortConfig.direction],
-    queryFn: async (): Promise<readonly TransactionListRow[]> => {
+    queryKey: ['transactions', sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize],
+    queryFn: async (): Promise<TransactionsPageData> => {
       const ascending = sortConfig.direction === 'asc';
+      const from = (pagination.page - 1) * pagination.pageSize;
+      const to = from + pagination.pageSize - 1;
       const r = await backendConnector
         .from('transactions')
-        .select('*, properties(name), lease_agreements(start_date)')
+        .select('*, properties(name), lease_agreements(start_date)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
-        .limit(100);
-      return r.error !== null ? Promise.reject(r.error) : (r.data ?? []);
+        .range(from, to);
+      return r.error !== null ? Promise.reject(r.error) : { rows: r.data ?? [], totalCount: r.count ?? 0 };
     },
     placeholderData: (prev) => prev,
   });
@@ -78,6 +106,7 @@ export const TransactionsM = ({
       asyncData={asyncData}
       navLinkTo={navLinkTo}
       sort={sort}
+      pagination={paginationProps}
     />
   );
 };

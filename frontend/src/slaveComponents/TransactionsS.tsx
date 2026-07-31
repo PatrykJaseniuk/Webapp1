@@ -1,9 +1,10 @@
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { ErrorMessage } from './ErrorMessageS';
-import { DataTableS, type ColumnDef } from './DataTableS';
+import { DataTableS, type ColumnDef, type Pagination } from './DataTableS';
 
-type Row = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
+type PageData = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Row = PageData['rows'][number];
 type Sort = TransactionsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type TxnType = Row['type'];
@@ -99,10 +100,17 @@ const leaseLabel = (tx: Row): string => {
     id8 !== undefined ? `Umowa #${id8}` : '—';
 };
 
+const toPagination = (
+  pagination: TransactionsSProps['pagination'],
+  totalCount: number | undefined,
+): Pagination | undefined =>
+  totalCount === undefined ? undefined : { ...pagination };
+
 export const TransactionsS = ({
   asyncData,
   navLinkTo,
   sort,
+  pagination,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Transakcje</h1>
@@ -126,9 +134,11 @@ export const TransactionsS = ({
           columns={COLUMNS}
           sort={sort}
           isFetching={isFetching ?? false}
-          rows={data}
+          rows={data.rows}
           skeletonRows={SKELETON_ROWS}
           emptyState={EMPTY_STATE}
+          pagination={toPagination(pagination, data.totalCount)}
+          totalCount={data.totalCount}
           renderRow={(tx) => (
             <tr
               key={tx.id}

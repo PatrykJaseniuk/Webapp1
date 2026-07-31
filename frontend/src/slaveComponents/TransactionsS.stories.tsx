@@ -4,7 +4,8 @@ import { within, expect } from 'storybook/test';
 import { TransactionsS } from './TransactionsS';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 
-type Row = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
+type PageData = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Row = PageData['rows'][number];
 
 const makeTransaction = (overrides?: Partial<Row>): Row =>
   ({
@@ -29,6 +30,15 @@ const noop = (): void => {};
 type SortColumn = TransactionsSProps['sort']['config']['column'];
 const sort = { config: { column: 'due_date' as SortColumn, direction: 'desc' as const }, doSort: noop };
 
+const pagination: TransactionsSProps['pagination'] = {
+  page: 1,
+  pageSize: 20,
+  onPrev: noop,
+  onNext: noop,
+};
+
+const pageData = (rows: readonly Row[], totalCount: number): PageData => ({ rows, totalCount });
+
 const navLinkTo: TransactionsSProps['navLinkTo'] = {
   transaction: ({ id, content, style, ariaLabel }) =>
     <a href={`#/transactions/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
@@ -51,6 +61,7 @@ const meta: Meta<typeof TransactionsS> = {
   args: {
     navLinkTo,
     sort,
+    pagination,
   },
 };
 
@@ -76,7 +87,7 @@ export const Rejected: Story = {
 };
 
 export const Empty: Story = {
-  args: { asyncData: { tag: 'fulfilled', data: [], isFetching: false } },
+  args: { asyncData: { tag: 'fulfilled', data: pageData([], 0), isFetching: false } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Brak transakcji do wyświetlenia')).toBeVisible();
@@ -88,14 +99,14 @@ export const WithRows: Story = {
     asyncData: {
       tag: 'fulfilled',
       isFetching: false,
-      data: [
+      data: pageData([
         makeTransaction({ id: '1', type: 'rent', amount: 2500, transaction_status: 'paid', due_date: '2026-01-15', description: 'Czynsz za styczeń' }),
         makeTransaction({ id: '2', type: 'utility', amount: 320.5, transaction_status: 'pending', due_date: '2026-02-01', description: 'Prąd i gaz — bardzo długa nazwa która powinna być obcięta przez truncate', properties: { name: 'Kawalerka Gdańska 12' }, property_id: 'prop-2' }),
         makeTransaction({ id: '3', type: 'payment', amount: 2820.5, transaction_status: 'overdue', due_date: '2026-01-10', description: 'Wpłata od najemcy', lease_agreements: null, lease_id: null }),
         makeTransaction({ id: '4', type: 'expense', amount: 150, transaction_status: 'paid', due_date: '2026-01-05', description: 'Naprawa pieca' }),
         makeTransaction({ id: '5', type: 'fee', amount: 45, transaction_status: 'pending', due_date: '2026-01-20', description: 'Opłata administracyjna' }),
         makeTransaction({ id: '6', type: 'withdraw', amount: 800, transaction_status: 'paid', due_date: '2026-01-08', description: 'Wypłata dla właściciela' }),
-      ],
+      ], 6),
     },
   },
   play: async ({ canvasElement }) => {
@@ -111,10 +122,10 @@ export const Fetching: Story = {
     asyncData: {
       tag: 'fulfilled',
       isFetching: true,
-      data: [
+      data: pageData([
         makeTransaction({ id: '1', type: 'rent', amount: 2500, transaction_status: 'paid' }),
         makeTransaction({ id: '2', type: 'expense', amount: 150, transaction_status: 'pending' }),
-      ],
+      ], 2),
     },
   },
   play: async ({ canvasElement }) => {
@@ -129,9 +140,9 @@ export const SingleTransaction: Story = {
     asyncData: {
       tag: 'fulfilled',
       isFetching: false,
-      data: [
+      data: pageData([
         makeTransaction({ id: '1', type: 'rent', amount: 2500, transaction_status: 'paid', due_date: '2026-01-15' }),
-      ],
+      ], 1),
     },
   },
   play: async ({ canvasElement }) => {
@@ -145,7 +156,7 @@ export const AllTypes: Story = {
     asyncData: {
       tag: 'fulfilled',
       isFetching: false,
-      data: [
+      data: pageData([
         makeTransaction({ id: '1', type: 'rent', amount: 2500, transaction_status: 'paid', description: 'Czynsz' }),
         makeTransaction({ id: '2', type: 'utility', amount: 320, transaction_status: 'pending', description: 'Media' }),
         makeTransaction({ id: '3', type: 'expense', amount: 500, transaction_status: 'paid', description: 'Wydatek' }),
@@ -153,7 +164,7 @@ export const AllTypes: Story = {
         makeTransaction({ id: '5', type: 'withdraw', amount: 1000, transaction_status: 'paid', description: 'Wypłata' }),
         makeTransaction({ id: '6', type: 'fee', amount: 45, transaction_status: 'pending', description: 'Opłata' }),
         makeTransaction({ id: '7', type: 'other', amount: -50, transaction_status: 'overdue', description: 'Inne (ujemne)' }),
-      ],
+      ], 7),
     },
   },
   play: async ({ canvasElement }) => {

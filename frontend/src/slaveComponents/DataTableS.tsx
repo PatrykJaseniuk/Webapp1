@@ -85,6 +85,59 @@ const FetchProgress = (): JSX.Element => (
   </div>
 );
 
+export type Pagination = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly onPrev: () => void;
+  readonly onNext: () => void;
+};
+
+const PaginationFooter = ({
+  pagination,
+  totalCount,
+}: {
+  readonly pagination: Pagination;
+  readonly totalCount: number;
+}): JSX.Element => {
+  const totalPages = Math.max(1, Math.ceil(totalCount / pagination.pageSize));
+  const prevDisabled = pagination.page <= 1;
+  const nextDisabled = pagination.page * pagination.pageSize >= totalCount;
+
+  return (
+    <nav className="flex items-center justify-between border-t border-gray-200 px-4 py-3" aria-label="Paginacja">
+      <button
+        type="button"
+        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          prevDisabled ?
+            'cursor-not-allowed text-gray-300' :
+            'text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+        }`}
+        disabled={prevDisabled}
+        onClick={pagination.onPrev}
+        aria-label="Poprzednia strona"
+      >
+        ← Poprzednia
+      </button>
+      <span className="text-sm text-gray-600">
+        Strona {pagination.page} z {totalPages}
+      </span>
+      <button
+        type="button"
+        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+          nextDisabled ?
+            'cursor-not-allowed text-gray-300' :
+            'text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
+        }`}
+        disabled={nextDisabled}
+        onClick={pagination.onNext}
+        aria-label="Następna strona"
+      >
+        Następna →
+      </button>
+    </nav>
+  );
+};
+
 type DataTableSProps<TRow, SortColumn extends string> = {
   readonly columns: readonly ColumnDef<SortColumn>[];
   readonly sort: Sort<SortColumn> | undefined;
@@ -93,6 +146,8 @@ type DataTableSProps<TRow, SortColumn extends string> = {
   readonly skeletonRows: JSX.Element;
   readonly emptyState: JSX.Element;
   readonly renderRow: (row: TRow) => JSX.Element;
+  readonly pagination?: Pagination;
+  readonly totalCount?: number;
 };
 
 export const DataTableS = <TRow, SortColumn extends string>({
@@ -103,6 +158,8 @@ export const DataTableS = <TRow, SortColumn extends string>({
   skeletonRows,
   emptyState,
   renderRow,
+  pagination,
+  totalCount,
 }: DataTableSProps<TRow, SortColumn>): JSX.Element => (
   <div className="relative overflow-x-auto">
     {isFetching && <FetchProgress />}
@@ -134,5 +191,6 @@ export const DataTableS = <TRow, SortColumn extends string>({
             rows.map(renderRow)}
       </tbody>
     </table>
+    {pagination !== undefined && totalCount !== undefined && <PaginationFooter pagination={pagination} totalCount={totalCount} />}
   </div>
 );
