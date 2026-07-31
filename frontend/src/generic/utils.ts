@@ -9,6 +9,7 @@
  * slaves match on `tag` and render the appropriate view — guaranteed exhaustive.
  */
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import type { CSSProperties, ReactNode } from 'react';
 import { match } from 'ts-pattern';
 
@@ -149,3 +150,93 @@ export const toAsyncData = <T>(
       ...(isFetching === true && { isFetching }),
     }))
     .exhaustive();
+
+// ──────────────────────────────────────────────
+// Paginated query hook — DRY for "Many" masters
+// ──────────────────────────────────────────────
+
+export type PaginatedQueryParams<TRow, TSortColumn extends string> = {
+  readonly queryKeyBase: string;
+  readonly defaultSortColumn: TSortColumn;
+  readonly defaultSortDirection: SortDirection;
+  readonly pageSize: number;
+  readonly queryFn: (
+    sort: SortConfig<TSortColumn>,
+    from: number,
+    to: number,
+  ) => Promise<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
+};
+
+export type PaginatedQueryResult<TRow, TSortColumn extends string> = {
+  readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
+  readonly sort: {
+    readonly config: SortConfig<TSortColumn>;
+    readonly doSort: (column: TSortColumn) => void;
+  };
+  readonly pagination: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly prevPage: () => void;
+    readonly nextPage: () => void;
+  };
+};
+
+export const usePaginatedQuery = <TRow, TSortColumn extends string>(
+  params: PaginatedQueryParams<TRow, TSortColumn>,
+): PaginatedQueryResult<TRow, TSortColumn> => {
+  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, queryFn } = params;
+  const [sortConfig, onSort] = useSort<TSortColumn>(defaultSortColumn, defaultSortDirection);
+  const [pagination, { goToPage, ...pageControls }] = usePagination(1, pageSize);
+
+  const doSort = (column: TSortColumn): void => {
+    onSort(column);
+    goToPage(1);
+  };
+  const sort = { config: sortConfig, doSort };
+
+  const paginationProps = {
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    prevPage: pageControls.prevPage,
+    nextPage: pageControls.nextPage,
+  };
+
+  const query = useQuery({
+    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize],
+    queryFn: async () => {
+      const from = (pagination.page - 1) * pagination.pageSize;
+      const to = from + pagination.pageSize - 1;
+      return queryFn(sortConfig, from, to);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  const asyncData = toAsyncData(
+    query,
+    () => {
+      void query.refetch();
+    },
+    query.isFetching,
+  );
+
+  return { asyncData, sort, pagination: paginationProps };
+};
+
+// ──────────────────────────────────────────────
+// Generic "Many records" slave props
+// ──────────────────────────────────────────────
+
+export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo> = {
+  readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
+  readonly navLinkTo: TNavLinkTo;
+  readonly sort: {
+    readonly config: SortConfig<TSortColumn>;
+    readonly doSort: (column: TSortColumn) => void;
+  };
+  readonly pagination: {
+    readonly page: number;
+    readonly pageSize: number;
+    readonly prevPage: () => void;
+    readonly nextPage: () => void;
+  };
+};
