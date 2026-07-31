@@ -45,8 +45,8 @@ export type TransactionsSProps = {
   readonly pagination: {
     readonly page: number;
     readonly pageSize: number;
-    readonly onPrev: () => void;
-    readonly onNext: () => void;
+    readonly prevPage: () => void;
+    readonly nextPage: () => void;
   };
 };
 
@@ -73,8 +73,8 @@ export const TransactionsM = ({
   const paginationProps = {
     page: pagination.page,
     pageSize: pagination.pageSize,
-    onPrev: pageControls.prevPage,
-    onNext: pageControls.nextPage,
+    prevPage: pageControls.prevPage,
+    nextPage: pageControls.nextPage,
   };
 
   const query = useQuery({

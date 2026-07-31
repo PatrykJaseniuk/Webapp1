@@ -1,9 +1,10 @@
 import { match } from 'ts-pattern';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { ErrorMessage } from './ErrorMessageS';
-import { DataTableS, type ColumnDef } from './DataTableS';
+import { DataTableS, type ColumnDef, type Pagination } from './DataTableS';
 
-type Row = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
+type PageData = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Row = PageData['rows'][number];
 type Sort = TenantsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type TenantStatus = Row['tenant_status'];
@@ -59,7 +60,13 @@ const EMPTY_STATE = (
   </>
 );
 
-export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Element => (
+const toPagination = (
+  pagination: TenantsSProps['pagination'],
+  totalCount: number | undefined,
+): Pagination | undefined =>
+  totalCount === undefined ? undefined : { ...pagination };
+
+export const TenantsS = ({ asyncData, navLinkTo, sort, pagination }: TenantsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Najemcy</h1>
     {match(asyncData)
@@ -82,9 +89,11 @@ export const TenantsS = ({ asyncData, navLinkTo, sort }: TenantsSProps): JSX.Ele
           columns={COLUMNS}
           sort={sort}
           isFetching={isFetching ?? false}
-          rows={data}
+          rows={data.rows}
           skeletonRows={SKELETON_ROWS}
           emptyState={EMPTY_STATE}
+          pagination={toPagination(pagination, data.totalCount)}
+          totalCount={data.totalCount}
           renderRow={(t) => (
             <tr
               key={t.id}

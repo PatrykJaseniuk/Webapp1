@@ -3,7 +3,8 @@ import { MemoryRouterProvider } from '@/test-router-utils';
 import { TenantsS } from './TenantsS';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 
-type Row = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
+type PageData = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Row = PageData['rows'][number];
 
 const makeTenant = (overrides?: Partial<Row>): Row => ({
   id: '00000000-0000-0000-0000-000000000001',
@@ -26,6 +27,15 @@ const noop = (): void => { };
 
 type SortColumn = TenantsSProps['sort']['config']['column'];
 const sort = { config: { column: 'last_name' as SortColumn, direction: 'asc' as const }, doSort: noop };
+
+const pagination: TenantsSProps['pagination'] = {
+  page: 1,
+  pageSize: 20,
+  prevPage: noop,
+  nextPage: noop,
+};
+
+const pageData = (rows: readonly Row[], totalCount: number): PageData => ({ rows, totalCount });
 
 const pendingDataMode: TenantsSProps['asyncData'] = { tag: 'pending' };
 
@@ -55,6 +65,7 @@ const meta: Meta<typeof TenantsS> = {
   args: {
     navLinkTo,
     sort,
+    pagination,
   },
 };
 
@@ -71,18 +82,18 @@ export const Rejected: Story = {
 };
 
 export const Empty: Story = {
-  args: { asyncData: { tag: 'fulfilled', data: [] } },
+  args: { asyncData: { tag: 'fulfilled', data: pageData([], 0) } },
 };
 
 export const WithRows: Story = {
   args: {
     asyncData: {
       tag: 'fulfilled',
-      data: [
+      data: pageData([
         makeTenant({ id: '1', first_name: 'Jan', last_name: 'Kowalski', tenant_status: 'active' }),
         makeTenant({ id: '2', first_name: 'Anna', last_name: 'Nowak', tenant_status: 'applicant', email: 'anna@example.com' }),
         makeTenant({ id: '3', first_name: 'Piotr', last_name: 'Zieliński', tenant_status: 'past', phone: '555555555' }),
-      ],
+      ], 3),
     },
   },
 };

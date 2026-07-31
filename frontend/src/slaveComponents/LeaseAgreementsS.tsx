@@ -1,9 +1,10 @@
 import { match } from 'ts-pattern';
 import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM';
 import { ErrorMessage } from './ErrorMessageS';
-import { DataTableS, type ColumnDef } from './DataTableS';
+import { DataTableS, type ColumnDef, type Pagination } from './DataTableS';
 
-type Row = Extract<LeaseAgreementsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
+type PageData = Extract<LeaseAgreementsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Row = PageData['rows'][number];
 type Sort = LeaseAgreementsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type LeaseStatus = Row['lease_status'];
@@ -61,7 +62,13 @@ const EMPTY_STATE = (
   </>
 );
 
-export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreementsSProps): JSX.Element => (
+const toPagination = (
+  pagination: LeaseAgreementsSProps['pagination'],
+  totalCount: number | undefined,
+): Pagination | undefined =>
+  totalCount === undefined ? undefined : { ...pagination };
+
+export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort, pagination }: LeaseAgreementsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Umowy najmu</h1>
     {match(asyncData)
@@ -84,9 +91,11 @@ export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort }: LeaseAgreements
           columns={COLUMNS}
           sort={sort}
           isFetching={isFetching ?? false}
-          rows={data}
+          rows={data.rows}
           skeletonRows={SKELETON_ROWS}
           emptyState={EMPTY_STATE}
+          pagination={toPagination(pagination, data.totalCount)}
+          totalCount={data.totalCount}
           renderRow={(l) => (
             <tr
               key={l.id}

@@ -33,8 +33,8 @@ const sort = { config: { column: 'due_date' as SortColumn, direction: 'desc' as 
 const pagination: TransactionsSProps['pagination'] = {
   page: 1,
   pageSize: 20,
-  onPrev: noop,
-  onNext: noop,
+  prevPage: noop,
+  nextPage: noop,
 };
 
 const pageData = (rows: readonly Row[], totalCount: number): PageData => ({ rows, totalCount });

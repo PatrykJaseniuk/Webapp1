@@ -88,8 +88,8 @@ const FetchProgress = (): JSX.Element => (
 export type Pagination = {
   readonly page: number;
   readonly pageSize: number;
-  readonly onPrev: () => void;
-  readonly onNext: () => void;
+  readonly prevPage: () => void;
+  readonly nextPage: () => void;
 };
 
 const PaginationFooter = ({
@@ -113,7 +113,7 @@ const PaginationFooter = ({
             'text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
         }`}
         disabled={prevDisabled}
-        onClick={pagination.onPrev}
+        onClick={pagination.prevPage}
         aria-label="Poprzednia strona"
       >
         ← Poprzednia
@@ -129,7 +129,7 @@ const PaginationFooter = ({
             'text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
         }`}
         disabled={nextDisabled}
-        onClick={pagination.onNext}
+        onClick={pagination.nextPage}
         aria-label="Następna strona"
       >
         Następna →

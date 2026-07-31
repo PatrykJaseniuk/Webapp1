@@ -3,7 +3,8 @@ import { MemoryRouterProvider } from '@/test-router-utils';
 import { PropertiesS } from './PropertiesS';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 
-type Row = Extract<PropertiesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
+type PageData = Extract<PropertiesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Row = PageData['rows'][number];
 
 const property: Row = {
   id: '1',
@@ -38,6 +39,15 @@ const noop = (): void => { };
 type SortColumn = PropertiesSProps['sort']['config']['column'];
 const sort = { config: { column: 'name' as SortColumn, direction: 'asc' as const }, doSort: noop };
 
+const pagination: PropertiesSProps['pagination'] = {
+  page: 1,
+  pageSize: 20,
+  prevPage: noop,
+  nextPage: noop,
+};
+
+const pageData = (rows: readonly Row[], totalCount: number): PageData => ({ rows, totalCount });
+
 const pendingDataMode: PropertiesSProps['asyncData'] = { tag: 'pending' };
 
 const rejectedDataMode: PropertiesSProps['asyncData'] = {
@@ -66,6 +76,7 @@ const meta: Meta<typeof PropertiesS> = {
   args: {
     navLinkTo,
     sort,
+    pagination,
   },
 };
 export default meta;
@@ -81,13 +92,13 @@ export const Rejected: Story = {
 };
 
 export const Empty: Story = {
-  args: { asyncData: { tag: 'fulfilled', data: [] } },
+  args: { asyncData: { tag: 'fulfilled', data: pageData([], 0) } },
 };
 
 export const Single: Story = {
-  args: { asyncData: { tag: 'fulfilled', data: [property] } },
+  args: { asyncData: { tag: 'fulfilled', data: pageData([property], 1) } },
 };
 
 export const Many: Story = {
-  args: { asyncData: { tag: 'fulfilled', data: manyProperties } },
+  args: { asyncData: { tag: 'fulfilled', data: pageData(manyProperties, 3) } },
 };
