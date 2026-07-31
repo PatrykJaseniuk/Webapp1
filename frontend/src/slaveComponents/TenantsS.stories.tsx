@@ -3,7 +3,7 @@ import { MemoryRouterProvider } from '@/test-router-utils';
 import { TenantsS } from './TenantsS';
 import type { TenantsSProps } from '@/masterComponents/TenantsM';
 
-type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 
 const makeTenant = (overrides?: Partial<Row>): Row => ({
   id: '00000000-0000-0000-0000-000000000001',

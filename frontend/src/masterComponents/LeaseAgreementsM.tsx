@@ -59,8 +59,7 @@ export const LeaseAgreementsM = ({
         .from('lease_agreements')
         .select('*, tenants(first_name,last_name), properties(name)')
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      if (r.error !== null) throw r.error;
-      return r.data ?? [];
+      return r.error !== null ? Promise.reject(r.error) : (r.data ?? []);
     },
     placeholderData: (prev) => prev,
   });

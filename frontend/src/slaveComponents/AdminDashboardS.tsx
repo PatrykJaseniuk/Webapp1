@@ -2,7 +2,7 @@ import { match } from 'ts-pattern';
 import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 
-type DashboardSummary = Extract<DashboardSummarySProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type DashboardSummary = Extract<DashboardSummarySProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 
 type Props = DashboardSummarySProps;
 

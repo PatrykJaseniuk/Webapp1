@@ -1,4 +1,9 @@
-import type { NavLink } from "@/generic/utils";
+import type { CSSProperties, ReactNode } from "react";
+
+type NavLink = (args: {
+  readonly style: CSSProperties;
+  readonly content: string;
+}) => ReactNode;
 
 type Props = {
   readonly navLinkTo: { readonly login: NavLink };

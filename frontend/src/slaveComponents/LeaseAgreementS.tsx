@@ -3,7 +3,7 @@ import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Data = Extract<LeaseAgreementSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type Data = Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
 type LeaseAgreementData = NonNullable<Data['leaseAgreement']>;
 type LeaseStatusKey = LeaseAgreementData['lease_status'];

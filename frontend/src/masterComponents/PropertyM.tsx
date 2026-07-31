@@ -14,14 +14,14 @@ type OccupancyDbRow = Database['public']['Views']['property_occupancy']['Row'];
 type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
 
 type PropertyWithRelationships = Readonly<{
-  property: PropertyDbRow | null;
-  occupancy: OccupancyDbRow | null;
-  leases: readonly (LeaseAgreementDbRow & {
+  readonly property: PropertyDbRow | null;
+  readonly occupancy: OccupancyDbRow | null;
+  readonly leases: readonly (LeaseAgreementDbRow & {
     readonly tenants: { readonly first_name: string; readonly last_name: string; };
   })[];
-  transactions: readonly TransactionDbRow[];
-  financial: FinancialSummaryDbRow | null;
-  attachments: readonly AttachmentDbRow[];
+  readonly transactions: readonly TransactionDbRow[];
+  readonly financial: FinancialSummaryDbRow | null;
+  readonly attachments: readonly AttachmentDbRow[];
 }>;
 
 type NavLinkTo = Readonly<{
@@ -87,9 +87,9 @@ export const PropertyDetailM = ({
         transactionsResult.error ??
         financialResult.error ??
         attachmentsResult.error;
-      if (combinedError !== null) throw combinedError;
-
-      return {
+      return combinedError !== null
+        ? Promise.reject(combinedError)
+        : {
         property: propertyResult.data ?? null,
         occupancy: occupancyResult.data ?? null,
         leases: leasesResult.data ?? [],

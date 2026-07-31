@@ -4,7 +4,7 @@ import { within, expect } from 'storybook/test';
 import { TransactionsS } from './TransactionsS';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 
-type Row = Extract<TransactionsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 
 const makeTransaction = (overrides?: Partial<Row>): Row =>
   ({

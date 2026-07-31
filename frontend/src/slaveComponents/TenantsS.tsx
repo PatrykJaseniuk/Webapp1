@@ -3,7 +3,7 @@ import type { TenantsSProps } from '@/masterComponents/TenantsM';
 import { ErrorMessage } from './ErrorMessageS';
 import { DataTableS, type ColumnDef } from './DataTableS';
 
-type Row = Extract<TenantsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 type Sort = TenantsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type TenantStatus = Row['tenant_status'];

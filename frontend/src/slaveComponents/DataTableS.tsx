@@ -1,4 +1,9 @@
-import type { SortConfig } from '@/generic';
+type SortDirection = 'asc' | 'desc';
+
+type SortConfig<C extends string> = {
+  readonly column: C;
+  readonly direction: SortDirection;
+};
 
 const SortIcon = ({ direction }: { readonly direction: 'asc' | 'desc' | null }): JSX.Element => (
   <svg

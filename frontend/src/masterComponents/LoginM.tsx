@@ -30,8 +30,7 @@ export const Login = ({ SlaveComponent }: Props): JSX.Element => {
         email: input.email,
         password: input.password,
       });
-      if (result.error !== null) throw result.error;
-      return result.data;
+      return result.error !== null ? Promise.reject(result.error) : result.data;
     },
   });
 

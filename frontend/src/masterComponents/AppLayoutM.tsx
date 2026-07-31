@@ -8,23 +8,23 @@ import { match } from 'ts-pattern';
 // ── Auth data extracted for the shell ──
 
 type AuthData = Readonly<{
-  email: string;
+  readonly email: string;
 }>;
 
 // ── Shell props (defined here so slave can import from master) ──
 
 type AdminLandlordNavLInkTo = {
-  dashboard: NavLink,
-  properties: NavLink,
-  tenants: NavLink,
-  leases: NavLink,
-  transactions: NavLink,
+  readonly dashboard: NavLink,
+  readonly properties: NavLink,
+  readonly tenants: NavLink,
+  readonly leases: NavLink,
+  readonly transactions: NavLink,
 }
 
 type TenantNavLInkTo = {
-  dashboard: NavLink,
-  leases: NavLink,
-  transactions: NavLink,
+  readonly dashboard: NavLink,
+  readonly leases: NavLink,
+  readonly transactions: NavLink,
 }
 
 type NavKey = 'dashboard' | 'properties' | 'tenants' | 'leases' | 'transactions';

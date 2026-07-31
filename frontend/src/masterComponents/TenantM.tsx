@@ -12,10 +12,10 @@ type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 type AttachmentRow = Database['public']['Tables']['attachments']['Row'];
 
 type TenantDetailData = Readonly<{
-  tenant: TenantRow;
-  leases: readonly ActiveLeaseRow[];
-  transactions: readonly TransactionRow[];
-  attachments: readonly AttachmentRow[];
+  readonly tenant: TenantRow;
+  readonly leases: readonly ActiveLeaseRow[];
+  readonly transactions: readonly TransactionRow[];
+  readonly attachments: readonly AttachmentRow[];
 }>;
 
 type NavLinkTo = Readonly<{
@@ -68,9 +68,9 @@ export const TenantDetailM = ({
         leasesResult.error ??
         attachmentsResult.error ??
         transactionsResult.error;
-      if (combinedError !== null) throw combinedError;
-
-      return {
+      return combinedError !== null
+        ? Promise.reject(combinedError)
+        : {
         attachments: attachmentsResult.data ?? [],
         leases: leasesResult.data ?? [],
         tenant: tenantResult.data as NonNullable<typeof tenantResult.data>,

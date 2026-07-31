@@ -6,27 +6,59 @@ import { toAsyncData, type AsyncData } from '@/generic';
 import type { NavLink } from '@/generic/utils';
 
 type DashboardSummary = Readonly<{
-  totalProperties: number;
-  occupiedProperties: number;
-  totalTenants: number;
-  activeTenants: number;
-  totalUnpaidAmount: number;
-  overdueItems: number;
+  readonly totalProperties: number;
+  readonly occupiedProperties: number;
+  readonly totalTenants: number;
+  readonly activeTenants: number;
+  readonly totalUnpaidAmount: number;
+  readonly overdueItems: number;
 }>;
 
-type NavLinkTo=  {
-    leases:NavLink,
-    tenants:NavLink,
-    properties:NavLink
-  };
+type NavLinkTo = Readonly<{
+  readonly leases: NavLink;
+  readonly tenants: NavLink;
+  readonly properties: NavLink;
+}>;
 
 export type DashboardSummarySProps = {
   readonly asyncData: AsyncData<DashboardSummary>;
-  readonly navLinkTo:NavLinkTo  
+  readonly navLinkTo: NavLinkTo;
 };
 
 type Props = {
   readonly Slave: ComponentType<DashboardSummarySProps>;
+};
+
+const buildSummary = (
+  propertiesCountResult: { readonly count: number | null; readonly error: unknown },
+  tenantsCountResult: { readonly count: number | null; readonly error: unknown },
+  unpaidResult: { readonly data: readonly { readonly total_unpaid_amount: number | null; readonly overdue_items_count: number | null }[] | null; readonly error: unknown },
+  occupiedCountResult: { readonly count: number | null; readonly error: unknown },
+  activeTenantsCountResult: { readonly count: number | null; readonly error: unknown },
+): DashboardSummary => {
+  const totalProperties = propertiesCountResult.count ?? 0;
+  const occupiedProperties = occupiedCountResult.count ?? 0;
+  const totalTenants = tenantsCountResult.count ?? 0;
+  const activeTenants = activeTenantsCountResult.count ?? 0;
+
+  const unpaidItems = unpaidResult.data ?? [];
+  const totalUnpaidAmount = unpaidItems.reduce(
+    (sum, u) => sum + (u.total_unpaid_amount ?? 0),
+    0,
+  );
+  const overdueItems = unpaidItems.reduce(
+    (sum, u) => sum + (u.overdue_items_count ?? 0),
+    0,
+  );
+
+  return {
+    totalProperties,
+    occupiedProperties,
+    totalTenants,
+    activeTenants,
+    totalUnpaidAmount,
+    overdueItems,
+  };
 };
 
 export const DashboardSummaryM = ({
@@ -35,7 +67,13 @@ export const DashboardSummaryM = ({
   const query = useQuery({
     queryKey: ['dashboardSummary'],
     queryFn: async (): Promise<DashboardSummary> => {
-      const [propertiesCountResult, tenantsCountResult, unpaidResult, occupiedCountResult, activeTenantsCountResult] = await Promise.all([
+      const [
+        propertiesCountResult,
+        tenantsCountResult,
+        unpaidResult,
+        occupiedCountResult,
+        activeTenantsCountResult,
+      ] = await Promise.all([
         backendConnector
           .from('properties')
           .select('*', { count: 'exact', head: true }),
@@ -61,42 +99,40 @@ export const DashboardSummaryM = ({
         unpaidResult.error ??
         occupiedCountResult.error ??
         activeTenantsCountResult.error;
-      if (combinedError !== null) throw combinedError;
 
-      const totalProperties = propertiesCountResult.count ?? 0;
-      const occupiedProperties = occupiedCountResult.count ?? 0;
-      const totalTenants = tenantsCountResult.count ?? 0;
-      const activeTenants = activeTenantsCountResult.count ?? 0;
-
-      const unpaidItems = unpaidResult.data ?? [];
-      const totalUnpaidAmount = unpaidItems.reduce(
-        (sum, u) => sum + (u.total_unpaid_amount ?? 0),
-        0,
-      );
-      const overdueItems = unpaidItems.reduce(
-        (sum, u) => sum + (u.overdue_items_count ?? 0),
-        0,
-      );
-
-      return {
-        totalProperties,
-        occupiedProperties,
-        totalTenants,
-        activeTenants,
-        totalUnpaidAmount,
-        overdueItems,
-      };
+      return combinedError !== null
+        ? Promise.reject(combinedError)
+        : buildSummary(
+            propertiesCountResult,
+            tenantsCountResult,
+            unpaidResult,
+            occupiedCountResult,
+            activeTenantsCountResult,
+          );
     },
   });
 
-  const asyncData = toAsyncData(query, () => { void query.refetch(); });
+  const asyncData = toAsyncData(query, () => {
+    void query.refetch();
+  });
 
   const navLinkTo: NavLinkTo = {
-    leases: ({ content, style }) => <Link to='/app/leases' style={style}> {content}</Link>,
-    tenants: ({ content, style }) => <Link to='/app/tenants' style={style}> {content}</Link>,
-    properties: ({ content, style }) => <Link to='/app/properties' style={style}> {content}</Link>,
-  }
-  
+    leases: ({ content, style }) => (
+      <Link to="/app/leases" style={style}>
+        {content}
+      </Link>
+    ),
+    tenants: ({ content, style }) => (
+      <Link to="/app/tenants" style={style}>
+        {content}
+      </Link>
+    ),
+    properties: ({ content, style }) => (
+      <Link to="/app/properties" style={style}>
+        {content}
+      </Link>
+    ),
+  };
 
   return <Slave asyncData={asyncData} navLinkTo={navLinkTo} />;
 };

@@ -3,7 +3,7 @@ import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 import { ErrorMessage } from './ErrorMessageS';
 import { DataTableS, type ColumnDef } from './DataTableS';
 
-type Row = Extract<PropertiesSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<PropertiesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 type Sort = PropertiesSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type PropertyStatus = NonNullable<Row['property_status']>;

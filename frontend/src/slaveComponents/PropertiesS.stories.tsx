@@ -3,7 +3,7 @@ import { MemoryRouterProvider } from '@/test-router-utils';
 import { PropertiesS } from './PropertiesS';
 import type { PropertiesSProps } from '@/masterComponents/PropertiesM';
 
-type Row = Extract<PropertiesSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<PropertiesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 
 const property: Row = {
   id: '1',

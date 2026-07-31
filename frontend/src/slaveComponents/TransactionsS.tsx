@@ -3,7 +3,7 @@ import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { ErrorMessage } from './ErrorMessageS';
 import { DataTableS, type ColumnDef } from './DataTableS';
 
-type Row = Extract<TransactionsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 type Sort = TransactionsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type TxnType = Row['type'];

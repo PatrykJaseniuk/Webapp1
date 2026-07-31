@@ -38,8 +38,7 @@ export const Signup = ({ Form }: Props): JSX.Element => {
           },
         },
       });
-      if (result.error !== null) throw result.error;
-      return result.data;
+      return result.error !== null ? Promise.reject(result.error) : result.data;
     },
   });
 

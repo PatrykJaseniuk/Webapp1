@@ -11,9 +11,7 @@ export const SignupPage = (): JSX.Element => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (authState.tag === 'authenticated') {
-      void navigate({ to: '/app' });
-    }
+    authState.tag === 'authenticated' ? void navigate({ to: '/app' }) : undefined;
   }, [authState.tag, navigate]);
 
   return match(authState)

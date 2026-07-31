@@ -3,7 +3,7 @@ import type { TenantSProps } from '@/masterComponents/TenantM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Data = Extract<TenantSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type Data = Extract<TenantSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = TenantSProps['navLinkTo'];
 type TenantStatusKey = Data['tenant']['tenant_status'];
 type LeaseStatusKey = NonNullable<Data['leases'][number]['lease_status']>;

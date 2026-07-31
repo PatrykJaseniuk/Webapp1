@@ -6,13 +6,11 @@ import type { SignupInput } from '@/masterComponents/SignupM';
 // extractSignupInput
 // ──────────────────────────────────────────────────────────────
 
-const makeFormData = (entries: Readonly<Record<string, string>>): FormData => {
-  const fd = new FormData();
-  for (const [key, value] of Object.entries(entries)) {
-    fd.append(key, value);
-  }
-  return fd;
-};
+const makeFormData = (entries: Readonly<Record<string, string>>): FormData =>
+  Object.entries(entries).reduce(
+    (fd, [key, value]) => (fd.append(key, value), fd),
+    new FormData(),
+  );
 
 describe('extractSignupInput', () => {
   it('extracts all four fields from valid FormData', () => {

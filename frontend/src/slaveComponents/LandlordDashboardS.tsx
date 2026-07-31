@@ -3,7 +3,7 @@ import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummary
 import { LoadingSpinner } from './LoadingSpinnerS';
 
 type Props = DashboardSummarySProps;
-type DashboardSummary = Extract<Props['asyncData'], { tag: 'fulfilled' }>['data'];
+type DashboardSummary = Extract<Props['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 
 const cardLinkClass =
   'rounded-lg border border-gray-200 bg-white p-6 text-center shadow-sm hover:shadow-md transition-shadow';

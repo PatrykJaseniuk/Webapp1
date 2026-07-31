@@ -3,7 +3,7 @@ import type { TransactionSProps } from '@/masterComponents/TransactionM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Data = Extract<TransactionSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type Data = Extract<TransactionSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = TransactionSProps['navLinkTo'];
 type TxnTypeKey = Data['transaction']['type'];
 type TxnStatusKey = Data['transaction']['transaction_status'];

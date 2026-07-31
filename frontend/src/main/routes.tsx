@@ -165,7 +165,7 @@ export const router = createRouter({
 // ══════════════════════════════════════════════════════════════
 
 declare module '@tanstack/react-router' {
-  interface Register {
+  type Register = {
     readonly router: typeof router;
   }
 }

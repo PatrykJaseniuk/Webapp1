@@ -3,7 +3,7 @@ import type { LeaseAgreementsSProps } from '@/masterComponents/LeaseAgreementsM'
 import { ErrorMessage } from './ErrorMessageS';
 import { DataTableS, type ColumnDef } from './DataTableS';
 
-type Row = Extract<LeaseAgreementsSProps['asyncData'], { tag: 'fulfilled' }>['data'][number];
+type Row = Extract<LeaseAgreementsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'][number];
 type Sort = LeaseAgreementsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type LeaseStatus = Row['lease_status'];

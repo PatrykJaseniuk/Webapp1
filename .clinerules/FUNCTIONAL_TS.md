@@ -9,7 +9,7 @@
 # ───────────────────────────────────────────────────────────────
 
 - Pure functions by default. No observable side effects unless explicitly labelled effectful.
-- Expressions over statements. Ternaries, `&&`, `||`, `??` over `if/else`.
+- Expressions over statements. `if` is NEVER allowed
 - Data is immutable. Never mutate objects or arrays after creation.
 - Compose small, single-purpose functions into larger behaviour.
 - No classes. Plain data types and standalone functions.
@@ -48,10 +48,7 @@
 # 5. ERRORS & EFFECTS
 # ───────────────────────────────────────────────────────────────
 
-- `throw` is NEVER allowed. Model all errors with `Result<T, E>`:
-    type Result<T, E> =
-      | { readonly tag: 'ok';  readonly value: T }
-      | { readonly tag: 'err'; readonly error: E };
+- `throw` is NEVER allowed.
 - Async functions: return error states, never throw. Never swallow errors.
 - I/O isolated at the edges. Dedicated data-access layer, thin async orchestrators.
 - Every promise: `await`, `return`, or `void`. No floating promises.
@@ -63,7 +60,8 @@
 
 - ❌ `throw` anywhere
 - ❌ Multiple `return` / early return / guard clauses
-- ❌ `switch`, `if/else if` chains, imperative loops
+- ❌ `if` anywhere — use ternaries, `match`, or lookup objects
+- ❌ `switch`, imperative loops
 - ❌ `let`, `var`, mutation in place, mutating callbacks
 - ❌ `enum` — use `as const` objects
 - ❌ `any`, `!`, floating promises, swallowed errors

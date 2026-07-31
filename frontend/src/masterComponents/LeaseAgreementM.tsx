@@ -12,12 +12,12 @@ type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
 
 type LeaseAgreementWithRelationships = Readonly<{
-  leaseAgreement: LeaseAgreementDbRow & {
+  readonly leaseAgreement: LeaseAgreementDbRow & {
     readonly tenants: { readonly first_name: string; readonly last_name: string; };
     readonly properties: { readonly name: string; };
   } | null;
-  transactions: readonly TransactionDbRow[];
-  attachments: readonly AttachmentDbRow[];
+  readonly transactions: readonly TransactionDbRow[];
+  readonly attachments: readonly AttachmentDbRow[];
 }>;
 
 type NavLinkTo = Readonly<{
@@ -70,9 +70,9 @@ export const LeaseAgreementDetailM = ({
         leaseResult.error ??
         transactionsResult.error ??
         attachmentsResult.error;
-      if (combinedError !== null) throw combinedError;
-
-      return {
+      return combinedError !== null
+        ? Promise.reject(combinedError)
+        : {
         attachments: attachmentsResult.data ?? [],
         leaseAgreement: leaseResult.data ?? null,
         transactions: transactionsResult.data ?? [],

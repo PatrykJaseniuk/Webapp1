@@ -10,9 +10,9 @@ import type { NavLink, NavLinkWithId } from '@/generic/utils';
 type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
 type TransactionDetailData = Readonly<{
-  transaction: TransactionRow;
-  propertyName: string | null;
-  leaseDescription: string | null;
+  readonly transaction: TransactionRow;
+  readonly propertyName: string | null;
+  readonly leaseDescription: string | null;
 }>;
 
 type NavLinkTo = Readonly<{
@@ -32,6 +32,35 @@ type Props = {
   readonly role: AppRole;
 };
 
+const resolveDetail = async (
+  txn: TransactionRow,
+  id: string,
+): Promise<TransactionDetailData> => {
+  const propertyName: string | null =
+    txn.property_id !== null
+      ? (await backendConnector
+          .from('properties')
+          .select('name')
+          .eq('id', txn.property_id)
+          .single()
+        ).data?.name ?? null
+      : null;
+
+  const leaseDescription: string | null =
+    txn.lease_id !== null
+      ? (await backendConnector
+          .from('lease_agreements')
+          .select('id')
+          .eq('id', txn.lease_id)
+          .single()
+        ).data !== null
+        ? `Umowa ${txn.lease_id.slice(0, 8)}...`
+        : null
+      : null;
+
+  return { transaction: txn, propertyName, leaseDescription };
+};
+
 export const TransactionDetailM = ({
   Slave,
   id,
@@ -45,44 +74,33 @@ export const TransactionDetailM = ({
         .select('*')
         .eq('id', id)
         .single();
-      if (txnError !== null) throw txnError;
-
-      const propertyName: string | null =
-        txn.property_id !== null ?
-          (await backendConnector
-            .from('properties')
-            .select('name')
-            .eq('id', txn.property_id)
-            .single()).data?.name ?? null :
-          null;
-
-      const leaseDescription: string | null =
-        txn.lease_id !== null ?
-          ((await backendConnector
-            .from('lease_agreements')
-            .select('id')
-            .eq('id', txn.lease_id)
-            .single()).data !== null ?
-            `Umowa ${txn.lease_id.slice(0, 8)}...` :
-            null) :
-          null;
-
-      return { transaction: txn, propertyName, leaseDescription };
+      return txnError !== null
+        ? Promise.reject(txnError)
+        : resolveDetail(txn, id);
     },
   });
 
-  const asyncData = toAsyncData(query, () => { void query.refetch(); });
+  const asyncData = toAsyncData(query, () => {
+    void query.refetch();
+  });
 
   const navLinkTo: NavLinkTo = {
-    toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
-    toLease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
-    linkToTransactions: ({ content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
+    toProperty: ({ id: propertyId, content, style }) => (
+      <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>
+        {content}
+      </Link>
+    ),
+    toLease: ({ id: leaseId, content, style }) => (
+      <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>
+        {content}
+      </Link>
+    ),
+    linkToTransactions: ({ content, style }) => (
+      <Link to="/app/transactions" style={style}>
+        {content}
+      </Link>
+    ),
   };
 
-  return (
-    <Slave
-      asyncData={asyncData}
-      navLinkTo={navLinkTo}
-    />
-  );
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} />;
 };

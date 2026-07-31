@@ -60,8 +60,7 @@ export const TransactionsM = ({
         .select('*, properties(name), lease_agreements(start_date)')
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .limit(100);
-      if (r.error !== null) throw r.error;
-      return r.data ?? [];
+      return r.error !== null ? Promise.reject(r.error) : (r.data ?? []);
     },
     placeholderData: (prev) => prev,
   });

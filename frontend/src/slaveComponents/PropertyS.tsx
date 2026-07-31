@@ -3,7 +3,7 @@ import type { PropertySProps } from '@/masterComponents/PropertyM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 
-type Data = Extract<PropertySProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type Data = Extract<PropertySProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = PropertySProps['navLinkTo'];
 type PropertyData = NonNullable<Data['property']>;
 type PropertyStatusKey = PropertyData['property_status'];

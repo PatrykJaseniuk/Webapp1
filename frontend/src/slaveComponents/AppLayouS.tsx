@@ -6,7 +6,7 @@ import { ErrorMessage } from './ErrorMessageS';
 
 // ── Inferred type from slave props ──
 
-type AuthData = Extract<AppLayoutSProps['asyncData'], { tag: 'fulfilled' }>['data'];
+type AuthData = Extract<AppLayoutSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavKey = AppLayoutSProps['activeNavKey'];
 
 // ── Display labels for nav keys ──

@@ -45,8 +45,7 @@ export const TenantsM = ({
         .from('tenants')
         .select('*')
         .order(sortConfig.column, { ascending });
-      if (r.error !== null) throw r.error;
-      return (r.data ?? []);
+      return r.error !== null ? Promise.reject(r.error) : (r.data ?? []);
     },
     placeholderData: (prev) => prev,
   });

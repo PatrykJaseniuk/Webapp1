@@ -227,7 +227,7 @@ tables), slaves stay pure render, a page wires them.
 # ❌ Master exports data-internal types separately from the slave props
 # ❌ Master switches between Loading/Error/Data rendering — delegate to the slave's match
 # ❌ Master swallows query errors or returns rejected promises implicitly —
-#     throw the combined error inside `queryFn` (the one sanctioned throw)
+#     use `Promise.reject(combinedError)` inside `queryFn` to signal errors to TanStack Query
 # ❌ Page fetches data or imports `@/backendConnector`
 # ❌ Page passes `LoadingComponent` or `ErrorComponent` to a master
 # ❌ Page conditionally renders different masters based on URL state —

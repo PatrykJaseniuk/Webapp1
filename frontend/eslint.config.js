@@ -9,26 +9,44 @@ import reactHooks from 'eslint-plugin-react-hooks';
 
 const tsconfigRootDir = new URL('.', import.meta.url).pathname;
 
-// Architecture boundary zones — mirrors .clinerules/FRONTEND_ARCH.md.
-// Slaves = pure render; masters = containers; pages = wiring; generic = zero-domain.
-// NOTE: slaves MUST import their master's SProps type (exactly one, plus the
-// form-input type for form slaves). ESLint cannot count type-only imports, so
-// masterComponents is intentionally absent here — that constraint stays
-// prose-enforced in FRONTEND_ARCH.md §2.
-const SLAVE_FORBIDDEN = [
-  '@/backendConnector', '@/backendConnector/*',
-  '@/pages', '@/pages/*',
-  '@/hooks', '@/hooks/*',
-  '@/generic', '@/generic/*',
-  '@/main', '@/main/*',
-  '../backendConnector', '../backendConnector/*',
-  '../pages', '../pages/*',
-  '../hooks', '../hooks/*',
-  '../generic', '../generic/*',
-  '../main', '../main/*',
-  '@tanstack/react-router', '@tanstack/react-router/*',
-  '@tanstack/react-query',
-];
+// ── Architecture boundary zones — mirrors .clinerules/FRONTEND_ARCH.md ──
+
+// Slave import whitelist — only two architectural dirs:
+//   ✅ @/masterComponents, ../masterComponents  (SProps + form-input types)
+//   ✅ @/slaveComponents, ./                    (sibling pure-render helpers)
+//   ❌ Everything else                          (slave tests/stories are excluded)
+const slaveAllowedPatterns = [/^ts-pattern$/, /^@\/masterComponents\//, /^\.\.\/masterComponents\//, /^@\/slaveComponents\//, /^\.\//];
+
+const matchesWhitelist = (source) =>
+  slaveAllowedPatterns.some((p) => p.test(source));
+
+const slaveImportRule = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Slaves may only import from masterComponents and slaveComponents.' },
+    messages: {
+      forbidden: 'Slave import "{{ source }}" is not allowed. Slaves may only import from @/masterComponents and @/slaveComponents (or relative equivalents). ' +
+        'Everything else must arrive via props (FRONTEND_ARCH.md §2).',
+    },
+  },
+  create(context) {
+    return {
+      ImportDeclaration(node) {
+        const isTypeOnly = node.importKind === 'type' || node.specifiers.every((s) => s.importKind === 'type');
+        const source = /** @type {string} */ (node.source.value);
+        !isTypeOnly && !matchesWhitelist(source) ?
+          context.report({ node, messageId: 'forbidden', data: { source } }) :
+          undefined;
+      },
+      ImportExpression(node) {
+        const source = /** @type {string} */ (node.source.value);
+        !matchesWhitelist(source) ?
+          context.report({ node, messageId: 'forbidden', data: { source } }) :
+          undefined;
+      },
+    };
+  },
+};
 
 const TEST_AND_STORY_FILES = [
   '**/*.unit.test.ts', '**/*.unit.test.tsx',
@@ -40,6 +58,7 @@ const TEST_AND_STORY_FILES = [
 export default [
   {
     ignores: ['dist/', 'node_modules/', 'src/backendConnector/__generated__/'],
+
   },
   {
     files: ['src/**/*.{ts,tsx}'],
@@ -66,21 +85,34 @@ export default [
       'no-param-reassign': 'error',
       'no-shadow': 'off', // handled by @typescript-eslint
       '@typescript-eslint/no-shadow': 'error',
+      
 
       // ── TypeScript ──
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-non-null-assertion': 'error',
+      '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { attributes: false } }],
 
       // ── Functional programming (FUNCTIONAL_TS.md) ──
       'functional/no-let': 'error',
+      'functional/functional-parameters': ['error', { enforceParameterCount: false, allowRestParameter: false, allowArgumentsKeyword: false }],
       'functional/immutable-data': 'error',
       'functional/no-loop-statements': 'error',
-      // `throw` allowed only inside async functions (queryFn/mutationFn) —
-      // there it rejects the promise, TanStack Query's error channel (FUNCTIONAL_TS.md §7).
-      'functional/no-throw-statements': ['error', { allowToRejectPromises: true }],
+      'functional/prefer-readonly-type': 'error',
+      'functional/no-classes': 'error',
+      'functional/no-throw-statements': 'error',
+
+      // ── Control-flow bans (FUNCTIONAL_TS.md §1, §4, §6) ──
+      'no-restricted-syntax': ['error',
+        { selector: 'IfStatement', message: '`if` is NEVER allowed — use ternaries for branching (FUNCTIONAL_TS.md §1).' },
+        { selector: 'SwitchStatement', message: '`switch` is banned — use `match().with().exhaustive()` (FUNCTIONAL_TS.md §4).' },
+        { selector: 'TSEnumDeclaration', message: '`enum` is banned — use `as const` objects (FUNCTIONAL_TS.md §6).' },
+      ],
+
+      // ── Named exports only (FUNCTIONAL_TS.md §3, §6) ──
+      'import/no-default-export': 'error',
 
       // ── Imports ──
       'import/no-cycle': 'error',
@@ -93,28 +125,11 @@ export default [
 
   // ── Architecture boundary zones (FRONTEND_ARCH.md) ──
   {
+    // Slave components: whitelist — only masterComponents, slaveComponents, and npm packages
     files: ['src/slaveComponents/**/*.tsx'],
     ignores: TEST_AND_STORY_FILES,
-    rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [{
-          group: SLAVE_FORBIDDEN,
-          message: 'Slaves are pure render — everything arrives via props (FRONTEND_ARCH.md §2).',
-        }],
-      }],
-    },
-  },
-  {
-    // Stories/tests of slaves render with mocked props — still no data layer.
-    files: ['src/slaveComponents/**/*.stories.tsx', 'src/slaveComponents/**/*.unit.test.*', 'src/slaveComponents/**/*.integration.test.*'],
-    rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [{
-          group: ['@/backendConnector', '@/backendConnector/*', '../backendConnector', '../backendConnector/*'],
-          message: 'Slave stories/tests mock props — no data layer (FRONTEND_ARCH.md §2).',
-        }],
-      }],
-    },
+    plugins: { 'slave-boundary': { rules: { 'allowed-imports': slaveImportRule } } },
+    rules: { 'slave-boundary/allowed-imports': 'error' },
   },
   {
     files: ['src/masterComponents/**/*.tsx'],
@@ -176,14 +191,54 @@ export default [
     },
   },
 
+  // ── Config files: same strict rules, but allow default export (ESLint 9 convention) ──
+  {
+    files: ['*.config.{js,mjs}'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        projectService: { allowDefaultProject: ['*.config.{js,mjs}'] },
+        tsconfigRootDir,
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+      'functional': functional,
+      'import': importPlugin,
+    },
+    rules: {
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'no-param-reassign': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      'functional/no-let': 'error',
+      'functional/immutable-data': 'error',
+      'functional/no-loop-statements': 'error',
+      'functional/no-classes': 'error',
+      'functional/no-throw-statements': 'error',
+      'no-restricted-syntax': ['error',
+        { selector: 'IfStatement', message: '`if` is NEVER allowed — use ternaries for branching (FUNCTIONAL_TS.md §1).' },
+        { selector: 'SwitchStatement', message: '`switch` is banned — use `match().with().exhaustive()` (FUNCTIONAL_TS.md §4).' },
+        { selector: 'TSEnumDeclaration', message: '`enum` is banned — use `as const` objects (FUNCTIONAL_TS.md §6).' },
+      ],
+      'import/no-default-export': 'off',
+      'import/no-cycle': 'error',
+    },
+  },
+
   // ── Tests & stories: relaxed (mock data, play functions, throwaway async) ──
   {
     files: TEST_AND_STORY_FILES,
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
-      'functional/no-throw-statements': 'off',
-      'functional/no-loop-statements': 'off',
+      // Rest parameters are idiomatic in test utilities (e.g. `render(ui, ...options)`)
+      'functional/functional-parameters': 'off',
+      // Storybook CSF requires `export default meta` (framework API, not a style choice)
+      'import/no-default-export': 'off',
     },
   },
 
