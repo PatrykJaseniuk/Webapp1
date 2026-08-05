@@ -33,7 +33,7 @@ type Props = {
 
 const resolveDetail = async (
   txn: TransactionRow,
-  id: string,
+  _id: string,
 ): Promise<TransactionDetailData> => {
   const propertyName: string | null =
     txn.property_id !== null
