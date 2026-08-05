@@ -2,8 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { usePaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
-import type { NavLinkWithId } from '@/generic/utils';
+import { usePaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
 

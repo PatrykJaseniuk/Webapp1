@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { LandlordDashboard } from './LandlordDashboardS';
-import type { NavLink } from '@/generic/utils';
+import type { NavLink } from '@/generic';
 
 const mockNavLink: NavLink = ({ content, style }) => (
   <span style={style}>{content}</span>

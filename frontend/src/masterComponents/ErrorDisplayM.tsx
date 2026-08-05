@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import type { ComponentType } from 'react';
-import type { NavLink } from '@/generic/utils';
+import type { NavLink } from '@/generic';
 
 type NavLinkTo = Readonly<{
   readonly login: NavLink;

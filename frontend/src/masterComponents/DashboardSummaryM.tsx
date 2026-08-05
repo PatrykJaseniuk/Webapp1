@@ -2,8 +2,7 @@ import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
-import { toAsyncData, type AsyncData } from '@/generic';
-import type { NavLink } from '@/generic/utils';
+import { toAsyncData, type AsyncData, type NavLink } from '@/generic';
 
 type DashboardSummary = Readonly<{
   readonly totalProperties: number;
