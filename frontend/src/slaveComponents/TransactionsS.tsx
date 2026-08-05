@@ -1,4 +1,5 @@
 import { match } from 'ts-pattern';
+import type { ChangeEvent } from 'react';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import { ErrorMessage } from './ErrorMessageS';
 import { DataTableS, type ColumnDef, type Pagination } from './DataTableS';
@@ -106,14 +107,36 @@ const toPagination = (
 ): Pagination | undefined =>
   totalCount === undefined ? undefined : { ...pagination };
 
+const onFilterInput = (
+  onFilterChange: (text: string) => void,
+): ((e: ChangeEvent<HTMLInputElement>) => void) =>
+  (e: ChangeEvent<HTMLInputElement>): void => {
+    onFilterChange(e.target.value);
+  };
+
 export const TransactionsS = ({
   asyncData,
   navLinkTo,
   sort,
   pagination,
+  filterText,
+  onFilterChange,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Transakcje</h1>
+    <div className="mb-4">
+      <label htmlFor="txn-filter" className="sr-only">
+        Filtruj po opisie transakcji
+      </label>
+      <input
+        id="txn-filter"
+        type="search"
+        defaultValue={filterText}
+        onChange={onFilterInput(onFilterChange)}
+        placeholder="Szukaj po opisie…"
+        className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm placeholder:text-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+      />
+    </div>
     {match(asyncData)
       .with({ tag: 'pending' }, () => (
         <DataTableS

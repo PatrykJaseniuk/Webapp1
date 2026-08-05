@@ -155,11 +155,12 @@ export const toAsyncData = <T>(
 // Paginated query hook — DRY for "Many" masters
 // ──────────────────────────────────────────────
 
-export type PaginatedQueryParams<TRow, TSortColumn extends string> = {
+export type PaginatedQueryParams<TRow, TSortColumn extends string, TExtraKeyParts extends readonly unknown[] = readonly []> = {
   readonly queryKeyBase: string;
   readonly defaultSortColumn: TSortColumn;
   readonly defaultSortDirection: SortDirection;
   readonly pageSize: number;
+  readonly extraQueryKeyParts?: TExtraKeyParts;
   readonly queryFn: (
     sort: SortConfig<TSortColumn>,
     from: number,
@@ -176,15 +177,16 @@ export type PaginatedQueryResult<TRow, TSortColumn extends string> = {
   readonly pagination: {
     readonly page: number;
     readonly pageSize: number;
+    readonly goToPage: (n: number) => void;
     readonly prevPage: () => void;
     readonly nextPage: () => void;
   };
 };
 
-export const usePaginatedQuery = <TRow, TSortColumn extends string>(
-  params: PaginatedQueryParams<TRow, TSortColumn>,
+export const usePaginatedQuery = <TRow, TSortColumn extends string, TExtraKeyParts extends readonly unknown[] = readonly []>(
+  params: PaginatedQueryParams<TRow, TSortColumn, TExtraKeyParts>,
 ): PaginatedQueryResult<TRow, TSortColumn> => {
-  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, queryFn } = params;
+  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, extraQueryKeyParts, queryFn } = params;
   const [sortConfig, onSort] = useSort<TSortColumn>(defaultSortColumn, defaultSortDirection);
   const [pagination, { goToPage, ...pageControls }] = usePagination(1, pageSize);
 
@@ -197,12 +199,13 @@ export const usePaginatedQuery = <TRow, TSortColumn extends string>(
   const paginationProps = {
     page: pagination.page,
     pageSize: pagination.pageSize,
+    goToPage,
     prevPage: pageControls.prevPage,
     nextPage: pageControls.nextPage,
   };
 
   const query = useQuery({
-    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize],
+    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize, ...(extraQueryKeyParts ?? [])] as const,
     queryFn: async () => {
       const from = (pagination.page - 1) * pagination.pageSize;
       const to = from + pagination.pageSize - 1;

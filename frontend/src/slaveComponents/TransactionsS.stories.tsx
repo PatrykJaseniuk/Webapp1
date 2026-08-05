@@ -62,6 +62,8 @@ const meta: Meta<typeof TransactionsS> = {
     navLinkTo,
     sort,
     pagination,
+    filterText: '',
+    onFilterChange: noop,
   },
 };
 
