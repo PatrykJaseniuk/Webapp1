@@ -42,6 +42,8 @@ const sort = { config: { column: 'name' as SortColumn, direction: 'asc' as const
 const pagination: PropertiesSProps['pagination'] = {
   page: 1,
   pageSize: 20,
+  goToPage: noop,
+  setPageSize: noop,
   prevPage: noop,
   nextPage: noop,
 };
@@ -63,6 +65,15 @@ const navLinkTo = {
     <a href={`#/tenants/${id}`} style={style}>{content}</a>,
 };
 
+const filter: PropertiesSProps['filter'] = {
+  text: '',
+  propertyType: '',
+  propertyStatus: '',
+  setText: noop,
+  setPropertyType: noop,
+  setPropertyStatus: noop,
+};
+
 const meta: Meta<typeof PropertiesS> = {
   title: 'slave/PropertiesS',
   component: PropertiesS,
@@ -77,6 +88,11 @@ const meta: Meta<typeof PropertiesS> = {
     navLinkTo,
     sort,
     pagination,
+    filter,
+    clearFilter: noop,
+    isFilterActive: false,
+    activeFilterCount: 0,
+    filterResetKey: 0,
   },
 };
 export default meta;

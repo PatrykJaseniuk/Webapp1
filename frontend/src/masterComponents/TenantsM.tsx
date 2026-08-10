@@ -16,7 +16,7 @@ type NavLinkTo = Readonly<{
 
 type TenantSortColumn = Extract<keyof TenantDbRow, 'last_name' | 'first_name' | 'email' | 'tenant_status'>;
 
-export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo>;
+export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, Record<string, never>>;
 
 type Props = {
   readonly Slave: ComponentType<TenantsSProps>;
@@ -48,5 +48,5 @@ export const TenantsM = ({
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} />;
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={{}} />;
 };

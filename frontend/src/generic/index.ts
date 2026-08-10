@@ -1,5 +1,7 @@
 export type {
   AsyncData,
+  FilteredQueryParams,
+  FilteredQueryResult,
   ManyRecordsSlaveProps,
   NavLink,
   NavLinkWithId,
@@ -8,4 +10,4 @@ export type {
   SortConfig,
   SortDirection,
 } from './utils';
-export { toAsyncData, usePagination, usePaginatedQuery, useSort } from './utils';
+export { toAsyncData, useFilteredPaginatedQuery, usePagination, usePaginatedQuery, useSort } from './utils';

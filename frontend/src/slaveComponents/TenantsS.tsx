@@ -84,8 +84,9 @@ export const TenantsS = ({ asyncData, navLinkTo, sort, pagination }: TenantsSPro
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (
         <ErrorMessage message={message} onRetry={onRetry} />
       ))
-      .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
+        .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
         <DataTableS
+          maxHeight="calc(100vh - 8rem)"
           columns={COLUMNS}
           sort={sort}
           isFetching={isFetching ?? false}

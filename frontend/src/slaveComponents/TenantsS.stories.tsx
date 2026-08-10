@@ -31,6 +31,8 @@ const sort = { config: { column: 'last_name' as SortColumn, direction: 'asc' as 
 const pagination: TenantsSProps['pagination'] = {
   page: 1,
   pageSize: 20,
+  goToPage: noop,
+  setPageSize: noop,
   prevPage: noop,
   nextPage: noop,
 };

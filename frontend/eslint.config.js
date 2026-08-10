@@ -15,7 +15,7 @@ const tsconfigRootDir = new URL('.', import.meta.url).pathname;
 //   ✅ @/masterComponents, ../masterComponents  (SProps + form-input types)
 //   ✅ @/slaveComponents, ./                    (sibling pure-render helpers)
 //   ❌ Everything else                          (slave tests/stories are excluded)
-const slaveAllowedPatterns = [/^ts-pattern$/, /^@\/masterComponents\//, /^\.\.\/masterComponents\//, /^@\/slaveComponents\//, /^\.\//];
+const slaveAllowedPatterns = [/^[a-z][a-zA-Z0-9_-]*$/, /^ts-pattern$/, /^@\/masterComponents\//, /^\.\.\/masterComponents\//, /^@\/slaveComponents\//, /^\.\//];
 
 const matchesWhitelist = (source) =>
   slaveAllowedPatterns.some((p) => p.test(source));

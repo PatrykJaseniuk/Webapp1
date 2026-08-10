@@ -88,52 +88,110 @@ const FetchProgress = (): JSX.Element => (
 export type Pagination = {
   readonly page: number;
   readonly pageSize: number;
+  readonly goToPage: (n: number) => void;
   readonly prevPage: () => void;
   readonly nextPage: () => void;
 };
 
+const PAGE_SIZE_OPTIONS: readonly number[] = [20, 50, 100];
+
 const PaginationFooter = ({
   pagination,
   totalCount,
+  onPageSizeChange,
 }: {
   readonly pagination: Pagination;
   readonly totalCount: number;
+  readonly onPageSizeChange?: (size: number) => void;
 }): JSX.Element => {
   const totalPages = Math.max(1, Math.ceil(totalCount / pagination.pageSize));
+  const from = totalCount === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+  const to = Math.min(pagination.page * pagination.pageSize, totalCount);
+
+  const pageNumbers = totalPages <= 7 ?
+    Array.from({ length: totalPages }, (_, i) => i + 1)
+  : ((): readonly (number | 'ellipsis')[] => {
+      const current = pagination.page;
+      const start = Math.max(2, current - 1);
+      const end = Math.min(totalPages - 1, current + 1);
+      const startAdjusted = current <= 3 ? 2 : start;
+      const endAdjusted = current >= totalPages - 2 ? totalPages - 1 : end;
+      return [
+        1,
+        ...(current > 3 ? (['ellipsis'] as const) : []),
+        ...Array.from({ length: endAdjusted - startAdjusted + 1 }, (_, i) => startAdjusted + i),
+        ...(endAdjusted < totalPages - 1 ? (['ellipsis'] as const) : []),
+        totalPages,
+      ];
+    })();
+
   const prevDisabled = pagination.page <= 1;
-  const nextDisabled = pagination.page * pagination.pageSize >= totalCount;
+  const nextDisabled = pagination.page >= totalPages;
+
+  const buttonBase = 'rounded-md px-2.5 py-1.5 text-sm font-medium transition-colors';
+  const activeButton = `${buttonBase} bg-blue-600 text-white`;
+  const inactiveButton = `${buttonBase} text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500`;
+  const disabledButton = `${buttonBase} cursor-not-allowed text-gray-300`;
 
   return (
-    <nav className="flex items-center justify-between border-t border-gray-200 px-4 py-3" aria-label="Paginacja">
-      <button
-        type="button"
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          prevDisabled ?
-            'cursor-not-allowed text-gray-300' :
-            'text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
-        }`}
-        disabled={prevDisabled}
-        onClick={pagination.prevPage}
-        aria-label="Poprzednia strona"
-      >
-        ← Poprzednia
-      </button>
-      <span className="text-sm text-gray-600">
-        Strona {pagination.page} z {totalPages}
-      </span>
-      <button
-        type="button"
-        className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-          nextDisabled ?
-            'cursor-not-allowed text-gray-300' :
-            'text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500'
-        }`}
-        disabled={nextDisabled}
-        onClick={pagination.nextPage}
-        aria-label="Następna strona"
-      >
-        Następna →
-      </button>
+    <nav className="grid grid-cols-[1fr_auto] items-center gap-3 border-t border-gray-200 bg-white px-4 py-2.5" aria-label="Paginacja">
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          className={prevDisabled ? disabledButton : inactiveButton}
+          disabled={prevDisabled}
+          onClick={pagination.prevPage}
+          aria-label="Poprzednia strona"
+        >
+          ←
+        </button>
+        {pageNumbers.map((item, idx) =>
+          item === 'ellipsis' ?
+            <span key={`ellipsis-${idx}`} className="px-1 text-gray-400 select-none">
+              …
+            </span> :
+            <button
+              key={item}
+              type="button"
+              className={item === pagination.page ? activeButton : inactiveButton}
+              onClick={item === pagination.page ? undefined : () => pagination.goToPage(item)}
+              aria-label={`Strona ${item}`}
+              aria-current={item === pagination.page ? 'page' : undefined}
+            >
+              {item}
+            </button>,
+        )}
+        <button
+          type="button"
+          className={nextDisabled ? disabledButton : inactiveButton}
+          disabled={nextDisabled}
+          onClick={pagination.nextPage}
+          aria-label="Następna strona"
+        >
+          →
+        </button>
+      </div>
+      <div className="flex items-center gap-3 text-sm text-gray-600">
+        <span>
+          {from}–{to} z {totalCount}
+        </span>
+        {onPageSizeChange !== undefined ? (
+          <select
+            value={pagination.pageSize}
+            onChange={(e) => onPageSizeChange(Number(e.target.value))}
+            className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            aria-label="Liczba wierszy na stronę"
+          >
+            {PAGE_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span>{pagination.pageSize}</span>
+        )}
+      </div>
     </nav>
   );
 };
@@ -148,6 +206,9 @@ type DataTableSProps<TRow, SortColumn extends string> = {
   readonly renderRow: (row: TRow) => JSX.Element;
   readonly pagination?: Pagination;
   readonly totalCount?: number;
+  readonly filterRow?: JSX.Element;
+  readonly onPageSizeChange?: (size: number) => void;
+  readonly maxHeight?: string;
 };
 
 export const DataTableS = <TRow, SortColumn extends string>({
@@ -160,25 +221,29 @@ export const DataTableS = <TRow, SortColumn extends string>({
   renderRow,
   pagination,
   totalCount,
-}: DataTableSProps<TRow, SortColumn>): JSX.Element => (
-  <div className="relative overflow-x-auto">
-    {isFetching && <FetchProgress />}
-    <table className="table-fixed border-collapse text-left w-max">
-      <thead>
-        <tr className="border-b border-gray-200 text-sm">
-          {columns.map((col) =>
-            sort !== undefined && col.sortColumn !== null && col.label !== null ?
-              <SortHeader
-                key={col.key}
-                className={col.className}
-                column={col.sortColumn}
-                label={col.label}
-                sort={sort}
-                align={col.align}
-              /> :
-              <StaticHeaderCell key={col.key} col={col} />)}
-        </tr>
-      </thead>
+  filterRow,
+  onPageSizeChange,
+  maxHeight,
+}: DataTableSProps<TRow, SortColumn>): JSX.Element => {
+  const content = (
+    <>
+      {filterRow}
+      <table className="w-full border-collapse text-left">
+        <thead>
+          <tr className="border-b border-gray-200 text-sm">
+            {columns.map((col) =>
+              sort !== undefined && col.sortColumn !== null && col.label !== null ?
+                <SortHeader
+                  key={col.key}
+                  className={col.className}
+                  column={col.sortColumn}
+                  label={col.label}
+                  sort={sort}
+                  align={col.align}
+                /> :
+                <StaticHeaderCell key={col.key} col={col} />)}
+          </tr>
+        </thead>
       <tbody>
         {sort === undefined ?
           skeletonRows :
@@ -191,6 +256,51 @@ export const DataTableS = <TRow, SortColumn extends string>({
             rows.map(renderRow)}
       </tbody>
     </table>
-    {pagination !== undefined && totalCount !== undefined && <PaginationFooter pagination={pagination} totalCount={totalCount} />}
-  </div>
-);
+    </>
+  );
+
+  const hasPagination = pagination !== undefined && totalCount !== undefined;
+
+  return hasPagination ?
+    <div className="relative grid grid-rows-[1fr_auto] overflow-hidden" style={maxHeight !== undefined ? { height: maxHeight } : undefined}>
+      {isFetching && <FetchProgress />}
+      {filterRow}
+        <div className="overflow-auto">
+        <table className="w-full border-collapse text-left">
+          <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#e5e7eb]">
+            <tr className="border-b border-gray-200 text-sm">
+              {columns.map((col) =>
+                sort !== undefined && col.sortColumn !== null && col.label !== null ?
+                  <SortHeader
+                    key={col.key}
+                    className={col.className}
+                    column={col.sortColumn}
+                    label={col.label}
+                    sort={sort}
+                    align={col.align}
+                  /> :
+                  <StaticHeaderCell key={col.key} col={col} />)}
+            </tr>
+          </thead>
+          <tbody>
+            {sort === undefined ?
+              skeletonRows :
+              rows.length === 0 ?
+                <tr>
+                  <td colSpan={columns.length} className="py-12 text-center">
+                    {emptyState}
+                  </td>
+                </tr> :
+                rows.map(renderRow)}
+          </tbody>
+        </table>
+      </div>
+      <div className="z-10 border-t border-gray-200 bg-white">
+        <PaginationFooter pagination={pagination} totalCount={totalCount} onPageSizeChange={onPageSizeChange} />
+      </div>
+    </div> :
+    <div className="relative overflow-x-auto">
+      {isFetching && <FetchProgress />}
+      {content}
+    </div>;
+};

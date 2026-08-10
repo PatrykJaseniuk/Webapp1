@@ -29,7 +29,7 @@ const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Obje
   properties: 'properties(name)',
 });
 
-export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo>;
+export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, Record<string, never>>;
 
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementsSProps>;
@@ -70,6 +70,7 @@ export const LeaseAgreementsM = ({
       navLinkTo={navLinkTo}
       sort={sort}
       pagination={pagination}
+      filter={{}}
     />
   );
 };

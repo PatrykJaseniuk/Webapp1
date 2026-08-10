@@ -33,6 +33,8 @@ const sort = { config: { column: 'due_date' as SortColumn, direction: 'desc' as 
 const pagination: TransactionsSProps['pagination'] = {
   page: 1,
   pageSize: 20,
+  goToPage: noop,
+  setPageSize: noop,
   prevPage: noop,
   nextPage: noop,
 };
@@ -62,8 +64,20 @@ const meta: Meta<typeof TransactionsS> = {
     navLinkTo,
     sort,
     pagination,
-    filterText: '',
-    onFilterChange: noop,
+    filter: {
+      text: '',
+      type: '',
+      dateFrom: '',
+      dateTo: '',
+      setText: noop,
+      setType: noop,
+      setDateFrom: noop,
+      setDateTo: noop,
+    },
+    clearFilter: noop,
+    isFilterActive: false,
+    activeFilterCount: 0,
+    filterResetKey: 0,
   },
 };
 

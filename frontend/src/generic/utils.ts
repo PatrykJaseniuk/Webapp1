@@ -8,7 +8,7 @@
  * Masters derive this from TanStack Query results via `toAsyncData`;
  * slaves match on `tag` and render the appropriate view — guaranteed exhaustive.
  */
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { CSSProperties, ReactNode } from 'react';
 import { match } from 'ts-pattern';
@@ -55,22 +55,30 @@ export type AsyncData<T> =
  */
 export const usePagination = (
   initialPage: number,
-  pageSize: number,
+  initialPageSize: number,
 ): readonly [
   { readonly page: number; readonly pageSize: number },
   {
     readonly goToPage: (n: number) => void;
+    readonly setPageSize: (size: number) => void;
     readonly nextPage: () => void;
     readonly prevPage: () => void;
   },
 ] => {
   const [page, setPage] = useState(initialPage);
+  const [pageSize, setPageSizeState] = useState(initialPageSize);
+  const goToPage = (n: number): void => {
+    setPage(Math.max(1, n));
+  };
+  const setPageSize = (size: number): void => {
+    setPageSizeState(size);
+    setPage(1);
+  };
   return [
     { page, pageSize },
     {
-      goToPage: (n: number): void => {
-        setPage(Math.max(1, n));
-      },
+      goToPage,
+      setPageSize,
       nextPage: (): void => {
         setPage((p) => p + 1);
       },
@@ -178,6 +186,7 @@ export type PaginatedQueryResult<TRow, TSortColumn extends string> = {
     readonly page: number;
     readonly pageSize: number;
     readonly goToPage: (n: number) => void;
+    readonly setPageSize: (size: number) => void;
     readonly prevPage: () => void;
     readonly nextPage: () => void;
   };
@@ -188,7 +197,7 @@ export const usePaginatedQuery = <TRow, TSortColumn extends string, TExtraKeyPar
 ): PaginatedQueryResult<TRow, TSortColumn> => {
   const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, extraQueryKeyParts, queryFn } = params;
   const [sortConfig, onSort] = useSort<TSortColumn>(defaultSortColumn, defaultSortDirection);
-  const [pagination, { goToPage, ...pageControls }] = usePagination(1, pageSize);
+  const [pagination, { goToPage, setPageSize, ...pageControls }] = usePagination(1, pageSize);
 
   const doSort = (column: TSortColumn): void => {
     onSort(column);
@@ -200,6 +209,7 @@ export const usePaginatedQuery = <TRow, TSortColumn extends string, TExtraKeyPar
     page: pagination.page,
     pageSize: pagination.pageSize,
     goToPage,
+    setPageSize,
     prevPage: pageControls.prevPage,
     nextPage: pageControls.nextPage,
   };
@@ -229,7 +239,7 @@ export const usePaginatedQuery = <TRow, TSortColumn extends string, TExtraKeyPar
 // Generic "Many records" slave props
 // ──────────────────────────────────────────────
 
-export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo> = {
+export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, TFilter> = {
   readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
   readonly navLinkTo: TNavLinkTo;
   readonly sort: {
@@ -239,7 +249,165 @@ export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo> 
   readonly pagination: {
     readonly page: number;
     readonly pageSize: number;
+    readonly goToPage: (n: number) => void;
+    readonly setPageSize: (size: number) => void;
     readonly prevPage: () => void;
     readonly nextPage: () => void;
   };
+  readonly filter: TFilter;
+};
+
+// ──────────────────────────────────────────────
+// Filtered paginated query — absorbs filter state + page-reset
+// ──────────────────────────────────────────────
+
+export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TFilterOut> = {
+  readonly queryKeyBase: string;
+  readonly defaultSortColumn: TSortColumn;
+  readonly defaultSortDirection: SortDirection;
+  readonly pageSize: number;
+  readonly initialFilter: TFilterValues;
+  readonly textFilterKey?: keyof TFilterValues & string;
+  readonly debounceMs?: number;
+  readonly assembleFilter: (values: TFilterValues, setters: FilterSetters<TFilterValues>) => TFilterOut;
+  readonly queryFn: (
+    sort: SortConfig<TSortColumn>,
+    from: number,
+    to: number,
+    filter: TFilterValues,
+  ) => Promise<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
+};
+
+type FilterSetter = (v: string) => void;
+
+export type FilterSetters<TFilterValues extends Record<string, string>> = {
+  readonly [K in keyof TFilterValues]: FilterSetter;
+};
+
+export type FilteredQueryResult<TRow, TSortColumn extends string, TFilterOut> =
+  PaginatedQueryResult<TRow, TSortColumn> & {
+    readonly filter: TFilterOut;
+    readonly clearFilter: () => void;
+    readonly isFilterActive: boolean;
+    readonly activeFilterCount: number;
+  };
+
+export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TFilterOut>(
+  params: FilteredQueryParams<TRow, TSortColumn, TFilterValues, TFilterOut>,
+): FilteredQueryResult<TRow, TSortColumn, TFilterOut> => {
+  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, initialFilter, assembleFilter, queryFn, textFilterKey, debounceMs = 300 } = params;
+
+  const filterKeys = useMemo(
+    () => Object.keys(initialFilter) as readonly (keyof TFilterValues & string)[],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  const [displayValues, setDisplayValues] = useState<TFilterValues>(initialFilter);
+  const [queryValues, setQueryValues] = useState<TFilterValues>(initialFilter);
+
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      debounceTimerRef.current !== null &&
+        clearTimeout(debounceTimerRef.current);
+    },
+    [],
+  );
+
+  const filterSetters = useMemo<FilterSetters<TFilterValues>>(
+    () =>
+      Object.freeze(
+        Object.fromEntries(
+          filterKeys.map((key) => [
+            key,
+            (v: string): void => {
+              setDisplayValues((prev) => ({ ...prev, [key]: v }));
+              const isTextField = key === textFilterKey;
+              isTextField ?
+                (() => {
+                  debounceTimerRef.current !== null &&
+                    clearTimeout(debounceTimerRef.current);
+                  // eslint-disable-next-line functional/immutable-data -- useRef for timer handle is the idiomatic React debounce pattern
+                  debounceTimerRef.current = setTimeout(() => {
+                    setQueryValues((prev) => ({ ...prev, [key]: v }));
+                  }, debounceMs);
+                })() :
+                setQueryValues((prev) => ({ ...prev, [key]: v }));
+            },
+          ]),
+        ),
+      ) as FilterSetters<TFilterValues>,
+    [filterKeys, textFilterKey, debounceMs],
+  );
+
+  const clearFilter = useCallback((): void => {
+    setDisplayValues(initialFilter);
+    setQueryValues(initialFilter);
+  }, [initialFilter]);
+
+  const isFilterActive = useMemo(
+    () => filterKeys.some((key) => displayValues[key] !== initialFilter[key]),
+    [displayValues, filterKeys, initialFilter],
+  );
+
+  const activeFilterCount = useMemo(
+    () => filterKeys.filter((key) => (displayValues[key] ?? '').length > 0).length,
+    [displayValues, filterKeys],
+  );
+
+  const filter = useMemo<TFilterOut>(
+    () => assembleFilter(displayValues, filterSetters),
+    [displayValues, filterSetters, assembleFilter],
+  );
+
+  const queryValuesRef = useRef(queryValues);
+  // eslint-disable-next-line functional/immutable-data
+  queryValuesRef.current = queryValues;
+
+  const queryDeps = Object.values(queryValues);
+
+  const [sortConfig, onSort] = useSort<TSortColumn>(defaultSortColumn, defaultSortDirection);
+  const [pagination, { goToPage, setPageSize, ...pageControls }] = usePagination(1, pageSize);
+
+  const doSort = (column: TSortColumn): void => {
+    onSort(column);
+    goToPage(1);
+  };
+  const sort = { config: sortConfig, doSort };
+
+  const paginationProps = {
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    goToPage,
+    setPageSize,
+    prevPage: pageControls.prevPage,
+    nextPage: pageControls.nextPage,
+  };
+
+  const query = useQuery({
+    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize, ...queryDeps] as const,
+    queryFn: async () => {
+      const from = (pagination.page - 1) * pagination.pageSize;
+      const to = from + pagination.pageSize - 1;
+      return queryFn(sortConfig, from, to, queryValuesRef.current);
+    },
+    placeholderData: (prev) => prev,
+  });
+
+  useEffect(() => {
+    goToPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, queryDeps);
+
+  const asyncData = toAsyncData(
+    query,
+    () => {
+      void query.refetch();
+    },
+    query.isFetching,
+  );
+
+  return { asyncData, sort, pagination: paginationProps, filter, clearFilter, isFilterActive, activeFilterCount };
 };

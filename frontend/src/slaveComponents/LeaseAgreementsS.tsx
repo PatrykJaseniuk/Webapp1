@@ -88,6 +88,7 @@ export const LeaseAgreementsS = ({ asyncData, navLinkTo, sort, pagination }: Lea
       ))
       .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
         <DataTableS
+          maxHeight="calc(100vh - 8rem)"
           columns={COLUMNS}
           sort={sort}
           isFetching={isFetching ?? false}
