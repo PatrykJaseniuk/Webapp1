@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { STATUS_LABEL, TYPE_LABEL } from './PropertiesS';
+import { PROPERTY_STATUS_LABEL as STATUS_LABEL, PROPERTY_TYPE_LABEL as TYPE_LABEL } from './domain';
 
 // ──────────────────────────────────────────────────────────────
 // STATUS_LABEL

@@ -80,11 +80,14 @@
   - TYPE imports: exactly ONE from its master — the slave props interface
     (e.g. `LeaseAgreementSProps`). Form slaves MAY additionally import the
     form-input type (e.g. `LoginInput`). Never import data-internal types.
+    Slaves MAY also TYPE-ONLY import shared generic helpers from `@/generic`
+    (`AsyncData`, `NavLink`, `NavLinkWithId`, `SortConfig`) whose canonical
+    source of truth lives there (see §0).
   - VALUE imports: `ts-pattern`, sibling pure-render slaves
     (`LoadingSpinnerS`, `ErrorMessageS`, ...), React type helpers.
-  - NEVER import: `@/backendConnector`, `@/generic`, `@/hooks`, `@/pages`,
-    `@/main`, `@tanstack/react-router`, `@tanstack/react-query`, other masters,
-    domain slaves that should arrive via props.
+  - NEVER import (value): `@/generic`, `@/backendConnector`, `@/hooks`,
+    `@/pages`, `@/main`, `@tanstack/react-router`, `@tanstack/react-query`,
+    other masters, domain slaves that should arrive via props.
 
 - Derive every data type inline from the slave props — never redefine them:
 

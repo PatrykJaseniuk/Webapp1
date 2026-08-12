@@ -2,58 +2,15 @@ import { match } from 'ts-pattern';
 import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
+import { LEASE_STATUS_LABEL } from './domain';
+import { leaseStatusPillClass } from './pills';
+import { formatPln } from './format';
+import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
+import { TransactionsTableS } from './TransactionsTableS';
+import { AttachmentsSectionS } from './AttachmentsListS';
 
 type Data = Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
-type LeaseAgreementData = NonNullable<Data['leaseAgreement']>;
-type LeaseStatusKey = LeaseAgreementData['lease_status'];
-type TransactionTypeKey = Data['transactions'][number]['type'];
-type TransactionStatusKey = Data['transactions'][number]['transaction_status'];
-
-const LEASE_STATUS_LABEL: Readonly<Record<LeaseStatusKey, string>> = Object.freeze({
-  active: 'Aktywna',
-  expired: 'Wygasła',
-  terminated: 'Rozwiązana',
-});
-
-const TRANSACTION_TYPE_LABEL: Readonly<Record<TransactionTypeKey, string>> = Object.freeze({
-  rent: 'Czynsz',
-  utility: 'Media',
-  expense: 'Wydatek',
-  payment: 'Wpłata',
-  withdraw: 'Wypłata',
-  fee: 'Opłata',
-  other: 'Inne',
-});
-
-const TRANSACTION_STATUS_LABEL: Readonly<Record<TransactionStatusKey, string>> = Object.freeze({
-  pending: 'Oczekująca',
-  paid: 'Opłacona',
-  overdue: 'Zaległa',
-});
-
-const sectionClass = 'rounded-lg border border-gray-200 bg-white p-6 shadow-sm';
-const sectionTitleClass = 'mb-4 text-base font-semibold text-gray-900';
-const labelClass = 'text-xs font-medium text-gray-500';
-const valueClass = 'text-sm text-gray-900';
-const pillClass = 'inline-block rounded-full px-2 py-0.5 text-xs font-medium';
-
-const leaseStatusPillClass = (status: LeaseStatusKey): string =>
-  status === 'active' ?
-    `${pillClass} bg-green-50 text-green-700` :
-    status === 'expired' ?
-      `${pillClass} bg-gray-50 text-gray-600` :
-      `${pillClass} bg-red-50 text-red-700`;
-
-const txnStatusPillClass = (status: TransactionStatusKey): string =>
-  status === 'paid' ?
-    `${pillClass} bg-green-50 text-green-700` :
-    status === 'overdue' ?
-      `${pillClass} bg-red-50 text-red-700` :
-      `${pillClass} bg-yellow-50 text-yellow-700`;
-
-const txnAmountClass = (amount: number): string =>
-  `text-sm font-medium ${amount >= 0 ? 'text-green-700' : 'text-red-700'}`;
 
 type DetailContentProps = {
   readonly data: Data;
@@ -89,40 +46,24 @@ const DetailContent = ({
             <div><p className={labelClass}>Status</p><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></div>
             <div><p className={labelClass}>Data rozpoczęcia</p><p className={valueClass}>{l.start_date}</p></div>
             <div><p className={labelClass}>Data zakończenia</p><p className={valueClass}>{l.end_date ?? 'Bezterminowo'}</p></div>
-            <div><p className={labelClass}>Czynsz miesięczny</p><p className={valueClass}>{l.monthly_rent.toLocaleString('pl-PL')} zł</p></div>
-            <div><p className={labelClass}>Kaucja</p><p className={valueClass}>{l.deposit_amount.toLocaleString('pl-PL')} zł</p></div>
+            <div><p className={labelClass}>Czynsz miesięczny</p><p className={valueClass}>{formatPln(l.monthly_rent)}</p></div>
+            <div><p className={labelClass}>Kaucja</p><p className={valueClass}>{formatPln(l.deposit_amount)}</p></div>
           </div>
           {l.notes !== null ? <div className="mt-4"><p className={labelClass}>Notatki</p><p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{l.notes}</p></div> : undefined}
         </div>
 
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Transakcje</h2>
-          {data.transactions.length === 0 ?
-            <p className="text-sm text-gray-500">Brak transakcji.</p> :
-            <div className="overflow-x-auto"><table className="w-full border-collapse text-left text-sm">
-              <thead><tr className="border-b border-gray-200 text-gray-500"><th className="py-2 pr-4 font-medium">Data</th><th className="py-2 pr-4 font-medium">Typ</th><th className="py-2 pr-4 font-medium">Opis</th><th className="py-2 pr-4 font-medium text-right">Kwota</th><th className="py-2 pr-4 font-medium">Status</th></tr></thead>
-              <tbody>{data.transactions.map((tx) => (
-                <tr key={tx.id} className="border-b border-gray-100 hover:bg-blue-50">
-                  <td className="py-2 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.transaction({ id: tx.id, style: {}, content: tx.due_date })}</td>
-                  <td className="py-2 pr-4 text-gray-600">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
-                  <td className="py-2 pr-4 text-gray-600">{tx.description}</td>
-                  <td className={`py-2 pr-4 text-right ${txnAmountClass(tx.amount)}`}>{tx.amount.toLocaleString('pl-PL')} zł</td>
-                  <td className="py-2 pr-4"><span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span></td>
-                </tr>
-              ))}</tbody>
-            </table></div>}
+          <TransactionsTableS
+            transactions={data.transactions}
+            emptyMessage="Brak transakcji."
+            renderTransactionLink={(id, content) => navLinkTo.transaction({ id, style: {}, content })}
+          />
         </div>
 
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Załączniki</h2>
-          {data.attachments.length === 0 ?
-            <p className="text-sm text-gray-500">Brak załączników.</p> :
-            <div className="space-y-2">{data.attachments.map((a) => (
-              <div key={a.id} className="flex items-center justify-between rounded border border-gray-100 px-4 py-2">
-                <div><a href={a.file_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline">{a.file_name}</a>{a.description !== null ? <p className="text-xs text-gray-500">{a.description}</p> : undefined}</div>
-                <span className="text-xs text-gray-400">{a.file_type ?? 'inny'}{a.file_size !== null ? ` · ${(a.file_size / 1024).toFixed(0)} KB` : ''}</span>
-              </div>
-            ))}</div>}
+          <AttachmentsSectionS attachments={data.attachments} emptyMessage="Brak załączników." />
         </div>
       </div>
     );

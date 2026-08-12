@@ -1,5 +1,6 @@
 import type { FormEvent } from 'react';
 import type { SignupFormProps, SignupInput } from '@/masterComponents/SignupM';
+import { buttonClass, FormErrorS, inputClass, labelClass } from './formUi';
 
 export const extractSignupInput = (formData: FormData): SignupInput => ({
   email: (formData.get('email') as string) ?? '',
@@ -7,14 +8,6 @@ export const extractSignupInput = (formData: FormData): SignupInput => ({
   firstName: (formData.get('firstName') as string) ?? '',
   lastName: (formData.get('lastName') as string) ?? '',
 });
-
-const inputClass =
-  'w-full rounded-md border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500';
-
-const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
-
-const buttonClass =
-  'w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50';
 
 export const SignupForm = ({
   onSubmit,
@@ -34,11 +27,7 @@ export const SignupForm = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <h2 className="text-xl font-bold text-gray-900">Zarejestruj się</h2>
 
-          {error !== null && (
-            <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          {error !== null && <FormErrorS message={error} />}
 
           <div>
             <label htmlFor="email" className={labelClass}>
