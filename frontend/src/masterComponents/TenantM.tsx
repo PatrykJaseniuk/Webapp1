@@ -3,8 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { toAsyncData, type AsyncData } from '@/generic';
-import type { NavLink, NavLinkWithId } from '@/generic/utils';
+import { toAsyncData, type AsyncData, type NavLink, type NavLinkWithId } from '@/generic';
 
 type TenantRow = Database['public']['Tables']['tenants']['Row'];
 type ActiveLeaseRow = Database['public']['Views']['active_leases']['Row'];

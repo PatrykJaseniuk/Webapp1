@@ -50,8 +50,10 @@ const slaveImportRule = {
 
 const TEST_AND_STORY_FILES = [
   '**/*.unit.test.ts', '**/*.unit.test.tsx',
-  '**/*.integration.test.tsx', '**/*.e2e.test.ts',
+  '**/*.integration.test.ts', '**/*.integration.test.tsx',
+  '**/*.e2e.test.ts',
   '**/*.stories.tsx',
+  '**/test-setup.ts',
 ];
 
 /** @type {import('eslint').Linter.Config[]} */
@@ -235,8 +237,16 @@ export default [
     rules: {
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/no-non-null-assertion': 'off',
       // Rest parameters are idiomatic in test utilities (e.g. `render(ui, ...options)`)
       'functional/functional-parameters': 'off',
+      // let + mutation are required by Vitest's describe/beforeAll (mutable setup state)
+      'functional/no-let': 'off',
+      'functional/immutable-data': 'off',
+      // throw is standard for signalling test-setup failures
+      'functional/no-throw-statements': 'off',
+      // if/switch are standard in test helpers for conditional setup
+      'no-restricted-syntax': 'off',
       // Storybook CSF requires `export default meta` (framework API, not a style choice)
       'import/no-default-export': 'off',
     },

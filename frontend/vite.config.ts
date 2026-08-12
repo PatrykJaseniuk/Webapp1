@@ -49,7 +49,10 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./src/test-setup.ts'],
-        exclude: ['**/*.e2e.test.ts', 'node_modules/**']
+        exclude: ['**/*.e2e.test.ts', 'node_modules/**'],
+        // Run files sequentially — backendConnector integration tests share
+        // a single Supabase DB instance and use afterAll to restore state.
+        fileParallelism: false,
       }
     }, {
       extends: true,

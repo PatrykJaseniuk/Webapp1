@@ -4,8 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { toAsyncData, type AsyncData } from '@/generic';
-import type { NavLink, NavLinkWithId } from '@/generic/utils';
+import { toAsyncData, type AsyncData, type NavLink, type NavLinkWithId } from '@/generic';
 
 type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 
@@ -34,7 +33,7 @@ type Props = {
 
 const resolveDetail = async (
   txn: TransactionRow,
-  id: string,
+  _id: string,
 ): Promise<TransactionDetailData> => {
   const propertyName: string | null =
     txn.property_id !== null

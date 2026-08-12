@@ -4,8 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { toAsyncData, type AsyncData } from '@/generic';
-import type { NavLink, NavLinkWithId } from '@/generic/utils';
+import { toAsyncData, type AsyncData, type NavLink, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];

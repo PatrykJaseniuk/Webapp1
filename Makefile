@@ -69,7 +69,7 @@ test-frontend: ## Run frontend vitest tests (unit + integration, no Supabase)
 
 # ── Backend Tests ─────────────────────────────────────────────────────────
 
-test-backend: ## Run backend tests (pgTAP + Vitest integration)
+test-backend: ## Run pgTAP tests
 	@trap '$(MAKE) stop' INT TERM EXIT; \
 	echo "=== Starting Supabase for tests ==="; \
 	(cd backend/supabase && npx supabase start); \
@@ -77,16 +77,10 @@ test-backend: ## Run backend tests (pgTAP + Vitest integration)
 	(cd backend/supabase && npx supabase db reset); \
 	echo "=== Running pgTAP tests ==="; \
 	for f in backend/supabase/tests/*.test.sql; do \
-		echo "--- $(basename $f) ---"; \
-		(cd backend/supabase && npx supabase db test $f 2>/dev/null) \
+		echo "--- $$(basename $$f) ---"; \
+		(cd backend/supabase && npx supabase db test $$f 2>/dev/null) \
 		|| echo "  (pgTAP CLI test runner — verify separately with psql)"; \
 	done; \
-	echo "=== Installing backend test dependencies ==="; \
-	(cd backend && npm install); \
-	echo "=== Extracting anon key ==="; \
-	SUPABASE_ANON_KEY=$$(cd backend/supabase && npx supabase status 2>/dev/null | awk -F'│' '/Publishable/{gsub(/^[ \t]+|[ \t]+$$/, "", $$3); print $$3}'); \
-	echo "=== Running Vitest integration tests ==="; \
-	(cd backend && SUPABASE_ANON_KEY="$$SUPABASE_ANON_KEY" npx vitest run); \
 	echo "=== Backend tests complete ==="
 
 # ── E2E Tests ──────────────────────────────────────────────────────────────────
