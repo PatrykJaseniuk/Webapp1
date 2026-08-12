@@ -268,7 +268,6 @@ export const TransactionsS = ({
               onChange={onFilterInput(filter.setText)}
               placeholder="Wpisz nazwę nieruchomości…"
               className={`${inputClass} w-full`}
-              aria-controls="txn-table"
             />
           </div>
           <div>

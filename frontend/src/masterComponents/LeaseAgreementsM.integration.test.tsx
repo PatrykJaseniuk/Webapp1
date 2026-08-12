@@ -298,9 +298,7 @@ describe('LeaseAgreementsM (integration)', () => {
         await user.selectOptions(screen.getByLabelText('Status'), 'active');
 
         await waitFor(() => {
-          screen.getByText('1');
-          const filterButton = screen.getByRole('button', { name: /Filtry/ });
-          expect(within(filterButton).getByText('1')).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /Filtry \(1\)/ })).toBeInTheDocument();
         });
       })());
   });
@@ -325,8 +323,7 @@ describe('LeaseAgreementsM (integration)', () => {
 
         // Wait for filter to apply — badge appears
         await waitFor(() => {
-          const filterButton = screen.getByRole('button', { name: /Filtry/ });
-          expect(within(filterButton).queryByText('1')).toBeInTheDocument();
+          expect(screen.getByRole('button', { name: /Filtry \(1\)/ })).toBeInTheDocument();
         });
 
         // Clear filters

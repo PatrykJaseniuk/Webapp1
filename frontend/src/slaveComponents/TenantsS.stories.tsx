@@ -47,6 +47,13 @@ const rejectedDataMode: TenantsSProps['asyncData'] = {
   onRetry: noop,
 };
 
+const filter: TenantsSProps['filter'] = {
+  text: '',
+  tenantStatus: '',
+  setText: noop,
+  setTenantStatus: noop,
+};
+
 const navLinkTo = {
   tenant: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
     <a href={`#/tenants/${id}`} style={style}>{content}</a>,
@@ -68,6 +75,11 @@ const meta: Meta<typeof TenantsS> = {
     navLinkTo,
     sort,
     pagination,
+    filter,
+    clearFilter: noop,
+    isFilterActive: false,
+    activeFilterCount: 0,
+    filterResetKey: 0,
   },
 };
 

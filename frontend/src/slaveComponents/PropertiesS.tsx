@@ -228,7 +228,6 @@ export const PropertiesS = ({
               onChange={onFilterInput(filter.setText)}
               placeholder="Wpisz fragment nazwy lub adresu…"
               className={`${inputClass} w-full`}
-              aria-controls="prop-table"
             />
           </div>
           <div>

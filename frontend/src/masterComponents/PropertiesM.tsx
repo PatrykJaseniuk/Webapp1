@@ -4,8 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
-import type { NavLinkWithId } from '@/generic/utils';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
 type PropertyTypeDb = Database['public']['Enums']['property_type'];
@@ -94,7 +93,7 @@ export const PropertiesM = ({
   }, [clearFilter]);
 
   const navLinkTo: NavLinkTo = {
-    property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
+    property: ({ id, content, style, ariaLabel }) => <Link to="/app/properties/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     tenant: ({ id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
   };
 

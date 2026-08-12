@@ -1,11 +1,13 @@
 import { Link } from '@tanstack/react-router';
-import { useState, type ComponentType } from 'react';
+import { useState, useCallback, type ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { usePaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
+type LeaseStatusDb = Database['public']['Enums']['lease_status'];
+
 type LeaseAgreementRow = LeaseAgreementDbRow & {
   readonly tenants: { readonly first_name: string; readonly last_name: string };
   readonly properties: { readonly name: string };
@@ -17,22 +19,43 @@ type NavLinkTo = Readonly<{
   readonly property: NavLinkWithId;
 }>;
 
-type LeaseStatus = LeaseAgreementDbRow['lease_status'];
-
 type LeaseAgreementSortColumn = Extract<keyof LeaseAgreementRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status' | 'tenants' | 'properties'>;
 
-export type LeaseAgreementsFilterValues = Readonly<{
-  readonly leaseStatus: LeaseStatus | null;
-  readonly startDateFrom: string | null;
-  readonly startDateTo: string | null;
-  readonly search: string | null;
+type LeaseAgreementsFilterShape = Readonly<{
+  readonly text: string;
+  readonly leaseStatus: string;
+  readonly dateFrom: string;
+  readonly dateTo: string;
+  readonly setText: (v: string) => void;
+  readonly setLeaseStatus: (v: string) => void;
+  readonly setDateFrom: (v: string) => void;
+  readonly setDateTo: (v: string) => void;
 }>;
 
-const INITIAL_FILTER_VALUES: LeaseAgreementsFilterValues = Object.freeze({
-  leaseStatus: null,
-  startDateFrom: null,
-  startDateTo: null,
-  search: null,
+export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementsFilterShape> & {
+  readonly clearFilter: () => void;
+  readonly isFilterActive: boolean;
+  readonly activeFilterCount: number;
+  readonly filterResetKey: number;
+};
+
+type Props = {
+  readonly Slave: ComponentType<LeaseAgreementsSProps>;
+  readonly role: AppRole;
+};
+
+type LeaseAgreementFilterValues = {
+  readonly text: string;
+  readonly leaseStatus: string;
+  readonly dateFrom: string;
+  readonly dateTo: string;
+};
+
+const INITIAL_FILTER: LeaseAgreementFilterValues = Object.freeze({
+  text: '',
+  leaseStatus: '',
+  dateFrom: '',
+  dateTo: '',
 });
 
 const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Object.freeze({
@@ -44,58 +67,58 @@ const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Obje
   properties: 'properties(name)',
 });
 
-export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, Record<string, never>>;
-
-type Props = {
-  readonly Slave: ComponentType<LeaseAgreementsSProps>;
-  readonly role: AppRole;
-};
-
 const PAGE_SIZE = 20;
+
+const resolveSearchIds = async (search: string): Promise<{
+  readonly tenantIds: readonly string[];
+  readonly propertyIds: readonly string[];
+}> => {
+  const pattern = `*${search}*`;
+  const [tenantRes, propertyRes] = await Promise.all([
+    backendConnector.from('tenants').select('id').or(`first_name.ilike.${pattern},last_name.ilike.${pattern}`),
+    backendConnector.from('properties').select('id').ilike('name', pattern),
+  ]);
+  const tenantIds = (tenantRes.data ?? []).map((t: { readonly id: string }) => t.id);
+  const propertyIds = (propertyRes.data ?? []).map((p: { readonly id: string }) => p.id);
+  return { tenantIds, propertyIds };
+};
 
 export const LeaseAgreementsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const [filterValues] = useState<LeaseAgreementsFilterValues>(INITIAL_FILTER_VALUES);
-
-  const extraQueryKeyParts = [filterValues.leaseStatus, filterValues.startDateFrom, filterValues.startDateTo, filterValues.search] as const;
-
-  const { asyncData, sort, pagination } = usePaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, typeof extraQueryKeyParts>({
+  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilterValues, LeaseAgreementsFilterShape>({
     queryKeyBase: 'lease_agreements',
     defaultSortColumn: 'start_date',
     defaultSortDirection: 'desc',
     pageSize: PAGE_SIZE,
-    extraQueryKeyParts,
-    queryFn: async (sortConfig, from, to) => {
+    initialFilter: INITIAL_FILTER,
+    textFilterKey: 'text',
+    debounceMs: 300,
+    assembleFilter: (values, setters) => ({
+      text: values.text,
+      leaseStatus: values.leaseStatus,
+      dateFrom: values.dateFrom,
+      dateTo: values.dateTo,
+      setText: setters.text,
+      setLeaseStatus: setters.leaseStatus,
+      setDateFrom: setters.dateFrom,
+      setDateTo: setters.dateTo,
+    }),
+    queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
-      const base = backendConnector
+      const baseQuery = backendConnector
         .from('lease_agreements')
         .select('*, tenants(first_name,last_name), properties(name)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      const withStatus =
-        filterValues.leaseStatus !== null ? base.filter('lease_status', 'eq', filterValues.leaseStatus) : base;
-      const withDateFrom =
-        filterValues.startDateFrom !== null ? withStatus.filter('start_date', 'gte', filterValues.startDateFrom) : withStatus;
-      const withDateTo =
-        filterValues.startDateTo !== null ? withDateFrom.filter('start_date', 'lte', filterValues.startDateTo) : withDateFrom;
-      const search = filterValues.search;
-      const searchExists = search !== null && search.length > 0;
-      const resolveSearchIds = async (): Promise<{
-        readonly tenantIds: readonly string[];
-        readonly propertyIds: readonly string[];
-      }> => {
-        const pattern = `*${search}*`;
-        const [tenantRes, propertyRes] = await Promise.all([
-          backendConnector.from('tenants').select('id').or(`first_name.ilike.${pattern},last_name.ilike.${pattern}`),
-          backendConnector.from('properties').select('id').ilike('name', pattern),
-        ]);
-        const tenantIds = (tenantRes.data ?? []).map((t: { readonly id: string }) => t.id);
-        const propertyIds = (propertyRes.data ?? []).map((p: { readonly id: string }) => p.id);
-        return { tenantIds, propertyIds };
-      };
+      const withStatus = filterValues.leaseStatus.length > 0 ? baseQuery.eq('lease_status', filterValues.leaseStatus as LeaseStatusDb) : baseQuery;
+      const withDateFrom = filterValues.dateFrom.length > 0 ? withStatus.gte('start_date', filterValues.dateFrom) : withStatus;
+      const withDateTo = filterValues.dateTo.length > 0 ? withDateFrom.lte('start_date', filterValues.dateTo) : withDateFrom;
+
+      const search = filterValues.text;
+      const searchExists = search.length > 0;
       const resolved = searchExists ?
-        await resolveSearchIds() :
+        await resolveSearchIds(search) :
         { tenantIds: [] as readonly string[], propertyIds: [] as readonly string[] };
       const noMatches = searchExists && resolved.tenantIds.length === 0 && resolved.propertyIds.length === 0;
       const orParts = [
@@ -104,6 +127,7 @@ export const LeaseAgreementsM = ({
       ].filter((p): p is string => p !== null);
       const withSearch =
         searchExists && orParts.length > 0 ? withDateTo.or(orParts.join(',')) : withDateTo;
+
       const r = noMatches ?
         { data: [] as readonly LeaseAgreementRow[], count: 0, error: null } :
         await withSearch.range(from, to);
@@ -111,19 +135,17 @@ export const LeaseAgreementsM = ({
     },
   });
 
+  const [filterResetKey, setFilterResetKey] = useState(0);
+  const handleClearFilter = useCallback((): void => {
+    clearFilter();
+    setFilterResetKey((k) => k + 1);
+  }, [clearFilter]);
+
   const navLinkTo: NavLinkTo = {
-    leaseAgreement: ({ content, id, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
+    leaseAgreement: ({ content, id, style, ariaLabel }) => <Link to="/app/leases/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     tenant: ({ content, id, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
     property: ({ content, id, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return (
-    <Slave
-      asyncData={asyncData}
-      navLinkTo={navLinkTo}
-      sort={sort}
-      pagination={pagination}
-      filter={{}}
-    />
-  );
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} clearFilter={handleClearFilter} isFilterActive={isFilterActive} activeFilterCount={activeFilterCount} filterResetKey={filterResetKey} />;
 };
