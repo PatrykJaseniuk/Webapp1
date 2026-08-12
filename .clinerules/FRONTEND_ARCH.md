@@ -19,7 +19,7 @@
 # ├── generic/            Zero-domain-knowledge shared types & helpers
 # ├── hooks/              Auth context (useAuth, AppRole)
 # ├── masterComponents/   CONTAINERS — logic, data, side effects
-# ├── slaveComponents/    PURE RENDER — UI only, no logic
+# ├── slaveComponents/    PRESENTATIONAL — UI only, may hold local UI state
 # └── pages/              WIRING — connect master + slave
 
 # Canonical imports — each symbol has exactly ONE source of truth:
@@ -64,12 +64,17 @@
   'LeaseAgreementM.tsx', `LeaseAgreementDetailM`.
 
 # ───────────────────────────────────────────────────────────────
-# 2. SLAVE (slaveComponents/) — PURE RENDER
+# 2. SLAVE (slaveComponents/) — PRESENTATIONAL (may hold local UI state)
 # ───────────────────────────────────────────────────────────────
 
 - Pure functions. Zero side effects. Zero DB knowledge. Zero application
-  knowledge. Zero local React state (`useState`, `useReducer`, `useRef` for
-  data). The only "state" a slave knows is the `asyncData` prop (see §2a).
+  knowledge. Local React state (`useState`, `useReducer`, `useRef`) is allowed
+  for purely presentational UI concerns (e.g. toggling a filter panel,
+  click-outside handling, local input focus). A slave MUST NOT fetch data and
+  MUST NOT read from outside context (no route params, no auth state, no
+  backend/store/query access). Server/asynchronous state arrives only via the
+  `asyncData` prop (see §2a) — a slave never owns the loading/error/data
+  lifecycle itself.
 
 - Imports — whitelist:
   - TYPE imports: exactly ONE from its master — the slave props interface

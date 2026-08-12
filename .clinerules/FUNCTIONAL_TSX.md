@@ -28,7 +28,11 @@
     ✅  setState(prev => ({ ...prev, field: value }));
     ❌  state.field = value;
 - Server state NEVER lives in `useState` — it belongs to TanStack Query in
-  master components (FRONTEND_ARCH.md §1). Slaves hold no state at all.
+  master components (FRONTEND_ARCH.md §1). Slave (presentational) components MAY
+  hold local `useState`/`useReducer` for purely presentational UI concerns
+  (panel visibility, focus, local input), but MUST NOT fetch data or read from
+  outside context (route params, auth, store/query) — server state arrives only
+  via props.
 - `useRef` only for DOM node references, never for mutable data storage.
 - Model component state machines with discriminated unions:
     type State =
