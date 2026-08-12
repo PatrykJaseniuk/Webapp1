@@ -173,7 +173,7 @@ const buildFilterChips = (
   filter: TransactionsSProps['filter'],
 ): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: filter.text.length > 0 ? `Opis: ${filter.text}` : null, onRemove: () => filter.setText('') },
+    { key: 'text', label: filter.text.length > 0 ? `Nieruchomość: ${filter.text}` : null, onRemove: () => filter.setText('') },
     { key: 'type', label: filter.type.length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filter.type as TxnType] ?? filter.type}` : null, onRemove: () => filter.setType('') },
     { key: 'dateFrom', label: filter.dateFrom.length > 0 ? `Od: ${DATE_FMT.format(new Date(filter.dateFrom))}` : null, onRemove: () => filter.setDateFrom('') },
     { key: 'dateTo', label: filter.dateTo.length > 0 ? `Do: ${DATE_FMT.format(new Date(filter.dateTo))}` : null, onRemove: () => filter.setDateTo('') },
@@ -259,14 +259,14 @@ export const TransactionsS = ({
       >
           <div className="min-w-[220px]">
             <label htmlFor="txn-filter" className={labelClass}>
-              Szukaj (opis, nieruchomość)
+              Szukaj (nieruchomość)
             </label>
             <input
               id="txn-filter"
               type="search"
               defaultValue={filter.text}
               onChange={onFilterInput(filter.setText)}
-              placeholder="Wpisz fragment opisu lub nazwy nieruchomości…"
+              placeholder="Wpisz nazwę nieruchomości…"
               className={`${inputClass} w-full`}
               aria-controls="txn-table"
             />

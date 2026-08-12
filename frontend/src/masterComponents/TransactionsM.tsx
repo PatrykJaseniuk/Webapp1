@@ -99,7 +99,7 @@ export const TransactionsM = ({
         .select('*, properties!inner(name), lease_agreements(start_date)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .range(from, to);
-      const withText = filterValues.text.length > 0 ? baseQuery.or(`description.ilike.*${filterValues.text}*,property_id(name).ilike.*${filterValues.text}*`) : baseQuery;
+      const withText = filterValues.text.length > 0 ? baseQuery.ilike('properties.name', `*${filterValues.text}*`) : baseQuery;
       const withType = filterValues.type.length > 0 ? withText.eq('type', filterValues.type as TransactionTypeDb) : withText;
       const withDateFrom = filterValues.dateFrom.length > 0 ? withType.gte('due_date', filterValues.dateFrom) : withType;
       const queryWithFilters = filterValues.dateTo.length > 0 ? withDateFrom.lte('due_date', filterValues.dateTo) : withDateFrom;
