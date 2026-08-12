@@ -64,8 +64,8 @@ const buildFilterChips = (
   [
     ...(filter.text.length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filter.text}`, onRemove: () => filter.setText('') }] : []),
     ...(filter.leaseStatus.length > 0 ? [{ key: 'leaseStatus' as const, label: `Status: ${LEASE_STATUS_LABEL[filter.leaseStatus as LeaseStatus] ?? filter.leaseStatus}`, onRemove: () => filter.setLeaseStatus('') }] : []),
-    ...(filter.dateFrom.length > 0 ? [{ key: 'dateFrom' as const, label: `Od: ${formatDate(filter.dateFrom)}`, onRemove: () => filter.setDateFrom('') }] : []),
-    ...(filter.dateTo.length > 0 ? [{ key: 'dateTo' as const, label: `Do: ${formatDate(filter.dateTo)}`, onRemove: () => filter.setDateTo('') }] : []),
+    ...(filter.dateFrom.length > 0 ? [{ key: 'dateFrom' as const, label: `Rozpoczęcie od: ${formatDate(filter.dateFrom)}`, onRemove: () => filter.setDateFrom('') }] : []),
+    ...(filter.dateTo.length > 0 ? [{ key: 'dateTo' as const, label: `Rozpoczęcie do: ${formatDate(filter.dateTo)}`, onRemove: () => filter.setDateTo('') }] : []),
   ];
 
 export const LeaseAgreementsS = ({
@@ -126,7 +126,7 @@ export const LeaseAgreementsS = ({
           </div>
           <div>
             <label htmlFor="lease-date-from" className={labelClass}>
-              Data od
+              Data rozpoczęcia od
             </label>
             <input
               id="lease-date-from"
@@ -138,7 +138,7 @@ export const LeaseAgreementsS = ({
           </div>
           <div>
             <label htmlFor="lease-date-to" className={labelClass}>
-              Data do
+              Data rozpoczęcia do
             </label>
             <input
               id="lease-date-to"
@@ -178,8 +178,8 @@ export const LeaseAgreementsS = ({
               {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: {} })}
             </div>
           </td>
-          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.start_date}</td>
-          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.end_date ?? '—'}</td>
+          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(l.start_date)}</td>
+          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.end_date !== null ? formatDate(l.end_date) : 'Bezterminowo'}</td>
           <td className="h-12 py-0 pr-4 text-right text-gray-900 whitespace-nowrap">{formatPln(l.monthly_rent)}</td>
           <td className="h-12 py-0 pr-4 whitespace-nowrap">
             <span className={leaseStatusPillClass(l.lease_status)}>
