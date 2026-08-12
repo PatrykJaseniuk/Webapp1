@@ -32,6 +32,10 @@ Thumbs.db
 doc/Next/
 doc/Supabase/
 
+# Supabase CLI
+backend/supabase/.temp/
+backend/supabase/.branches/
+
 *storybook.log
 storybook-static
 .lighthouseci/
