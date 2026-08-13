@@ -3,7 +3,7 @@ import { useState, useCallback, type ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type FilterSetters, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
@@ -21,18 +21,14 @@ type NavLinkTo = Readonly<{
 
 type LeaseAgreementSortColumn = Extract<keyof LeaseAgreementRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status' | 'tenants' | 'properties'>;
 
-type LeaseAgreementsFilterShape = Readonly<{
+type LeaseAgreementFilterValues = {
   readonly text: string;
   readonly leaseStatus: string;
   readonly dateFrom: string;
   readonly dateTo: string;
-  readonly setText: (v: string) => void;
-  readonly setLeaseStatus: (v: string) => void;
-  readonly setDateFrom: (v: string) => void;
-  readonly setDateTo: (v: string) => void;
-}>;
+};
 
-export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementsFilterShape> & {
+export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementFilterValues & FilterSetters<LeaseAgreementFilterValues>> & {
   readonly clearFilter: () => void;
   readonly isFilterActive: boolean;
   readonly activeFilterCount: number;
@@ -42,13 +38,6 @@ export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, Lea
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementsSProps>;
   readonly role: AppRole;
-};
-
-type LeaseAgreementFilterValues = {
-  readonly text: string;
-  readonly leaseStatus: string;
-  readonly dateFrom: string;
-  readonly dateTo: string;
 };
 
 const INITIAL_FILTER: LeaseAgreementFilterValues = Object.freeze({
@@ -87,7 +76,7 @@ export const LeaseAgreementsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilterValues, LeaseAgreementsFilterShape>({
+  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilterValues>({
     queryKeyBase: 'lease_agreements',
     defaultSortColumn: 'start_date',
     defaultSortDirection: 'desc',
@@ -95,16 +84,6 @@ export const LeaseAgreementsM = ({
     initialFilter: INITIAL_FILTER,
     textFilterKey: 'text',
     debounceMs: 300,
-    assembleFilter: (values, setters) => ({
-      text: values.text,
-      leaseStatus: values.leaseStatus,
-      dateFrom: values.dateFrom,
-      dateTo: values.dateTo,
-      setText: setters.text,
-      setLeaseStatus: setters.leaseStatus,
-      setDateFrom: setters.dateFrom,
-      setDateTo: setters.dateTo,
-    }),
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

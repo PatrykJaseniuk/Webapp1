@@ -3,7 +3,7 @@ import { useState, useCallback } from 'react';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
+import { useFilteredPaginatedQuery, type FilterSetters, type ManyRecordsSlaveProps } from '@/generic';
 import type { NavLinkWithId } from '@/generic';
 
 type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
@@ -18,14 +18,12 @@ type NavLinkTo = Readonly<{
 
 type TenantSortColumn = Extract<keyof TenantDbRow, 'last_name' | 'first_name' | 'email' | 'tenant_status'>;
 
-type TenantsFilterShape = Readonly<{
+type TenantFilterValues = {
   readonly text: string;
   readonly tenantStatus: string;
-  readonly setText: (v: string) => void;
-  readonly setTenantStatus: (v: string) => void;
-}>;
+};
 
-export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, TenantsFilterShape> & {
+export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, TenantFilterValues & FilterSetters<TenantFilterValues>> & {
   readonly clearFilter: () => void;
   readonly isFilterActive: boolean;
   readonly activeFilterCount: number;
@@ -34,11 +32,6 @@ export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColum
 
 type Props = {
   readonly Slave: ComponentType<TenantsSProps>;
-};
-
-type TenantFilterValues = {
-  readonly text: string;
-  readonly tenantStatus: string;
 };
 
 const INITIAL_FILTER: TenantFilterValues = Object.freeze({
@@ -51,7 +44,7 @@ const PAGE_SIZE = 20;
 export const TenantsM = ({
   Slave,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilterValues, TenantsFilterShape>({
+  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilterValues>({
     queryKeyBase: 'tenants',
     defaultSortColumn: 'last_name',
     defaultSortDirection: 'asc',
@@ -59,12 +52,6 @@ export const TenantsM = ({
     initialFilter: INITIAL_FILTER,
     textFilterKey: 'text',
     debounceMs: 300,
-    assembleFilter: (values, setters) => ({
-      text: values.text,
-      tenantStatus: values.tenantStatus,
-      setText: setters.text,
-      setTenantStatus: setters.tenantStatus,
-    }),
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

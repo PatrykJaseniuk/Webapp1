@@ -4,7 +4,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type FilterSetters, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
 type PropertyTypeDb = Database['public']['Enums']['property_type'];
@@ -18,16 +18,13 @@ type NavLinkTo = Readonly<{
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
 type PropertySortColumn = Extract<keyof PropertyDbRow, 'name' | 'address' | 'property_type' | 'property_status' | 'monthly_rent'>;
 
-type PropertiesFilterShape = Readonly<{
+type PropertyFilterValues = {
   readonly text: string;
   readonly propertyType: string;
   readonly propertyStatus: string;
-  readonly setText: (v: string) => void;
-  readonly setPropertyType: (v: string) => void;
-  readonly setPropertyStatus: (v: string) => void;
-}>;
+};
 
-export type PropertiesSProps = ManyRecordsSlaveProps<PropertyOccupancyRow, PropertySortColumn, NavLinkTo, PropertiesFilterShape> & {
+export type PropertiesSProps = ManyRecordsSlaveProps<PropertyOccupancyRow, PropertySortColumn, NavLinkTo, PropertyFilterValues & FilterSetters<PropertyFilterValues>> & {
   readonly clearFilter: () => void;
   readonly isFilterActive: boolean;
   readonly activeFilterCount: number;
@@ -36,12 +33,6 @@ export type PropertiesSProps = ManyRecordsSlaveProps<PropertyOccupancyRow, Prope
 
 type Props = {
   readonly Slave: ComponentType<PropertiesSProps>;
-};
-
-type PropertyFilterValues = {
-  readonly text: string;
-  readonly propertyType: string;
-  readonly propertyStatus: string;
 };
 
 const INITIAL_FILTER: PropertyFilterValues = Object.freeze({
@@ -55,7 +46,7 @@ const PAGE_SIZE = 20;
 export const PropertiesM = ({
   Slave,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<PropertyOccupancyRow, PropertySortColumn, PropertyFilterValues, PropertiesFilterShape>({
+  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<PropertyOccupancyRow, PropertySortColumn, PropertyFilterValues>({
     queryKeyBase: 'properties',
     defaultSortColumn: 'name',
     defaultSortDirection: 'asc',
@@ -63,14 +54,6 @@ export const PropertiesM = ({
     initialFilter: INITIAL_FILTER,
     textFilterKey: 'text',
     debounceMs: 300,
-    assembleFilter: (values, setters) => ({
-      text: values.text,
-      propertyType: values.propertyType,
-      propertyStatus: values.propertyStatus,
-      setText: setters.text,
-      setPropertyType: setters.propertyType,
-      setPropertyStatus: setters.propertyStatus,
-    }),
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

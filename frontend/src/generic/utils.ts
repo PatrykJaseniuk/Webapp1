@@ -261,15 +261,15 @@ export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, 
 // Filtered paginated query — absorbs filter state + page-reset
 // ──────────────────────────────────────────────
 
-export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TFilterOut> = {
+export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []> = {
   readonly queryKeyBase: string;
   readonly defaultSortColumn: TSortColumn;
   readonly defaultSortDirection: SortDirection;
   readonly pageSize: number;
+  readonly extraQueryKeyParts?: TExtraKeyParts;
   readonly initialFilter: TFilterValues;
   readonly textFilterKey?: keyof TFilterValues & string;
   readonly debounceMs?: number;
-  readonly assembleFilter: (values: TFilterValues, setters: FilterSetters<TFilterValues>) => TFilterOut;
   readonly queryFn: (
     sort: SortConfig<TSortColumn>,
     from: number,
@@ -281,21 +281,21 @@ export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues 
 type FilterSetter = (v: string) => void;
 
 export type FilterSetters<TFilterValues extends Record<string, string>> = {
-  readonly [K in keyof TFilterValues]: FilterSetter;
+  readonly [K in keyof TFilterValues & string as `set${Capitalize<K>}`]: FilterSetter;
 };
 
-export type FilteredQueryResult<TRow, TSortColumn extends string, TFilterOut> =
+export type FilteredQueryResult<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>> =
   PaginatedQueryResult<TRow, TSortColumn> & {
-    readonly filter: TFilterOut;
+    readonly filter: TFilterValues & FilterSetters<TFilterValues>;
     readonly clearFilter: () => void;
     readonly isFilterActive: boolean;
     readonly activeFilterCount: number;
   };
 
-export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TFilterOut>(
-  params: FilteredQueryParams<TRow, TSortColumn, TFilterValues, TFilterOut>,
-): FilteredQueryResult<TRow, TSortColumn, TFilterOut> => {
-  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, initialFilter, assembleFilter, queryFn, textFilterKey, debounceMs = 300 } = params;
+export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []>(
+  params: FilteredQueryParams<TRow, TSortColumn, TFilterValues, TExtraKeyParts>,
+): FilteredQueryResult<TRow, TSortColumn, TFilterValues> => {
+  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, extraQueryKeyParts, initialFilter, queryFn, textFilterKey, debounceMs = 300 } = params;
 
   const filterKeys = useMemo(
     () => Object.keys(initialFilter) as readonly (keyof TFilterValues & string)[],
@@ -321,7 +321,7 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
       Object.freeze(
         Object.fromEntries(
           filterKeys.map((key) => [
-            key,
+            `set${key.charAt(0).toUpperCase()}${key.slice(1)}`,
             (v: string): void => {
               setDisplayValues((prev) => ({ ...prev, [key]: v }));
               const isTextField = key === textFilterKey;
@@ -357,9 +357,9 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
     [displayValues, filterKeys],
   );
 
-  const filter = useMemo<TFilterOut>(
-    () => assembleFilter(displayValues, filterSetters),
-    [displayValues, filterSetters, assembleFilter],
+  const filter = useMemo(
+    () => ({ ...displayValues, ...filterSetters }),
+    [displayValues, filterSetters],
   );
 
   const queryValuesRef = useRef(queryValues);
@@ -387,7 +387,7 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
   };
 
   const query = useQuery({
-    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize, ...queryDeps] as const,
+    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize, ...(extraQueryKeyParts ?? []), ...queryDeps] as const,
     queryFn: async () => {
       const from = (pagination.page - 1) * pagination.pageSize;
       const to = from + pagination.pageSize - 1;

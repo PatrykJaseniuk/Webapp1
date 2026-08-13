@@ -5,7 +5,7 @@ import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
 import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
-import type { NavLinkWithId } from '@/generic';
+import type { FilterSetters, NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
@@ -31,18 +31,14 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
   properties: 'properties(name)',
 });
 
-type TransactionsFilterShape = Readonly<{
+type TransactionFilterValues = {
   readonly text: string;
   readonly type: string;
   readonly dateFrom: string;
   readonly dateTo: string;
-  readonly setText: (v: string) => void;
-  readonly setType: (v: string) => void;
-  readonly setDateFrom: (v: string) => void;
-  readonly setDateTo: (v: string) => void;
-}>;
+};
 
-export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionsFilterShape> & {
+export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionFilterValues & FilterSetters<TransactionFilterValues>> & {
   readonly clearFilter: () => void;
   readonly isFilterActive: boolean;
   readonly activeFilterCount: number;
@@ -52,13 +48,6 @@ export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, Trans
 type Props = {
   readonly Slave: ComponentType<TransactionsSProps>;
   readonly role: AppRole;
-};
-
-type TransactionFilterValues = {
-  readonly text: string;
-  readonly type: string;
-  readonly dateFrom: string;
-  readonly dateTo: string;
 };
 
 const INITIAL_FILTER: TransactionFilterValues = Object.freeze({
@@ -74,7 +63,7 @@ export const TransactionsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilterValues, TransactionsFilterShape>({
+  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilterValues>({
     queryKeyBase: 'transactions',
     defaultSortColumn: 'due_date',
     defaultSortDirection: 'desc',
@@ -82,16 +71,6 @@ export const TransactionsM = ({
     initialFilter: INITIAL_FILTER,
     textFilterKey: 'text',
     debounceMs: 300,
-    assembleFilter: (values, setters) => ({
-      text: values.text,
-      type: values.type,
-      dateFrom: values.dateFrom,
-      dateTo: values.dateTo,
-      setText: setters.text,
-      setType: setters.type,
-      setDateFrom: setters.dateFrom,
-      setDateTo: setters.dateTo,
-    }),
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
