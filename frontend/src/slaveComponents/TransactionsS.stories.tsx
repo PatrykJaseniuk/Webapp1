@@ -73,11 +73,11 @@ const meta: Meta<typeof TransactionsS> = {
       setType: noop,
       setDateFrom: noop,
       setDateTo: noop,
+      clearFilter: noop,
+      isFilterActive: false,
+      activeFilterCount: 0,
+      filterResetKey: 0,
     },
-    clearFilter: noop,
-    isFilterActive: false,
-    activeFilterCount: 0,
-    filterResetKey: 0,
   },
 };
 

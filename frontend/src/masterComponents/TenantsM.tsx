@@ -1,9 +1,8 @@
 import { Link } from '@tanstack/react-router';
-import { useState, useCallback } from 'react';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { useFilteredPaginatedQuery, type FilterSetters, type ManyRecordsSlaveProps } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
 import type { NavLinkWithId } from '@/generic';
 
 type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
@@ -23,33 +22,25 @@ type TenantFilterValues = {
   readonly tenantStatus: string;
 };
 
-export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, TenantFilterValues & FilterSetters<TenantFilterValues>> & {
-  readonly clearFilter: () => void;
-  readonly isFilterActive: boolean;
-  readonly activeFilterCount: number;
-  readonly filterResetKey: number;
-};
+export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, TenantFilterValues>;
 
 type Props = {
   readonly Slave: ComponentType<TenantsSProps>;
 };
 
-const INITIAL_FILTER: TenantFilterValues = Object.freeze({
-  text: '',
-  tenantStatus: '',
-});
+const FILTER_KEYS = Object.freeze(['text', 'tenantStatus'] as const satisfies readonly (keyof TenantFilterValues & string)[]);
 
 const PAGE_SIZE = 20;
 
 export const TenantsM = ({
   Slave,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilterValues>({
+  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilterValues>({
     queryKeyBase: 'tenants',
     defaultSortColumn: 'last_name',
     defaultSortDirection: 'asc',
     pageSize: PAGE_SIZE,
-    initialFilter: INITIAL_FILTER,
+    filterKeys: FILTER_KEYS,
     textFilterKey: 'text',
     debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
@@ -66,16 +57,10 @@ export const TenantsM = ({
     },
   });
 
-  const [filterResetKey, setFilterResetKey] = useState(0);
-  const handleClearFilter = useCallback((): void => {
-    clearFilter();
-    setFilterResetKey((k) => k + 1);
-  }, [clearFilter]);
-
   const navLinkTo: NavLinkTo = {
     tenant: ({ id, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} clearFilter={handleClearFilter} isFilterActive={isFilterActive} activeFilterCount={activeFilterCount} filterResetKey={filterResetKey} />;
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} />;
 };

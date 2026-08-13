@@ -83,20 +83,12 @@ type DetailContentProps = {
   readonly data: Data;
   readonly navLinkTo: NavLinkTo;
   readonly transactions: Transactions;
-  readonly clearFilter: () => void;
-  readonly isFilterActive: boolean;
-  readonly activeFilterCount: number;
-  readonly filterResetKey: number;
 };
 
 const DetailContent = ({
   data,
   navLinkTo,
   transactions,
-  clearFilter,
-  isFilterActive,
-  activeFilterCount,
-  filterResetKey,
 }: DetailContentProps): JSX.Element => {
   const l = data.leaseAgreement;
   const filter = transactions.filter;
@@ -133,14 +125,14 @@ const DetailContent = ({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Ostatnie transakcje</h2>
           <FilterToolbarS
-            isFilterActive={isFilterActive}
-            activeFilterCount={activeFilterCount}
-            clearFilter={clearFilter}
+            isFilterActive={filter.isFilterActive}
+            activeFilterCount={filter.activeFilterCount}
+            clearFilter={filter.clearFilter}
             chips={buildFilterChips(filter)}
             resultCount={match(transactions.asyncData)
-              .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${isFilterActive ? ' (filtrowane)' : ''}`)
+              .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${filter.isFilterActive ? ' (filtrowane)' : ''}`)
               .otherwise(() => null)}
-            filterResetKey={filterResetKey}
+            filterResetKey={filter.filterResetKey}
             panel={
               <>
                 <div className="min-w-[220px]">
@@ -226,8 +218,8 @@ const DetailContent = ({
             pagination={transactions.pagination}
             skeletonRows={SKELETON_ROWS}
             emptyState={EMPTY_DATABASE}
-            filteredEmptyState={<FilterEmptyStateS clearFilter={clearFilter} />}
-            isFilterActive={isFilterActive}
+            filteredEmptyState={<FilterEmptyStateS clearFilter={filter.clearFilter} />}
+            isFilterActive={filter.isFilterActive}
             renderRow={(tx) => (
               <tr
                 key={tx.id}
@@ -263,7 +255,7 @@ const DetailContent = ({
 };
 
 export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => {
-  const { asyncData, navLinkTo, transactions, clearFilter, isFilterActive, activeFilterCount, filterResetKey } = props;
+  const { asyncData, navLinkTo, transactions } = props;
 
   return (
     <div className="min-h-[400px]">
@@ -275,10 +267,6 @@ export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element 
             data={data}
             navLinkTo={navLinkTo}
             transactions={transactions}
-            clearFilter={clearFilter}
-            isFilterActive={isFilterActive}
-            activeFilterCount={activeFilterCount}
-            filterResetKey={filterResetKey}
           />
         ))
         .exhaustive()}

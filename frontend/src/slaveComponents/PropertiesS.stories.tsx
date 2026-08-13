@@ -72,6 +72,10 @@ const filter: PropertiesSProps['filter'] = {
   setText: noop,
   setPropertyType: noop,
   setPropertyStatus: noop,
+  clearFilter: noop,
+  isFilterActive: false,
+  activeFilterCount: 0,
+  filterResetKey: 0,
 };
 
 const meta: Meta<typeof PropertiesS> = {
@@ -89,10 +93,6 @@ const meta: Meta<typeof PropertiesS> = {
     sort,
     pagination,
     filter,
-    clearFilter: noop,
-    isFilterActive: false,
-    activeFilterCount: 0,
-    filterResetKey: 0,
   },
 };
 export default meta;

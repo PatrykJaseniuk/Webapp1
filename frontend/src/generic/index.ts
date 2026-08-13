@@ -2,6 +2,7 @@ export type {
   AsyncData,
   FilteredQueryParams,
   FilteredQueryResult,
+  FilterControls,
   FilterSetters,
   ManyRecordsSlaveProps,
   NavLink,

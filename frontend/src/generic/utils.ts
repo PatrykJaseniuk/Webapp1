@@ -239,7 +239,7 @@ export const usePaginatedQuery = <TRow, TSortColumn extends string, TExtraKeyPar
 // Generic "Many records" slave props
 // ──────────────────────────────────────────────
 
-export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, TFilter> = {
+export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, TFilterValues extends Record<string, string>> = {
   readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
   readonly navLinkTo: TNavLinkTo;
   readonly sort: {
@@ -254,7 +254,7 @@ export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, 
     readonly prevPage: () => void;
     readonly nextPage: () => void;
   };
-  readonly filter: TFilter;
+  readonly filter: FilterControls<TFilterValues>;
 };
 
 // ──────────────────────────────────────────────
@@ -267,7 +267,7 @@ export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues 
   readonly defaultSortDirection: SortDirection;
   readonly pageSize: number;
   readonly extraQueryKeyParts?: TExtraKeyParts;
-  readonly initialFilter: TFilterValues;
+  readonly filterKeys: readonly (keyof TFilterValues & string)[];
   readonly textFilterKey?: keyof TFilterValues & string;
   readonly debounceMs?: number;
   readonly queryFn: (
@@ -284,27 +284,33 @@ export type FilterSetters<TFilterValues extends Record<string, string>> = {
   readonly [K in keyof TFilterValues & string as `set${Capitalize<K>}`]: FilterSetter;
 };
 
+export type FilterControls<TFilterValues extends Record<string, string>> =
+  TFilterValues
+  & FilterSetters<TFilterValues>
+  & Readonly<{
+      readonly clearFilter: () => void;
+      readonly isFilterActive: boolean;
+      readonly activeFilterCount: number;
+      readonly filterResetKey: number;
+    }>;
+
 export type FilteredQueryResult<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>> =
   PaginatedQueryResult<TRow, TSortColumn> & {
-    readonly filter: TFilterValues & FilterSetters<TFilterValues>;
-    readonly clearFilter: () => void;
-    readonly isFilterActive: boolean;
-    readonly activeFilterCount: number;
+    readonly filter: FilterControls<TFilterValues>;
   };
 
 export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []>(
   params: FilteredQueryParams<TRow, TSortColumn, TFilterValues, TExtraKeyParts>,
 ): FilteredQueryResult<TRow, TSortColumn, TFilterValues> => {
-  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, extraQueryKeyParts, initialFilter, queryFn, textFilterKey, debounceMs = 300 } = params;
+  const { queryKeyBase, defaultSortColumn, defaultSortDirection, pageSize, extraQueryKeyParts, filterKeys, queryFn, textFilterKey, debounceMs = 300 } = params;
 
-  const filterKeys = useMemo(
-    () => Object.keys(initialFilter) as readonly (keyof TFilterValues & string)[],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
+  const emptyFilter = useMemo<TFilterValues>(
+    () => Object.fromEntries(filterKeys.map((key) => [key, ''])) as TFilterValues,
+    [filterKeys],
   );
 
-  const [displayValues, setDisplayValues] = useState<TFilterValues>(initialFilter);
-  const [queryValues, setQueryValues] = useState<TFilterValues>(initialFilter);
+  const [displayValues, setDisplayValues] = useState<TFilterValues>(emptyFilter);
+  const [queryValues, setQueryValues] = useState<TFilterValues>(emptyFilter);
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -342,14 +348,17 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
     [filterKeys, textFilterKey, debounceMs],
   );
 
+  const [filterResetKey, setFilterResetKey] = useState(0);
+
   const clearFilter = useCallback((): void => {
-    setDisplayValues(initialFilter);
-    setQueryValues(initialFilter);
-  }, [initialFilter]);
+    setDisplayValues(emptyFilter);
+    setQueryValues(emptyFilter);
+    setFilterResetKey((k) => k + 1);
+  }, [emptyFilter]);
 
   const isFilterActive = useMemo(
-    () => filterKeys.some((key) => displayValues[key] !== initialFilter[key]),
-    [displayValues, filterKeys, initialFilter],
+    () => filterKeys.some((key) => displayValues[key] !== ''),
+    [displayValues, filterKeys],
   );
 
   const activeFilterCount = useMemo(
@@ -357,9 +366,9 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
     [displayValues, filterKeys],
   );
 
-  const filter = useMemo(
-    () => ({ ...displayValues, ...filterSetters }),
-    [displayValues, filterSetters],
+  const filter = useMemo<FilterControls<TFilterValues>>(
+    () => ({ ...displayValues, ...filterSetters, clearFilter, isFilterActive, activeFilterCount, filterResetKey }),
+    [displayValues, filterSetters, clearFilter, isFilterActive, activeFilterCount, filterResetKey],
   );
 
   const queryValuesRef = useRef(queryValues);
@@ -409,5 +418,5 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
     query.isFetching,
   );
 
-  return { asyncData, sort, pagination: paginationProps, filter, clearFilter, isFilterActive, activeFilterCount };
+  return { asyncData, sort, pagination: paginationProps, filter };
 };

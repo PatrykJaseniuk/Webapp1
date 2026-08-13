@@ -1,11 +1,10 @@
 import { Link } from '@tanstack/react-router';
-import { useState, useCallback } from 'react';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
 import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
-import type { FilterSetters, NavLinkWithId } from '@/generic';
+import type { NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
@@ -38,24 +37,14 @@ type TransactionFilterValues = {
   readonly dateTo: string;
 };
 
-export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionFilterValues & FilterSetters<TransactionFilterValues>> & {
-  readonly clearFilter: () => void;
-  readonly isFilterActive: boolean;
-  readonly activeFilterCount: number;
-  readonly filterResetKey: number;
-};
+export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionFilterValues>;
 
 type Props = {
   readonly Slave: ComponentType<TransactionsSProps>;
   readonly role: AppRole;
 };
 
-const INITIAL_FILTER: TransactionFilterValues = Object.freeze({
-  text: '',
-  type: '',
-  dateFrom: '',
-  dateTo: '',
-});
+const FILTER_KEYS = Object.freeze(['text', 'type', 'dateFrom', 'dateTo'] as const satisfies readonly (keyof TransactionFilterValues & string)[]);
 
 const PAGE_SIZE = 20;
 
@@ -63,12 +52,12 @@ export const TransactionsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilterValues>({
+  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilterValues>({
     queryKeyBase: 'transactions',
     defaultSortColumn: 'due_date',
     defaultSortDirection: 'desc',
     pageSize: PAGE_SIZE,
-    initialFilter: INITIAL_FILTER,
+    filterKeys: FILTER_KEYS,
     textFilterKey: 'text',
     debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
@@ -87,12 +76,6 @@ export const TransactionsM = ({
     },
   });
 
-  const [filterResetKey, setFilterResetKey] = useState(0);
-  const handleClearFilter = useCallback((): void => {
-    clearFilter();
-    setFilterResetKey((k) => k + 1);
-  }, [clearFilter]);
-
   const navLinkTo: NavLinkTo = {
     transaction: ({ id, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
@@ -106,10 +89,6 @@ export const TransactionsM = ({
       sort={sort}
       pagination={pagination}
       filter={filter}
-      clearFilter={handleClearFilter}
-      isFilterActive={isFilterActive}
-      activeFilterCount={activeFilterCount}
-      filterResetKey={filterResetKey}
     />
   );
 };

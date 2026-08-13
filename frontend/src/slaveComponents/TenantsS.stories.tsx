@@ -52,6 +52,10 @@ const filter: TenantsSProps['filter'] = {
   tenantStatus: '',
   setText: noop,
   setTenantStatus: noop,
+  clearFilter: noop,
+  isFilterActive: false,
+  activeFilterCount: 0,
+  filterResetKey: 0,
 };
 
 const navLinkTo = {
@@ -76,10 +80,6 @@ const meta: Meta<typeof TenantsS> = {
     sort,
     pagination,
     filter,
-    clearFilter: noop,
-    isFilterActive: false,
-    activeFilterCount: 0,
-    filterResetKey: 0,
   },
 };
 

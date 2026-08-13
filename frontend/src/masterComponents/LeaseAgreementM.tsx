@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useState, type ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
@@ -49,10 +49,6 @@ const TRANSACTIONS_PAGE_SIZE = 20;
 export type LeaseAgreementSProps = {
   readonly asyncData: AsyncData<LeaseAgreementWithRelationships>;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilterValues>;
-  readonly clearFilter: () => void;
-  readonly isFilterActive: boolean;
-  readonly activeFilterCount: number;
-  readonly filterResetKey: number;
   readonly navLinkTo: NavLinkTo;
 };
 
@@ -70,13 +66,7 @@ type LeaseTransactionFilterValues = {
   readonly dateTo: string;
 };
 
-const INITIAL_FILTER: LeaseTransactionFilterValues = Object.freeze({
-  text: '',
-  type: '',
-  status: '',
-  dateFrom: '',
-  dateTo: '',
-});
+const FILTER_KEYS = Object.freeze(['text', 'type', 'status', 'dateFrom', 'dateTo'] as const satisfies readonly (keyof LeaseTransactionFilterValues & string)[]);
 
 export const LeaseAgreementDetailM = ({
   Slave,
@@ -117,7 +107,7 @@ export const LeaseAgreementDetailM = ({
     defaultSortDirection: 'desc',
     pageSize: TRANSACTIONS_PAGE_SIZE,
     extraQueryKeyParts: ['leaseAgreement', id],
-    initialFilter: INITIAL_FILTER,
+    filterKeys: FILTER_KEYS,
     textFilterKey: 'text',
     debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
@@ -139,12 +129,6 @@ export const LeaseAgreementDetailM = ({
     },
   });
 
-  const [filterResetKey, setFilterResetKey] = useState(0);
-  const handleClearFilter = useCallback((): void => {
-    transactions.clearFilter();
-    setFilterResetKey((k) => k + 1);
-  }, [transactions]);
-
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,
     property: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
@@ -157,10 +141,6 @@ export const LeaseAgreementDetailM = ({
     <Slave
       asyncData={asyncData}
       transactions={transactions}
-      clearFilter={handleClearFilter}
-      isFilterActive={transactions.isFilterActive}
-      activeFilterCount={transactions.activeFilterCount}
-      filterResetKey={filterResetKey}
       navLinkTo={navLinkTo}
     />
   );

@@ -74,22 +74,18 @@ export const PropertiesS = ({
   sort,
   pagination,
   filter,
-  clearFilter,
-  isFilterActive,
-  activeFilterCount,
-  filterResetKey,
 }: PropertiesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Nieruchomości</h1>
     <FilterToolbarS
-      isFilterActive={isFilterActive}
-      activeFilterCount={activeFilterCount}
-      clearFilter={clearFilter}
+      isFilterActive={filter.isFilterActive}
+      activeFilterCount={filter.activeFilterCount}
+      clearFilter={filter.clearFilter}
       chips={buildFilterChips(filter)}
       resultCount={match(asyncData)
-        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${isFilterActive ? ' (filtrowane)' : ''}`)
+        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${filter.isFilterActive ? ' (filtrowane)' : ''}`)
         .otherwise(() => null)}
-      filterResetKey={filterResetKey}
+      filterResetKey={filter.filterResetKey}
       panel={
         <>
           <div className="min-w-[280px]">
@@ -151,8 +147,8 @@ export const PropertiesS = ({
       pagination={pagination}
       skeletonRows={SKELETON_ROWS}
       emptyState={EMPTY_DATABASE}
-      filteredEmptyState={<FilterEmptyStateS clearFilter={clearFilter} />}
-      isFilterActive={isFilterActive}
+      filteredEmptyState={<FilterEmptyStateS clearFilter={filter.clearFilter} />}
+      isFilterActive={filter.isFilterActive}
       renderRow={(p) => (
         <tr
           key={p.id ?? ''}

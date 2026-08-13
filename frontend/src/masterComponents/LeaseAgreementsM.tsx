@@ -1,9 +1,9 @@
 import { Link } from '@tanstack/react-router';
-import { useState, useCallback, type ComponentType } from 'react';
+import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type FilterSetters, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
@@ -28,24 +28,14 @@ type LeaseAgreementFilterValues = {
   readonly dateTo: string;
 };
 
-export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementFilterValues & FilterSetters<LeaseAgreementFilterValues>> & {
-  readonly clearFilter: () => void;
-  readonly isFilterActive: boolean;
-  readonly activeFilterCount: number;
-  readonly filterResetKey: number;
-};
+export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementFilterValues>;
 
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementsSProps>;
   readonly role: AppRole;
 };
 
-const INITIAL_FILTER: LeaseAgreementFilterValues = Object.freeze({
-  text: '',
-  leaseStatus: '',
-  dateFrom: '',
-  dateTo: '',
-});
+const FILTER_KEYS = Object.freeze(['text', 'leaseStatus', 'dateFrom', 'dateTo'] as const satisfies readonly (keyof LeaseAgreementFilterValues & string)[]);
 
 const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Object.freeze({
   start_date: 'start_date',
@@ -76,12 +66,12 @@ export const LeaseAgreementsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter, clearFilter, isFilterActive, activeFilterCount } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilterValues>({
+  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilterValues>({
     queryKeyBase: 'lease_agreements',
     defaultSortColumn: 'start_date',
     defaultSortDirection: 'desc',
     pageSize: PAGE_SIZE,
-    initialFilter: INITIAL_FILTER,
+    filterKeys: FILTER_KEYS,
     textFilterKey: 'text',
     debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
@@ -114,17 +104,11 @@ export const LeaseAgreementsM = ({
     },
   });
 
-  const [filterResetKey, setFilterResetKey] = useState(0);
-  const handleClearFilter = useCallback((): void => {
-    clearFilter();
-    setFilterResetKey((k) => k + 1);
-  }, [clearFilter]);
-
   const navLinkTo: NavLinkTo = {
     leaseAgreement: ({ content, id, style, ariaLabel }) => <Link to="/app/leases/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     tenant: ({ content, id, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
     property: ({ content, id, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
   };
 
-  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} clearFilter={handleClearFilter} isFilterActive={isFilterActive} activeFilterCount={activeFilterCount} filterResetKey={filterResetKey} />;
+  return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} />;
 };
