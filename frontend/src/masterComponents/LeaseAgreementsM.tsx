@@ -35,8 +35,6 @@ type Props = {
   readonly role: AppRole;
 };
 
-const FILTER_KEYS = Object.freeze(['text', 'leaseStatus', 'dateFrom', 'dateTo'] as const satisfies readonly (keyof LeaseAgreementFilterValues & string)[]);
-
 const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Object.freeze({
   start_date: 'start_date',
   end_date: 'end_date',
@@ -45,8 +43,6 @@ const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Obje
   tenants: 'tenants(last_name)',
   properties: 'properties(name)',
 });
-
-const PAGE_SIZE = 20;
 
 const resolveSearchIds = async (search: string): Promise<{
   readonly tenantIds: readonly string[];
@@ -70,10 +66,8 @@ export const LeaseAgreementsM = ({
     queryKeyBase: 'lease_agreements',
     defaultSortColumn: 'start_date',
     defaultSortDirection: 'desc',
-    pageSize: PAGE_SIZE,
-    filterKeys: FILTER_KEYS,
+    initialFilter: { text: '', leaseStatus: '', dateFrom: '', dateTo: '' },
     textFilterKey: 'text',
-    debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

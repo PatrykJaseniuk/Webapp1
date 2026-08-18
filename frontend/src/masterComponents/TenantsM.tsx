@@ -28,21 +28,14 @@ type Props = {
   readonly Slave: ComponentType<TenantsSProps>;
 };
 
-const FILTER_KEYS = Object.freeze(['text', 'tenantStatus'] as const satisfies readonly (keyof TenantFilterValues & string)[]);
-
-const PAGE_SIZE = 20;
-
 export const TenantsM = ({
   Slave,
 }: Props): JSX.Element => {
   const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilterValues>({
     queryKeyBase: 'tenants',
     defaultSortColumn: 'last_name',
-    defaultSortDirection: 'asc',
-    pageSize: PAGE_SIZE,
-    filterKeys: FILTER_KEYS,
+    initialFilter: { text: '', tenantStatus: '' },
     textFilterKey: 'text',
-    debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

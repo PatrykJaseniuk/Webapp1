@@ -44,10 +44,6 @@ type Props = {
   readonly role: AppRole;
 };
 
-const FILTER_KEYS = Object.freeze(['text', 'type', 'dateFrom', 'dateTo'] as const satisfies readonly (keyof TransactionFilterValues & string)[]);
-
-const PAGE_SIZE = 20;
-
 export const TransactionsM = ({
   Slave,
   role: _role,
@@ -56,10 +52,8 @@ export const TransactionsM = ({
     queryKeyBase: 'transactions',
     defaultSortColumn: 'due_date',
     defaultSortDirection: 'desc',
-    pageSize: PAGE_SIZE,
-    filterKeys: FILTER_KEYS,
+    initialFilter: { text: '', type: '', dateFrom: '', dateTo: '' },
     textFilterKey: 'text',
-    debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

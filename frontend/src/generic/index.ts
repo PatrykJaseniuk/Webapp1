@@ -7,9 +7,8 @@ export type {
   ManyRecordsSlaveProps,
   NavLink,
   NavLinkWithId,
-  PaginatedQueryParams,
   PaginatedQueryResult,
   SortConfig,
   SortDirection,
 } from './utils';
-export { toAsyncData, useFilteredPaginatedQuery, usePagination, usePaginatedQuery, useSort } from './utils';
+export { toAsyncData, useFilteredPaginatedQuery, usePagination, useSort } from './utils';

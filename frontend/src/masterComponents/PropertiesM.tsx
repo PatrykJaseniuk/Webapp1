@@ -29,21 +29,14 @@ type Props = {
   readonly Slave: ComponentType<PropertiesSProps>;
 };
 
-const FILTER_KEYS = Object.freeze(['text', 'propertyType', 'propertyStatus'] as const satisfies readonly (keyof PropertyFilterValues & string)[]);
-
-const PAGE_SIZE = 20;
-
 export const PropertiesM = ({
   Slave,
 }: Props): JSX.Element => {
   const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<PropertyOccupancyRow, PropertySortColumn, PropertyFilterValues>({
     queryKeyBase: 'properties',
     defaultSortColumn: 'name',
-    defaultSortDirection: 'asc',
-    pageSize: PAGE_SIZE,
-    filterKeys: FILTER_KEYS,
+    initialFilter: { text: '', propertyType: '', propertyStatus: '' },
     textFilterKey: 'text',
-    debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector

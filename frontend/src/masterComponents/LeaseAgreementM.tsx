@@ -44,8 +44,6 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
   transaction_status: 'transaction_status',
 });
 
-const TRANSACTIONS_PAGE_SIZE = 20;
-
 export type LeaseAgreementSProps = {
   readonly asyncData: AsyncData<LeaseAgreementWithRelationships>;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilterValues>;
@@ -65,8 +63,6 @@ type LeaseTransactionFilterValues = {
   readonly dateFrom: string;
   readonly dateTo: string;
 };
-
-const FILTER_KEYS = Object.freeze(['text', 'type', 'status', 'dateFrom', 'dateTo'] as const satisfies readonly (keyof LeaseTransactionFilterValues & string)[]);
 
 export const LeaseAgreementDetailM = ({
   Slave,
@@ -105,11 +101,9 @@ export const LeaseAgreementDetailM = ({
     queryKeyBase: 'transactions',
     defaultSortColumn: 'due_date',
     defaultSortDirection: 'desc',
-    pageSize: TRANSACTIONS_PAGE_SIZE,
     extraQueryKeyParts: ['leaseAgreement', id],
-    filterKeys: FILTER_KEYS,
+    initialFilter: { text: '', type: '', status: '', dateFrom: '', dateTo: '' },
     textFilterKey: 'text',
-    debounceMs: 300,
     queryFn: async (sortConfig, from, to, filterValues) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
