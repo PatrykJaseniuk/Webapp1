@@ -1,45 +1,13 @@
-// ──────────────────────────────────────────────
-// Slave data state — three-state discriminated union
-// ──────────────────────────────────────────────
-
-/**
- * Three-state discriminated union for async data lifecycle.
- * Passed as the `asyncData` prop from master to slaves.
- * Masters derive this from TanStack Query results via `toAsyncData`;
- * slaves match on `tag` and render the appropriate view — guaranteed exhaustive.
- */
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { CSSProperties, ReactNode } from 'react';
-import { match } from 'ts-pattern';
+import { toAsyncData, type AsyncData } from './asyncData';
 
-export type NavLink = (args: {
-  readonly style: CSSProperties;
-  readonly content: string;
-}) => ReactNode;
+type SortDirection = 'asc' | 'desc';
 
-export type NavLinkWithId = (args: {
-  readonly id: string;
-  readonly style: CSSProperties;
-  readonly content: string;
-  readonly ariaLabel?: string;
-}) => ReactNode;
-
-export type SortDirection = 'asc' | 'desc';
-
-export type SortConfig<C extends string> = {
+type SortConfig<C extends string> = {
   readonly column: C;
   readonly direction: SortDirection;
 };
-
-export type AsyncData<T> =
-  | { readonly tag: 'pending' }
-  | { readonly tag: 'rejected'; readonly message: string; readonly onRetry: () => void }
-  | { readonly tag: 'fulfilled'; readonly data: T; readonly isFetching?: boolean };
-
-// ──────────────────────────────────────────────
-// Pagination hook
-// ──────────────────────────────────────────────
 
 /**
  * Manages server-side pagination state for table components.
@@ -53,7 +21,7 @@ export type AsyncData<T> =
  *   - nextPage()  — advance one page
  *   - prevPage()  — go back one page (no-op when page === 1)
  */
-export const usePagination = (
+const usePagination = (
   initialPage: number,
   initialPageSize: number,
 ): readonly [
@@ -86,10 +54,6 @@ export const usePagination = (
   ];
 };
 
-// ──────────────────────────────────────────────
-// Sort hook
-// ──────────────────────────────────────────────
-
 /**
  * Manages server-side sort state for table components.
  * Returns a tuple of [current config, toggle handler].
@@ -101,7 +65,7 @@ export const usePagination = (
  *   - clicking the active column flips asc ↔ desc
  *   - clicking a new column sets it to asc
  */
-export const useSort = <C extends string>(
+const useSort = <C extends string>(
   defaultColumn: C,
   defaultDirection: SortDirection,
 ): readonly [SortConfig<C>, (column: C) => void] => {
@@ -121,46 +85,7 @@ export const useSort = <C extends string>(
   return [sortConfig, doSort];
 };
 
-// ──────────────────────────────────────────────
-// TanStack Query → AsyncData converter
-// ──────────────────────────────────────────────
-
-/**
- * Converts a TanStack Query result (from `useQuery` or `useMutation`)
- * into the three-state `AsyncData<T>` discriminated union used by slaves.
- *
- * - `status === 'pending'` → `{ tag: 'pending' }`
- * - `status === 'error'`   → `{ tag: 'rejected', message, onRetry }`
- * - `status === 'success'` → `{ tag: 'fulfilled', data }`
- */
-export const toAsyncData = <T>(
-  result: {
-    readonly status: 'pending' | 'error' | 'success';
-    readonly error: Error | null;
-    readonly data: T | undefined;
-  },
-  onRetry: () => void,
-  isFetching?: boolean,
-): AsyncData<T> =>
-  match(result.status)
-    .with('pending', () => ({ tag: 'pending' as const }))
-    .with('error', () => ({
-      tag: 'rejected' as const,
-      message: result.error?.message ?? 'Unknown error',
-      onRetry,
-    }))
-    .with('success', () => ({
-      tag: 'fulfilled' as const,
-      data: result.data as T,
-      ...(isFetching === true && { isFetching }),
-    }))
-    .exhaustive();
-
-// ──────────────────────────────────────────────
-// Paginated query result — shared shape
-// ──────────────────────────────────────────────
-
-export type PaginatedQueryResult<TRow, TSortColumn extends string> = {
+type PaginatedQueryResult<TRow, TSortColumn extends string> = {
   readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
   readonly sort: {
     readonly config: SortConfig<TSortColumn>;
@@ -175,10 +100,6 @@ export type PaginatedQueryResult<TRow, TSortColumn extends string> = {
     readonly nextPage: () => void;
   };
 };
-
-// ──────────────────────────────────────────────
-// Generic "Many records" slave props
-// ──────────────────────────────────────────────
 
 export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, TFilterValues extends Record<string, string>> = {
   readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
@@ -198,11 +119,7 @@ export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, 
   readonly filter: FilterControls<TFilterValues>;
 };
 
-// ──────────────────────────────────────────────
-// Filtered paginated query — absorbs filter state + page-reset
-// ──────────────────────────────────────────────
-
-export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []> = {
+type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []> = {
   readonly queryKeyBase: string;
   readonly defaultSortColumn: TSortColumn;
   readonly defaultSortDirection?: SortDirection;
@@ -221,11 +138,11 @@ export type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues 
 
 type FilterSetter = (v: string) => void;
 
-export type FilterSetters<TFilterValues extends Record<string, string>> = {
+type FilterSetters<TFilterValues extends Record<string, string>> = {
   readonly [K in keyof TFilterValues & string as `set${Capitalize<K>}`]: FilterSetter;
 };
 
-export type FilterControls<TFilterValues extends Record<string, string>> =
+type FilterControls<TFilterValues extends Record<string, string>> =
   TFilterValues
   & FilterSetters<TFilterValues>
   & Readonly<{

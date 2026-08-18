@@ -2,8 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useFilteredPaginatedQuery } from './utils';
-import type { SortConfig } from './utils';
+import { useFilteredPaginatedQuery } from './dataQuery';
 import type { ReactNode } from 'react';
 
 // ──────────────────────────────────────────────────────────────
@@ -13,18 +12,19 @@ import type { ReactNode } from 'react';
 type TestRow = { readonly id: string; readonly name: string };
 type TestColumn = 'name' | 'date';
 type TestFilter = { readonly text: string; readonly status: string };
+type TestSort = { readonly column: TestColumn; readonly direction: 'asc' | 'desc' };
 
 const INITIAL_FILTER: TestFilter = { text: '', status: '' };
 
 type TestQueryFn = (
-  sort: SortConfig<TestColumn>,
+  sort: TestSort,
   from: number,
   to: number,
   filter: TestFilter,
 ) => Promise<{ readonly rows: readonly TestRow[]; readonly totalCount: number }>;
 
 type PlainQueryFn = (
-  sort: SortConfig<TestColumn>,
+  sort: TestSort,
   from: number,
   to: number,
   filter: Record<string, string>,
