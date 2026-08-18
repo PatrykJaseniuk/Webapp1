@@ -7,7 +7,6 @@ import { formatDate, formatPln } from './format';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
   activeFilterCount,
-  filterText,
   inputClass,
   isFilterActive,
   labelClass,
@@ -67,10 +66,10 @@ const buildFilterChips = (
   filter: Filter,
 ): readonly FilterChip[] =>
   [
-    ...(filterText(filter.config.text).length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filterText(filter.config.text)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
-    ...(filterText(filter.config.leaseStatus).length > 0 ? [{ key: 'leaseStatus' as const, label: `Status: ${LEASE_STATUS_LABEL[filterText(filter.config.leaseStatus) as LeaseStatus] ?? filterText(filter.config.leaseStatus)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'leaseStatus', '')) }] : []),
-    ...(filterText(filter.config.dateFrom).length > 0 ? [{ key: 'dateFrom' as const, label: `Rozpoczęcie od: ${formatDate(filterText(filter.config.dateFrom))}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) }] : []),
-    ...(filterText(filter.config.dateTo).length > 0 ? [{ key: 'dateTo' as const, label: `Rozpoczęcie do: ${formatDate(filterText(filter.config.dateTo))}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) }] : []),
+    ...((filter.config.text ?? '').length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filter.config.text ?? ''}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
+    ...((filter.config.leaseStatus ?? '').length > 0 ? [{ key: 'leaseStatus' as const, label: `Status: ${LEASE_STATUS_LABEL[(filter.config.leaseStatus ?? '') as LeaseStatus] ?? (filter.config.leaseStatus ?? '')}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'leaseStatus', '')) }] : []),
+    ...((filter.config.dateFrom ?? '').length > 0 ? [{ key: 'dateFrom' as const, label: `Rozpoczęcie od: ${formatDate(filter.config.dateFrom ?? '')}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) }] : []),
+    ...((filter.config.dateTo ?? '').length > 0 ? [{ key: 'dateTo' as const, label: `Rozpoczęcie do: ${formatDate(filter.config.dateTo ?? '')}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) }] : []),
   ];
 
 export const LeaseAgreementsS = ({
@@ -100,7 +99,7 @@ export const LeaseAgreementsS = ({
             <input
               id="lease-filter"
               type="search"
-              value={filterText(filter.config.text)}
+              value={filter.config.text ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Najemca lub nieruchomość…"
               className={`${inputClass} w-full`}
@@ -112,7 +111,7 @@ export const LeaseAgreementsS = ({
             </label>
             <select
               id="lease-status"
-              value={filterText(filter.config.leaseStatus)}
+              value={filter.config.leaseStatus ?? ''}
               onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'leaseStatus', v)))}
               className={inputClass}
             >
@@ -131,7 +130,7 @@ export const LeaseAgreementsS = ({
             <input
               id="lease-date-from"
               type="date"
-              value={filterText(filter.config.dateFrom)}
+              value={filter.config.dateFrom ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateFrom', v)))}
               className={inputClass}
             />
@@ -143,7 +142,7 @@ export const LeaseAgreementsS = ({
             <input
               id="lease-date-to"
               type="date"
-              value={filterText(filter.config.dateTo)}
+              value={filter.config.dateTo ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateTo', v)))}
               className={inputClass}
             />

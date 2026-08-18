@@ -14,13 +14,8 @@ export type SortControls<C extends string = string> = {
   readonly doSort: (column: C) => void;
 };
 
-/**
- * A filter value is either a plain text / enum value or a numeric range.
- * Key presence in the filter config means "this filter is applied".
- */
-export type FilterValue = string | { readonly from: number; readonly to: number };
-
-export type FilterConfig<F extends string = string> = Readonly<Partial<Record<F, FilterValue>>>;
+/** Key presence in the filter config means "this filter is applied". */
+export type FilterConfig<F extends string = string> = Readonly<Partial<Record<F, string>>>;
 
 /** Sort + filter share the same { config, doX } shape. */
 export type FilterControls<F extends string = string> = {
@@ -64,10 +59,6 @@ export type FilteredQueryParams<TRow, TSortColumn extends string, F extends stri
     readonly filter: FilterConfig<F>;
   }) => Promise<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
 };
-
-/** Extracts a plain-text filter value, yielding '' for missing/range values. */
-export const filterTextValue = (value: FilterValue | undefined): string =>
-  typeof value === 'string' ? value : '';
 
 const usePagination = (initialPageSize: number): PaginationControls => {
   const [page, setPage] = useState(1);

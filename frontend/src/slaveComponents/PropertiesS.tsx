@@ -7,7 +7,6 @@ import { formatPln } from './format';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
   activeFilterCount,
-  filterText,
   inputClass,
   isFilterActive,
   labelClass,
@@ -68,9 +67,9 @@ const buildFilterChips = (
   filter: Filter,
 ): readonly FilterChip[] =>
   [
-    ...(filterText(filter.config.text).length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filterText(filter.config.text)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
-    ...(filterText(filter.config.propertyType).length > 0 ? [{ key: 'propertyType' as const, label: `Typ: ${PROPERTY_TYPE_LABEL[filterText(filter.config.propertyType) as PropertyType] ?? filterText(filter.config.propertyType)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'propertyType', '')) }] : []),
-    ...(filterText(filter.config.propertyStatus).length > 0 ? [{ key: 'propertyStatus' as const, label: `Status: ${PROPERTY_STATUS_LABEL[filterText(filter.config.propertyStatus) as PropertyStatus] ?? filterText(filter.config.propertyStatus)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'propertyStatus', '')) }] : []),
+    ...((filter.config.text ?? '').length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filter.config.text ?? ''}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
+    ...((filter.config.propertyType ?? '').length > 0 ? [{ key: 'propertyType' as const, label: `Typ: ${PROPERTY_TYPE_LABEL[(filter.config.propertyType ?? '') as PropertyType] ?? (filter.config.propertyType ?? '')}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'propertyType', '')) }] : []),
+    ...((filter.config.propertyStatus ?? '').length > 0 ? [{ key: 'propertyStatus' as const, label: `Status: ${PROPERTY_STATUS_LABEL[(filter.config.propertyStatus ?? '') as PropertyStatus] ?? (filter.config.propertyStatus ?? '')}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'propertyStatus', '')) }] : []),
   ];
 
 export const PropertiesS = ({
@@ -99,7 +98,7 @@ export const PropertiesS = ({
             <input
               id="prop-filter"
               type="search"
-              value={filterText(filter.config.text)}
+              value={filter.config.text ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Wpisz fragment nazwy lub adresu…"
               className={`${inputClass} w-full`}
@@ -111,7 +110,7 @@ export const PropertiesS = ({
             </label>
             <select
               id="prop-type"
-              value={filterText(filter.config.propertyType)}
+              value={filter.config.propertyType ?? ''}
               onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'propertyType', v)))}
               className={inputClass}
             >
@@ -129,7 +128,7 @@ export const PropertiesS = ({
             </label>
             <select
               id="prop-status"
-              value={filterText(filter.config.propertyStatus)}
+              value={filter.config.propertyStatus ?? ''}
               onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'propertyStatus', v)))}
               className={inputClass}
             >

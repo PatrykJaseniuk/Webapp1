@@ -1,5 +1,5 @@
 import type { ChangeEvent } from 'react';
-import type { FilterConfig, FilterValue } from '@/generic';
+import type { FilterConfig } from '@/generic';
 import type { Pagination } from './DataTableS';
 
 export const inputClass =
@@ -40,9 +40,6 @@ export const toPagination = (
       prevPage: pagination.prevPage,
       nextPage: pagination.nextPage,
     };
-
-export const filterText = (value: FilterValue | undefined): string =>
-  typeof value === 'string' ? value : '';
 
 export const isFilterActive = <F extends string>(config: FilterConfig<F>): boolean =>
   Object.keys(config).length > 0;

@@ -16,7 +16,6 @@ import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import { FilterToolbarS } from './FilterToolbarS';
 import {
   activeFilterCount,
-  filterText,
   inputClass as filterInputClass,
   isFilterActive,
   labelClass as filterLabelClass,
@@ -73,11 +72,11 @@ const EMPTY_DATABASE = (
 
 const buildFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: filterText(filter.config.text).length > 0 ? `Opis: ${filterText(filter.config.text)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
-    { key: 'type', label: filterText(filter.config.type).length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filterText(filter.config.type) as TxnType] ?? filterText(filter.config.type)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
-    { key: 'status', label: filterText(filter.config.status).length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[filterText(filter.config.status) as TxnStatus] ?? filterText(filter.config.status)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
-    { key: 'dateFrom', label: filterText(filter.config.dateFrom).length > 0 ? `Od: ${formatDate(filterText(filter.config.dateFrom))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
-    { key: 'dateTo', label: filterText(filter.config.dateTo).length > 0 ? `Do: ${formatDate(filterText(filter.config.dateTo))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
+    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
+    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
+    { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[(filter.config.status ?? '') as TxnStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
+    { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
+    { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
 
   return base.filter((c): c is FilterChip => c.label !== null);
@@ -145,7 +144,7 @@ const DetailContent = ({
                   <input
                     id="lease-txn-filter"
                     type="search"
-                    value={filterText(filter.config.text)}
+                    value={filter.config.text ?? ''}
                     onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
                     placeholder="Wpisz fragment opisu…"
                     className={`${filterInputClass} w-full`}
@@ -157,7 +156,7 @@ const DetailContent = ({
                   </label>
                   <select
                     id="lease-txn-type"
-                    value={filterText(filter.config.type)}
+                    value={filter.config.type ?? ''}
                     onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'type', v)))}
                     className={filterInputClass}
                   >
@@ -175,7 +174,7 @@ const DetailContent = ({
                   </label>
                   <select
                     id="lease-txn-status"
-                    value={filterText(filter.config.status)}
+                    value={filter.config.status ?? ''}
                     onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'status', v)))}
                     className={filterInputClass}
                   >
@@ -194,7 +193,7 @@ const DetailContent = ({
                   <input
                     id="lease-txn-date-from"
                     type="date"
-                    value={filterText(filter.config.dateFrom)}
+                    value={filter.config.dateFrom ?? ''}
                     onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateFrom', v)))}
                     className={filterInputClass}
                   />
@@ -206,7 +205,7 @@ const DetailContent = ({
                   <input
                     id="lease-txn-date-to"
                     type="date"
-                    value={filterText(filter.config.dateTo)}
+                    value={filter.config.dateTo ?? ''}
                     onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateTo', v)))}
                     className={filterInputClass}
                   />

@@ -6,7 +6,6 @@ import { tenantStatusPillClass } from './pills';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
   activeFilterCount,
-  filterText,
   inputClass,
   isFilterActive,
   labelClass,
@@ -64,8 +63,8 @@ const buildFilterChips = (
   filter: Filter,
 ): readonly FilterChip[] =>
   [
-    ...(filterText(filter.config.text).length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filterText(filter.config.text)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
-    ...(filterText(filter.config.tenantStatus).length > 0 ? [{ key: 'tenantStatus' as const, label: `Status: ${TENANT_STATUS_LABEL[filterText(filter.config.tenantStatus) as TenantStatus] ?? filterText(filter.config.tenantStatus)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'tenantStatus', '')) }] : []),
+    ...((filter.config.text ?? '').length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filter.config.text ?? ''}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
+    ...((filter.config.tenantStatus ?? '').length > 0 ? [{ key: 'tenantStatus' as const, label: `Status: ${TENANT_STATUS_LABEL[(filter.config.tenantStatus ?? '') as TenantStatus] ?? (filter.config.tenantStatus ?? '')}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'tenantStatus', '')) }] : []),
   ];
 
 export const TenantsS = ({
@@ -94,7 +93,7 @@ export const TenantsS = ({
             <input
               id="tenant-filter"
               type="search"
-              value={filterText(filter.config.text)}
+              value={filter.config.text ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Wpisz fragment…"
               className={`${inputClass} w-full`}
@@ -106,7 +105,7 @@ export const TenantsS = ({
             </label>
             <select
               id="tenant-status"
-              value={filterText(filter.config.tenantStatus)}
+              value={filter.config.tenantStatus ?? ''}
               onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'tenantStatus', v)))}
               className={inputClass}
             >

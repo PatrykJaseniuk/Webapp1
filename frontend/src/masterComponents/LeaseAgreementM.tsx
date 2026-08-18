@@ -5,7 +5,6 @@ import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
 import {
-  filterTextValue,
   toAsyncData,
   useFilteredPaginatedQuery,
   type AsyncData,
@@ -102,11 +101,11 @@ export const LeaseAgreementDetailM = ({
         .select('*', { count: 'exact' })
         .eq('lease_id', id)
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      const text = filterTextValue(filterConfig.text);
-      const type = filterTextValue(filterConfig.type);
-      const status = filterTextValue(filterConfig.status);
-      const dateFrom = filterTextValue(filterConfig.dateFrom);
-      const dateTo = filterTextValue(filterConfig.dateTo);
+      const text = filterConfig.text ?? '';
+      const type = filterConfig.type ?? '';
+      const status = filterConfig.status ?? '';
+      const dateFrom = filterConfig.dateFrom ?? '';
+      const dateTo = filterConfig.dateTo ?? '';
       const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
       const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
       const withStatus = status.length > 0 ? withType.eq('transaction_status', status as TransactionStatusDb) : withType;

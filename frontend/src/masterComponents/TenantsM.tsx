@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
 type TenantStatusDb = Database['public']['Enums']['tenant_status'];
@@ -37,8 +37,8 @@ export const TenantsM = ({
         .select('*', { count: 'exact' })
         .order(sortConfig.column, { ascending })
         .range(from, to);
-      const text = filterTextValue(filterConfig.text);
-      const tenantStatus = filterTextValue(filterConfig.tenantStatus);
+      const text = filterConfig.text ?? '';
+      const tenantStatus = filterConfig.tenantStatus ?? '';
       const withText = text.length > 0 ? baseQuery.or(`first_name.ilike.*${text}*,last_name.ilike.*${text}*,email.ilike.*${text}*`) : baseQuery;
       const queryWithFilters = tenantStatus.length > 0 ? withText.eq('tenant_status', tenantStatus as TenantStatusDb) : withText;
       const result = await queryWithFilters;

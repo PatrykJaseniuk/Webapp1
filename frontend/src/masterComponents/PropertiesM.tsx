@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 
-import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
 type PropertyTypeDb = Database['public']['Enums']['property_type'];
@@ -38,9 +38,9 @@ export const PropertiesM = ({
         .select('*', { count: 'exact' })
         .order(sortConfig.column, { ascending })
         .range(from, to);
-      const text = filterTextValue(filterConfig.text);
-      const propertyType = filterTextValue(filterConfig.propertyType);
-      const propertyStatus = filterTextValue(filterConfig.propertyStatus);
+      const text = filterConfig.text ?? '';
+      const propertyType = filterConfig.propertyType ?? '';
+      const propertyStatus = filterConfig.propertyStatus ?? '';
       const withText = text.length > 0 ? baseQuery.or(`name.ilike.*${text}*,address.ilike.*${text}*`) : baseQuery;
       const withType = propertyType.length > 0 ? withText.eq('property_type', propertyType as PropertyTypeDb) : withText;
       const queryWithFilters = propertyStatus.length > 0 ? withType.eq('property_status', propertyStatus as PropertyStatusDb) : withType;

@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
@@ -66,14 +66,14 @@ export const LeaseAgreementsM = ({
         .from('lease_agreements')
         .select('*, tenants(first_name,last_name), properties(name)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      const leaseStatus = filterTextValue(filterConfig.leaseStatus);
-      const dateFrom = filterTextValue(filterConfig.dateFrom);
-      const dateTo = filterTextValue(filterConfig.dateTo);
+      const leaseStatus = filterConfig.leaseStatus ?? '';
+      const dateFrom = filterConfig.dateFrom ?? '';
+      const dateTo = filterConfig.dateTo ?? '';
       const withStatus = leaseStatus.length > 0 ? baseQuery.eq('lease_status', leaseStatus as LeaseStatusDb) : baseQuery;
       const withDateFrom = dateFrom.length > 0 ? withStatus.gte('start_date', dateFrom) : withStatus;
       const withDateTo = dateTo.length > 0 ? withDateFrom.lte('start_date', dateTo) : withDateFrom;
 
-      const search = filterTextValue(filterConfig.text);
+      const search = filterConfig.text ?? '';
       const searchExists = search.length > 0;
       const resolved = searchExists ?
         await resolveSearchIds(search) :

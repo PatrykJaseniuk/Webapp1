@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
@@ -52,10 +52,10 @@ export const TransactionsM = ({
         .select('*, properties!inner(name), lease_agreements(start_date)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .range(from, to);
-      const text = filterTextValue(filterConfig.text);
-      const type = filterTextValue(filterConfig.type);
-      const dateFrom = filterTextValue(filterConfig.dateFrom);
-      const dateTo = filterTextValue(filterConfig.dateTo);
+      const text = filterConfig.text ?? '';
+      const type = filterConfig.type ?? '';
+      const dateFrom = filterConfig.dateFrom ?? '';
+      const dateTo = filterConfig.dateTo ?? '';
       const withText = text.length > 0 ? baseQuery.ilike('properties.name', `*${text}*`) : baseQuery;
       const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
       const withDateFrom = dateFrom.length > 0 ? withType.gte('due_date', dateFrom) : withType;

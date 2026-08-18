@@ -7,7 +7,6 @@ import { formatDate, formatPln } from './format';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
   activeFilterCount,
-  filterText,
   inputClass,
   isFilterActive,
   labelClass,
@@ -77,10 +76,10 @@ const buildFilterChips = (
   filter: Filter,
 ): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: filterText(filter.config.text).length > 0 ? `Nieruchomość: ${filterText(filter.config.text)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
-    { key: 'type', label: filterText(filter.config.type).length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filterText(filter.config.type) as TxnType] ?? filterText(filter.config.type)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
-    { key: 'dateFrom', label: filterText(filter.config.dateFrom).length > 0 ? `Od: ${formatDate(filterText(filter.config.dateFrom))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
-    { key: 'dateTo', label: filterText(filter.config.dateTo).length > 0 ? `Do: ${formatDate(filterText(filter.config.dateTo))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
+    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Nieruchomość: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
+    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
+    { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
+    { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
 
   return base.filter((c): c is FilterChip => c.label !== null);
@@ -112,7 +111,7 @@ export const TransactionsS = ({
             <input
               id="txn-filter"
               type="search"
-              value={filterText(filter.config.text)}
+              value={filter.config.text ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Wpisz nazwę nieruchomości…"
               className={`${inputClass} w-full`}
@@ -124,7 +123,7 @@ export const TransactionsS = ({
             </label>
             <select
               id="txn-type"
-              value={filterText(filter.config.type)}
+              value={filter.config.type ?? ''}
               onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'type', v)))}
               className={inputClass}
             >
@@ -143,7 +142,7 @@ export const TransactionsS = ({
             <input
               id="txn-date-from"
               type="date"
-              value={filterText(filter.config.dateFrom)}
+              value={filter.config.dateFrom ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateFrom', v)))}
               className={inputClass}
             />
@@ -155,7 +154,7 @@ export const TransactionsS = ({
             <input
               id="txn-date-to"
               type="date"
-              value={filterText(filter.config.dateTo)}
+              value={filter.config.dateTo ?? ''}
               onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateTo', v)))}
               className={inputClass}
             />
