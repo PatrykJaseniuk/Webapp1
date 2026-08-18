@@ -5,11 +5,15 @@ import { TENANT_STATUS_LABEL } from './domain';
 import { tenantStatusPillClass } from './pills';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
+  activeFilterCount,
+  filterText,
   inputClass,
+  isFilterActive,
   labelClass,
   onFilterInput,
   onSelectInput,
   optionEntries,
+  setFilterString,
   type FilterChip,
 } from './filter';
 import { FilterToolbarS } from './FilterToolbarS';
@@ -19,6 +23,7 @@ type PageData = Extract<TenantsSProps['asyncData'], { readonly tag: 'fulfilled' 
 type Row = PageData['rows'][number];
 type Sort = TenantsSProps['sort'];
 type SortColumn = Sort['config']['column'];
+type Filter = TenantsSProps['filter'];
 type TenantStatus = Row['tenant_status'];
 
 const COLUMNS: readonly ColumnDef<SortColumn>[] = [
@@ -56,11 +61,11 @@ const EMPTY_DATABASE = (
 );
 
 const buildFilterChips = (
-  filter: TenantsSProps['filter'],
+  filter: Filter,
 ): readonly FilterChip[] =>
   [
-    ...(filter.text.length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filter.text}`, onRemove: () => filter.setText('') }] : []),
-    ...(filter.tenantStatus.length > 0 ? [{ key: 'tenantStatus' as const, label: `Status: ${TENANT_STATUS_LABEL[filter.tenantStatus as TenantStatus] ?? filter.tenantStatus}`, onRemove: () => filter.setTenantStatus('') }] : []),
+    ...(filterText(filter.config.text).length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filterText(filter.config.text)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
+    ...(filterText(filter.config.tenantStatus).length > 0 ? [{ key: 'tenantStatus' as const, label: `Status: ${TENANT_STATUS_LABEL[filterText(filter.config.tenantStatus) as TenantStatus] ?? filterText(filter.config.tenantStatus)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'tenantStatus', '')) }] : []),
   ];
 
 export const TenantsS = ({
@@ -73,14 +78,13 @@ export const TenantsS = ({
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Najemcy</h1>
     <FilterToolbarS
-      isFilterActive={filter.isFilterActive}
-      activeFilterCount={filter.activeFilterCount}
-      clearFilter={filter.clearFilter}
+      isFilterActive={isFilterActive(filter.config)}
+      activeFilterCount={activeFilterCount(filter.config)}
+      clearFilter={() => filter.doFilter({})}
       chips={buildFilterChips(filter)}
       resultCount={match(asyncData)
-        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${filter.isFilterActive ? ' (filtrowane)' : ''}`)
+        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${isFilterActive(filter.config) ? ' (filtrowane)' : ''}`)
         .otherwise(() => null)}
-      filterResetKey={filter.filterResetKey}
       panel={
         <>
           <div className="min-w-[280px]">
@@ -90,8 +94,8 @@ export const TenantsS = ({
             <input
               id="tenant-filter"
               type="search"
-              defaultValue={filter.text}
-              onChange={onFilterInput(filter.setText)}
+              value={filterText(filter.config.text)}
+              onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Wpisz fragment…"
               className={`${inputClass} w-full`}
             />
@@ -102,8 +106,8 @@ export const TenantsS = ({
             </label>
             <select
               id="tenant-status"
-              defaultValue={filter.tenantStatus}
-              onChange={onSelectInput(filter.setTenantStatus)}
+              value={filterText(filter.config.tenantStatus)}
+              onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'tenantStatus', v)))}
               className={inputClass}
             >
               <option value="">Wszystkie</option>
@@ -124,8 +128,8 @@ export const TenantsS = ({
       pagination={pagination}
       skeletonRows={SKELETON_ROWS}
       emptyState={EMPTY_DATABASE}
-      filteredEmptyState={<FilterEmptyStateS clearFilter={filter.clearFilter} />}
-      isFilterActive={filter.isFilterActive}
+      filteredEmptyState={<FilterEmptyStateS clearFilter={() => filter.doFilter({})} />}
+      isFilterActive={isFilterActive(filter.config)}
       renderRow={(t) => (
         <tr
           key={t.id}

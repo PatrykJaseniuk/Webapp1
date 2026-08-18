@@ -5,6 +5,7 @@ import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
 import {
+  filterTextValue,
   toAsyncData,
   useFilteredPaginatedQuery,
   type AsyncData,
@@ -37,6 +38,8 @@ type NavLinkTo = Readonly<{
 
 type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'>;
 
+type LeaseTransactionFilter = 'text' | 'type' | 'status' | 'dateFrom' | 'dateTo';
+
 const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.freeze({
   due_date: 'due_date',
   type: 'type',
@@ -46,7 +49,7 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
 
 export type LeaseAgreementSProps = {
   readonly asyncData: AsyncData<LeaseAgreementWithRelationships>;
-  readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilterValues>;
+  readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilter>;
   readonly navLinkTo: NavLinkTo;
 };
 
@@ -54,14 +57,6 @@ type Props = {
   readonly Slave: ComponentType<LeaseAgreementSProps>;
   readonly id: string;
   readonly role: AppRole;
-};
-
-type LeaseTransactionFilterValues = {
-  readonly text: string;
-  readonly type: string;
-  readonly status: string;
-  readonly dateFrom: string;
-  readonly dateTo: string;
 };
 
 export const LeaseAgreementDetailM = ({
@@ -97,25 +92,26 @@ export const LeaseAgreementDetailM = ({
 
   const asyncData = toAsyncData(query, () => { void query.refetch(); });
 
-  const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilterValues, readonly [string, string]>({
-    queryKeyBase: 'transactions',
-    defaultSortColumn: 'due_date',
-    defaultSortDirection: 'desc',
-    extraQueryKeyParts: ['leaseAgreement', id],
-    initialFilter: { text: '', type: '', status: '', dateFrom: '', dateTo: '' },
-    textFilterKey: 'text',
-    queryFn: async (sortConfig, from, to, filterValues) => {
+  const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilter>({
+    queryKey: ['transactions', 'leaseAgreement', id],
+    defaultSort: { column: 'due_date', direction: 'desc' },
+    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('transactions')
         .select('*', { count: 'exact' })
         .eq('lease_id', id)
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      const withText = filterValues.text.length > 0 ? baseQuery.ilike('description', `*${filterValues.text}*`) : baseQuery;
-      const withType = filterValues.type.length > 0 ? withText.eq('type', filterValues.type as TransactionTypeDb) : withText;
-      const withStatus = filterValues.status.length > 0 ? withType.eq('transaction_status', filterValues.status as TransactionStatusDb) : withType;
-      const withDateFrom = filterValues.dateFrom.length > 0 ? withStatus.gte('due_date', filterValues.dateFrom) : withStatus;
-      const queryWithFilters = filterValues.dateTo.length > 0 ? withDateFrom.lte('due_date', filterValues.dateTo) : withDateFrom;
+      const text = filterTextValue(filterConfig.text);
+      const type = filterTextValue(filterConfig.type);
+      const status = filterTextValue(filterConfig.status);
+      const dateFrom = filterTextValue(filterConfig.dateFrom);
+      const dateTo = filterTextValue(filterConfig.dateTo);
+      const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
+      const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
+      const withStatus = status.length > 0 ? withType.eq('transaction_status', status as TransactionStatusDb) : withType;
+      const withDateFrom = dateFrom.length > 0 ? withStatus.gte('due_date', dateFrom) : withStatus;
+      const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('due_date', dateTo) : withDateFrom;
       const result = await queryWithFilters.range(from, to);
       return result.error !== null
         ? Promise.reject(result.error)

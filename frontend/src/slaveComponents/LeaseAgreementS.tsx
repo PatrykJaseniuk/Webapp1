@@ -15,11 +15,15 @@ import type { ColumnDef } from './DataTableS';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import { FilterToolbarS } from './FilterToolbarS';
 import {
+  activeFilterCount,
+  filterText,
   inputClass as filterInputClass,
+  isFilterActive,
   labelClass as filterLabelClass,
   onFilterInput,
   onSelectInput,
   optionEntries,
+  setFilterString,
   type FilterChip,
 } from './filter';
 import { AttachmentsSectionS } from './AttachmentsListS';
@@ -69,11 +73,11 @@ const EMPTY_DATABASE = (
 
 const buildFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: filter.text.length > 0 ? `Opis: ${filter.text}` : null, onRemove: () => filter.setText('') },
-    { key: 'type', label: filter.type.length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filter.type as TxnType] ?? filter.type}` : null, onRemove: () => filter.setType('') },
-    { key: 'status', label: filter.status.length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[filter.status as TxnStatus] ?? filter.status}` : null, onRemove: () => filter.setStatus('') },
-    { key: 'dateFrom', label: filter.dateFrom.length > 0 ? `Od: ${formatDate(filter.dateFrom)}` : null, onRemove: () => filter.setDateFrom('') },
-    { key: 'dateTo', label: filter.dateTo.length > 0 ? `Do: ${formatDate(filter.dateTo)}` : null, onRemove: () => filter.setDateTo('') },
+    { key: 'text', label: filterText(filter.config.text).length > 0 ? `Opis: ${filterText(filter.config.text)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
+    { key: 'type', label: filterText(filter.config.type).length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filterText(filter.config.type) as TxnType] ?? filterText(filter.config.type)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
+    { key: 'status', label: filterText(filter.config.status).length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[filterText(filter.config.status) as TxnStatus] ?? filterText(filter.config.status)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
+    { key: 'dateFrom', label: filterText(filter.config.dateFrom).length > 0 ? `Od: ${formatDate(filterText(filter.config.dateFrom))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
+    { key: 'dateTo', label: filterText(filter.config.dateTo).length > 0 ? `Do: ${formatDate(filterText(filter.config.dateTo))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
 
   return base.filter((c): c is FilterChip => c.label !== null);
@@ -125,14 +129,13 @@ const DetailContent = ({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Ostatnie transakcje</h2>
           <FilterToolbarS
-            isFilterActive={filter.isFilterActive}
-            activeFilterCount={filter.activeFilterCount}
-            clearFilter={filter.clearFilter}
+            isFilterActive={isFilterActive(filter.config)}
+            activeFilterCount={activeFilterCount(filter.config)}
+            clearFilter={() => filter.doFilter({})}
             chips={buildFilterChips(filter)}
             resultCount={match(transactions.asyncData)
-              .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${filter.isFilterActive ? ' (filtrowane)' : ''}`)
+              .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${isFilterActive(filter.config) ? ' (filtrowane)' : ''}`)
               .otherwise(() => null)}
-            filterResetKey={filter.filterResetKey}
             panel={
               <>
                 <div className="min-w-[220px]">
@@ -142,8 +145,8 @@ const DetailContent = ({
                   <input
                     id="lease-txn-filter"
                     type="search"
-                    defaultValue={filter.text}
-                    onChange={onFilterInput(filter.setText)}
+                    value={filterText(filter.config.text)}
+                    onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
                     placeholder="Wpisz fragment opisu…"
                     className={`${filterInputClass} w-full`}
                   />
@@ -154,8 +157,8 @@ const DetailContent = ({
                   </label>
                   <select
                     id="lease-txn-type"
-                    defaultValue={filter.type}
-                    onChange={onSelectInput(filter.setType)}
+                    value={filterText(filter.config.type)}
+                    onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'type', v)))}
                     className={filterInputClass}
                   >
                     <option value="">Wszystkie</option>
@@ -172,8 +175,8 @@ const DetailContent = ({
                   </label>
                   <select
                     id="lease-txn-status"
-                    defaultValue={filter.status}
-                    onChange={onSelectInput(filter.setStatus)}
+                    value={filterText(filter.config.status)}
+                    onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'status', v)))}
                     className={filterInputClass}
                   >
                     <option value="">Wszystkie</option>
@@ -191,8 +194,8 @@ const DetailContent = ({
                   <input
                     id="lease-txn-date-from"
                     type="date"
-                    defaultValue={filter.dateFrom}
-                    onChange={onFilterInput(filter.setDateFrom)}
+                    value={filterText(filter.config.dateFrom)}
+                    onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateFrom', v)))}
                     className={filterInputClass}
                   />
                 </div>
@@ -203,8 +206,8 @@ const DetailContent = ({
                   <input
                     id="lease-txn-date-to"
                     type="date"
-                    defaultValue={filter.dateTo}
-                    onChange={onFilterInput(filter.setDateTo)}
+                    value={filterText(filter.config.dateTo)}
+                    onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateTo', v)))}
                     className={filterInputClass}
                   />
                 </div>
@@ -218,8 +221,8 @@ const DetailContent = ({
             pagination={transactions.pagination}
             skeletonRows={SKELETON_ROWS}
             emptyState={EMPTY_DATABASE}
-            filteredEmptyState={<FilterEmptyStateS clearFilter={filter.clearFilter} />}
-            isFilterActive={filter.isFilterActive}
+            filteredEmptyState={<FilterEmptyStateS clearFilter={() => filter.doFilter({})} />}
+            isFilterActive={isFilterActive(filter.config)}
             renderRow={(tx) => (
               <tr
                 key={tx.id}

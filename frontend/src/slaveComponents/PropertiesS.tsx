@@ -6,11 +6,15 @@ import { propertyStatusPillClass } from './pills';
 import { formatPln } from './format';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
+  activeFilterCount,
+  filterText,
   inputClass,
+  isFilterActive,
   labelClass,
   onFilterInput,
   onSelectInput,
   optionEntries,
+  setFilterString,
   type FilterChip,
 } from './filter';
 import { FilterToolbarS } from './FilterToolbarS';
@@ -20,6 +24,7 @@ type PageData = Extract<PropertiesSProps['asyncData'], { readonly tag: 'fulfille
 type Row = PageData['rows'][number];
 type Sort = PropertiesSProps['sort'];
 type SortColumn = Sort['config']['column'];
+type Filter = PropertiesSProps['filter'];
 type PropertyStatus = NonNullable<Row['property_status']>;
 type PropertyType = NonNullable<Row['property_type']>;
 
@@ -60,12 +65,12 @@ const EMPTY_DATABASE = (
 );
 
 const buildFilterChips = (
-  filter: PropertiesSProps['filter'],
+  filter: Filter,
 ): readonly FilterChip[] =>
   [
-    ...(filter.text.length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filter.text}`, onRemove: () => filter.setText('') }] : []),
-    ...(filter.propertyType.length > 0 ? [{ key: 'propertyType' as const, label: `Typ: ${PROPERTY_TYPE_LABEL[filter.propertyType as PropertyType] ?? filter.propertyType}`, onRemove: () => filter.setPropertyType('') }] : []),
-    ...(filter.propertyStatus.length > 0 ? [{ key: 'propertyStatus' as const, label: `Status: ${PROPERTY_STATUS_LABEL[filter.propertyStatus as PropertyStatus] ?? filter.propertyStatus}`, onRemove: () => filter.setPropertyStatus('') }] : []),
+    ...(filterText(filter.config.text).length > 0 ? [{ key: 'text' as const, label: `Szukaj: ${filterText(filter.config.text)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) }] : []),
+    ...(filterText(filter.config.propertyType).length > 0 ? [{ key: 'propertyType' as const, label: `Typ: ${PROPERTY_TYPE_LABEL[filterText(filter.config.propertyType) as PropertyType] ?? filterText(filter.config.propertyType)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'propertyType', '')) }] : []),
+    ...(filterText(filter.config.propertyStatus).length > 0 ? [{ key: 'propertyStatus' as const, label: `Status: ${PROPERTY_STATUS_LABEL[filterText(filter.config.propertyStatus) as PropertyStatus] ?? filterText(filter.config.propertyStatus)}`, onRemove: () => filter.doFilter(setFilterString(filter.config, 'propertyStatus', '')) }] : []),
   ];
 
 export const PropertiesS = ({
@@ -78,14 +83,13 @@ export const PropertiesS = ({
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Nieruchomości</h1>
     <FilterToolbarS
-      isFilterActive={filter.isFilterActive}
-      activeFilterCount={filter.activeFilterCount}
-      clearFilter={filter.clearFilter}
+      isFilterActive={isFilterActive(filter.config)}
+      activeFilterCount={activeFilterCount(filter.config)}
+      clearFilter={() => filter.doFilter({})}
       chips={buildFilterChips(filter)}
       resultCount={match(asyncData)
-        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${filter.isFilterActive ? ' (filtrowane)' : ''}`)
+        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${isFilterActive(filter.config) ? ' (filtrowane)' : ''}`)
         .otherwise(() => null)}
-      filterResetKey={filter.filterResetKey}
       panel={
         <>
           <div className="min-w-[280px]">
@@ -95,8 +99,8 @@ export const PropertiesS = ({
             <input
               id="prop-filter"
               type="search"
-              defaultValue={filter.text}
-              onChange={onFilterInput(filter.setText)}
+              value={filterText(filter.config.text)}
+              onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Wpisz fragment nazwy lub adresu…"
               className={`${inputClass} w-full`}
             />
@@ -107,8 +111,8 @@ export const PropertiesS = ({
             </label>
             <select
               id="prop-type"
-              defaultValue={filter.propertyType}
-              onChange={onSelectInput(filter.setPropertyType)}
+              value={filterText(filter.config.propertyType)}
+              onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'propertyType', v)))}
               className={inputClass}
             >
               <option value="">Wszystkie</option>
@@ -125,8 +129,8 @@ export const PropertiesS = ({
             </label>
             <select
               id="prop-status"
-              defaultValue={filter.propertyStatus}
-              onChange={onSelectInput(filter.setPropertyStatus)}
+              value={filterText(filter.config.propertyStatus)}
+              onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'propertyStatus', v)))}
               className={inputClass}
             >
               <option value="">Wszystkie</option>
@@ -147,8 +151,8 @@ export const PropertiesS = ({
       pagination={pagination}
       skeletonRows={SKELETON_ROWS}
       emptyState={EMPTY_DATABASE}
-      filteredEmptyState={<FilterEmptyStateS clearFilter={filter.clearFilter} />}
-      isFilterActive={filter.isFilterActive}
+      filteredEmptyState={<FilterEmptyStateS clearFilter={() => filter.doFilter({})} />}
+      isFilterActive={isFilterActive(filter.config)}
       renderRow={(p) => (
         <tr
           key={p.id ?? ''}

@@ -1,39 +1,76 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toAsyncData, type AsyncData } from './asyncData';
 
-type SortDirection = 'asc' | 'desc';
+export type SortDirection = 'asc' | 'desc';
 
-type SortConfig<C extends string> = {
+export type SortConfig<C extends string = string> = {
   readonly column: C;
   readonly direction: SortDirection;
 };
 
+export type SortControls<C extends string = string> = {
+  readonly config: SortConfig<C>;
+  readonly doSort: (column: C) => void;
+};
+
 /**
- * Manages server-side pagination state for table components.
- * Returns a tuple of [state, controls].
- *
- * @param initialPage  First page (1-based).
- * @param pageSize     Number of rows per page.
- *
- * Controls:
- *   - goToPage(n) — jump to absolute page
- *   - nextPage()  — advance one page
- *   - prevPage()  — go back one page (no-op when page === 1)
+ * A filter value is either a plain text / enum value or a numeric range.
+ * Key presence in the filter config means "this filter is applied".
  */
-const usePagination = (
-  initialPage: number,
-  initialPageSize: number,
-): readonly [
-  { readonly page: number; readonly pageSize: number },
-  {
-    readonly goToPage: (n: number) => void;
-    readonly setPageSize: (size: number) => void;
-    readonly nextPage: () => void;
-    readonly prevPage: () => void;
-  },
-] => {
-  const [page, setPage] = useState(initialPage);
+export type FilterValue = string | { readonly from: number; readonly to: number };
+
+export type FilterConfig<F extends string = string> = Readonly<Partial<Record<F, FilterValue>>>;
+
+/** Sort + filter share the same { config, doX } shape. */
+export type FilterControls<F extends string = string> = {
+  readonly config: FilterConfig<F>;
+  readonly doFilter: (next: FilterConfig<F>) => void;
+};
+
+export type PaginationControls = {
+  readonly page: number;
+  readonly pageSize: number;
+  readonly goToPage: (n: number) => void;
+  readonly setPageSize: (size: number) => void;
+  readonly prevPage: () => void;
+  readonly nextPage: () => void;
+};
+
+export type FilteredQueryResult<TRow, TSortColumn extends string, F extends string> = {
+  readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
+  readonly sort: SortControls<TSortColumn>;
+  readonly filter: FilterControls<F>;
+  readonly pagination: PaginationControls;
+};
+
+export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, F extends string> = {
+  readonly asyncData: FilteredQueryResult<TRow, TSortColumn, F>['asyncData'];
+  readonly navLinkTo: TNavLinkTo;
+  readonly sort: SortControls<TSortColumn>;
+  readonly filter: FilterControls<F>;
+  readonly pagination: PaginationControls;
+};
+
+export type FilteredQueryParams<TRow, TSortColumn extends string, F extends string> = {
+  readonly queryKey: readonly string[];
+  readonly defaultSort: SortConfig<TSortColumn>;
+  readonly pageSize?: number;
+  readonly debounceMs?: number;
+  readonly fetchPage: (args: {
+    readonly sort: SortConfig<TSortColumn>;
+    readonly from: number;
+    readonly to: number;
+    readonly filter: FilterConfig<F>;
+  }) => Promise<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
+};
+
+/** Extracts a plain-text filter value, yielding '' for missing/range values. */
+export const filterTextValue = (value: FilterValue | undefined): string =>
+  typeof value === 'string' ? value : '';
+
+const usePagination = (initialPageSize: number): PaginationControls => {
+  const [page, setPage] = useState(1);
   const [pageSize, setPageSizeState] = useState(initialPageSize);
   const goToPage = useCallback((n: number): void => {
     setPage(Math.max(1, n));
@@ -48,233 +85,92 @@ const usePagination = (
   const prevPage = useCallback((): void => {
     setPage((p) => Math.max(1, p - 1));
   }, []);
-  return [
-    { page, pageSize },
-    { goToPage, setPageSize, nextPage, prevPage },
-  ];
+  return { page, pageSize, goToPage, setPageSize, nextPage, prevPage };
 };
 
-/**
- * Manages server-side sort state for table components.
- * Returns a tuple of [current config, toggle handler].
- *
- * @param defaultColumn  The column name to sort by on initial render.
- * @param defaultDirection  Initial direction ('asc' | 'desc').
- *
- * Toggle behaviour:
- *   - clicking the active column flips asc ↔ desc
- *   - clicking a new column sets it to asc
- */
-const useSort = <C extends string>(
-  defaultColumn: C,
-  defaultDirection: SortDirection,
-): readonly [SortConfig<C>, (column: C) => void] => {
-  const [sortConfig, setSortConfig] = useState<SortConfig<C>>({
-    column: defaultColumn,
-    direction: defaultDirection,
-  });
-
-  const doSort = (column: C): void => {
-    setSortConfig((prev) =>
+const useSort = <C extends string>(defaultSort: SortConfig<C>): SortControls<C> => {
+  const [config, setConfig] = useState<SortConfig<C>>(defaultSort);
+  const doSort = useCallback((column: C): void => {
+    setConfig((prev) =>
       prev.column === column ?
         { column, direction: prev.direction === 'asc' ? 'desc' : 'asc' } :
         { column, direction: 'asc' },
     );
-  };
-
-  return [sortConfig, doSort];
+  }, []);
+  return { config, doSort };
 };
 
-type PaginatedQueryResult<TRow, TSortColumn extends string> = {
-  readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
-  readonly sort: {
-    readonly config: SortConfig<TSortColumn>;
-    readonly doSort: (column: TSortColumn) => void;
-  };
-  readonly pagination: {
-    readonly page: number;
-    readonly pageSize: number;
-    readonly goToPage: (n: number) => void;
-    readonly setPageSize: (size: number) => void;
-    readonly prevPage: () => void;
-    readonly nextPage: () => void;
-  };
+const useFilter = <F extends string>(): readonly [FilterConfig<F>, (next: FilterConfig<F>) => void] => {
+  const [config, setConfig] = useState<FilterConfig<F>>({} as FilterConfig<F>);
+  const doFilter = useCallback((next: FilterConfig<F>): void => {
+    setConfig(next);
+  }, []);
+  return [config, doFilter];
 };
-
-export type ManyRecordsSlaveProps<TRow, TSortColumn extends string, TNavLinkTo, TFilterValues extends Record<string, string>> = {
-  readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
-  readonly navLinkTo: TNavLinkTo;
-  readonly sort: {
-    readonly config: SortConfig<TSortColumn>;
-    readonly doSort: (column: TSortColumn) => void;
-  };
-  readonly pagination: {
-    readonly page: number;
-    readonly pageSize: number;
-    readonly goToPage: (n: number) => void;
-    readonly setPageSize: (size: number) => void;
-    readonly prevPage: () => void;
-    readonly nextPage: () => void;
-  };
-  readonly filter: FilterControls<TFilterValues>;
-};
-
-type FilteredQueryParams<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []> = {
-  readonly queryKeyBase: string;
-  readonly defaultSortColumn: TSortColumn;
-  readonly defaultSortDirection?: SortDirection;
-  readonly pageSize?: number;
-  readonly extraQueryKeyParts?: TExtraKeyParts;
-  readonly initialFilter?: TFilterValues;
-  readonly textFilterKey?: keyof TFilterValues & string;
-  readonly debounceMs?: number;
-  readonly queryFn: (
-    sort: SortConfig<TSortColumn>,
-    from: number,
-    to: number,
-    filter: TFilterValues,
-  ) => Promise<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
-};
-
-type FilterSetter = (v: string) => void;
-
-type FilterSetters<TFilterValues extends Record<string, string>> = {
-  readonly [K in keyof TFilterValues & string as `set${Capitalize<K>}`]: FilterSetter;
-};
-
-type FilterControls<TFilterValues extends Record<string, string>> =
-  TFilterValues
-  & FilterSetters<TFilterValues>
-  & Readonly<{
-      readonly clearFilter: () => void;
-      readonly isFilterActive: boolean;
-      readonly activeFilterCount: number;
-      readonly filterResetKey: number;
-    }>;
-
-export type FilteredQueryResult<TRow, TSortColumn extends string, TFilterValues extends Record<string, string>> =
-  PaginatedQueryResult<TRow, TSortColumn> & {
-    readonly filter: FilterControls<TFilterValues>;
-  };
 
 /**
- * All-in-one hook for "Many" masters: sort + pagination + filters + TanStack Query.
- *
- * `initialFilter` is mount-time configuration (like `defaultSortColumn`): its keys
- * define the filter fields and generated setters (`setXxx`), its values are the
- * "cleared" state that `clearFilter` restores and `isFilterActive` compares against.
- * It is captured once on mount — later changes to the passed object are ignored.
- * Omit it to disable filtering (the hook then behaves as plain pagination and
- * `filter` contains trivial no-op controls).
- *
- * Defaults: `defaultSortDirection: 'asc'`, `pageSize: 20`, `debounceMs: 300`.
- * `textFilterKey` marks the single debounced filter field; all other setters
- * apply to the query immediately. Every filter change resets the page to 1.
+ * Composes sort + pagination + debounced filtering + TanStack Query for "many" lists.
+ * The master defines its filter system through the `F` key union.
  */
-export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFilterValues extends Record<string, string> = Record<string, string>, TExtraKeyParts extends readonly unknown[] = readonly []>(
-  params: FilteredQueryParams<TRow, TSortColumn, TFilterValues, TExtraKeyParts>,
-): FilteredQueryResult<TRow, TSortColumn, TFilterValues> => {
-  const { queryKeyBase, defaultSortColumn, defaultSortDirection = 'asc', pageSize = 20, extraQueryKeyParts, initialFilter, textFilterKey, debounceMs = 300, queryFn } = params;
+export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, F extends string>(
+  params: FilteredQueryParams<TRow, TSortColumn, F>,
+): FilteredQueryResult<TRow, TSortColumn, F> => {
+  const { queryKey, defaultSort, pageSize = 20, debounceMs = 300, fetchPage } = params;
 
-  const [initialValues] = useState<TFilterValues>(() => initialFilter ?? ({} as TFilterValues));
-  const filterKeys = useMemo<readonly (keyof TFilterValues & string)[]>(
-    () => Object.keys(initialValues) as readonly (keyof TFilterValues & string)[],
-    [initialValues],
-  );
+  const sort = useSort<TSortColumn>(defaultSort);
+  const pagination = usePagination(pageSize);
+  const [filterConfig, setFilterConfig] = useFilter<F>();
+  const [committedFilter, setCommittedFilter] = useState<FilterConfig<F>>({} as FilterConfig<F>);
 
-  const [displayValues, setDisplayValues] = useState<TFilterValues>(initialValues);
-  const [queryValues, setQueryValues] = useState<TFilterValues>(initialValues);
-  const [filterResetKey, setFilterResetKey] = useState(0);
-
-  const [sortConfig, onSort] = useSort<TSortColumn>(defaultSortColumn, defaultSortDirection);
-  const [pagination, { goToPage, setPageSize, ...pageControls }] = usePagination(1, pageSize);
+  const { goToPage } = pagination;
+  const { doSort: applySort, config: sortConfig } = sort;
 
   const resetPage = useCallback((): void => {
     goToPage(1);
   }, [goToPage]);
 
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelDebounce = useCallback((): void => {
-    debounceTimerRef.current !== null && clearTimeout(debounceTimerRef.current);
+    debounceRef.current !== null && clearTimeout(debounceRef.current);
   }, []);
 
   useEffect(() => cancelDebounce, [cancelDebounce]);
 
-  const scheduleQueryUpdate = useCallback(
-    (key: keyof TFilterValues & string, v: string): void => {
+  const doFilter = useCallback(
+    (next: FilterConfig<F>): void => {
+      setFilterConfig(next);
+      resetPage();
       cancelDebounce();
-      // eslint-disable-next-line functional/immutable-data -- useRef for timer handle is the idiomatic React debounce pattern
-      debounceTimerRef.current = setTimeout(() => {
-        setQueryValues((prev) => ({ ...prev, [key]: v }));
+      // eslint-disable-next-line functional/immutable-data -- useRef for the debounce handle is idiomatic React
+      debounceRef.current = setTimeout(() => {
+        setCommittedFilter(next);
       }, debounceMs);
     },
-    [cancelDebounce, debounceMs],
+    [setFilterConfig, resetPage, cancelDebounce, debounceMs],
   );
 
-  const filterSetters = useMemo<FilterSetters<TFilterValues>>(
-    () =>
-      Object.freeze(
-        Object.fromEntries(
-          filterKeys.map((key) => [
-            `set${key.charAt(0).toUpperCase()}${key.slice(1)}`,
-            (v: string): void => {
-              setDisplayValues((prev) => ({ ...prev, [key]: v }));
-              resetPage();
-              key === textFilterKey ?
-                scheduleQueryUpdate(key, v) :
-                setQueryValues((prev) => ({ ...prev, [key]: v }));
-            },
-          ]),
-        ),
-      ) as FilterSetters<TFilterValues>,
-    [filterKeys, textFilterKey, resetPage, scheduleQueryUpdate],
+  const doSort = useCallback(
+    (column: TSortColumn): void => {
+      applySort(column);
+      resetPage();
+    },
+    [applySort, resetPage],
   );
-
-  const clearFilter = useCallback((): void => {
-    cancelDebounce();
-    setDisplayValues(initialValues);
-    setQueryValues(initialValues);
-    setFilterResetKey((k) => k + 1);
-    resetPage();
-  }, [cancelDebounce, initialValues, resetPage]);
-
-  const isFilterActive = useMemo(
-    () => filterKeys.some((key) => displayValues[key] !== initialValues[key]),
-    [displayValues, initialValues, filterKeys],
-  );
-
-  const activeFilterCount = useMemo(
-    () => filterKeys.filter((key) => displayValues[key] !== initialValues[key]).length,
-    [displayValues, initialValues, filterKeys],
-  );
-
-  const filter = useMemo<FilterControls<TFilterValues>>(
-    () => ({ ...displayValues, ...filterSetters, clearFilter, isFilterActive, activeFilterCount, filterResetKey }),
-    [displayValues, filterSetters, clearFilter, isFilterActive, activeFilterCount, filterResetKey],
-  );
-
-  const doSort = (column: TSortColumn): void => {
-    onSort(column);
-    resetPage();
-  };
-  const sort = { config: sortConfig, doSort };
-
-  const paginationProps = {
-    page: pagination.page,
-    pageSize: pagination.pageSize,
-    goToPage,
-    setPageSize,
-    prevPage: pageControls.prevPage,
-    nextPage: pageControls.nextPage,
-  };
 
   const query = useQuery({
-    queryKey: [queryKeyBase, sortConfig.column, sortConfig.direction, pagination.page, pagination.pageSize, ...(extraQueryKeyParts ?? []), ...Object.values(queryValues)] as const,
+    queryKey: [
+      ...queryKey,
+      sortConfig.column,
+      sortConfig.direction,
+      pagination.page,
+      pagination.pageSize,
+      ...Object.values(committedFilter),
+    ] as const,
     queryFn: async () => {
       const from = (pagination.page - 1) * pagination.pageSize;
       const to = from + pagination.pageSize - 1;
-      return queryFn(sortConfig, from, to, queryValues);
+      return fetchPage({ sort: sortConfig, from, to, filter: committedFilter });
     },
     placeholderData: (prev) => prev,
   });
@@ -287,5 +183,10 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, TFil
     query.isFetching,
   );
 
-  return { asyncData, sort, pagination: paginationProps, filter };
+  return {
+    asyncData,
+    sort: { config: sortConfig, doSort },
+    filter: { config: filterConfig, doFilter },
+    pagination,
+  };
 };

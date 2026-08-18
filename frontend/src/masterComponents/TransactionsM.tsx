@@ -3,8 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
-import type { NavLinkWithId } from '@/generic';
+import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
@@ -30,14 +29,9 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
   properties: 'properties(name)',
 });
 
-type TransactionFilterValues = {
-  readonly text: string;
-  readonly type: string;
-  readonly dateFrom: string;
-  readonly dateTo: string;
-};
+type TransactionFilter = 'text' | 'type' | 'dateFrom' | 'dateTo';
 
-export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionFilterValues>;
+export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionFilter>;
 
 type Props = {
   readonly Slave: ComponentType<TransactionsSProps>;
@@ -48,23 +42,24 @@ export const TransactionsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilterValues>({
-    queryKeyBase: 'transactions',
-    defaultSortColumn: 'due_date',
-    defaultSortDirection: 'desc',
-    initialFilter: { text: '', type: '', dateFrom: '', dateTo: '' },
-    textFilterKey: 'text',
-    queryFn: async (sortConfig, from, to, filterValues) => {
+  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilter>({
+    queryKey: ['transactions'],
+    defaultSort: { column: 'due_date', direction: 'desc' },
+    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('transactions')
         .select('*, properties!inner(name), lease_agreements(start_date)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .range(from, to);
-      const withText = filterValues.text.length > 0 ? baseQuery.ilike('properties.name', `*${filterValues.text}*`) : baseQuery;
-      const withType = filterValues.type.length > 0 ? withText.eq('type', filterValues.type as TransactionTypeDb) : withText;
-      const withDateFrom = filterValues.dateFrom.length > 0 ? withType.gte('due_date', filterValues.dateFrom) : withType;
-      const queryWithFilters = filterValues.dateTo.length > 0 ? withDateFrom.lte('due_date', filterValues.dateTo) : withDateFrom;
+      const text = filterTextValue(filterConfig.text);
+      const type = filterTextValue(filterConfig.type);
+      const dateFrom = filterTextValue(filterConfig.dateFrom);
+      const dateTo = filterTextValue(filterConfig.dateTo);
+      const withText = text.length > 0 ? baseQuery.ilike('properties.name', `*${text}*`) : baseQuery;
+      const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
+      const withDateFrom = dateFrom.length > 0 ? withType.gte('due_date', dateFrom) : withType;
+      const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('due_date', dateTo) : withDateFrom;
       const result = await queryWithFilters;
       return result.error !== null ? Promise.reject(result.error) : { rows: result.data ?? [], totalCount: result.count ?? 0 };
     },

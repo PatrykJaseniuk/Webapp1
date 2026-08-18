@@ -16,7 +16,6 @@ type FilterToolbarSProps = {
   readonly clearFilter: () => void;
   readonly chips: readonly FilterChip[];
   readonly resultCount: string | null;
-  readonly filterResetKey: number;
   readonly clearLabel?: string;
   readonly panel: JSX.Element;
 };
@@ -27,7 +26,6 @@ export const FilterToolbarS = ({
   clearFilter,
   chips,
   resultCount,
-  filterResetKey,
   clearLabel = 'Wyczyść',
   panel,
 }: FilterToolbarSProps): JSX.Element => {
@@ -79,7 +77,6 @@ export const FilterToolbarS = ({
       </div>
       <div
         className={`absolute left-0 top-full z-20 mt-1 flex flex-wrap items-end gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-lg transition-all duration-200 ${showFilterPanel ? popoverOpen : popoverClosed}`}
-        key={filterResetKey}
       >
         {panel}
       </div>

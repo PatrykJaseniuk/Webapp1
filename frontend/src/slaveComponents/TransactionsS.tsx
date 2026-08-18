@@ -6,11 +6,15 @@ import { amountClass, txnStatusPillClass } from './pills';
 import { formatDate, formatPln } from './format';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
+  activeFilterCount,
+  filterText,
   inputClass,
+  isFilterActive,
   labelClass,
   onFilterInput,
   onSelectInput,
   optionEntries,
+  setFilterString,
   type FilterChip,
 } from './filter';
 import { FilterToolbarS } from './FilterToolbarS';
@@ -20,6 +24,7 @@ type PageData = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfil
 type Row = PageData['rows'][number];
 type Sort = TransactionsSProps['sort'];
 type SortColumn = Sort['config']['column'];
+type Filter = TransactionsSProps['filter'];
 type TxnType = Row['type'];
 
 const COLUMNS: readonly ColumnDef<SortColumn>[] = [
@@ -69,13 +74,13 @@ const leaseLabel = (tx: Row): string => {
 };
 
 const buildFilterChips = (
-  filter: TransactionsSProps['filter'],
+  filter: Filter,
 ): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: filter.text.length > 0 ? `Nieruchomość: ${filter.text}` : null, onRemove: () => filter.setText('') },
-    { key: 'type', label: filter.type.length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filter.type as TxnType] ?? filter.type}` : null, onRemove: () => filter.setType('') },
-    { key: 'dateFrom', label: filter.dateFrom.length > 0 ? `Od: ${formatDate(filter.dateFrom)}` : null, onRemove: () => filter.setDateFrom('') },
-    { key: 'dateTo', label: filter.dateTo.length > 0 ? `Do: ${formatDate(filter.dateTo)}` : null, onRemove: () => filter.setDateTo('') },
+    { key: 'text', label: filterText(filter.config.text).length > 0 ? `Nieruchomość: ${filterText(filter.config.text)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
+    { key: 'type', label: filterText(filter.config.type).length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[filterText(filter.config.type) as TxnType] ?? filterText(filter.config.type)}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
+    { key: 'dateFrom', label: filterText(filter.config.dateFrom).length > 0 ? `Od: ${formatDate(filterText(filter.config.dateFrom))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
+    { key: 'dateTo', label: filterText(filter.config.dateTo).length > 0 ? `Do: ${formatDate(filterText(filter.config.dateTo))}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
 
   return base.filter((c): c is FilterChip => c.label !== null);
@@ -91,14 +96,13 @@ export const TransactionsS = ({
   <div className="min-h-[300px]">
     <h1 className="mb-4 text-xl font-semibold text-gray-900">Transakcje</h1>
     <FilterToolbarS
-      isFilterActive={filter.isFilterActive}
-      activeFilterCount={filter.activeFilterCount}
-      clearFilter={filter.clearFilter}
+      isFilterActive={isFilterActive(filter.config)}
+      activeFilterCount={activeFilterCount(filter.config)}
+      clearFilter={() => filter.doFilter({})}
       chips={buildFilterChips(filter)}
       resultCount={match(asyncData)
-        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${filter.isFilterActive ? ' (filtrowane)' : ''}`)
+        .with({ tag: 'fulfilled' }, ({ data }) => `Znaleziono: ${data.totalCount}${isFilterActive(filter.config) ? ' (filtrowane)' : ''}`)
         .otherwise(() => null)}
-      filterResetKey={filter.filterResetKey}
       panel={
         <>
           <div className="min-w-[220px]">
@@ -108,8 +112,8 @@ export const TransactionsS = ({
             <input
               id="txn-filter"
               type="search"
-              defaultValue={filter.text}
-              onChange={onFilterInput(filter.setText)}
+              value={filterText(filter.config.text)}
+              onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
               placeholder="Wpisz nazwę nieruchomości…"
               className={`${inputClass} w-full`}
             />
@@ -120,8 +124,8 @@ export const TransactionsS = ({
             </label>
             <select
               id="txn-type"
-              defaultValue={filter.type}
-              onChange={onSelectInput(filter.setType)}
+              value={filterText(filter.config.type)}
+              onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'type', v)))}
               className={inputClass}
             >
               <option value="">Wszystkie</option>
@@ -139,8 +143,8 @@ export const TransactionsS = ({
             <input
               id="txn-date-from"
               type="date"
-              defaultValue={filter.dateFrom}
-              onChange={onFilterInput(filter.setDateFrom)}
+              value={filterText(filter.config.dateFrom)}
+              onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateFrom', v)))}
               className={inputClass}
             />
           </div>
@@ -151,8 +155,8 @@ export const TransactionsS = ({
             <input
               id="txn-date-to"
               type="date"
-              defaultValue={filter.dateTo}
-              onChange={onFilterInput(filter.setDateTo)}
+              value={filterText(filter.config.dateTo)}
+              onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'dateTo', v)))}
               className={inputClass}
             />
           </div>
@@ -166,8 +170,8 @@ export const TransactionsS = ({
       pagination={pagination}
       skeletonRows={SKELETON_ROWS}
       emptyState={EMPTY_DATABASE}
-      filteredEmptyState={<FilterEmptyStateS clearFilter={filter.clearFilter} />}
-      isFilterActive={filter.isFilterActive}
+      filteredEmptyState={<FilterEmptyStateS clearFilter={() => filter.doFilter({})} />}
+      isFilterActive={isFilterActive(filter.config)}
       renderRow={(tx) => (
         <tr
           key={tx.id}

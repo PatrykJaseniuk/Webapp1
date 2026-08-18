@@ -66,16 +66,8 @@ const navLinkTo = {
 };
 
 const filter: PropertiesSProps['filter'] = {
-  text: '',
-  propertyType: '',
-  propertyStatus: '',
-  setText: noop,
-  setPropertyType: noop,
-  setPropertyStatus: noop,
-  clearFilter: noop,
-  isFilterActive: false,
-  activeFilterCount: 0,
-  filterResetKey: 0,
+  config: {},
+  doFilter: noop,
 };
 
 const meta: Meta<typeof PropertiesS> = {

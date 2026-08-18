@@ -3,34 +3,22 @@ import type { Mock } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFilteredPaginatedQuery } from './dataQuery';
+import type { FilterConfig } from './dataQuery';
 import type { ReactNode } from 'react';
-
-// ──────────────────────────────────────────────────────────────
-// useFilteredPaginatedQuery — sort + pagination + filter + query
-// ──────────────────────────────────────────────────────────────
 
 type TestRow = { readonly id: string; readonly name: string };
 type TestColumn = 'name' | 'date';
-type TestFilter = { readonly text: string; readonly status: string };
+type TestFilterKey = 'text' | 'status';
 type TestSort = { readonly column: TestColumn; readonly direction: 'asc' | 'desc' };
 
-const INITIAL_FILTER: TestFilter = { text: '', status: '' };
+type TestFetchPage = (args: {
+  readonly sort: TestSort;
+  readonly from: number;
+  readonly to: number;
+  readonly filter: FilterConfig<TestFilterKey>;
+}) => Promise<{ readonly rows: readonly TestRow[]; readonly totalCount: number }>;
 
-type TestQueryFn = (
-  sort: TestSort,
-  from: number,
-  to: number,
-  filter: TestFilter,
-) => Promise<{ readonly rows: readonly TestRow[]; readonly totalCount: number }>;
-
-type PlainQueryFn = (
-  sort: TestSort,
-  from: number,
-  to: number,
-  filter: Record<string, string>,
-) => Promise<{ readonly rows: readonly TestRow[]; readonly totalCount: number }>;
-
-const makeQueryFn = (): Mock<TestQueryFn> => vi.fn<TestQueryFn>().mockResolvedValue({ rows: [], totalCount: 0 });
+const makeFetchPage = (): Mock<TestFetchPage> => vi.fn<TestFetchPage>().mockResolvedValue({ rows: [], totalCount: 0 });
 
 const makeWrapper = () => {
   const queryClient = new QueryClient({
@@ -42,15 +30,13 @@ const makeWrapper = () => {
   return Wrapper;
 };
 
-const renderFilteredQuery = (queryFn: Mock<TestQueryFn>, overrides?: Record<string, unknown>) =>
+const renderFilteredQuery = (fetchPage: Mock<TestFetchPage>, overrides?: Record<string, unknown>) =>
   renderHook(
     () =>
-      useFilteredPaginatedQuery<TestRow, TestColumn, TestFilter>({
-        queryKeyBase: 'test-entity',
-        defaultSortColumn: 'name',
-        initialFilter: INITIAL_FILTER,
-        textFilterKey: 'text',
-        queryFn,
+      useFilteredPaginatedQuery<TestRow, TestColumn, TestFilterKey>({
+        queryKey: ['test-entity'],
+        defaultSort: { column: 'name', direction: 'asc' },
+        fetchPage,
         ...overrides,
       }),
     { wrapper: makeWrapper() },
@@ -61,20 +47,17 @@ afterEach(() => {
 });
 
 describe('useFilteredPaginatedQuery', () => {
-  it('calls queryFn with default sort, first page range, and initial filter', async () => {
-    const queryFn = makeQueryFn();
+  it('calls fetchPage with default sort, first page range, and empty filter', async () => {
+    const fetchPage = makeFetchPage();
 
-    renderFilteredQuery(queryFn);
+    renderFilteredQuery(fetchPage);
 
     await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(fetchPage).toHaveBeenCalledTimes(1);
     });
 
-    expect(queryFn).toHaveBeenCalledWith(
-      { column: 'name', direction: 'asc' },
-      0,
-      19,
-      INITIAL_FILTER,
+    expect(fetchPage).toHaveBeenCalledWith(
+      { sort: { column: 'name', direction: 'asc' }, from: 0, to: 19, filter: {} },
     );
   });
 
@@ -83,9 +66,9 @@ describe('useFilteredPaginatedQuery', () => {
       { id: '1', name: 'Alice' },
       { id: '2', name: 'Bob' },
     ];
-    const queryFn = vi.fn<TestQueryFn>().mockResolvedValue({ rows, totalCount: 2 });
+    const fetchPage = vi.fn<TestFetchPage>().mockResolvedValue({ rows, totalCount: 2 });
 
-    const { result } = renderFilteredQuery(queryFn);
+    const { result } = renderFilteredQuery(fetchPage);
 
     await waitFor(() => {
       expect(result.current.asyncData.tag).toBe('fulfilled');
@@ -96,10 +79,10 @@ describe('useFilteredPaginatedQuery', () => {
     expect(fulfilled.tag === 'fulfilled' && fulfilled.data.totalCount).toBe(2);
   });
 
-  it('returns rejected asyncData when queryFn fails', async () => {
-    const queryFn = vi.fn<TestQueryFn>().mockRejectedValue(new Error('Network failure'));
+  it('returns rejected asyncData when fetchPage fails', async () => {
+    const fetchPage = vi.fn<TestFetchPage>().mockRejectedValue(new Error('Network failure'));
 
-    const { result } = renderFilteredQuery(queryFn);
+    const { result } = renderFilteredQuery(fetchPage);
 
     await waitFor(() => {
       expect(result.current.asyncData.tag).toBe('rejected');
@@ -109,33 +92,21 @@ describe('useFilteredPaginatedQuery', () => {
     expect(rejected.tag === 'rejected' && rejected.message).toBe('Network failure');
   });
 
-  it('derives filter values and setters from initialFilter', async () => {
-    const queryFn = makeQueryFn();
+  it('starts with an empty filter config', async () => {
+    const fetchPage = makeFetchPage();
 
-    const { result } = renderFilteredQuery(queryFn);
+    const { result } = renderFilteredQuery(fetchPage);
 
-    expect(result.current.filter.text).toBe('');
-    expect(result.current.filter.status).toBe('');
-    expect(result.current.filter.isFilterActive).toBe(false);
-    expect(result.current.filter.activeFilterCount).toBe(0);
-
-    act(() => {
-      result.current.filter.setStatus('active');
-    });
-
-    expect(result.current.filter.status).toBe('active');
-    expect(result.current.filter.isFilterActive).toBe(true);
-    expect(result.current.filter.activeFilterCount).toBe(1);
+    expect(result.current.filter.config).toEqual({});
   });
 
+  it('applies a filter change and resets page to 1', async () => {
+    const fetchPage = makeFetchPage();
 
-  it('applies non-text filter changes immediately and resets page to 1 with a single fetch', async () => {
-    const queryFn = makeQueryFn();
-
-    const { result } = renderFilteredQuery(queryFn);
+    const { result } = renderFilteredQuery(fetchPage);
 
     await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(fetchPage).toHaveBeenCalledTimes(1);
     });
 
     act(() => {
@@ -143,112 +114,75 @@ describe('useFilteredPaginatedQuery', () => {
     });
 
     await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledWith({ column: 'name', direction: 'asc' }, 20, 39, INITIAL_FILTER);
-    });
-
-    const callsBefore = queryFn.mock.calls.length;
-
-    act(() => {
-      result.current.filter.setStatus('active');
-    });
-
-    await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledWith(
-        { column: 'name', direction: 'asc' },
-        0,
-        19,
-        { text: '', status: 'active' },
+      expect(fetchPage).toHaveBeenCalledWith(
+        { sort: { column: 'name', direction: 'asc' }, from: 20, to: 39, filter: {} },
       );
     });
 
-    const filterCalls = queryFn.mock.calls.filter(
-      (call) => (call[3] as TestFilter).status === 'active',
-    );
-    expect(filterCalls).toHaveLength(1);
-    expect(queryFn.mock.calls.length).toBe(callsBefore + 1);
-    expect(result.current.pagination.page).toBe(1);
-  });
-
-  it('debounces the text filter before hitting the query', async () => {
-    const queryFn = makeQueryFn();
-
-    const { result } = renderFilteredQuery(queryFn);
+    act(() => {
+      result.current.filter.doFilter({ status: 'active' });
+    });
 
     await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(result.current.filter.config).toEqual({ status: 'active' });
+      expect(result.current.pagination.page).toBe(1);
+    });
+  });
+
+  it('debounces filter changes before hitting the query', async () => {
+    const fetchPage = makeFetchPage();
+
+    const { result } = renderFilteredQuery(fetchPage);
+
+    await waitFor(() => {
+      expect(fetchPage).toHaveBeenCalledTimes(1);
     });
 
     vi.useFakeTimers();
 
     act(() => {
-      result.current.filter.setText('abc');
+      result.current.filter.doFilter({ text: 'abc' });
     });
 
-    expect(result.current.filter.text).toBe('abc');
-    expect(queryFn).toHaveBeenCalledTimes(1);
+    expect(result.current.filter.config).toEqual({ text: 'abc' });
+    expect(fetchPage).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       vi.advanceTimersByTime(300);
     });
 
-    expect(queryFn).toHaveBeenCalledWith(
-      { column: 'name', direction: 'asc' },
-      0,
-      19,
-      { text: 'abc', status: '' },
+    expect(fetchPage).toHaveBeenCalledWith(
+      { sort: { column: 'name', direction: 'asc' }, from: 0, to: 19, filter: { text: 'abc' } },
     );
   });
 
-  it('clearFilter cancels a pending debounced update', async () => {
-    const queryFn = makeQueryFn();
+  it('clearing the filter cancels a pending debounced update', async () => {
+    const fetchPage = makeFetchPage();
 
-    const { result } = renderFilteredQuery(queryFn);
+    const { result } = renderFilteredQuery(fetchPage);
 
     await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(fetchPage).toHaveBeenCalledTimes(1);
     });
 
     vi.useFakeTimers();
 
     act(() => {
-      result.current.filter.setText('abc');
+      result.current.filter.doFilter({ text: 'abc' });
     });
 
     act(() => {
-      result.current.filter.clearFilter();
+      result.current.filter.doFilter({});
     });
 
     await act(async () => {
       vi.advanceTimersByTime(1000);
     });
 
-    const staleCalls = queryFn.mock.calls.filter(
-      (call) => (call[3] as TestFilter).text === 'abc',
+    const staleCalls = fetchPage.mock.calls.filter(
+      (call) => call[0].filter.text === 'abc',
     );
     expect(staleCalls).toHaveLength(0);
-    expect(result.current.filter.text).toBe('');
-    expect(result.current.filter.isFilterActive).toBe(false);
-  });
-
-  it('returns trivial filter controls when initialFilter is omitted', async () => {
-    const queryFn = vi.fn<PlainQueryFn>().mockResolvedValue({ rows: [], totalCount: 0 });
-
-    const { result } = renderHook(
-      () =>
-        useFilteredPaginatedQuery<TestRow, TestColumn>({
-          queryKeyBase: 'test-entity-plain',
-          defaultSortColumn: 'name',
-          queryFn,
-        }),
-      { wrapper: makeWrapper() },
-    );
-
-    await waitFor(() => {
-      expect(queryFn).toHaveBeenCalledTimes(1);
-    });
-
-    expect(queryFn).toHaveBeenCalledWith({ column: 'name', direction: 'asc' }, 0, 19, {});
-    expect(result.current.filter.isFilterActive).toBe(false);
-    expect(result.current.filter.activeFilterCount).toBe(0);
+    expect(result.current.filter.config).toEqual({});
   });
 });

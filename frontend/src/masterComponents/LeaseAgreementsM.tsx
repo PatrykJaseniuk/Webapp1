@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
@@ -21,14 +21,9 @@ type NavLinkTo = Readonly<{
 
 type LeaseAgreementSortColumn = Extract<keyof LeaseAgreementRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status' | 'tenants' | 'properties'>;
 
-type LeaseAgreementFilterValues = {
-  readonly text: string;
-  readonly leaseStatus: string;
-  readonly dateFrom: string;
-  readonly dateTo: string;
-};
+type LeaseAgreementFilter = 'text' | 'leaseStatus' | 'dateFrom' | 'dateTo';
 
-export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementFilterValues>;
+export type LeaseAgreementsSProps = ManyRecordsSlaveProps<LeaseAgreementRow, LeaseAgreementSortColumn, NavLinkTo, LeaseAgreementFilter>;
 
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementsSProps>;
@@ -62,23 +57,23 @@ export const LeaseAgreementsM = ({
   Slave,
   role: _role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilterValues>({
-    queryKeyBase: 'lease_agreements',
-    defaultSortColumn: 'start_date',
-    defaultSortDirection: 'desc',
-    initialFilter: { text: '', leaseStatus: '', dateFrom: '', dateTo: '' },
-    textFilterKey: 'text',
-    queryFn: async (sortConfig, from, to, filterValues) => {
+  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilter>({
+    queryKey: ['lease_agreements'],
+    defaultSort: { column: 'start_date', direction: 'desc' },
+    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('lease_agreements')
         .select('*, tenants(first_name,last_name), properties(name)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      const withStatus = filterValues.leaseStatus.length > 0 ? baseQuery.eq('lease_status', filterValues.leaseStatus as LeaseStatusDb) : baseQuery;
-      const withDateFrom = filterValues.dateFrom.length > 0 ? withStatus.gte('start_date', filterValues.dateFrom) : withStatus;
-      const withDateTo = filterValues.dateTo.length > 0 ? withDateFrom.lte('start_date', filterValues.dateTo) : withDateFrom;
+      const leaseStatus = filterTextValue(filterConfig.leaseStatus);
+      const dateFrom = filterTextValue(filterConfig.dateFrom);
+      const dateTo = filterTextValue(filterConfig.dateTo);
+      const withStatus = leaseStatus.length > 0 ? baseQuery.eq('lease_status', leaseStatus as LeaseStatusDb) : baseQuery;
+      const withDateFrom = dateFrom.length > 0 ? withStatus.gte('start_date', dateFrom) : withStatus;
+      const withDateTo = dateTo.length > 0 ? withDateFrom.lte('start_date', dateTo) : withDateFrom;
 
-      const search = filterValues.text;
+      const search = filterTextValue(filterConfig.text);
       const searchExists = search.length > 0;
       const resolved = searchExists ?
         await resolveSearchIds(search) :

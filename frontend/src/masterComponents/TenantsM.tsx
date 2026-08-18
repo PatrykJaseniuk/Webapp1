@@ -2,8 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps } from '@/generic';
-import type { NavLinkWithId } from '@/generic';
+import { filterTextValue, useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
 
 type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
 type TenantStatusDb = Database['public']['Enums']['tenant_status'];
@@ -17,12 +16,9 @@ type NavLinkTo = Readonly<{
 
 type TenantSortColumn = Extract<keyof TenantDbRow, 'last_name' | 'first_name' | 'email' | 'tenant_status'>;
 
-type TenantFilterValues = {
-  readonly text: string;
-  readonly tenantStatus: string;
-};
+type TenantFilter = 'text' | 'tenantStatus';
 
-export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, TenantFilterValues>;
+export type TenantsSProps = ManyRecordsSlaveProps<TenantListRow, TenantSortColumn, NavLinkTo, TenantFilter>;
 
 type Props = {
   readonly Slave: ComponentType<TenantsSProps>;
@@ -31,20 +27,20 @@ type Props = {
 export const TenantsM = ({
   Slave,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilterValues>({
-    queryKeyBase: 'tenants',
-    defaultSortColumn: 'last_name',
-    initialFilter: { text: '', tenantStatus: '' },
-    textFilterKey: 'text',
-    queryFn: async (sortConfig, from, to, filterValues) => {
+  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TenantListRow, TenantSortColumn, TenantFilter>({
+    queryKey: ['tenants'],
+    defaultSort: { column: 'last_name', direction: 'asc' },
+    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('tenants')
         .select('*', { count: 'exact' })
         .order(sortConfig.column, { ascending })
         .range(from, to);
-      const withText = filterValues.text.length > 0 ? baseQuery.or(`first_name.ilike.*${filterValues.text}*,last_name.ilike.*${filterValues.text}*,email.ilike.*${filterValues.text}*`) : baseQuery;
-      const queryWithFilters = filterValues.tenantStatus.length > 0 ? withText.eq('tenant_status', filterValues.tenantStatus as TenantStatusDb) : withText;
+      const text = filterTextValue(filterConfig.text);
+      const tenantStatus = filterTextValue(filterConfig.tenantStatus);
+      const withText = text.length > 0 ? baseQuery.or(`first_name.ilike.*${text}*,last_name.ilike.*${text}*,email.ilike.*${text}*`) : baseQuery;
+      const queryWithFilters = tenantStatus.length > 0 ? withText.eq('tenant_status', tenantStatus as TenantStatusDb) : withText;
       const result = await queryWithFilters;
       return result.error !== null ? Promise.reject(result.error) : { rows: result.data ?? [], totalCount: result.count ?? 0 };
     },
