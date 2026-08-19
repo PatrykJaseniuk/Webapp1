@@ -2,26 +2,154 @@ import { match } from 'ts-pattern';
 import type { TenantSProps } from '@/masterComponents/TenantM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
-import { LEASE_STATUS_LABEL, TENANT_STATUS_LABEL } from './domain';
-import { leaseStatusPillClass, tenantStatusPillClass } from './pills';
-import { formatPln } from './format';
+import {
+  LEASE_STATUS_LABEL,
+  TENANT_STATUS_LABEL,
+  TRANSACTION_STATUS_LABEL,
+  TRANSACTION_TYPE_LABEL,
+} from './domain';
+import {
+  amountClass,
+  leaseStatusPillClass,
+  tenantStatusPillClass,
+  txnStatusPillClass,
+} from './pills';
+import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
-import { TransactionsTableS } from './TransactionsTableS';
-import { AttachmentsSectionS } from './AttachmentsListS';
+import { AsyncStateTableS } from './AsyncStateTableS';
+import type { ColumnDef } from './DataTableS';
+import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
+import { FilterToolbarS } from './FilterToolbarS';
+import {
+  activeFilterCount,
+  inputClass as filterInputClass,
+  isFilterActive,
+  labelClass as filterLabelClass,
+  onFilterInput,
+  onSelectInput,
+  optionEntries,
+  setFilterString,
+  type FilterChip,
+} from './filter';
+import { AttachmentsTableS } from './AttachmentsTableS';
 
 type Data = Extract<TenantSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = TenantSProps['navLinkTo'];
+type Leases = TenantSProps['leases'];
+type Transactions = TenantSProps['transactions'];
+type Attachments = TenantSProps['attachments'];
+type LeaseRow = Extract<Leases['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
+type LeaseSortColumn = Leases['sort']['config']['column'];
+type LeaseFilter = Leases['filter'];
+type LeaseStatus = LeaseRow['lease_status'];
+type TransactionRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
+type TransactionSortColumn = Transactions['sort']['config']['column'];
+type TransactionFilter = Transactions['filter'];
+type TxnType = TransactionRow['type'];
+type TxnStatus = TransactionRow['transaction_status'];
+
+const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
+  { key: 'property', label: 'Nieruchomość', sortColumn: null, align: 'left', className: 'pl-4 pr-4' },
+  { key: 'start_date', label: 'Od', sortColumn: 'start_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'end_date', label: 'Do', sortColumn: 'end_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'monthly_rent', label: 'Czynsz', sortColumn: 'monthly_rent', align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'lease_status', label: 'Status', sortColumn: 'lease_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
+];
+
+const TRANSACTION_COLUMNS: readonly ColumnDef<TransactionSortColumn>[] = [
+  { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
+  { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'type', label: 'Typ', sortColumn: 'type', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
+  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
+];
+
+const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
+
+const LEASE_SKELETON_ROWS = (
+  <>
+    {Array.from({ length: 4 }, (_, i) => (
+      <tr key={`lease-skel-${i}`} className="border-b border-gray-100">
+        <td className="pl-4 h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-16`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
+      </tr>
+    ))}
+  </>
+);
+
+const TRANSACTION_SKELETON_ROWS = (
+  <>
+    {Array.from({ length: 6 }, (_, i) => (
+      <tr key={`txn-skel-${i}`} className="border-b border-gray-100">
+        <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
+      </tr>
+    ))}
+  </>
+);
+
+const LEASE_EMPTY = (
+  <EmptyStateS
+    iconPath="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h8l5 5v11a2 2 0 01-2 2z"
+    title="Brak umów najmu"
+    description="Ten najemca nie posiada jeszcze żadnych umów."
+  />
+);
+
+const TRANSACTION_EMPTY = (
+  <EmptyStateS
+    iconPath="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z"
+    title="Brak transakcji do wyświetlenia"
+    description="Brak transakcji powiązanych z tym najemcą."
+  />
+);
+
+const buildLeaseFilterChips = (filter: LeaseFilter): readonly FilterChip[] => {
+  const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
+    { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${LEASE_STATUS_LABEL[(filter.config.status ?? '') as LeaseStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
+    { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
+    { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
+  ]);
+  return base.filter((c): c is FilterChip => c.label !== null);
+};
+
+const buildTransactionFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
+  const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
+    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
+    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
+    { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[(filter.config.status ?? '') as TxnStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
+    { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
+    { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
+  ]);
+  return base.filter((c): c is FilterChip => c.label !== null);
+};
 
 type DetailContentProps = {
   readonly data: Data;
   readonly navLinkTo: NavLinkTo;
+  readonly leases: Leases;
+  readonly transactions: Transactions;
+  readonly attachments: Attachments;
 };
 
 const DetailContent = ({
   data,
   navLinkTo,
+  leases,
+  transactions,
+  attachments,
 }: DetailContentProps): JSX.Element => {
   const t = data.tenant;
+  const leaseFilter = leases.filter;
+  const transactionFilter = transactions.filter;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div className="flex items-center justify-between">
@@ -47,46 +175,192 @@ const DetailContent = ({
 
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Umowy najmu</h2>
-        {data.leases.length === 0 ?
-          <p className="text-sm text-gray-500">Brak umów najmu.</p> :
-          <div className="overflow-x-auto"><table className="w-full border-collapse text-left text-sm">
-            <thead><tr className="border-b border-gray-200 text-gray-500"><th className="py-2 pr-4 font-medium">Nieruchomość</th><th className="py-2 pr-4 font-medium">Od</th><th className="py-2 pr-4 font-medium">Do</th><th className="py-2 pr-4 font-medium text-right">Czynsz</th><th className="py-2 pr-4 font-medium">Status</th></tr></thead>
-            <tbody>{data.leases.map((l) => (
-              <tr key={l.id ?? ''} className="border-b border-gray-100 hover:bg-blue-50">
-                <td className="py-2 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {l.property_id !== null ?
-                    navLinkTo.toProperty({ id: l.property_id, style: {}, content: l.property_name ?? '' }) :
-                    <span className="text-gray-400">—</span>}
-                </td>
-                <td className="py-2 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                  {l.id !== null ?
-                    navLinkTo.toLease({ id: l.id, style: {}, content: l.start_date ?? '' }) :
-                    <span className="text-gray-400">—</span>}
-                </td>
-                <td className="py-2 pr-4 text-gray-600">{l.end_date ?? '—'}</td>
-                <td className="py-2 pr-4 text-right text-gray-900">{formatPln(l.monthly_rent ?? 0)}</td>
-                <td className="py-2 pr-4">
-                  {l.lease_status !== null ?
-                    <span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status]}</span> :
-                    <span className="text-gray-400">—</span>}
-                </td>
-              </tr>
-            ))}</tbody>
-          </table></div>}
+        <FilterToolbarS
+          isFilterActive={isFilterActive(leaseFilter.config)}
+          activeFilterCount={activeFilterCount(leaseFilter.config)}
+          clearFilter={() => leaseFilter.doFilter({})}
+          chips={buildLeaseFilterChips(leaseFilter)}
+          resultCount={match(leases.asyncData)
+            .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${isFilterActive(leaseFilter.config) ? ' (filtrowane)' : ''}`)
+            .otherwise(() => null)}
+          panel={
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label htmlFor="tenant-lease-status" className={filterLabelClass}>Status</label>
+                <select
+                  id="tenant-lease-status"
+                  value={leaseFilter.config.status ?? ''}
+                  onChange={onSelectInput((v) => leaseFilter.doFilter(setFilterString(leaseFilter.config, 'status', v)))}
+                  className={filterInputClass}
+                >
+                  <option value="">Wszystkie</option>
+                  {optionEntries(LEASE_STATUS_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="tenant-lease-date-from" className={filterLabelClass}>Od</label>
+                <input
+                  id="tenant-lease-date-from"
+                  type="date"
+                  value={leaseFilter.config.dateFrom ?? ''}
+                  onChange={onFilterInput((v) => leaseFilter.doFilter(setFilterString(leaseFilter.config, 'dateFrom', v)))}
+                  className={filterInputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="tenant-lease-date-to" className={filterLabelClass}>Do</label>
+                <input
+                  id="tenant-lease-date-to"
+                  type="date"
+                  value={leaseFilter.config.dateTo ?? ''}
+                  onChange={onFilterInput((v) => leaseFilter.doFilter(setFilterString(leaseFilter.config, 'dateTo', v)))}
+                  className={filterInputClass}
+                />
+              </div>
+            </div>
+          }
+        />
+        <AsyncStateTableS<LeaseRow, LeaseSortColumn>
+          asyncData={leases.asyncData}
+          columns={LEASE_COLUMNS}
+          sort={leases.sort}
+          pagination={leases.pagination}
+          skeletonRows={LEASE_SKELETON_ROWS}
+          emptyState={LEASE_EMPTY}
+          filteredEmptyState={<FilterEmptyStateS clearFilter={() => leaseFilter.doFilter({})} />}
+          isFilterActive={isFilterActive(leaseFilter.config)}
+          maxHeight={null}
+          pageSizeOptions={[5, 20, 50, 100]}
+          renderRow={(l) => (
+            <tr key={l.id} className="border-b border-gray-100 text-sm hover:bg-gray-50">
+              <td className="pl-4 h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                {navLinkTo.toProperty({ id: l.property_id, style: {}, content: l.properties.name })}
+              </td>
+              <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+                {navLinkTo.toLease({ id: l.id, style: {}, content: formatDate(l.start_date) })}
+              </td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.end_date !== null ? formatDate(l.end_date) : '—'}</td>
+              <td className="h-12 py-0 pr-4 text-right text-gray-900">{formatPln(l.monthly_rent)}</td>
+              <td className="h-12 py-0 pr-4"><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></td>
+            </tr>
+          )}
+        />
       </div>
 
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Ostatnie transakcje</h2>
-        <TransactionsTableS
-          transactions={data.transactions}
-          emptyMessage="Brak transakcji."
-          renderTransactionLink={(id, content) => navLinkTo.toTransaction({ id, style: {}, content })}
+        <FilterToolbarS
+          isFilterActive={isFilterActive(transactionFilter.config)}
+          activeFilterCount={activeFilterCount(transactionFilter.config)}
+          clearFilter={() => transactionFilter.doFilter({})}
+          chips={buildTransactionFilterChips(transactionFilter)}
+          resultCount={match(transactions.asyncData)
+            .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${isFilterActive(transactionFilter.config) ? ' (filtrowane)' : ''}`)
+            .otherwise(() => null)}
+          panel={
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="min-w-[220px]">
+                <label htmlFor="tenant-txn-filter" className={filterLabelClass}>Szukaj (opis)</label>
+                <input
+                  id="tenant-txn-filter"
+                  type="search"
+                  value={transactionFilter.config.text ?? ''}
+                  onChange={onFilterInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'text', v)))}
+                  placeholder="Wpisz fragment opisu…"
+                  className={`${filterInputClass} w-full`}
+                />
+              </div>
+              <div>
+                <label htmlFor="tenant-txn-type" className={filterLabelClass}>Typ</label>
+                <select
+                  id="tenant-txn-type"
+                  value={transactionFilter.config.type ?? ''}
+                  onChange={onSelectInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'type', v)))}
+                  className={filterInputClass}
+                >
+                  <option value="">Wszystkie</option>
+                  {optionEntries(TRANSACTION_TYPE_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="tenant-txn-status" className={filterLabelClass}>Status</label>
+                <select
+                  id="tenant-txn-status"
+                  value={transactionFilter.config.status ?? ''}
+                  onChange={onSelectInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'status', v)))}
+                  className={filterInputClass}
+                >
+                  <option value="">Wszystkie</option>
+                  {optionEntries(TRANSACTION_STATUS_LABEL).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="tenant-txn-date-from" className={filterLabelClass}>Termin od</label>
+                <input
+                  id="tenant-txn-date-from"
+                  type="date"
+                  value={transactionFilter.config.dateFrom ?? ''}
+                  onChange={onFilterInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'dateFrom', v)))}
+                  className={filterInputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="tenant-txn-date-to" className={filterLabelClass}>Termin do</label>
+                <input
+                  id="tenant-txn-date-to"
+                  type="date"
+                  value={transactionFilter.config.dateTo ?? ''}
+                  onChange={onFilterInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'dateTo', v)))}
+                  className={filterInputClass}
+                />
+              </div>
+            </div>
+          }
+        />
+        <AsyncStateTableS<TransactionRow, TransactionSortColumn>
+          asyncData={transactions.asyncData}
+          columns={TRANSACTION_COLUMNS}
+          sort={transactions.sort}
+          pagination={transactions.pagination}
+          skeletonRows={TRANSACTION_SKELETON_ROWS}
+          emptyState={TRANSACTION_EMPTY}
+          filteredEmptyState={<FilterEmptyStateS clearFilter={() => transactionFilter.doFilter({})} />}
+          isFilterActive={isFilterActive(transactionFilter.config)}
+          maxHeight={null}
+          pageSizeOptions={[5, 20, 50, 100]}
+          renderRow={(tx) => (
+            <tr key={tx.id} className="group border-b border-gray-100 text-sm hover:bg-gray-50">
+              <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
+                {navLinkTo.toTransaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
+              </td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
+              <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
+                <div className="truncate">{tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}</div>
+              </td>
+              <td className="h-12 py-0 pr-4">
+                <span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span>
+              </td>
+              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
+            </tr>
+          )}
         />
       </div>
 
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Załączniki</h2>
-        <AttachmentsSectionS attachments={data.attachments} emptyMessage="Brak załączników." />
+        <AttachmentsTableS
+          asyncData={attachments.asyncData}
+          sort={attachments.sort}
+          pagination={attachments.pagination}
+          emptyMessage="Brak załączników."
+        />
       </div>
     </div>
   );
@@ -101,6 +375,9 @@ export const TenantDetailS = (props: TenantSProps): JSX.Element => (
         <DetailContent
           data={data}
           navLinkTo={props.navLinkTo}
+          leases={props.leases}
+          transactions={props.transactions}
+          attachments={props.attachments}
         />
       ))
       .exhaustive()}

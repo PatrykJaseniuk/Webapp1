@@ -4,7 +4,7 @@ import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 import { TRANSACTION_STATUS_LABEL, TRANSACTION_TYPE_LABEL } from './domain';
 import { txnStatusPillClass } from './pills';
-import { formatPln } from './format';
+import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 
 type Data = Extract<TransactionSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
@@ -33,7 +33,7 @@ const DetailContent = ({
           <div><p className={labelClass}>Typ</p><p className={valueClass}>{TRANSACTION_TYPE_LABEL[t.type] ?? t.type}</p></div>
           <div><p className={labelClass}>Status</p><span className={txnStatusPillClass(t.transaction_status)}>{TRANSACTION_STATUS_LABEL[t.transaction_status] ?? t.transaction_status}</span></div>
           <div><p className={labelClass}>Kwota</p><p className={`text-sm font-semibold ${t.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{formatPln(t.amount)}</p></div>
-          <div><p className={labelClass}>Termin płatności</p><p className={valueClass}>{t.due_date}</p></div>
+          <div><p className={labelClass}>Termin płatności</p><p className={valueClass}>{formatDate(t.due_date)}</p></div>
           {t.property_id !== null && data.propertyName !== null ?
             <div><p className={labelClass}>Nieruchomość</p><span className="[&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.toProperty({ id: t.property_id, style: {}, content: data.propertyName })}</span></div> :
             undefined}

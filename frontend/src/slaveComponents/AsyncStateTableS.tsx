@@ -25,6 +25,8 @@ type AsyncStateTableSProps<TRow, SortColumn extends string> = {
   readonly filteredEmptyState: JSX.Element;
   readonly isFilterActive: boolean;
   readonly renderRow: (row: TRow) => JSX.Element;
+  readonly maxHeight?: string | null;
+  readonly pageSizeOptions?: readonly number[];
 };
 
 export const AsyncStateTableS = <TRow, SortColumn extends string>({
@@ -37,6 +39,8 @@ export const AsyncStateTableS = <TRow, SortColumn extends string>({
   filteredEmptyState,
   isFilterActive,
   renderRow,
+  maxHeight = 'calc(100vh - 10rem)',
+  pageSizeOptions = [20, 50, 100],
 }: AsyncStateTableSProps<TRow, SortColumn>): JSX.Element => (
   <div role="status" aria-live="polite">
     {match(asyncData)
@@ -56,7 +60,8 @@ export const AsyncStateTableS = <TRow, SortColumn extends string>({
       ))
       .with({ tag: 'fulfilled' }, ({ data, isFetching }) => (
         <DataTableS
-          maxHeight="calc(100vh - 10rem)"
+          maxHeight={maxHeight}
+          pageSizeOptions={pageSizeOptions}
           columns={columns}
           sort={sort}
           isFetching={isFetching ?? false}

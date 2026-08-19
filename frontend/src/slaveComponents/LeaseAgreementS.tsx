@@ -25,11 +25,12 @@ import {
   setFilterString,
   type FilterChip,
 } from './filter';
-import { AttachmentsSectionS } from './AttachmentsListS';
+import { AttachmentsTableS } from './AttachmentsTableS';
 
 type Data = Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
 type Transactions = LeaseAgreementSProps['transactions'];
+type Attachments = LeaseAgreementSProps['attachments'];
 type TransactionFilter = Transactions['filter'];
 type TransactionRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type TransactionSortColumn = Transactions['sort']['config']['column'];
@@ -86,12 +87,14 @@ type DetailContentProps = {
   readonly data: Data;
   readonly navLinkTo: NavLinkTo;
   readonly transactions: Transactions;
+  readonly attachments: Attachments;
 };
 
 const DetailContent = ({
   data,
   navLinkTo,
   transactions,
+  attachments,
 }: DetailContentProps): JSX.Element => {
   const l = data.leaseAgreement;
   const filter = transactions.filter;
@@ -222,6 +225,8 @@ const DetailContent = ({
             emptyState={EMPTY_DATABASE}
             filteredEmptyState={<FilterEmptyStateS clearFilter={() => filter.doFilter({})} />}
             isFilterActive={isFilterActive(filter.config)}
+            maxHeight={null}
+            pageSizeOptions={[5, 20, 50, 100]}
             renderRow={(tx) => (
               <tr
                 key={tx.id}
@@ -250,14 +255,19 @@ const DetailContent = ({
 
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Załączniki</h2>
-          <AttachmentsSectionS attachments={data.attachments} emptyMessage="Brak załączników." />
+          <AttachmentsTableS
+            asyncData={attachments.asyncData}
+            sort={attachments.sort}
+            pagination={attachments.pagination}
+            emptyMessage="Brak załączników."
+          />
         </div>
       </div>
     );
 };
 
 export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => {
-  const { asyncData, navLinkTo, transactions } = props;
+  const { asyncData, navLinkTo, transactions, attachments } = props;
 
   return (
     <div className="min-h-[400px]">
@@ -269,6 +279,7 @@ export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element 
             data={data}
             navLinkTo={navLinkTo}
             transactions={transactions}
+            attachments={attachments}
           />
         ))
         .exhaustive()}

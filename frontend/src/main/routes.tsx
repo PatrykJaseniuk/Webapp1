@@ -21,7 +21,7 @@ import { TenantsListPage } from '@/pages/TenantsP';
 import { TenantDetailPage } from '@/pages/TenantP';
 import { LeaseAgreementsListPage } from '@/pages/LeaseAgreementsP';
 import { LeaseAgreementDetailPage } from '@/pages/LeaseAgreementP';
-import { TransactionDetailPage } from '@/pages/TransactionPage';
+import { TransactionDetailPage } from '@/pages/TransactionP';
 import { TransactionsListPage } from '@/pages/TransactionsP';
 
 // ── Root route ──

@@ -93,16 +93,18 @@ export type Pagination = {
   readonly nextPage: () => void;
 };
 
-const PAGE_SIZE_OPTIONS: readonly number[] = [20, 50, 100];
+const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [20, 50, 100];
 
 const PaginationFooter = ({
   pagination,
   totalCount,
   onPageSizeChange,
+  pageSizeOptions,
 }: {
   readonly pagination: Pagination;
   readonly totalCount: number;
   readonly onPageSizeChange?: (size: number) => void;
+  readonly pageSizeOptions: readonly number[];
 }): JSX.Element => {
   const totalPages = Math.max(1, Math.ceil(totalCount / pagination.pageSize));
   const from = totalCount === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
@@ -182,7 +184,7 @@ const PaginationFooter = ({
             className="rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             aria-label="Liczba wierszy na stronę"
           >
-            {PAGE_SIZE_OPTIONS.map((size) => (
+            {pageSizeOptions.map((size) => (
               <option key={size} value={size}>
                 {size}
               </option>
@@ -208,7 +210,8 @@ type DataTableSProps<TRow, SortColumn extends string> = {
   readonly totalCount?: number;
   readonly filterRow?: JSX.Element;
   readonly onPageSizeChange?: (size: number) => void;
-  readonly maxHeight?: string;
+  readonly pageSizeOptions?: readonly number[];
+  readonly maxHeight?: string | null;
 };
 
 export const DataTableS = <TRow, SortColumn extends string>({
@@ -223,6 +226,7 @@ export const DataTableS = <TRow, SortColumn extends string>({
   totalCount,
   filterRow,
   onPageSizeChange,
+  pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   maxHeight,
 }: DataTableSProps<TRow, SortColumn>): JSX.Element => {
   const content = (
@@ -262,7 +266,7 @@ export const DataTableS = <TRow, SortColumn extends string>({
   const hasPagination = pagination !== undefined && totalCount !== undefined;
 
   return hasPagination ?
-    <div className="relative grid grid-rows-[1fr_auto] overflow-hidden" style={maxHeight !== undefined ? { height: maxHeight } : undefined}>
+    <div className="relative grid grid-rows-[1fr_auto] overflow-hidden" style={maxHeight != null ? { height: maxHeight } : undefined}>
       {isFetching && <FetchProgress />}
       {filterRow}
         <div className="overflow-auto">
@@ -296,7 +300,7 @@ export const DataTableS = <TRow, SortColumn extends string>({
         </table>
       </div>
       <div className="z-10 border-t border-gray-200 bg-white">
-        <PaginationFooter pagination={pagination} totalCount={totalCount} onPageSizeChange={onPageSizeChange} />
+        <PaginationFooter pagination={pagination} totalCount={totalCount} onPageSizeChange={onPageSizeChange} pageSizeOptions={pageSizeOptions} />
       </div>
     </div> :
     <div className="relative overflow-x-auto">

@@ -19,12 +19,11 @@ type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
 type TransactionStatusDb = Database['public']['Enums']['transaction_status'];
 
-type LeaseAgreementWithRelationships = Readonly<{
+type LeaseAgreementData = Readonly<{
   readonly leaseAgreement: LeaseAgreementDbRow & {
     readonly tenants: { readonly first_name: string; readonly last_name: string; };
     readonly properties: { readonly name: string; };
   } | null;
-  readonly attachments: readonly AttachmentDbRow[];
 }>;
 
 type NavLinkTo = Readonly<{
@@ -36,6 +35,7 @@ type NavLinkTo = Readonly<{
 }>;
 
 type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'>;
+type AttachmentSortColumn = 'created_at';
 
 type LeaseTransactionFilter = 'text' | 'type' | 'status' | 'dateFrom' | 'dateTo';
 
@@ -47,8 +47,9 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
 });
 
 export type LeaseAgreementSProps = {
-  readonly asyncData: AsyncData<LeaseAgreementWithRelationships>;
+  readonly asyncData: AsyncData<LeaseAgreementData>;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilter>;
+  readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
 
@@ -65,27 +66,16 @@ export const LeaseAgreementDetailM = ({
 }: Props): JSX.Element => {
   const query = useQuery({
     queryKey: ['leaseAgreement', id],
-    queryFn: async (): Promise<LeaseAgreementWithRelationships> => {
-      const [leaseResult, attachmentsResult] = await Promise.all([
-        backendConnector
-          .from('lease_agreements')
-          .select('*, tenants(first_name,last_name), properties(name)')
-          .eq('id', id)
-          .single(),
-        backendConnector
-          .from('attachments')
-          .select('*')
-          .eq('related_to_type', 'lease')
-          .eq('related_to_id', id),
-      ]);
+    queryFn: async (): Promise<LeaseAgreementData> => {
+      const leaseResult = await backendConnector
+        .from('lease_agreements')
+        .select('*, tenants(first_name,last_name), properties(name)')
+        .eq('id', id)
+        .single();
 
-      const combinedError = leaseResult.error ?? attachmentsResult.error;
-      return combinedError !== null
-        ? Promise.reject(combinedError)
-        : {
-          attachments: attachmentsResult.data ?? [],
-          leaseAgreement: leaseResult.data ?? null,
-        };
+      return leaseResult.error !== null
+        ? Promise.reject(leaseResult.error)
+        : { leaseAgreement: leaseResult.data ?? null };
     },
   });
 
@@ -94,6 +84,7 @@ export const LeaseAgreementDetailM = ({
   const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilter>({
     queryKey: ['transactions', 'leaseAgreement', id],
     defaultSort: { column: 'due_date', direction: 'desc' },
+    pageSize: 5,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
@@ -118,6 +109,25 @@ export const LeaseAgreementDetailM = ({
     },
   });
 
+  const attachments = useFilteredPaginatedQuery<AttachmentDbRow, AttachmentSortColumn, never>({
+    queryKey: ['attachments', 'lease', id],
+    defaultSort: { column: 'created_at', direction: 'desc' },
+    pageSize: 5,
+    fetchPage: async ({ sort: sortConfig, from, to }) => {
+      const ascending = sortConfig.direction === 'asc';
+      const result = await backendConnector
+        .from('attachments')
+        .select('*', { count: 'exact' })
+        .eq('related_to_type', 'lease')
+        .eq('related_to_id', id)
+        .order(sortConfig.column, { ascending })
+        .range(from, to);
+      return result.error !== null
+        ? Promise.reject(result.error)
+        : { rows: result.data ?? [], totalCount: result.count ?? 0 };
+    },
+  });
+
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,
     property: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
@@ -130,6 +140,7 @@ export const LeaseAgreementDetailM = ({
     <Slave
       asyncData={asyncData}
       transactions={transactions}
+      attachments={attachments}
       navLinkTo={navLinkTo}
     />
   );
