@@ -107,8 +107,8 @@ const DetailContent = ({
     (
       <div className="mx-auto max-w-4xl space-y-6 py-8">
         <div className="flex items-center justify-between">
-          <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-            {navLinkTo.leases({ style: {}, content: '← Wszystkie umowy' })}
+          <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:text-left [&_button]:text-sm [&_button]:text-blue-600 hover:[&_button]:text-blue-800 hover:[&_button]:underline">
+            {navLinkTo.goBack({ style: {}, content: '← Powrót' })}
             <h1 className="mt-1 text-2xl font-bold text-gray-900">{`Umowa najmu: ${l.properties?.name ?? ''}${l.tenants !== null ? ` — ${l.tenants.first_name} ${l.tenants.last_name}` : ''}`}</h1>
           </div>
           <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">{navLinkTo.edit({ style: {}, content: 'Edytuj' })}</div>

@@ -37,7 +37,7 @@ type NavLinkTo = Readonly<{
   readonly lease: NavLinkWithId;
   readonly transaction: NavLinkWithId;
   readonly edit: NavLink;
-  readonly properties: NavLink;
+  readonly goBack: NavLink;
 }>;
 
 type LeaseSortColumn = Extract<keyof LeaseAgreementDbRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status'>;
@@ -176,7 +176,7 @@ export const PropertyDetailM = ({
     lease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
     transaction: ({ id: transactionId, content, style }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style}>{content}</Link>,
     edit: ({ content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
-    properties: ({ content, style }) => <Link to="/app/properties" style={style}>{content}</Link>,
+    goBack: ({ content, style }) => <button type="button" onClick={() => window.history.back()} style={style}>{content}</button>,
   };
 
   return (

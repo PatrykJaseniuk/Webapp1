@@ -22,8 +22,8 @@ const DetailContent = ({
   const t = data.transaction;
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
-      <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-        {navLinkTo.linkToTransactions({ style: {}, content: '← Powrót' })}
+      <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:text-left [&_button]:text-sm [&_button]:text-blue-600 hover:[&_button]:text-blue-800 hover:[&_button]:underline">
+        {navLinkTo.goBack({ style: {}, content: '← Powrót' })}
         <h1 className="mt-1 text-2xl font-bold text-gray-900">Transakcja</h1>
       </div>
 

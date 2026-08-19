@@ -17,7 +17,7 @@ type TransactionDetailData = Readonly<{
 type NavLinkTo = Readonly<{
   readonly toProperty: NavLinkWithId;
   readonly toLease: NavLinkWithId;
-  readonly linkToTransactions: NavLink;
+  readonly goBack: NavLink;
 }>;
 
 export type TransactionSProps = {
@@ -94,10 +94,10 @@ export const TransactionDetailM = ({
         {content}
       </Link>
     ),
-    linkToTransactions: ({ content, style }) => (
-      <Link to="/app/transactions" style={style}>
+    goBack: ({ content, style }) => (
+      <button type="button" onClick={() => window.history.back()} style={style}>
         {content}
-      </Link>
+      </button>
     ),
   };
 

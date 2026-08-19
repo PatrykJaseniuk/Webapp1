@@ -49,6 +49,7 @@ type TxnType = TransactionRow['type'];
 type TxnStatus = TransactionRow['transaction_status'];
 
 const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
+  { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'property', label: 'Nieruchomość', sortColumn: null, align: 'left', className: 'pl-4 pr-4' },
   { key: 'start_date', label: 'Od', sortColumn: 'start_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'end_date', label: 'Do', sortColumn: 'end_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
@@ -71,6 +72,7 @@ const LEASE_SKELETON_ROWS = (
   <>
     {Array.from({ length: 4 }, (_, i) => (
       <tr key={`lease-skel-${i}`} className="border-b border-gray-100">
+        <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
         <td className="pl-4 h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
@@ -153,8 +155,8 @@ const DetailContent = ({
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div className="flex items-center justify-between">
-        <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-          {navLinkTo.linkToTenants({ style: {}, content: '← Powrót do listy' })}
+        <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:text-left [&_button]:text-sm [&_button]:text-blue-600 hover:[&_button]:text-blue-800 hover:[&_button]:underline">
+          {navLinkTo.goBack({ style: {}, content: '← Powrót' })}
           <h1 className="mt-1 text-2xl font-bold text-gray-900">{t.first_name} {t.last_name}</h1>
         </div>
         <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">{navLinkTo.linkToEdit({ style: {}, content: 'Edytuj' })}</div>
@@ -234,7 +236,10 @@ const DetailContent = ({
           maxHeight={null}
           pageSizeOptions={[5, 20, 50, 100]}
           renderRow={(l) => (
-            <tr key={l.id} className="border-b border-gray-100 text-sm hover:bg-gray-50">
+            <tr key={l.id} className="group border-b border-gray-100 text-sm hover:bg-gray-50">
+              <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
+                {navLinkTo.toLease({ id: l.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: 'Szczegóły umowy' })}
+              </td>
               <td className="pl-4 h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                 {navLinkTo.toProperty({ id: l.property_id, style: {}, content: l.properties.name })}
               </td>
