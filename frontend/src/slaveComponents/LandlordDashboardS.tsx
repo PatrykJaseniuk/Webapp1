@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import type { DashboardSummarySProps } from '@/masterComponents/DashboardSummaryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
+import { ErrorMessage } from './ErrorMessageS';
 import { cardLinkClass, DashboardStatCardsS, navCardStyle } from './DashboardStatCardsS';
 
 type Props = DashboardSummarySProps;
@@ -13,20 +14,25 @@ export const LandlordDashboard = ({
     <h1 className="mb-2 text-3xl font-bold text-gray-900">Panel Wynajmującego</h1>
     <p className="text-gray-500">System zarządzania najmem</p>
 
-    <div className="mt-6 w-full max-w-3xl min-h-[200px]">
+    <div className="mt-6 w-full max-w-3xl min-h-[300px]">
       {match(asyncData)
         .with({ tag: 'pending' }, () => <LoadingSpinner />)
-        .with({ tag: 'rejected' }, () => undefined)
+        .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+          <ErrorMessage message={message} onRetry={onRetry} />
+        ))
         .with({ tag: 'fulfilled' }, ({ data }) => <DashboardStatCardsS summary={data} />)
         .exhaustive()}
     </div>
 
-    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+    <div className="mt-4 grid w-full max-w-3xl gap-4 sm:grid-cols-3">
       <div className={cardLinkClass}>
         {navLinkTo.leases({ style: navCardStyle(), content: 'Umowy' })}
       </div>
       <div className={cardLinkClass}>
         {navLinkTo.tenants({ style: navCardStyle(), content: 'Najemcy' })}
+      </div>
+      <div className={cardLinkClass}>
+        {navLinkTo.transactions({ style: navCardStyle(), content: 'Transakcje' })}
       </div>
     </div>
   </div>

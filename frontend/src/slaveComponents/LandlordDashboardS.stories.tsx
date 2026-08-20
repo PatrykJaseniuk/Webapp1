@@ -31,6 +31,7 @@ const meta: Meta<typeof LandlordDashboard> = {
       leases: mockNavLink,
       tenants: mockNavLink,
       properties: mockNavLink,
+      transactions: mockNavLink,
     },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },

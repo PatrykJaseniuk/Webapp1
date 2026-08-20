@@ -23,6 +23,7 @@ const meta: Meta<typeof AdminDashboard> = {
       leases: mockNavLink('Umowy'),
       tenants: mockNavLink('Najemcy'),
       properties: mockNavLink('Nieruchomości'),
+      transactions: mockNavLink('Transakcje'),
     },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },

@@ -1,6 +1,7 @@
 import { match } from 'ts-pattern';
 import { useAuth } from '@/hooks/AuthContext';
 import { DashboardSummaryM } from '@/masterComponents/DashboardSummaryM';
+import { TenantDashboardM } from '@/masterComponents/TenantDashboardM';
 import { AdminDashboard } from '@/slaveComponents/AdminDashboardS';
 import { LandlordDashboard } from '@/slaveComponents/LandlordDashboardS';
 import { TenantDashboardS } from '@/slaveComponents/TenantDashboardS';
@@ -17,7 +18,7 @@ export const DashboardPage = (): JSX.Element => {
       <DashboardSummaryM Slave={LandlordDashboard} />
     ))
     .with({ tag: 'authenticated', role: 'tenant' }, () => (
-      <DashboardSummaryM Slave={TenantDashboardS} />
+      <TenantDashboardM Slave={TenantDashboardS} />
     ))
     .with({ tag: 'loading' }, () => <LoadingSpinner />)
     .with({ tag: 'unauthenticated' }, () => <></>)

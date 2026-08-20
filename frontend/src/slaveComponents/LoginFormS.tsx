@@ -2,6 +2,18 @@ import type { FormEvent } from 'react';
 import type { LoginSProps, LoginInput } from '@/masterComponents/LoginM';
 import { buttonClass, FormErrorS, inputClass, labelClass } from './formUi';
 
+type DemoAccount = Readonly<{
+  readonly role: string;
+  readonly email: string;
+  readonly password: string;
+}>;
+
+const DEMO_ACCOUNTS: readonly DemoAccount[] = [
+  { role: 'Administrator', email: 'admin@test.local', password: 'password123' },
+  { role: 'Wynajmujący', email: 'landlord@test.local', password: 'password123' },
+  { role: 'Najemca', email: 'jan.kowalski@test.local', password: 'password123' },
+];
+
 export const extractLoginInput = (formData: FormData): LoginInput => ({
   email: (formData.get('email') as string) ?? '',
   password: (formData.get('password') as string) ?? '',
@@ -64,6 +76,19 @@ export const LoginForm = ({
           Nie masz konta?{' '}
           {signupLink}
         </p>
+
+        <div className="mt-4 border-t border-gray-200 pt-4">
+          <h3 className="text-sm font-semibold text-gray-700">Konta demo</h3>
+          <ul className="mt-2 space-y-1 text-xs text-gray-600">
+            {DEMO_ACCOUNTS.map(({ role, email, password }) => (
+              <li key={email}>
+                <span className="font-medium text-gray-800">{role}:</span>{' '}
+                <span className="font-mono">{email}</span>
+                <span className="font-mono text-gray-400"> / {password}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </div>
   );

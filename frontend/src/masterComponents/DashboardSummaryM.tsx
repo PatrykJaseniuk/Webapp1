@@ -17,6 +17,7 @@ type NavLinkTo = Readonly<{
   readonly leases: NavLink;
   readonly tenants: NavLink;
   readonly properties: NavLink;
+  readonly transactions: NavLink;
 }>;
 
 export type DashboardSummarySProps = {
@@ -128,6 +129,11 @@ export const DashboardSummaryM = ({
     ),
     properties: ({ content, style }) => (
       <Link to="/app/properties" style={style}>
+        {content}
+      </Link>
+    ),
+    transactions: ({ content, style }) => (
+      <Link to="/app/transactions" style={style}>
         {content}
       </Link>
     ),
