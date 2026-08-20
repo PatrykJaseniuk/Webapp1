@@ -172,6 +172,7 @@ export const router = createRouter({
 // ══════════════════════════════════════════════════════════════
 
 declare module '@tanstack/react-router' {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions -- module augmentation requires interface merging (FUNCTIONAL_TS §2: interface allowed for declaration merging)
   interface Register {
     readonly router: typeof router;
   }

@@ -1,6 +1,9 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { match } from 'ts-pattern';
+import { useState } from 'react';
 import type { ComponentType } from 'react';
+import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import {
@@ -14,6 +17,41 @@ import {
 
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
+
+export const propertyInsertSchema = z.object({
+  name: z.string().trim().min(1, 'Nazwa jest wymagana'),
+  address: z.string().trim().min(1, 'Adres jest wymagany'),
+  property_type: z.enum(['apartment', 'house', 'commercial', 'room'], {
+    message: 'Nieprawidłowy typ nieruchomości',
+  }),
+  property_status: z.enum(['available', 'occupied', 'inactive'], {
+    message: 'Nieprawidłowy status nieruchomości',
+  }),
+  size_sqm: z
+    .number({ invalid_type_error: 'Powierzchnia musi być liczbą' })
+    .finite('Powierzchnia musi być liczbą')
+    .positive('Powierzchnia musi być dodatnia')
+    .nullable(),
+  bedrooms: z
+    .number({ invalid_type_error: 'Liczba sypialni musi być liczbą' })
+    .int('Liczba sypialni musi być liczbą całkowitą')
+    .nonnegative('Liczba sypialni nie może być ujemna')
+    .nullable(),
+  monthly_rent: z
+    .number({ invalid_type_error: 'Czynsz musi być liczbą' })
+    .finite('Czynsz musi być liczbą')
+    .nonnegative('Czynsz nie może być ujemny'),
+  deposit_amount: z
+    .number({ invalid_type_error: 'Kaucja musi być liczbą' })
+    .finite('Kaucja musi być liczbą')
+    .nonnegative('Kaucja nie może być ujemna'),
+  notes: z.string().nullable(),
+});
+
+export type PropertyInsertInput = z.input<typeof propertyInsertSchema>;
+
+const formatZodIssues = (error: z.ZodError): string =>
+  error.issues.map((issue) => issue.message).join('; ');
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type FinancialSummaryDbRow = Database['public']['Views']['property_financial_summary']['Row'];
@@ -69,7 +107,7 @@ export type SubmitState =
 
 export type PropertySProps = {
   readonly asyncData: AsyncData<PropertyData | null>;
-  readonly doEdit: (newRecord: PropertyInsert) => void;
+  readonly doEdit: (newRecord: PropertyInsertInput) => void;
   readonly doDelete: (() => void) | null;
   readonly doCancel: () => void;
   readonly submitState: SubmitState;
@@ -90,6 +128,7 @@ export const PropertyDetailM = ({
 }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const query = useQuery({
     queryKey: ['property', id],
@@ -224,9 +263,22 @@ export const PropertyDetailM = ({
     },
   });
 
-  const doEdit = (newRecord: PropertyInsert): void => {
-    id === null ? insertMutation.mutate(newRecord) : updateMutation.mutate(newRecord);
-  };
+  const doEdit = (newRecord: PropertyInsertInput): void =>
+    match(propertyInsertSchema.safeParse(newRecord))
+      .with(
+        { success: true },
+        ({ data }) => {
+          setValidationError(null);
+          id === null ? insertMutation.mutate(data) : updateMutation.mutate(data);
+        },
+      )
+      .with(
+        { success: false },
+        ({ error }) => {
+          setValidationError(formatZodIssues(error));
+        },
+      )
+      .exhaustive();
 
   const doDelete = (): void => {
     deleteMutation.mutate();
@@ -239,11 +291,13 @@ export const PropertyDetailM = ({
   const submitState: SubmitState =
     insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
       ? { tag: 'submitting' }
-      : (insertMutation.error ?? updateMutation.error ?? deleteMutation.error) !== null
-        ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error ?? deleteMutation.error)?.message ?? 'Unknown error' }
-        : insertMutation.isSuccess || updateMutation.isSuccess
-          ? { tag: 'success' }
-          : { tag: 'idle' };
+      : validationError !== null
+        ? { tag: 'error', message: validationError }
+        : (insertMutation.error ?? updateMutation.error ?? deleteMutation.error) !== null
+          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error ?? deleteMutation.error)?.message ?? 'Unknown error' }
+          : insertMutation.isSuccess || updateMutation.isSuccess
+            ? { tag: 'success' }
+            : { tag: 'idle' };
 
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,
