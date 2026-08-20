@@ -655,7 +655,7 @@ export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
             submitState={props.submitState}
             doEdit={props.doEdit}
             doDelete={null}
-            onCancel={() => props.navLinkTo.toList({ style: {}, content: '← Anuluj' })}
+            onCancel={props.doCancel}
           /> :
           <PropertyDetail
             data={data}

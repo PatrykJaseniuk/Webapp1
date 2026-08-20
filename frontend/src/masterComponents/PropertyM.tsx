@@ -71,6 +71,7 @@ export type PropertySProps = {
   readonly asyncData: AsyncData<PropertyData | null>;
   readonly doEdit: (newRecord: PropertyInsert) => void;
   readonly doDelete: (() => void) | null;
+  readonly doCancel: () => void;
   readonly submitState: SubmitState;
   readonly leases: FilteredQueryResult<LeaseRow, LeaseSortColumn, LeaseFilter>;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, TransactionFilter>;
@@ -231,6 +232,10 @@ export const PropertyDetailM = ({
     deleteMutation.mutate();
   };
 
+  const doCancel = (): void => {
+    void navigate({ to: '/app/properties' });
+  };
+
   const submitState: SubmitState =
     insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
       ? { tag: 'submitting' }
@@ -252,6 +257,7 @@ export const PropertyDetailM = ({
       asyncData={asyncData}
       doEdit={doEdit}
       doDelete={id === null ? null : doDelete}
+      doCancel={doCancel}
       submitState={submitState}
       leases={leases}
       transactions={transactions}
