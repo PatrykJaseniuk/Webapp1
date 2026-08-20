@@ -197,7 +197,7 @@ const meta: Meta<typeof PropertyDetailS> = {
   ],
   args: {
     doSubmit: fn(),
-    doDelete: fn(),
+    deleteAction: { tag: 'allowed', doDelete: fn() },
     doCancel: fn(),
     onEditStart: fn(),
     submitState: { tag: 'idle' },
@@ -390,7 +390,7 @@ export const DeleteConfirmed: Story = {
     await userEvent.click(canvas.getByRole('button', { name: /edytuj/i }));
     await userEvent.click(canvas.getByRole('button', { name: /usuń/i }));
     await userEvent.click(canvas.getByRole('button', { name: /potwierdź usunięcie/i }));
-    await expect(args.doDelete).toHaveBeenCalledTimes(1);
+    await expect((args.deleteAction as { readonly doDelete: () => void }).doDelete).toHaveBeenCalledTimes(1);
   },
 };
 
@@ -401,6 +401,6 @@ export const DeleteCancelled: Story = {
     await userEvent.click(canvas.getByRole('button', { name: /edytuj/i }));
     await userEvent.click(canvas.getByRole('button', { name: /usuń/i }));
     await userEvent.click(canvas.getByRole('button', { name: /nie usuwaj/i }));
-    await expect(args.doDelete).not.toHaveBeenCalled();
+    await expect((args.deleteAction as { readonly doDelete: () => void }).doDelete).not.toHaveBeenCalled();
   },
 };

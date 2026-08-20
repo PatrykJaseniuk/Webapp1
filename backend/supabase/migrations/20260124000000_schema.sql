@@ -79,8 +79,8 @@ CREATE TABLE public.tenants (
 -- Links tenants to properties with rental terms
 CREATE TABLE public.lease_agreements (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
-    property_id uuid NOT NULL REFERENCES public.properties(id) ON DELETE CASCADE,
+    tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
+    property_id uuid NOT NULL REFERENCES public.properties(id) ON DELETE RESTRICT,
     start_date date NOT NULL,
     end_date date,
     monthly_rent decimal(10,2) NOT NULL,
@@ -119,8 +119,8 @@ CREATE TABLE public.attachments (
 -- - Lease-level transactions (rent, utilities) have both lease_id and property_id
 CREATE TABLE public.transactions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    lease_id uuid REFERENCES public.lease_agreements(id) ON DELETE CASCADE,
-    property_id uuid REFERENCES public.properties(id) ON DELETE CASCADE,
+    lease_id uuid REFERENCES public.lease_agreements(id) ON DELETE RESTRICT,
+    property_id uuid REFERENCES public.properties(id) ON DELETE RESTRICT,
     type public.transaction_type NOT NULL,
     description text NOT NULL,
     amount decimal(10,2) NOT NULL,

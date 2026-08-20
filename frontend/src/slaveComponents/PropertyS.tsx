@@ -43,6 +43,7 @@ type PropertyType = Property['property_type'];
 type PropertyStatus = Property['property_status'];
 type PropertyInsert = Parameters<PropertySProps['doSubmit']>[0];
 type SubmitState = PropertySProps['submitState'];
+type DeleteAction = PropertySProps['deleteAction'];
 type NavLinkTo = PropertySProps['navLinkTo'];
 type Leases = PropertySProps['leases'];
 type Transactions = PropertySProps['transactions'];
@@ -468,7 +469,7 @@ type FormProps = {
   readonly initial: PropertyDraft;
   readonly submitState: SubmitState;
   readonly doSubmit: (newRecord: PropertyInsert) => void;
-  readonly doDelete: (() => void) | null;
+  readonly deleteAction: DeleteAction;
   readonly onCancel: () => void;
 };
 
@@ -476,7 +477,7 @@ const PropertyForm = ({
   initial,
   submitState,
   doSubmit,
-  doDelete,
+  deleteAction,
   onCancel,
 }: FormProps): JSX.Element => {
   const [form, setForm] = useState<PropertyDraft>(initial);
@@ -494,7 +495,7 @@ const PropertyForm = ({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
-      <h1 className="text-2xl font-bold text-gray-900">{doDelete === null ? 'Nowa nieruchomość' : 'Edytuj nieruchomość'}</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{deleteAction.tag === 'absent' ? 'Nowa nieruchomość' : 'Edytuj nieruchomość'}</h1>
       {match(submitState)
         .with({ tag: 'idle' }, () => null)
         .with({ tag: 'submitting' }, () => null)
@@ -559,35 +560,56 @@ const PropertyForm = ({
               Anuluj
             </button>
           </div>
-          {doDelete !== null ?
-            confirmDelete ?
-              <div className="flex gap-2">
+          {match(deleteAction)
+            .with({ tag: 'absent' }, () => null)
+            .with({ tag: 'checking' }, () => (
+              <button type="button" disabled className="cursor-not-allowed rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-400">
+                Sprawdzanie…
+              </button>
+            ))
+            .with({ tag: 'blocked' }, ({ reason }) => (
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => { doDelete(); setConfirmDelete(false); }}
-                  disabled={submitState.tag === 'submitting'}
-                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                  disabled
+                  aria-describedby="property-delete-blocked"
+                  className="cursor-not-allowed rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-400"
                 >
-                  Potwierdź usunięcie
+                  Usuń
                 </button>
+                <p id="property-delete-blocked" className="text-xs text-gray-500">{reason}</p>
+              </div>
+            ))
+            .with({ tag: 'allowed' }, ({ doDelete }) =>
+              confirmDelete ?
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { doDelete(); setConfirmDelete(false); }}
+                    disabled={submitState.tag === 'submitting'}
+                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                  >
+                    Potwierdź usunięcie
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={submitState.tag === 'submitting'}
+                    className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Nie usuwaj
+                  </button>
+                </div> :
                 <button
                   type="button"
-                  onClick={() => setConfirmDelete(false)}
+                  onClick={() => setConfirmDelete(true)}
                   disabled={submitState.tag === 'submitting'}
-                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
                 >
-                  Nie usuwaj
+                  Usuń
                 </button>
-              </div> :
-              <button
-                type="button"
-                onClick={() => setConfirmDelete(true)}
-                disabled={submitState.tag === 'submitting'}
-                className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-              >
-                Usuń
-              </button> :
-            null}
+            )
+            .exhaustive()}
         </div>
       </form>
     </div>
@@ -601,7 +623,7 @@ const PropertyDetail = ({
   transactions,
   attachments,
   doSubmit,
-  doDelete,
+  deleteAction,
   onEditStart,
   submitState,
 }: {
@@ -611,7 +633,7 @@ const PropertyDetail = ({
   readonly transactions: Transactions;
   readonly attachments: Attachments;
   readonly doSubmit: (newRecord: PropertyInsert) => void;
-  readonly doDelete: (() => void) | null;
+  readonly deleteAction: DeleteAction;
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
 }): JSX.Element => {
@@ -652,7 +674,7 @@ const PropertyDetail = ({
               initial={toDraft(p)}
               submitState={submitState}
               doSubmit={doSubmit}
-              doDelete={doDelete}
+              deleteAction={deleteAction}
               onCancel={() => setEditing(false)}
             /> :
             <DetailContent
@@ -680,7 +702,7 @@ export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
             initial={EMPTY_DRAFT}
             submitState={props.submitState}
             doSubmit={props.doSubmit}
-            doDelete={null}
+            deleteAction={{ tag: 'absent' }}
             onCancel={props.doCancel}
           /> :
           <PropertyDetail
@@ -690,7 +712,7 @@ export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
             transactions={props.transactions}
             attachments={props.attachments}
             doSubmit={props.doSubmit}
-            doDelete={props.doDelete}
+            deleteAction={props.deleteAction}
             onEditStart={props.onEditStart}
             submitState={props.submitState}
           />

@@ -53,6 +53,13 @@ export type PropertyInsertInput = z.input<typeof propertyInsertSchema>;
 
 const formatZodIssues = (error: z.ZodError): string =>
   error.issues.map((issue) => issue.message).join('; ');
+
+const formatDeleteError = (error: Error | null): string => {
+  const code = (error as { readonly code?: string } | null)?.code;
+  return code === '23503'
+    ? 'Nie można usunąć nieruchomości — jest powiązana z umowami najmu lub transakcjami.'
+    : error?.message ?? 'Wystąpił nieznany błąd';
+};
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type FinancialSummaryDbRow = Database['public']['Views']['property_financial_summary']['Row'];
@@ -106,10 +113,16 @@ type SubmitState =
   | { readonly tag: 'success' }
   | { readonly tag: 'error'; readonly message: string };
 
+type PropertyDeleteAction =
+  | { readonly tag: 'absent' }
+  | { readonly tag: 'checking' }
+  | { readonly tag: 'blocked'; readonly reason: string }
+  | { readonly tag: 'allowed'; readonly doDelete: () => void };
+
 export type PropertySProps = {
   readonly asyncData: AsyncData<PropertyData | null>;
   readonly doSubmit: (newRecord: PropertyInsertInput) => void;
-  readonly doDelete: (() => void) | null;
+  readonly deleteAction: PropertyDeleteAction;
   readonly doCancel: () => void;
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
@@ -259,6 +272,28 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     },
   });
 
+  const deleteGuard = useQuery({
+    queryKey: ['property', propertyId, 'deleteGuard'],
+    queryFn: async (): Promise<{ readonly leaseCount: number; readonly directTransactionCount: number }> => {
+      const [leaseResult, transactionResult] = await Promise.all([
+        backendConnector
+          .from('lease_agreements')
+          .select('id', { count: 'exact', head: true })
+          .eq('property_id', propertyId ?? ''),
+        backendConnector
+          .from('transactions')
+          .select('id', { count: 'exact', head: true })
+          .eq('property_id', propertyId ?? '')
+          .is('lease_id', null),
+      ]);
+      const combinedError = leaseResult.error ?? transactionResult.error;
+      return combinedError !== null
+        ? Promise.reject(combinedError)
+        : { leaseCount: leaseResult.count ?? 0, directTransactionCount: transactionResult.count ?? 0 };
+    },
+    enabled: propertyId !== null,
+  });
+
   const insertMutation = useMutation({
     mutationFn: (newRecord: PropertyInsert): Promise<string> => insertProperty(newRecord),
     onSuccess: (newId) => {
@@ -312,9 +347,23 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     setValidationError(null);
   };
 
-  const doDelete: (() => void) | null = match(mode)
-    .with({ tag: 'create' }, () => null)
-    .with({ tag: 'edit' }, ({ id }) => (): void => { deleteMutation.mutate(id); })
+  const deleteAction: PropertyDeleteAction = match(mode)
+    .with({ tag: 'create' }, () => ({ tag: 'absent' as const }))
+    .with({ tag: 'edit' }, ({ id }) =>
+      match(deleteGuard.status)
+        .with('pending', () => ({ tag: 'checking' as const }))
+        .with('error', () => ({ tag: 'blocked' as const, reason: 'Nie udało się sprawdzić powiązań nieruchomości.' }))
+        .with('success', () => {
+          const leaseCount = deleteGuard.data?.leaseCount ?? 0;
+          const directTransactionCount = deleteGuard.data?.directTransactionCount ?? 0;
+          return leaseCount > 0
+            ? { tag: 'blocked' as const, reason: `Nieruchomość jest powiązana z ${leaseCount} ${leaseCount === 1 ? 'umową najmu' : 'umowami najmu'} i nie może zostać usunięta.` }
+            : directTransactionCount > 0
+              ? { tag: 'blocked' as const, reason: 'Nieruchomość ma powiązane transakcje i nie może zostać usunięta.' }
+              : { tag: 'allowed' as const, doDelete: (): void => { deleteMutation.mutate(id); } };
+        })
+        .exhaustive()
+    )
     .exhaustive();
 
   const doCancel = (): void => {
@@ -326,11 +375,13 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
       ? { tag: 'submitting' }
       : validationError !== null
         ? { tag: 'error', message: validationError }
-        : (insertMutation.error ?? updateMutation.error ?? deleteMutation.error) !== null
-          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error ?? deleteMutation.error)?.message ?? 'Unknown error' }
-          : insertMutation.isSuccess || updateMutation.isSuccess
-            ? { tag: 'success' }
-            : { tag: 'idle' };
+        : insertMutation.error !== null || updateMutation.error !== null
+          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error)?.message ?? 'Unknown error' }
+          : deleteMutation.error !== null
+            ? { tag: 'error', message: formatDeleteError(deleteMutation.error) }
+            : insertMutation.isSuccess || updateMutation.isSuccess
+              ? { tag: 'success' }
+              : { tag: 'idle' };
 
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,
@@ -343,7 +394,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     <Slave
       asyncData={asyncData}
       doSubmit={doSubmit}
-      doDelete={doDelete}
+      deleteAction={deleteAction}
       doCancel={doCancel}
       onEditStart={onEditStart}
       submitState={submitState}
