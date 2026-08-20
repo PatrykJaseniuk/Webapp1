@@ -53,6 +53,10 @@ export const AsyncStateTableS = <TRow, SortColumn extends string>({
           skeletonRows={skeletonRows}
           emptyState={emptyState}
           renderRow={() => <></>}
+          pagination={pagination}
+          totalCount={0}
+          maxHeight={maxHeight}
+          pageSizeOptions={pageSizeOptions}
         />
       ))
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (

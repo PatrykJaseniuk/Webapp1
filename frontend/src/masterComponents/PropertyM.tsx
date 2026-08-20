@@ -1,5 +1,5 @@
-import { Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
@@ -13,6 +13,7 @@ import {
 } from '@/generic';
 
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
+type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type FinancialSummaryDbRow = Database['public']['Views']['property_financial_summary']['Row'];
@@ -36,8 +37,7 @@ type NavLinkTo = Readonly<{
   readonly tenant: NavLinkWithId;
   readonly lease: NavLinkWithId;
   readonly transaction: NavLinkWithId;
-  readonly edit: NavLink;
-  readonly goBack: NavLink;
+  readonly toList: NavLink;
 }>;
 
 type LeaseSortColumn = Extract<keyof LeaseAgreementDbRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status'>;
@@ -61,8 +61,17 @@ const TRANSACTION_SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string
   transaction_status: 'transaction_status',
 });
 
+export type SubmitState =
+  | { readonly tag: 'idle' }
+  | { readonly tag: 'submitting' }
+  | { readonly tag: 'success' }
+  | { readonly tag: 'error'; readonly message: string };
+
 export type PropertySProps = {
-  readonly asyncData: AsyncData<PropertyData>;
+  readonly asyncData: AsyncData<PropertyData | null>;
+  readonly doEdit: (newRecord: PropertyInsert) => void;
+  readonly doDelete: (() => void) | null;
+  readonly submitState: SubmitState;
   readonly leases: FilteredQueryResult<LeaseRow, LeaseSortColumn, LeaseFilter>;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, TransactionFilter>;
   readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
@@ -71,45 +80,53 @@ export type PropertySProps = {
 
 type Props = {
   readonly Slave: ComponentType<PropertySProps>;
-  readonly id: string;
+  readonly id: string | null;
 };
 
 export const PropertyDetailM = ({
   Slave,
   id,
 }: Props): JSX.Element => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const query = useQuery({
     queryKey: ['property', id],
     queryFn: async (): Promise<PropertyData> => {
       const [propertyResult, occupancyResult, financialResult] = await Promise.all([
-        backendConnector.from('properties').select('*').eq('id', id).single(),
-        backendConnector.from('property_occupancy').select('*').eq('id', id).single(),
-        backendConnector.from('property_financial_summary').select('*').eq('property_id', id).single(),
+        backendConnector.from('properties').select('*').eq('id', id as string).single(),
+        backendConnector.from('property_occupancy').select('*').eq('id', id as string).maybeSingle(),
+        backendConnector.from('property_financial_summary').select('*').eq('property_id', id as string).maybeSingle(),
       ]);
 
       const combinedError = propertyResult.error ?? occupancyResult.error ?? financialResult.error;
       return combinedError !== null
         ? Promise.reject(combinedError)
         : {
-            property: propertyResult.data ?? null,
-            occupancy: occupancyResult.data ?? null,
-            financial: financialResult.data ?? null,
-          };
+          property: propertyResult.data ?? null,
+          occupancy: occupancyResult.data ?? null,
+          financial: financialResult.data ?? null,
+        };
     },
+    enabled: id !== null,
   });
 
-  const asyncData = toAsyncData(query, () => { void query.refetch(); });
+  const asyncData: AsyncData<PropertyData | null> =
+    id === null ?
+      { tag: 'fulfilled', data: null } :
+      toAsyncData(query, () => { void query.refetch(); });
 
   const leases = useFilteredPaginatedQuery<LeaseRow, LeaseSortColumn, LeaseFilter>({
-    queryKey: ['leases', 'property', id],
+    queryKey: ['leases', 'property', id ?? ''],
     defaultSort: { column: 'start_date', direction: 'desc' },
     pageSize: 5,
+    enabled: id !== null,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('lease_agreements')
         .select('*, tenants(first_name,last_name)', { count: 'exact' })
-        .eq('property_id', id)
+        .eq('property_id', id ?? '')
         .order(LEASE_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const status = filterConfig.status ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
@@ -125,15 +142,16 @@ export const PropertyDetailM = ({
   });
 
   const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, TransactionFilter>({
-    queryKey: ['transactions', 'property', id],
+    queryKey: ['transactions', 'property', id ?? ''],
     defaultSort: { column: 'due_date', direction: 'desc' },
     pageSize: 5,
+    enabled: id !== null,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('transactions')
         .select('*', { count: 'exact' })
-        .eq('property_id', id)
+        .eq('property_id', id ?? '')
         .order(TRANSACTION_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const text = filterConfig.text ?? '';
       const type = filterConfig.type ?? '';
@@ -153,16 +171,17 @@ export const PropertyDetailM = ({
   });
 
   const attachments = useFilteredPaginatedQuery<AttachmentDbRow, AttachmentSortColumn, never>({
-    queryKey: ['attachments', 'property', id],
+    queryKey: ['attachments', 'property', id ?? ''],
     defaultSort: { column: 'created_at', direction: 'desc' },
     pageSize: 5,
+    enabled: id !== null,
     fetchPage: async ({ sort: sortConfig, from, to }) => {
       const ascending = sortConfig.direction === 'asc';
       const result = await backendConnector
         .from('attachments')
         .select('*', { count: 'exact' })
         .eq('related_to_type', 'property')
-        .eq('related_to_id', id)
+        .eq('related_to_id', id ?? '')
         .order(sortConfig.column, { ascending })
         .range(from, to);
       return result.error !== null
@@ -171,17 +190,69 @@ export const PropertyDetailM = ({
     },
   });
 
+  const insertMutation = useMutation({
+    mutationFn: async (newRecord: PropertyInsert): Promise<string> => {
+      const result = await backendConnector.from('properties').insert(newRecord).select('id').single();
+      return result.error !== null ? Promise.reject(result.error) : result.data.id;
+    },
+    onSuccess: (newId) => {
+      void queryClient.invalidateQueries({ queryKey: ['properties'] });
+      void navigate({ to: '/app/properties/$id', params: { id: newId } });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (newRecord: PropertyInsert): Promise<void> => {
+      const result = await backendConnector.from('properties').update(newRecord).eq('id', id as string);
+      return result.error !== null ? Promise.reject(result.error) : undefined;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['properties'] });
+      void queryClient.invalidateQueries({ queryKey: ['property', id] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (): Promise<void> => {
+      const result = await backendConnector.from('properties').delete().eq('id', id as string);
+      return result.error !== null ? Promise.reject(result.error) : undefined;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['properties'] });
+      void navigate({ to: '/app/properties' });
+    },
+  });
+
+  const doEdit = (newRecord: PropertyInsert): void => {
+    id === null ? insertMutation.mutate(newRecord) : updateMutation.mutate(newRecord);
+  };
+
+  const doDelete = (): void => {
+    deleteMutation.mutate();
+  };
+
+  const submitState: SubmitState =
+    insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
+      ? { tag: 'submitting' }
+      : (insertMutation.error ?? updateMutation.error ?? deleteMutation.error) !== null
+        ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error ?? deleteMutation.error)?.message ?? 'Unknown error' }
+        : insertMutation.isSuccess || updateMutation.isSuccess
+          ? { tag: 'success' }
+          : { tag: 'idle' };
+
   const navLinkTo: NavLinkTo = {
-    tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,
-    lease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
-    transaction: ({ id: transactionId, content, style }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style}>{content}</Link>,
-    edit: ({ content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
-    goBack: ({ content, style }) => <button type="button" onClick={() => window.history.back()} style={style}>{content}</button>,
+    tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,
+    lease: ({ id: leaseId, content, style, ariaLabel }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style} aria-label={ariaLabel}>{content}</Link>,
+    transaction: ({ id: transactionId, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style} aria-label={ariaLabel}>{content}</Link>,
+    toList: ({ content, style }) => <Link to="/app/properties" style={style}>{content}</Link>,
   };
 
   return (
     <Slave
       asyncData={asyncData}
+      doEdit={doEdit}
+      doDelete={id === null ? null : doDelete}
+      submitState={submitState}
       leases={leases}
       transactions={transactions}
       attachments={attachments}

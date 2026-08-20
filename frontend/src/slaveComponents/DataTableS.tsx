@@ -95,6 +95,9 @@ export type Pagination = {
 
 const DEFAULT_PAGE_SIZE_OPTIONS: readonly number[] = [20, 50, 100];
 
+// Matches the `h-12` row/header height (3rem) used throughout the table.
+const ROW_HEIGHT_PX = 48;
+
 const PaginationFooter = ({
   pagination,
   totalCount,
@@ -229,6 +232,8 @@ export const DataTableS = <TRow, SortColumn extends string>({
   pageSizeOptions = DEFAULT_PAGE_SIZE_OPTIONS,
   maxHeight,
 }: DataTableSProps<TRow, SortColumn>): JSX.Element => {
+  const emptyStateMinHeight = (pagination?.pageSize ?? 1) * ROW_HEIGHT_PX;
+
   const content = (
     <>
       {filterRow}
@@ -253,8 +258,10 @@ export const DataTableS = <TRow, SortColumn extends string>({
           skeletonRows :
           rows.length === 0 ?
             <tr>
-              <td colSpan={columns.length} className="py-12 text-center">
-                {emptyState}
+              <td colSpan={columns.length} className="p-0">
+                <div className="flex items-center justify-center" style={{ minHeight: `${emptyStateMinHeight}px` }}>
+                  {emptyState}
+                </div>
               </td>
             </tr> :
             rows.map(renderRow)}
@@ -291,8 +298,10 @@ export const DataTableS = <TRow, SortColumn extends string>({
               skeletonRows :
               rows.length === 0 ?
                 <tr>
-                  <td colSpan={columns.length} className="py-12 text-center">
-                    {emptyState}
+                  <td colSpan={columns.length} className="p-0">
+                    <div className="flex items-center justify-center" style={{ minHeight: `${emptyStateMinHeight}px` }}>
+                      {emptyState}
+                    </div>
                   </td>
                 </tr> :
                 rows.map(renderRow)}

@@ -23,7 +23,7 @@ const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
 const SKELETON_ROWS = (
   <>
-    {Array.from({ length: 4 }, (_, i) => (
+    {Array.from({ length: 5 }, (_, i) => (
       <tr key={`attachment-skel-${i}`} className="border-b border-gray-100">
         <td className="pl-4 h-12 py-0 pr-4"><div className={`${skeletonBar} w-40`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>

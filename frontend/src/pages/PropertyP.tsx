@@ -7,8 +7,7 @@ import { PropertyDetailS } from '@/slaveComponents/PropertyS';
 import { AccessDeniedS } from '@/slaveComponents/AccessDeniedS';
 import { LoadingSpinner } from '@/slaveComponents/LoadingSpinnerS';
 
-export const PropertyDetailPage = (): JSX.Element => {
-  const { id } = propertyDetailRoute.useParams();
+const PropertyPage = ({ id }: { readonly id: string | null }): JSX.Element => {
   const authState = useAuth();
 
   return match(authState)
@@ -19,3 +18,10 @@ export const PropertyDetailPage = (): JSX.Element => {
     .with({ tag: 'authenticated', role: 'tenant' }, () => <AccessDeniedM Slave={AccessDeniedS} />)
     .exhaustive();
 };
+
+export const PropertyDetailPage = (): JSX.Element => {
+  const { id } = propertyDetailRoute.useParams();
+  return <PropertyPage id={id} />;
+};
+
+export const PropertyNewPage = (): JSX.Element => <PropertyPage id={null} />;

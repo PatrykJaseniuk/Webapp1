@@ -4,7 +4,7 @@ type Props = {
 };
 
 export const ErrorMessage = ({ message, onRetry }: Props): JSX.Element => (
-  <div className="flex flex-col items-center justify-center gap-4 py-16">
+  <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16">
     <p className="text-red-600">{message}</p>
     <button
       type="button"

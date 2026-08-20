@@ -63,6 +63,8 @@ const navLinkTo = {
     <a href={`#/properties/${id}`} style={style}>{content}</a>,
   tenant: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
     <a href={`#/tenants/${id}`} style={style}>{content}</a>,
+  create: ({ content, style }: { readonly style: React.CSSProperties; readonly content: string }) =>
+    <a href="#/properties/new" style={style}>{content}</a>,
 };
 
 const filter: PropertiesSProps['filter'] = {

@@ -52,6 +52,7 @@ export type FilteredQueryParams<TRow, TSortColumn extends string, F extends stri
   readonly defaultSort: SortConfig<TSortColumn>;
   readonly pageSize?: number;
   readonly debounceMs?: number;
+  readonly enabled?: boolean;
   readonly fetchPage: (args: {
     readonly sort: SortConfig<TSortColumn>;
     readonly from: number;
@@ -106,7 +107,7 @@ const useFilter = <F extends string>(): readonly [FilterConfig<F>, (next: Filter
 export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, F extends string>(
   params: FilteredQueryParams<TRow, TSortColumn, F>,
 ): FilteredQueryResult<TRow, TSortColumn, F> => {
-  const { queryKey, defaultSort, pageSize = 20, debounceMs = 300, fetchPage } = params;
+  const { queryKey, defaultSort, pageSize = 20, debounceMs = 300, enabled = true, fetchPage } = params;
 
   const sort = useSort<TSortColumn>(defaultSort);
   const pagination = usePagination(pageSize);
@@ -163,6 +164,7 @@ export const useFilteredPaginatedQuery = <TRow, TSortColumn extends string, F ex
       const to = from + pagination.pageSize - 1;
       return fetchPage({ sort: sortConfig, from, to, filter: committedFilter });
     },
+    enabled,
     placeholderData: (prev) => prev,
   });
 

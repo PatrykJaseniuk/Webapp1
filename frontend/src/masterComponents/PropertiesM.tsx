@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
 type PropertyOccupancyRow = Database['public']['Views']['property_occupancy']['Row'];
 type PropertyTypeDb = Database['public']['Enums']['property_type'];
@@ -12,6 +12,7 @@ type PropertyStatusDb = Database['public']['Enums']['property_status'];
 type NavLinkTo = Readonly<{
   readonly property: NavLinkWithId;
   readonly tenant: NavLinkWithId;
+  readonly create: NavLink;
 }>;
 
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
@@ -52,6 +53,7 @@ export const PropertiesM = ({
   const navLinkTo: NavLinkTo = {
     property: ({ id, content, style, ariaLabel }) => <Link to="/app/properties/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     tenant: ({ id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
+    create: ({ content, style }) => <Link to="/app/properties/new" style={style}>{content}</Link>,
   };
 
   return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} />;

@@ -1,5 +1,6 @@
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { match } from 'ts-pattern';
-import type { PropertySProps } from '@/masterComponents/PropertyM';
+import type { PropertySProps, SubmitState } from '@/masterComponents/PropertyM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 import {
@@ -9,6 +10,7 @@ import {
   TRANSACTION_STATUS_LABEL,
   TRANSACTION_TYPE_LABEL,
 } from './domain';
+import { buttonClass, FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
 import {
   amountClass,
   leaseStatusPillClass,
@@ -34,9 +36,13 @@ import {
 } from './filter';
 import { AttachmentsTableS } from './AttachmentsTableS';
 
-type Data = Extract<PropertySProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Fulfilled = Extract<PropertySProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type PropertyData = NonNullable<Fulfilled>;
+type Property = NonNullable<PropertyData['property']>;
+type PropertyType = Property['property_type'];
+type PropertyStatus = Property['property_status'];
+type PropertyInsert = Parameters<PropertySProps['doEdit']>[0];
 type NavLinkTo = PropertySProps['navLinkTo'];
-type PropertyData = NonNullable<Data['property']>;
 type Leases = PropertySProps['leases'];
 type Transactions = PropertySProps['transactions'];
 type Attachments = PropertySProps['attachments'];
@@ -72,7 +78,7 @@ const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
 const LEASE_SKELETON_ROWS = (
   <>
-    {Array.from({ length: 4 }, (_, i) => (
+    {Array.from({ length: 5 }, (_, i) => (
       <tr key={`lease-skel-${i}`} className="border-b border-gray-100">
         <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
         <td className="pl-4 h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
@@ -87,7 +93,7 @@ const LEASE_SKELETON_ROWS = (
 
 const TRANSACTION_SKELETON_ROWS = (
   <>
-    {Array.from({ length: 6 }, (_, i) => (
+    {Array.from({ length: 5 }, (_, i) => (
       <tr key={`txn-skel-${i}`} className="border-b border-gray-100">
         <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
@@ -116,6 +122,54 @@ const TRANSACTION_EMPTY = (
   />
 );
 
+type PropertyDraft = {
+  readonly name: string;
+  readonly address: string;
+  readonly property_type: PropertyType;
+  readonly property_status: PropertyStatus;
+  readonly size_sqm: string;
+  readonly bedrooms: string;
+  readonly monthly_rent: string;
+  readonly deposit_amount: string;
+  readonly notes: string;
+};
+
+const toDraft = (p: Property): PropertyDraft => ({
+  name: p.name,
+  address: p.address,
+  property_type: p.property_type,
+  property_status: p.property_status,
+  size_sqm: p.size_sqm !== null ? String(p.size_sqm) : '',
+  bedrooms: p.bedrooms !== null ? String(p.bedrooms) : '',
+  monthly_rent: String(p.monthly_rent),
+  deposit_amount: String(p.deposit_amount),
+  notes: p.notes ?? '',
+});
+
+const EMPTY_DRAFT: PropertyDraft = Object.freeze({
+  name: '',
+  address: '',
+  property_type: 'apartment',
+  property_status: 'available',
+  size_sqm: '',
+  bedrooms: '',
+  monthly_rent: '',
+  deposit_amount: '',
+  notes: '',
+});
+
+const toInsert = (d: PropertyDraft): PropertyInsert => ({
+  name: d.name,
+  address: d.address,
+  property_type: d.property_type,
+  property_status: d.property_status,
+  size_sqm: d.size_sqm === '' ? null : Number(d.size_sqm),
+  bedrooms: d.bedrooms === '' ? null : Number(d.bedrooms),
+  monthly_rent: d.monthly_rent === '' ? 0 : Number(d.monthly_rent),
+  deposit_amount: d.deposit_amount === '' ? 0 : Number(d.deposit_amount),
+  notes: d.notes === '' ? null : d.notes,
+});
+
 const buildLeaseFilterChips = (filter: LeaseFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
     { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${LEASE_STATUS_LABEL[(filter.config.status ?? '') as LeaseStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
@@ -140,12 +194,13 @@ const financialLabelClass = 'text-xs font-medium text-gray-500';
 const financialValueClass = 'text-lg font-semibold';
 
 type DetailContentProps = {
-  readonly data: Data;
-  readonly property: PropertyData;
+  readonly data: PropertyData;
+  readonly property: Property;
   readonly navLinkTo: NavLinkTo;
   readonly leases: Leases;
   readonly transactions: Transactions;
   readonly attachments: Attachments;
+  readonly onEdit: () => void;
 };
 
 const DetailContent = ({
@@ -155,6 +210,7 @@ const DetailContent = ({
   leases,
   transactions,
   attachments,
+  onEdit,
 }: DetailContentProps): JSX.Element => {
   const occupancy = data.occupancy;
   const financial = data.financial;
@@ -163,12 +219,14 @@ const DetailContent = ({
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
       <div className="flex items-center justify-between">
-        <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:text-left [&_button]:text-sm [&_button]:text-blue-600 hover:[&_button]:text-blue-800 hover:[&_button]:underline">
-          {navLinkTo.goBack({ style: {}, content: '← Powrót' })}
+        <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+          {navLinkTo.toList({ style: {}, content: '← Powrót' })}
           <h1 className="mt-1 text-2xl font-bold text-gray-900">{p.name}</h1>
         </div>
-        <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">
-          {navLinkTo.edit({ style: {}, content: 'Edytuj' })}
+        <div className="flex gap-2">
+          <button type="button" onClick={onEdit} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+            Edytuj
+          </button>
         </div>
       </div>
 
@@ -405,22 +463,210 @@ const DetailContent = ({
   );
 };
 
+type FormProps = {
+  readonly initial: PropertyDraft;
+  readonly submitState: SubmitState;
+  readonly doEdit: (newRecord: PropertyInsert) => void;
+  readonly doDelete: (() => void) | null;
+  readonly onCancel: () => void;
+};
+
+const PropertyForm = ({
+  initial,
+  submitState,
+  doEdit,
+  doDelete,
+  onCancel,
+}: FormProps): JSX.Element => {
+  const [form, setForm] = useState<PropertyDraft>(initial);
+
+  const setField = (field: keyof PropertyDraft) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }) as PropertyDraft);
+    };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    doEdit(toInsert(form));
+  };
+
+  return (
+    <div className="mx-auto max-w-4xl space-y-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-900">{doDelete === null ? 'Nowa nieruchomość' : 'Edytuj nieruchomość'}</h1>
+      {match(submitState)
+        .with({ tag: 'idle' }, () => null)
+        .with({ tag: 'submitting' }, () => null)
+        .with({ tag: 'success' }, () => null)
+        .with({ tag: 'error' }, ({ message }) => <FormErrorS message={message} />)
+        .exhaustive()}
+      <form onSubmit={handleSubmit} className={`${sectionClass} space-y-4`}>
+        <div>
+          <label htmlFor="property-name" className={formLabelClass}>Nazwa</label>
+          <input id="property-name" name="name" type="text" required value={form.name} onChange={setField('name')} className={inputClass} />
+        </div>
+        <div>
+          <label htmlFor="property-address" className={formLabelClass}>Adres</label>
+          <input id="property-address" name="address" type="text" required value={form.address} onChange={setField('address')} className={inputClass} />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="property-type" className={formLabelClass}>Typ</label>
+            <select id="property-type" name="property_type" value={form.property_type} onChange={setField('property_type')} className={inputClass}>
+              {optionEntries(PROPERTY_TYPE_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="property-status" className={formLabelClass}>Status</label>
+            <select id="property-status" name="property_status" value={form.property_status} onChange={setField('property_status')} className={inputClass}>
+              {optionEntries(PROPERTY_STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="property-size" className={formLabelClass}>Powierzchnia (m²)</label>
+            <input id="property-size" name="size_sqm" type="number" step="0.01" min="0" value={form.size_sqm} onChange={setField('size_sqm')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="property-bedrooms" className={formLabelClass}>Sypialnie</label>
+            <input id="property-bedrooms" name="bedrooms" type="number" step="1" min="0" value={form.bedrooms} onChange={setField('bedrooms')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="property-rent" className={formLabelClass}>Czynsz miesięczny (zł)</label>
+            <input id="property-rent" name="monthly_rent" type="number" step="0.01" min="0" required value={form.monthly_rent} onChange={setField('monthly_rent')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="property-deposit" className={formLabelClass}>Kaucja (zł)</label>
+            <input id="property-deposit" name="deposit_amount" type="number" step="0.01" min="0" required value={form.deposit_amount} onChange={setField('deposit_amount')} className={inputClass} />
+          </div>
+        </div>
+        <div>
+          <label htmlFor="property-notes" className={formLabelClass}>Notatki</label>
+          <textarea id="property-notes" name="notes" rows={3} value={form.notes} onChange={setField('notes')} className={inputClass} />
+        </div>
+        <div className="flex items-center justify-between gap-4 pt-2">
+          <div className="flex gap-2">
+            <button type="submit" disabled={submitState.tag === 'submitting'} className={buttonClass}>
+              {submitState.tag === 'submitting' ? 'Przetwarzanie...' : 'Zapisz'}
+            </button>
+            <button type="button" onClick={onCancel} disabled={submitState.tag === 'submitting'} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+              Anuluj
+            </button>
+          </div>
+          {doDelete !== null ?
+            <button
+              type="button"
+              onClick={() => { window.confirm('Usunąć nieruchomość?') && doDelete !== null && doDelete(); }}
+              disabled={submitState.tag === 'submitting'}
+              className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+            >
+              Usuń
+            </button> :
+            null}
+        </div>
+      </form>
+    </div>
+  );
+};
+
+const PropertyDetail = ({
+  data,
+  navLinkTo,
+  leases,
+  transactions,
+  attachments,
+  doEdit,
+  doDelete,
+  submitState,
+}: {
+  readonly data: PropertyData;
+  readonly navLinkTo: NavLinkTo;
+  readonly leases: Leases;
+  readonly transactions: Transactions;
+  readonly attachments: Attachments;
+  readonly doEdit: (newRecord: PropertyInsert) => void;
+  readonly doDelete: (() => void) | null;
+  readonly submitState: SubmitState;
+}): JSX.Element => {
+  const [editing, setEditing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const property = data.property;
+
+  useEffect(() => {
+    const isSuccess = submitState.tag === 'success';
+    isSuccess ? setEditing(false) : undefined;
+    isSuccess ? setShowSuccess(true) : undefined;
+    const timer = isSuccess ? setTimeout(() => setShowSuccess(false), 4000) : null;
+    return () => (timer !== null ? clearTimeout(timer) : undefined);
+  }, [submitState.tag]);
+
+  return (
+    <>
+      {showSuccess ? (
+        <div role="status" className="fixed top-4 right-4 z-50 flex items-center justify-between gap-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-md">
+          <span>✓ Zapisano zmiany</span>
+          <button type="button" onClick={() => setShowSuccess(false)} className="rounded px-1 text-green-700 hover:text-green-900" aria-label="Zamknij powiadomienie">
+            ×
+          </button>
+        </div>
+      ) : null}
+      {match(property)
+        .with(null, () => (
+          <div className="flex items-center justify-center min-h-[300px]">
+            <p className="text-sm text-gray-500">Nie znaleziono nieruchomości.</p>
+          </div>
+        ))
+        .otherwise((p) =>
+          editing ?
+            <PropertyForm
+              initial={toDraft(p)}
+              submitState={submitState}
+              doEdit={doEdit}
+              doDelete={doDelete}
+              onCancel={() => setEditing(false)}
+            /> :
+            <DetailContent
+              data={data}
+              property={p}
+              navLinkTo={navLinkTo}
+              leases={leases}
+              transactions={transactions}
+              attachments={attachments}
+              onEdit={() => { setEditing(true); setShowSuccess(false); }}
+            />
+        )}
+    </>
+  );
+};
+
 export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
-  <div className="min-h-[400px]">
+  <div className="flex min-h-[400px] flex-col">
     {match(props.asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (<ErrorMessage message={message} onRetry={onRetry} />))
       .with({ tag: 'fulfilled' }, ({ data }) =>
-        data.property !== null ?
-          <DetailContent
+        data === null ?
+          <PropertyForm
+            initial={EMPTY_DRAFT}
+            submitState={props.submitState}
+            doEdit={props.doEdit}
+            doDelete={null}
+            onCancel={() => props.navLinkTo.toList({ style: {}, content: '← Anuluj' })}
+          /> :
+          <PropertyDetail
             data={data}
-            property={data.property}
             navLinkTo={props.navLinkTo}
             leases={props.leases}
             transactions={props.transactions}
             attachments={props.attachments}
-          /> :
-          <div className="flex items-center justify-center"><p className="text-sm text-gray-500">Nie znaleziono nieruchomości.</p></div>
+            doEdit={props.doEdit}
+            doDelete={props.doDelete}
+            submitState={props.submitState}
+          />
       )
       .exhaustive()}
   </div>

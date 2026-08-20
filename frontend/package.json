@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "overrides": {
+    "@vitest/expect": "4.1.9",
+    "@vitest/spy": "4.1.9"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
