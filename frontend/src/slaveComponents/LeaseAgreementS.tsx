@@ -1,3 +1,4 @@
+import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { match } from 'ts-pattern';
 import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
@@ -26,8 +27,16 @@ import {
   type FilterChip,
 } from './filter';
 import { AttachmentsTableS } from './AttachmentsTableS';
+import { buttonClass, FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
 
-type Data = Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type Fulfilled = Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type LeaseAgreementData = NonNullable<Fulfilled>;
+type Lease = NonNullable<LeaseAgreementData['leaseAgreement']>;
+type LeaseStatus = Lease['lease_status'];
+type FormOptions = LeaseAgreementSProps['formOptions'];
+type LeaseInsert = Parameters<LeaseAgreementSProps['doSubmit']>[0];
+type SubmitState = LeaseAgreementSProps['submitState'];
+type DeleteAction = LeaseAgreementSProps['deleteAction'];
 type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
 type Transactions = LeaseAgreementSProps['transactions'];
 type Attachments = LeaseAgreementSProps['attachments'];
@@ -83,11 +92,56 @@ const buildFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
   return base.filter((c): c is FilterChip => c.label !== null);
 };
 
+type LeaseDraft = {
+  readonly tenant_id: string;
+  readonly property_id: string;
+  readonly start_date: string;
+  readonly end_date: string;
+  readonly monthly_rent: string;
+  readonly deposit_amount: string;
+  readonly lease_status: LeaseStatus;
+  readonly notes: string;
+};
+
+const toDraft = (l: Lease): LeaseDraft => ({
+  tenant_id: l.tenant_id,
+  property_id: l.property_id,
+  start_date: l.start_date,
+  end_date: l.end_date ?? '',
+  monthly_rent: String(l.monthly_rent),
+  deposit_amount: String(l.deposit_amount),
+  lease_status: l.lease_status,
+  notes: l.notes ?? '',
+});
+
+const EMPTY_DRAFT: LeaseDraft = Object.freeze({
+  tenant_id: '',
+  property_id: '',
+  start_date: '',
+  end_date: '',
+  monthly_rent: '',
+  deposit_amount: '',
+  lease_status: 'active',
+  notes: '',
+});
+
+const toInsert = (d: LeaseDraft): LeaseInsert => ({
+  tenant_id: d.tenant_id,
+  property_id: d.property_id,
+  start_date: d.start_date,
+  end_date: d.end_date === '' ? null : d.end_date,
+  monthly_rent: d.monthly_rent === '' ? 0 : Number(d.monthly_rent),
+  deposit_amount: d.deposit_amount === '' ? 0 : Number(d.deposit_amount),
+  lease_status: d.lease_status,
+  notes: d.notes === '' ? null : d.notes,
+});
+
 type DetailContentProps = {
-  readonly data: Data;
+  readonly data: LeaseAgreementData;
   readonly navLinkTo: NavLinkTo;
   readonly transactions: Transactions;
   readonly attachments: Attachments;
+  readonly onEdit: () => void;
 };
 
 const DetailContent = ({
@@ -95,6 +149,7 @@ const DetailContent = ({
   navLinkTo,
   transactions,
   attachments,
+  onEdit,
 }: DetailContentProps): JSX.Element => {
   const l = data.leaseAgreement;
   const filter = transactions.filter;
@@ -107,11 +162,15 @@ const DetailContent = ({
     (
       <div className="mx-auto max-w-4xl space-y-6 py-8">
         <div className="flex items-center justify-between">
-          <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline [&_button]:cursor-pointer [&_button]:border-0 [&_button]:bg-transparent [&_button]:p-0 [&_button]:text-left [&_button]:text-sm [&_button]:text-blue-600 hover:[&_button]:text-blue-800 hover:[&_button]:underline">
-            {navLinkTo.goBack({ style: {}, content: '← Powrót' })}
+          <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
+            {navLinkTo.toList({ style: {}, content: '← Powrót' })}
             <h1 className="mt-1 text-2xl font-bold text-gray-900">{`Umowa najmu: ${l.properties?.name ?? ''}${l.tenants !== null ? ` — ${l.tenants.first_name} ${l.tenants.last_name}` : ''}`}</h1>
           </div>
-          <div className="flex gap-2 [&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">{navLinkTo.edit({ style: {}, content: 'Edytuj' })}</div>
+          <div className="flex gap-2">
+            <button type="button" onClick={onEdit} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+              Edytuj
+            </button>
+          </div>
         </div>
 
         <div className={sectionClass}>
@@ -266,23 +325,274 @@ const DetailContent = ({
     );
 };
 
-export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => {
-  const { asyncData, navLinkTo, transactions, attachments } = props;
+type FormProps = {
+  readonly initial: LeaseDraft;
+  readonly formOptions: FormOptions;
+  readonly submitState: SubmitState;
+  readonly doSubmit: (newRecord: LeaseInsert) => void;
+  readonly deleteAction: DeleteAction;
+  readonly onCancel: () => void;
+};
+
+const LeaseAgreementForm = ({
+  initial,
+  formOptions,
+  submitState,
+  doSubmit,
+  deleteAction,
+  onCancel,
+}: FormProps): JSX.Element => {
+  const [form, setForm] = useState<LeaseDraft>(initial);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const setField = (field: keyof LeaseDraft) =>
+    (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    };
+
+  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    doSubmit(toInsert(form));
+  };
 
   return (
-    <div className="min-h-[400px]">
-      {match(asyncData)
-        .with({ tag: 'pending' }, () => <LoadingSpinner />)
-        .with({ tag: 'rejected' }, ({ message, onRetry }) => (<ErrorMessage message={message} onRetry={onRetry} />))
-        .with({ tag: 'fulfilled' }, ({ data }) => (
-          <DetailContent
-            data={data}
-            navLinkTo={navLinkTo}
-            transactions={transactions}
-            attachments={attachments}
-          />
-        ))
+    <div className="mx-auto max-w-4xl space-y-6 py-8">
+      <h1 className="text-2xl font-bold text-gray-900">{deleteAction.tag === 'absent' ? 'Nowa umowa najmu' : 'Edytuj umowę najmu'}</h1>
+      {match(submitState)
+        .with({ tag: 'idle' }, () => null)
+        .with({ tag: 'submitting' }, () => null)
+        .with({ tag: 'success' }, () => null)
+        .with({ tag: 'error' }, ({ message }) => <FormErrorS message={message} />)
         .exhaustive()}
+      <form onSubmit={handleSubmit} className={`${sectionClass} space-y-4`}>
+        {match(formOptions)
+          .with({ tag: 'pending' }, () => (
+            <div className="flex items-center justify-center min-h-[120px]">
+              <LoadingSpinner />
+            </div>
+          ))
+          .with({ tag: 'rejected' }, ({ message, onRetry }) => (
+            <ErrorMessage message={message} onRetry={onRetry} />
+          ))
+          .with({ tag: 'fulfilled' }, ({ data: options }) => (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="lease-tenant" className={formLabelClass}>Najemca</label>
+                <select id="lease-tenant" name="tenant_id" required value={form.tenant_id} onChange={setField('tenant_id')} className={inputClass}>
+                  <option value="">Wybierz najemcę…</option>
+                  {options.tenants.map((t) => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="lease-property" className={formLabelClass}>Nieruchomość</label>
+                <select id="lease-property" name="property_id" required value={form.property_id} onChange={setField('property_id')} className={inputClass}>
+                  <option value="">Wybierz nieruchomość…</option>
+                  {options.properties.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          ))
+          .exhaustive()}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="lease-start-date" className={formLabelClass}>Data rozpoczęcia</label>
+            <input id="lease-start-date" name="start_date" type="date" required value={form.start_date} onChange={setField('start_date')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="lease-end-date" className={formLabelClass}>Data zakończenia</label>
+            <input id="lease-end-date" name="end_date" type="date" value={form.end_date} onChange={setField('end_date')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="lease-rent" className={formLabelClass}>Czynsz miesięczny (zł)</label>
+            <input id="lease-rent" name="monthly_rent" type="number" step="0.01" min="0" required value={form.monthly_rent} onChange={setField('monthly_rent')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="lease-deposit" className={formLabelClass}>Kaucja (zł)</label>
+            <input id="lease-deposit" name="deposit_amount" type="number" step="0.01" min="0" required value={form.deposit_amount} onChange={setField('deposit_amount')} className={inputClass} />
+          </div>
+          <div>
+            <label htmlFor="lease-status" className={formLabelClass}>Status</label>
+            <select id="lease-status" name="lease_status" value={form.lease_status} onChange={setField('lease_status')} className={inputClass}>
+              {optionEntries(LEASE_STATUS_LABEL).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label htmlFor="lease-notes" className={formLabelClass}>Notatki</label>
+          <textarea id="lease-notes" name="notes" rows={3} value={form.notes} onChange={setField('notes')} className={inputClass} />
+        </div>
+        <div className="flex items-center justify-between gap-4 pt-2">
+          <div className="flex gap-2">
+            <button type="submit" disabled={submitState.tag === 'submitting'} className={buttonClass}>
+              {submitState.tag === 'submitting' ? 'Przetwarzanie...' : 'Zapisz'}
+            </button>
+            <button type="button" onClick={onCancel} disabled={submitState.tag === 'submitting'} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+              Anuluj
+            </button>
+          </div>
+          {match(deleteAction)
+            .with({ tag: 'absent' }, () => null)
+            .with({ tag: 'checking' }, () => (
+              <button type="button" disabled className="cursor-not-allowed rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-400">
+                Sprawdzanie…
+              </button>
+            ))
+            .with({ tag: 'blocked' }, ({ reason }) => (
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  aria-describedby="lease-delete-blocked"
+                  className="cursor-not-allowed rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-400"
+                >
+                  Usuń
+                </button>
+                <p id="lease-delete-blocked" className="text-xs text-gray-500">{reason}</p>
+              </div>
+            ))
+            .with({ tag: 'allowed' }, ({ doDelete }) =>
+              confirmDelete ?
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { doDelete(); setConfirmDelete(false); }}
+                    disabled={submitState.tag === 'submitting'}
+                    className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                  >
+                    Potwierdź usunięcie
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={submitState.tag === 'submitting'}
+                    className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Nie usuwaj
+                  </button>
+                </div> :
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={submitState.tag === 'submitting'}
+                  className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                >
+                  Usuń
+                </button>
+            )
+            .exhaustive()}
+        </div>
+      </form>
     </div>
   );
 };
+
+const LeaseAgreementDetail = ({
+  data,
+  navLinkTo,
+  formOptions,
+  transactions,
+  attachments,
+  doSubmit,
+  deleteAction,
+  onEditStart,
+  submitState,
+}: {
+  readonly data: LeaseAgreementData;
+  readonly navLinkTo: NavLinkTo;
+  readonly formOptions: FormOptions;
+  readonly transactions: Transactions;
+  readonly attachments: Attachments;
+  readonly doSubmit: (newRecord: LeaseInsert) => void;
+  readonly deleteAction: DeleteAction;
+  readonly onEditStart: () => void;
+  readonly submitState: SubmitState;
+}): JSX.Element => {
+  const [editing, setEditing] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const lease = data.leaseAgreement;
+
+  useEffect(() => {
+    const timer = match(submitState.tag)
+      .with('success', () => {
+        setEditing(false);
+        setShowSuccess(true);
+        return setTimeout(() => setShowSuccess(false), 4000);
+      })
+      .otherwise(() => null);
+    return () => (timer !== null ? clearTimeout(timer) : undefined);
+  }, [submitState.tag]);
+
+  return (
+    <>
+      {showSuccess ? (
+        <div role="status" className="fixed top-4 right-4 z-50 flex items-center justify-between gap-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 shadow-md">
+          <span>✓ Zapisano zmiany</span>
+          <button type="button" onClick={() => setShowSuccess(false)} className="rounded px-1 text-green-700 hover:text-green-900" aria-label="Zamknij powiadomienie">
+            ×
+          </button>
+        </div>
+      ) : null}
+      {match(lease)
+        .with(null, () => (
+          <div className="flex items-center justify-center min-h-[300px]">
+            <p className="text-sm text-gray-500">Nie znaleziono umowy.</p>
+          </div>
+        ))
+        .otherwise((l) =>
+          editing ?
+            <LeaseAgreementForm
+              initial={toDraft(l)}
+              formOptions={formOptions}
+              submitState={submitState}
+              doSubmit={doSubmit}
+              deleteAction={deleteAction}
+              onCancel={() => setEditing(false)}
+            /> :
+            <DetailContent
+              data={data}
+              navLinkTo={navLinkTo}
+              transactions={transactions}
+              attachments={attachments}
+              onEdit={() => { setEditing(true); setShowSuccess(false); onEditStart(); }}
+            />
+        )}
+    </>
+  );
+};
+
+export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element => (
+  <div className="flex min-h-[400px] flex-col">
+    {match(props.asyncData)
+      .with({ tag: 'pending' }, () => <LoadingSpinner />)
+      .with({ tag: 'rejected' }, ({ message, onRetry }) => (<ErrorMessage message={message} onRetry={onRetry} />))
+      .with({ tag: 'fulfilled' }, ({ data }) =>
+        data === null ?
+          <LeaseAgreementForm
+            initial={EMPTY_DRAFT}
+            formOptions={props.formOptions}
+            submitState={props.submitState}
+            doSubmit={props.doSubmit}
+            deleteAction={{ tag: 'absent' }}
+            onCancel={props.doCancel}
+          /> :
+          <LeaseAgreementDetail
+            data={data}
+            navLinkTo={props.navLinkTo}
+            formOptions={props.formOptions}
+            transactions={props.transactions}
+            attachments={props.attachments}
+            doSubmit={props.doSubmit}
+            deleteAction={props.deleteAction}
+            onEditStart={props.onEditStart}
+            submitState={props.submitState}
+          />
+      )
+      .exhaustive()}
+  </div>
+);

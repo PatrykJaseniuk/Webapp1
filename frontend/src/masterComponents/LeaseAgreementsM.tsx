@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
@@ -17,6 +17,7 @@ type NavLinkTo = Readonly<{
   readonly leaseAgreement: NavLinkWithId;
   readonly tenant: NavLinkWithId;
   readonly property: NavLinkWithId;
+  readonly create?: NavLink;
 }>;
 
 type LeaseAgreementSortColumn = Extract<keyof LeaseAgreementRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status' | 'tenants' | 'properties'>;
@@ -55,7 +56,7 @@ const resolveSearchIds = async (search: string): Promise<{
 
 export const LeaseAgreementsM = ({
   Slave,
-  role: _role,
+  role,
 }: Props): JSX.Element => {
   const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<LeaseAgreementRow, LeaseAgreementSortColumn, LeaseAgreementFilter>({
     queryKey: ['lease_agreements'],
@@ -93,10 +94,13 @@ export const LeaseAgreementsM = ({
     },
   });
 
+  const canCreate = role === 'admin' || role === 'landlord';
+
   const navLinkTo: NavLinkTo = {
     leaseAgreement: ({ content, id, style, ariaLabel }) => <Link to="/app/leases/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     tenant: ({ content, id, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
     property: ({ content, id, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
+    ...(canCreate ? { create: ({ content, style }) => <Link to="/app/leases/$id" params={{ id: 'new' }} style={style}>{content}</Link> } : {}),
   };
 
   return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} />;

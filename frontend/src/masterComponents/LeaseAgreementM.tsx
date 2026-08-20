@@ -1,9 +1,11 @@
-import { Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { match } from 'ts-pattern';
+import { useState } from 'react';
 import type { ComponentType } from 'react';
+import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import type { AppRole } from '@/hooks/AuthContext';
 import {
   toAsyncData,
   useFilteredPaginatedQuery,
@@ -14,24 +16,71 @@ import {
 } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
+type LeaseAgreementInsert = Database['public']['Tables']['lease_agreements']['Insert'];
+type LeaseAgreementUpdate = Database['public']['Tables']['lease_agreements']['Update'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
 type TransactionStatusDb = Database['public']['Enums']['transaction_status'];
 
+export const leaseAgreementInsertSchema = z
+  .object({
+    tenant_id: z.string().uuid('Wybierz najemcę'),
+    property_id: z.string().uuid('Wybierz nieruchomość'),
+    start_date: z.string().min(1, 'Data rozpoczęcia jest wymagana'),
+    end_date: z.string().nullable(),
+    monthly_rent: z
+      .number({ invalid_type_error: 'Czynsz musi być liczbą' })
+      .finite('Czynsz musi być liczbą')
+      .nonnegative('Czynsz nie może być ujemny'),
+    deposit_amount: z
+      .number({ invalid_type_error: 'Kaucja musi być liczbą' })
+      .finite('Kaucja musi być liczbą')
+      .nonnegative('Kaucja nie może być ujemna'),
+    lease_status: z.enum(['active', 'expired', 'terminated'], {
+      message: 'Nieprawidłowy status umowy',
+    }),
+    notes: z.string().nullable(),
+  })
+  .refine(
+    (v) => v.end_date === null || v.end_date.length === 0 || v.end_date >= v.start_date,
+    { message: 'Data zakończenia nie może być wcześniejsza niż data rozpoczęcia', path: ['end_date'] },
+  );
+
+export type LeaseAgreementInsertInput = z.input<typeof leaseAgreementInsertSchema>;
+
+const formatZodIssues = (error: z.ZodError): string =>
+  error.issues.map((issue) => issue.message).join('; ');
+
+const formatDeleteError = (error: Error | null): string => {
+  const code = (error as { readonly code?: string } | null)?.code;
+  return code === '23503'
+    ? 'Nie można usunąć umowy — są z nią powiązane transakcje.'
+    : error?.message ?? 'Wystąpił nieznany błąd';
+};
+
+type TenantOption = { readonly id: string; readonly label: string };
+type PropertyOption = { readonly id: string; readonly label: string };
+
+export type LeaseFormOptions = Readonly<{
+  readonly tenants: readonly TenantOption[];
+  readonly properties: readonly PropertyOption[];
+}>;
+
 type LeaseAgreementData = Readonly<{
-  readonly leaseAgreement: LeaseAgreementDbRow & {
-    readonly tenants: { readonly first_name: string; readonly last_name: string; };
-    readonly properties: { readonly name: string; };
-  } | null;
+  readonly leaseAgreement:
+    | (LeaseAgreementDbRow & {
+        readonly tenants: { readonly first_name: string; readonly last_name: string };
+        readonly properties: { readonly name: string };
+      })
+    | null;
 }>;
 
 type NavLinkTo = Readonly<{
   readonly tenant: NavLinkWithId;
   readonly property: NavLinkWithId;
   readonly transaction: NavLinkWithId;
-  readonly edit: NavLink;
-  readonly goBack: NavLink;
+  readonly toList: NavLink;
 }>;
 
 type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'>;
@@ -46,51 +95,126 @@ const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.
   transaction_status: 'transaction_status',
 });
 
+type SubmitState =
+  | { readonly tag: 'idle' }
+  | { readonly tag: 'submitting' }
+  | { readonly tag: 'success' }
+  | { readonly tag: 'error'; readonly message: string };
+
+type LeaseAgreementDeleteAction =
+  | { readonly tag: 'absent' }
+  | { readonly tag: 'checking' }
+  | { readonly tag: 'blocked'; readonly reason: string }
+  | { readonly tag: 'allowed'; readonly doDelete: () => void };
+
 export type LeaseAgreementSProps = {
-  readonly asyncData: AsyncData<LeaseAgreementData>;
+  readonly asyncData: AsyncData<LeaseAgreementData | null>;
+  readonly formOptions: AsyncData<LeaseFormOptions>;
+  readonly doSubmit: (newRecord: LeaseAgreementInsertInput) => void;
+  readonly deleteAction: LeaseAgreementDeleteAction;
+  readonly doCancel: () => void;
+  readonly onEditStart: () => void;
+  readonly submitState: SubmitState;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilter>;
   readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
 
+export type LeaseAgreementDetailMode =
+  | { readonly tag: 'create' }
+  | { readonly tag: 'edit'; readonly id: string };
+
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementSProps>;
-  readonly id: string;
-  readonly role: AppRole;
+  readonly mode: LeaseAgreementDetailMode;
 };
 
-export const LeaseAgreementDetailM = ({
-  Slave,
-  id,
-  role: _role,
-}: Props): JSX.Element => {
-  const query = useQuery({
-    queryKey: ['leaseAgreement', id],
-    queryFn: async (): Promise<LeaseAgreementData> => {
-      const leaseResult = await backendConnector
-        .from('lease_agreements')
-        .select('*, tenants(first_name,last_name), properties(name)')
-        .eq('id', id)
-        .single();
+const fetchLeaseAgreementData = async (leaseId: string): Promise<LeaseAgreementData> => {
+  const result = await backendConnector
+    .from('lease_agreements')
+    .select('*, tenants(first_name,last_name), properties(name)')
+    .eq('id', leaseId)
+    .single();
+  return result.error !== null
+    ? Promise.reject(result.error)
+    : { leaseAgreement: result.data ?? null };
+};
 
-      return leaseResult.error !== null
-        ? Promise.reject(leaseResult.error)
-        : { leaseAgreement: leaseResult.data ?? null };
-    },
+const fetchFormOptions = async (): Promise<LeaseFormOptions> => {
+  const [tenantsResult, propertiesResult] = await Promise.all([
+    backendConnector.from('tenants').select('id, first_name, last_name').order('last_name'),
+    backendConnector.from('properties').select('id, name').order('name'),
+  ]);
+  const combinedError = tenantsResult.error ?? propertiesResult.error;
+  return combinedError !== null
+    ? Promise.reject(combinedError)
+    : {
+        tenants: (tenantsResult.data ?? []).map((t) => ({
+          id: t.id,
+          label: `${t.first_name} ${t.last_name}`.trim(),
+        })),
+        properties: (propertiesResult.data ?? []).map((p) => ({ id: p.id, label: p.name })),
+      };
+};
+
+const insertLeaseAgreement = async (newRecord: LeaseAgreementInsert): Promise<string> => {
+  const result = await backendConnector.from('lease_agreements').insert(newRecord).select('id').single();
+  return result.error !== null ? Promise.reject(result.error) : result.data.id;
+};
+
+const updateLeaseAgreement = async (leaseId: string, newRecord: LeaseAgreementUpdate): Promise<void> => {
+  const result = await backendConnector.from('lease_agreements').update(newRecord).eq('id', leaseId);
+  return result.error !== null ? Promise.reject(result.error) : undefined;
+};
+
+const deleteLeaseAgreement = async (leaseId: string): Promise<void> => {
+  const result = await backendConnector.from('lease_agreements').delete().eq('id', leaseId);
+  return result.error !== null ? Promise.reject(result.error) : undefined;
+};
+
+export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const leaseId = match(mode)
+    .with({ tag: 'create' }, () => null)
+    .with({ tag: 'edit' }, ({ id }) => id)
+    .exhaustive();
+
+  const query = useQuery({
+    queryKey: ['leaseAgreement', leaseId],
+    queryFn: (): Promise<LeaseAgreementData> =>
+      match(mode)
+        .with({ tag: 'create' }, () => Promise.reject(new Error('Brak identyfikatora umowy')))
+        .with({ tag: 'edit' }, ({ id }) => fetchLeaseAgreementData(id))
+        .exhaustive(),
+    enabled: leaseId !== null,
   });
 
-  const asyncData = toAsyncData(query, () => { void query.refetch(); });
+  const asyncData: AsyncData<LeaseAgreementData | null> = match(mode)
+    .with({ tag: 'create' }, () => ({ tag: 'fulfilled' as const, data: null }))
+    .with({ tag: 'edit' }, () => toAsyncData(query, () => { void query.refetch(); }))
+    .exhaustive();
+
+  const formOptionsQuery = useQuery({
+    queryKey: ['leaseFormOptions'],
+    queryFn: (): Promise<LeaseFormOptions> => fetchFormOptions(),
+  });
+
+  const formOptions = toAsyncData(formOptionsQuery, () => { void formOptionsQuery.refetch(); });
 
   const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, LeaseTransactionFilter>({
-    queryKey: ['transactions', 'leaseAgreement', id],
+    queryKey: ['transactions', 'leaseAgreement', leaseId ?? ''],
     defaultSort: { column: 'due_date', direction: 'desc' },
     pageSize: 5,
+    enabled: leaseId !== null,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('transactions')
         .select('*', { count: 'exact' })
-        .eq('lease_id', id)
+        .eq('lease_id', leaseId ?? '')
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const text = filterConfig.text ?? '';
       const type = filterConfig.type ?? '';
@@ -110,16 +234,17 @@ export const LeaseAgreementDetailM = ({
   });
 
   const attachments = useFilteredPaginatedQuery<AttachmentDbRow, AttachmentSortColumn, never>({
-    queryKey: ['attachments', 'lease', id],
+    queryKey: ['attachments', 'lease', leaseId ?? ''],
     defaultSort: { column: 'created_at', direction: 'desc' },
     pageSize: 5,
+    enabled: leaseId !== null,
     fetchPage: async ({ sort: sortConfig, from, to }) => {
       const ascending = sortConfig.direction === 'asc';
       const result = await backendConnector
         .from('attachments')
         .select('*', { count: 'exact' })
         .eq('related_to_type', 'lease')
-        .eq('related_to_id', id)
+        .eq('related_to_id', leaseId ?? '')
         .order(sortConfig.column, { ascending })
         .range(from, to);
       return result.error !== null
@@ -128,17 +253,116 @@ export const LeaseAgreementDetailM = ({
     },
   });
 
+  const deleteGuard = useQuery({
+    queryKey: ['leaseAgreement', leaseId, 'deleteGuard'],
+    queryFn: async (): Promise<{ readonly transactionCount: number }> => {
+      const result = await backendConnector
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('lease_id', leaseId ?? '');
+      return result.error !== null
+        ? Promise.reject(result.error)
+        : { transactionCount: result.count ?? 0 };
+    },
+    enabled: leaseId !== null,
+  });
+
+  const insertMutation = useMutation({
+    mutationFn: (newRecord: LeaseAgreementInsert): Promise<string> => insertLeaseAgreement(newRecord),
+    onSuccess: (newId) => {
+      void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
+      void navigate({ to: '/app/leases/$id', params: { id: newId } });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, record }: { readonly id: string; readonly record: LeaseAgreementUpdate }): Promise<void> =>
+      updateLeaseAgreement(id, record),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
+      void queryClient.invalidateQueries({ queryKey: ['leaseAgreement', leaseId] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string): Promise<void> => deleteLeaseAgreement(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
+      void queryClient.invalidateQueries({ queryKey: ['leaseAgreement', leaseId] });
+      void navigate({ to: '/app/leases' });
+    },
+  });
+
+  const doSubmit = (newRecord: LeaseAgreementInsertInput): void =>
+    match(leaseAgreementInsertSchema.safeParse(newRecord))
+      .with({ success: true }, ({ data }) => {
+        setValidationError(null);
+        match(mode)
+          .with({ tag: 'create' }, () => insertMutation.mutate(data))
+          .with({ tag: 'edit' }, ({ id }) => updateMutation.mutate({ id, record: data }))
+          .exhaustive();
+      })
+      .with({ success: false }, ({ error }) => {
+        setValidationError(formatZodIssues(error));
+      })
+      .exhaustive();
+
+  const onEditStart = (): void => {
+    insertMutation.reset();
+    updateMutation.reset();
+    deleteMutation.reset();
+    setValidationError(null);
+  };
+
+  const deleteAction: LeaseAgreementDeleteAction = match(mode)
+    .with({ tag: 'create' }, () => ({ tag: 'absent' as const }))
+    .with({ tag: 'edit' }, ({ id }) =>
+      match(deleteGuard.status)
+        .with('pending', () => ({ tag: 'checking' as const }))
+        .with('error', () => ({ tag: 'blocked' as const, reason: 'Nie udało się sprawdzić powiązań umowy.' }))
+        .with('success', () => {
+          const transactionCount = deleteGuard.data?.transactionCount ?? 0;
+          return transactionCount > 0
+            ? { tag: 'blocked' as const, reason: `Umowa ma ${transactionCount} ${transactionCount === 1 ? 'powiązaną transakcję' : 'powiązanych transakcji'} i nie może zostać usunięta.` }
+            : { tag: 'allowed' as const, doDelete: (): void => { deleteMutation.mutate(id); } };
+        })
+        .exhaustive(),
+    )
+    .exhaustive();
+
+  const doCancel = (): void => {
+    void navigate({ to: '/app/leases' });
+  };
+
+  const submitState: SubmitState =
+    insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
+      ? { tag: 'submitting' }
+      : validationError !== null
+        ? { tag: 'error', message: validationError }
+        : insertMutation.error !== null || updateMutation.error !== null
+          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error)?.message ?? 'Unknown error' }
+          : deleteMutation.error !== null
+            ? { tag: 'error', message: formatDeleteError(deleteMutation.error) }
+            : insertMutation.isSuccess || updateMutation.isSuccess
+              ? { tag: 'success' }
+              : { tag: 'idle' };
+
   const navLinkTo: NavLinkTo = {
-    tenant: ({ id: tenantId, content, style }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style}>{content}</Link>,
-    property: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
+    tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,
+    property: ({ id: propertyId, content, style, ariaLabel }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style} aria-label={ariaLabel}>{content}</Link>,
     transaction: ({ id: transactionId, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style} aria-label={ariaLabel}>{content}</Link>,
-    edit: ({ content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
-    goBack: ({ content, style }) => <button type="button" onClick={() => window.history.back()} style={style}>{content}</button>,
+    toList: ({ content, style }) => <Link to="/app/leases" style={style}>{content}</Link>,
   };
 
   return (
     <Slave
       asyncData={asyncData}
+      formOptions={formOptions}
+      doSubmit={doSubmit}
+      deleteAction={deleteAction}
+      doCancel={doCancel}
+      onEditStart={onEditStart}
+      submitState={submitState}
       transactions={transactions}
       attachments={attachments}
       navLinkTo={navLinkTo}
