@@ -32,7 +32,7 @@ export const leaseAgreementInsertSchema = z
     monthly_rent: z
       .number({ invalid_type_error: 'Czynsz musi być liczbą' })
       .finite('Czynsz musi być liczbą')
-      .nonnegative('Czynsz nie może być ujemny'),
+      .positive('Czynsz musi być większy od zera'),
     deposit_amount: z
       .number({ invalid_type_error: 'Kaucja musi być liczbą' })
       .finite('Kaucja musi być liczbą')

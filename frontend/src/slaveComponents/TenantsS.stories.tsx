@@ -57,6 +57,8 @@ const navLinkTo = {
     <a href={`#/tenants/${id}`} style={style}>{content}</a>,
   property: ({ id, content, style }: { readonly id: string; readonly style: React.CSSProperties; readonly content: string }) =>
     <a href={`#/properties/${id}`} style={style}>{content}</a>,
+  create: ({ content, style }: { readonly style: React.CSSProperties; readonly content: string }) =>
+    <a href="#/tenants/new" style={style}>{content}</a>,
 };
 
 const meta: Meta<typeof TenantsS> = {

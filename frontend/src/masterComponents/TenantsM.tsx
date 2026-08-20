@@ -2,7 +2,7 @@ import { Link } from '@tanstack/react-router';
 import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
 type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
 type TenantStatusDb = Database['public']['Enums']['tenant_status'];
@@ -12,6 +12,7 @@ type TenantListRow = TenantDbRow;
 type NavLinkTo = Readonly<{
   readonly tenant: NavLinkWithId;
   readonly property: NavLinkWithId;
+  readonly create: NavLink;
 }>;
 
 type TenantSortColumn = Extract<keyof TenantDbRow, 'last_name' | 'first_name' | 'email' | 'tenant_status'>;
@@ -49,6 +50,7 @@ export const TenantsM = ({
   const navLinkTo: NavLinkTo = {
     tenant: ({ id, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
+    create: ({ content, style }) => <Link to="/app/tenants/$id" params={{ id: 'new' }} style={style}>{content}</Link>,
   };
 
   return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} />;

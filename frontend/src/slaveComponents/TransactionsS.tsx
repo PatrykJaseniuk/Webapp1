@@ -93,7 +93,14 @@ export const TransactionsS = ({
   filter,
 }: TransactionsSProps): JSX.Element => (
   <div className="min-h-[300px]">
-    <h1 className="mb-4 text-xl font-semibold text-gray-900">Transakcje</h1>
+    <div className="mb-4 flex items-center justify-between">
+      <h1 className="text-xl font-semibold text-gray-900">Transakcje</h1>
+      {navLinkTo.create !== undefined ? (
+        <div className="[&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">
+          {navLinkTo.create({ style: {}, content: 'Dodaj transakcję' })}
+        </div>
+      ) : null}
+    </div>
     <FilterToolbarS
       isFilterActive={isFilterActive(filter.config)}
       activeFilterCount={activeFilterCount(filter.config)}

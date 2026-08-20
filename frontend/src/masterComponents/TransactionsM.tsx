@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLinkWithId } from '@/generic';
+import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
@@ -17,6 +17,7 @@ type NavLinkTo = Readonly<{
   readonly transaction: NavLinkWithId;
   readonly property: NavLinkWithId;
   readonly lease: NavLinkWithId;
+  readonly create?: NavLink;
 }>;
 
 type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'> | 'properties';
@@ -40,7 +41,7 @@ type Props = {
 
 export const TransactionsM = ({
   Slave,
-  role: _role,
+  role,
 }: Props): JSX.Element => {
   const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<TransactionListRow, TransactionSortColumn, TransactionFilter>({
     queryKey: ['transactions'],
@@ -65,10 +66,13 @@ export const TransactionsM = ({
     },
   });
 
+  const canCreate = role === 'admin' || role === 'landlord';
+
   const navLinkTo: NavLinkTo = {
     transaction: ({ id, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     property: ({ id, content, style }) => <Link to="/app/properties/$id" params={{ id }} style={style}>{content}</Link>,
     lease: ({ id, content, style }) => <Link to="/app/leases/$id" params={{ id }} style={style}>{content}</Link>,
+    ...(canCreate ? { create: ({ content, style }) => <Link to="/app/transactions/$id" params={{ id: 'new' }} style={style}>{content}</Link> } : {}),
   };
 
   return (

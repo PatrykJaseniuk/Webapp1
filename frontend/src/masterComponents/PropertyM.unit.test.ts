@@ -72,7 +72,11 @@ describe('propertyInsertSchema', () => {
   });
 
   it('rejects a negative monthly_rent', () => {
-    expect(failureMessages({ ...validInput, monthly_rent: -100 })).toContain('Czynsz nie może być ujemny');
+    expect(failureMessages({ ...validInput, monthly_rent: -100 })).toContain('Czynsz musi być większy od zera');
+  });
+
+  it('rejects a zero monthly_rent', () => {
+    expect(failureMessages({ ...validInput, monthly_rent: 0 })).toContain('Czynsz musi być większy od zera');
   });
 
   it('rejects a NaN monthly_rent (from a failed Number() coercion)', () => {
