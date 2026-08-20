@@ -53,7 +53,7 @@ export const PropertiesM = ({
   const navLinkTo: NavLinkTo = {
     property: ({ id, content, style, ariaLabel }) => <Link to="/app/properties/$id" params={{ id }} style={style} aria-label={ariaLabel}>{content}</Link>,
     tenant: ({ id, content, style }) => <Link to="/app/tenants/$id" params={{ id }} style={style}>{content}</Link>,
-    create: ({ content, style }) => <Link to="/app/properties/new" style={style}>{content}</Link>,
+    create: ({ content, style }) => <Link to="/app/properties/$id" params={{ id: 'new' }} style={style}>{content}</Link>,
   };
 
   return <Slave asyncData={asyncData} navLinkTo={navLinkTo} sort={sort} pagination={pagination} filter={filter} />;

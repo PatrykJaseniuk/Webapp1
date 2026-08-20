@@ -17,6 +17,7 @@ import {
 
 type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
 type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
+type PropertyUpdate = Database['public']['Tables']['properties']['Update'];
 
 export const propertyInsertSchema = z.object({
   name: z.string().trim().min(1, 'Nazwa jest wymagana'),
@@ -99,7 +100,7 @@ const TRANSACTION_SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string
   transaction_status: 'transaction_status',
 });
 
-export type SubmitState =
+type SubmitState =
   | { readonly tag: 'idle' }
   | { readonly tag: 'submitting' }
   | { readonly tag: 'success' }
@@ -107,9 +108,10 @@ export type SubmitState =
 
 export type PropertySProps = {
   readonly asyncData: AsyncData<PropertyData | null>;
-  readonly doEdit: (newRecord: PropertyInsertInput) => void;
+  readonly doSubmit: (newRecord: PropertyInsertInput) => void;
   readonly doDelete: (() => void) | null;
   readonly doCancel: () => void;
+  readonly onEditStart: () => void;
   readonly submitState: SubmitState;
   readonly leases: FilteredQueryResult<LeaseRow, LeaseSortColumn, LeaseFilter>;
   readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, TransactionFilter>;
@@ -117,56 +119,83 @@ export type PropertySProps = {
   readonly navLinkTo: NavLinkTo;
 };
 
+export type PropertyDetailMode =
+  | { readonly tag: 'create' }
+  | { readonly tag: 'edit'; readonly id: string };
+
 type Props = {
   readonly Slave: ComponentType<PropertySProps>;
-  readonly id: string | null;
+  readonly mode: PropertyDetailMode;
 };
 
-export const PropertyDetailM = ({
-  Slave,
-  id,
-}: Props): JSX.Element => {
+const fetchPropertyData = async (propertyId: string): Promise<PropertyData> => {
+  const [propertyResult, occupancyResult, financialResult] = await Promise.all([
+    backendConnector.from('properties').select('*').eq('id', propertyId).single(),
+    backendConnector.from('property_occupancy').select('*').eq('id', propertyId).maybeSingle(),
+    backendConnector.from('property_financial_summary').select('*').eq('property_id', propertyId).maybeSingle(),
+  ]);
+
+  const combinedError = propertyResult.error ?? occupancyResult.error ?? financialResult.error;
+  return combinedError !== null
+    ? Promise.reject(combinedError)
+    : {
+      property: propertyResult.data ?? null,
+      occupancy: occupancyResult.data ?? null,
+      financial: financialResult.data ?? null,
+    };
+};
+
+const insertProperty = async (newRecord: PropertyInsert): Promise<string> => {
+  const result = await backendConnector.from('properties').insert(newRecord).select('id').single();
+  return result.error !== null ? Promise.reject(result.error) : result.data.id;
+};
+
+const updateProperty = async (propertyId: string, newRecord: PropertyUpdate): Promise<void> => {
+  const result = await backendConnector.from('properties').update(newRecord).eq('id', propertyId);
+  return result.error !== null ? Promise.reject(result.error) : undefined;
+};
+
+const deleteProperty = async (propertyId: string): Promise<void> => {
+  const result = await backendConnector.from('properties').delete().eq('id', propertyId);
+  return result.error !== null ? Promise.reject(result.error) : undefined;
+};
+
+export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const query = useQuery({
-    queryKey: ['property', id],
-    queryFn: async (): Promise<PropertyData> => {
-      const [propertyResult, occupancyResult, financialResult] = await Promise.all([
-        backendConnector.from('properties').select('*').eq('id', id as string).single(),
-        backendConnector.from('property_occupancy').select('*').eq('id', id as string).maybeSingle(),
-        backendConnector.from('property_financial_summary').select('*').eq('property_id', id as string).maybeSingle(),
-      ]);
+  const propertyId = match(mode)
+    .with({ tag: 'create' }, () => null)
+    .with({ tag: 'edit' }, ({ id }) => id)
+    .exhaustive();
 
-      const combinedError = propertyResult.error ?? occupancyResult.error ?? financialResult.error;
-      return combinedError !== null
-        ? Promise.reject(combinedError)
-        : {
-          property: propertyResult.data ?? null,
-          occupancy: occupancyResult.data ?? null,
-          financial: financialResult.data ?? null,
-        };
-    },
-    enabled: id !== null,
+  const query = useQuery({
+    queryKey: ['property', propertyId],
+    queryFn: (): Promise<PropertyData> =>
+      match(mode)
+        .with({ tag: 'create' }, () => Promise.reject(new Error('Brak identyfikatora nieruchomości')))
+        .with({ tag: 'edit' }, ({ id }) => fetchPropertyData(id))
+        .exhaustive(),
+    enabled: propertyId !== null,
   });
 
-  const asyncData: AsyncData<PropertyData | null> =
-    id === null ?
-      { tag: 'fulfilled', data: null } :
-      toAsyncData(query, () => { void query.refetch(); });
+  const asyncData: AsyncData<PropertyData | null> = match(mode)
+    .with({ tag: 'create' }, () => ({ tag: 'fulfilled' as const, data: null }))
+    .with({ tag: 'edit' }, () => toAsyncData(query, () => { void query.refetch(); }))
+    .exhaustive();
 
   const leases = useFilteredPaginatedQuery<LeaseRow, LeaseSortColumn, LeaseFilter>({
-    queryKey: ['leases', 'property', id ?? ''],
+    queryKey: ['leases', 'property', propertyId ?? ''],
     defaultSort: { column: 'start_date', direction: 'desc' },
     pageSize: 5,
-    enabled: id !== null,
+    enabled: propertyId !== null,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('lease_agreements')
         .select('*, tenants(first_name,last_name)', { count: 'exact' })
-        .eq('property_id', id ?? '')
+        .eq('property_id', propertyId ?? '')
         .order(LEASE_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const status = filterConfig.status ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
@@ -182,16 +211,16 @@ export const PropertyDetailM = ({
   });
 
   const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, TransactionFilter>({
-    queryKey: ['transactions', 'property', id ?? ''],
+    queryKey: ['transactions', 'property', propertyId ?? ''],
     defaultSort: { column: 'due_date', direction: 'desc' },
     pageSize: 5,
-    enabled: id !== null,
+    enabled: propertyId !== null,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
         .from('transactions')
         .select('*', { count: 'exact' })
-        .eq('property_id', id ?? '')
+        .eq('property_id', propertyId ?? '')
         .order(TRANSACTION_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const text = filterConfig.text ?? '';
       const type = filterConfig.type ?? '';
@@ -211,17 +240,17 @@ export const PropertyDetailM = ({
   });
 
   const attachments = useFilteredPaginatedQuery<AttachmentDbRow, AttachmentSortColumn, never>({
-    queryKey: ['attachments', 'property', id ?? ''],
+    queryKey: ['attachments', 'property', propertyId ?? ''],
     defaultSort: { column: 'created_at', direction: 'desc' },
     pageSize: 5,
-    enabled: id !== null,
+    enabled: propertyId !== null,
     fetchPage: async ({ sort: sortConfig, from, to }) => {
       const ascending = sortConfig.direction === 'asc';
       const result = await backendConnector
         .from('attachments')
         .select('*', { count: 'exact' })
         .eq('related_to_type', 'property')
-        .eq('related_to_id', id ?? '')
+        .eq('related_to_id', propertyId ?? '')
         .order(sortConfig.column, { ascending })
         .range(from, to);
       return result.error !== null
@@ -231,10 +260,7 @@ export const PropertyDetailM = ({
   });
 
   const insertMutation = useMutation({
-    mutationFn: async (newRecord: PropertyInsert): Promise<string> => {
-      const result = await backendConnector.from('properties').insert(newRecord).select('id').single();
-      return result.error !== null ? Promise.reject(result.error) : result.data.id;
-    },
+    mutationFn: (newRecord: PropertyInsert): Promise<string> => insertProperty(newRecord),
     onSuccess: (newId) => {
       void queryClient.invalidateQueries({ queryKey: ['properties'] });
       void navigate({ to: '/app/properties/$id', params: { id: newId } });
@@ -242,34 +268,33 @@ export const PropertyDetailM = ({
   });
 
   const updateMutation = useMutation({
-    mutationFn: async (newRecord: PropertyInsert): Promise<void> => {
-      const result = await backendConnector.from('properties').update(newRecord).eq('id', id as string);
-      return result.error !== null ? Promise.reject(result.error) : undefined;
-    },
+    mutationFn: ({ id, record }: { readonly id: string; readonly record: PropertyUpdate }): Promise<void> =>
+      updateProperty(id, record),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['properties'] });
-      void queryClient.invalidateQueries({ queryKey: ['property', id] });
+      void queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (): Promise<void> => {
-      const result = await backendConnector.from('properties').delete().eq('id', id as string);
-      return result.error !== null ? Promise.reject(result.error) : undefined;
-    },
+    mutationFn: (id: string): Promise<void> => deleteProperty(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['properties'] });
+      void queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
       void navigate({ to: '/app/properties' });
     },
   });
 
-  const doEdit = (newRecord: PropertyInsertInput): void =>
+  const doSubmit = (newRecord: PropertyInsertInput): void =>
     match(propertyInsertSchema.safeParse(newRecord))
       .with(
         { success: true },
         ({ data }) => {
           setValidationError(null);
-          id === null ? insertMutation.mutate(data) : updateMutation.mutate(data);
+          match(mode)
+            .with({ tag: 'create' }, () => insertMutation.mutate(data))
+            .with({ tag: 'edit' }, ({ id }) => updateMutation.mutate({ id, record: data }))
+            .exhaustive();
         },
       )
       .with(
@@ -280,9 +305,17 @@ export const PropertyDetailM = ({
       )
       .exhaustive();
 
-  const doDelete = (): void => {
-    deleteMutation.mutate();
+  const onEditStart = (): void => {
+    insertMutation.reset();
+    updateMutation.reset();
+    deleteMutation.reset();
+    setValidationError(null);
   };
+
+  const doDelete: (() => void) | null = match(mode)
+    .with({ tag: 'create' }, () => null)
+    .with({ tag: 'edit' }, ({ id }) => (): void => { deleteMutation.mutate(id); })
+    .exhaustive();
 
   const doCancel = (): void => {
     void navigate({ to: '/app/properties' });
@@ -309,9 +342,10 @@ export const PropertyDetailM = ({
   return (
     <Slave
       asyncData={asyncData}
-      doEdit={doEdit}
-      doDelete={id === null ? null : doDelete}
+      doSubmit={doSubmit}
+      doDelete={doDelete}
       doCancel={doCancel}
+      onEditStart={onEditStart}
       submitState={submitState}
       leases={leases}
       transactions={transactions}

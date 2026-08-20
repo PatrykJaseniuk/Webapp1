@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
-import { fn, spyOn, userEvent, within, expect } from 'storybook/test';
+import { fn, userEvent, within, expect } from 'storybook/test';
 import { PropertyDetailS } from './PropertyS';
 import type { PropertySProps } from '@/masterComponents/PropertyM';
 import type { FilterConfig, FilteredQueryResult } from '@/generic';
@@ -161,8 +161,6 @@ const populatedAttachments: PropertySProps['attachments'] = makeResult<Attachmen
 // navLinkTo
 // ──────────────────────────────────────────────────────────────
 
-const toListMock = fn();
-
 const makeNavLinkTo = () => ({
   tenant: ({ id, content, style, ariaLabel }: { readonly id: string; readonly style: CSSProperties; readonly content: string; readonly ariaLabel?: string }) =>
     <a href={`#/tenants/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
@@ -173,11 +171,6 @@ const makeNavLinkTo = () => ({
   toList: fn(({ content, style }: { readonly style: CSSProperties; readonly content: string }) =>
     <a href="#/properties" style={style}>{content}</a>),
 });
-
-const navLinkToWithSpy = {
-  ...makeNavLinkTo(),
-  toList: toListMock,
-};
 
 const filledData: PropertySProps['asyncData'] = { tag: 'fulfilled', data: propertyData };
 const createData: PropertySProps['asyncData'] = { tag: 'fulfilled', data: null };
@@ -203,8 +196,10 @@ const meta: Meta<typeof PropertyDetailS> = {
     ),
   ],
   args: {
-    doEdit: fn(),
+    doSubmit: fn(),
     doDelete: fn(),
+    doCancel: fn(),
+    onEditStart: fn(),
     submitState: { tag: 'idle' },
     navLinkTo: makeNavLinkTo(),
     leases: emptyLeases,
@@ -275,7 +270,7 @@ export const CreateSubmit: Story = {
     await userEvent.type(canvas.getByLabelText(/kaucja/i), '3000');
     await userEvent.click(canvas.getByRole('button', { name: /zapisz/i }));
 
-    await expect(args.doEdit).toHaveBeenCalledWith({
+    await expect(args.doSubmit).toHaveBeenCalledWith({
       name: 'Dom',
       address: 'ul. Kwiatowa 1',
       property_type: 'apartment',
@@ -290,14 +285,11 @@ export const CreateSubmit: Story = {
 };
 
 export const CreateCancel: Story = {
-  args: {
-    asyncData: createData,
-    navLinkTo: navLinkToWithSpy,
-  },
-  play: async ({ canvasElement }) => {
+  args: { asyncData: createData },
+  play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole('button', { name: /anuluj/i }));
-    await expect(toListMock).toHaveBeenCalled();
+    await expect(args.doCancel).toHaveBeenCalled();
   },
 };
 
@@ -328,7 +320,7 @@ export const EditSubmit: Story = {
     await userEvent.type(nameInput, 'Dom z ogrodem');
     await userEvent.click(canvas.getByRole('button', { name: /zapisz/i }));
 
-    await expect(args.doEdit).toHaveBeenCalledWith({
+    await expect(args.doSubmit).toHaveBeenCalledWith({
       name: 'Dom z ogrodem',
       address: 'ul. Marszałkowska 10, Warszawa',
       property_type: 'apartment',
@@ -395,11 +387,10 @@ export const DeleteConfirmed: Story = {
   args: { asyncData: filledData },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const confirmSpy = spyOn(window, 'confirm').mockReturnValue(true);
     await userEvent.click(canvas.getByRole('button', { name: /edytuj/i }));
     await userEvent.click(canvas.getByRole('button', { name: /usuń/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /potwierdź usunięcie/i }));
     await expect(args.doDelete).toHaveBeenCalledTimes(1);
-    confirmSpy.mockRestore();
   },
 };
 
@@ -407,10 +398,9 @@ export const DeleteCancelled: Story = {
   args: { asyncData: filledData },
   play: async ({ canvasElement, args }) => {
     const canvas = within(canvasElement);
-    const confirmSpy = spyOn(window, 'confirm').mockReturnValue(false);
     await userEvent.click(canvas.getByRole('button', { name: /edytuj/i }));
     await userEvent.click(canvas.getByRole('button', { name: /usuń/i }));
+    await userEvent.click(canvas.getByRole('button', { name: /nie usuwaj/i }));
     await expect(args.doDelete).not.toHaveBeenCalled();
-    confirmSpy.mockRestore();
   },
 };

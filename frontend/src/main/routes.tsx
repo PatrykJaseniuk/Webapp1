@@ -16,7 +16,7 @@ import { NotFoundPage } from '@/pages/NotFoundP';
 import { ErrorPage } from '@/pages/ErrorP';
 import { AppLayoutPage } from '@/pages/AppLayoutP';
 import { PropertiesListPage } from '@/pages/PropertiesP';
-import { PropertyDetailPage, PropertyNewPage } from '@/pages/PropertyP';
+import { PropertyPage } from '@/pages/PropertyP';
 import { TenantsListPage } from '@/pages/TenantsP';
 import { TenantDetailPage } from '@/pages/TenantP';
 import { LeaseAgreementsListPage } from '@/pages/LeaseAgreementsP';
@@ -78,13 +78,7 @@ const propertiesListRoute = createRoute({
 export const propertyDetailRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
   path: '/properties/$id',
-  component: PropertyDetailPage,
-});
-
-export const propertyNewRoute = createRoute({
-  getParentRoute: () => appLayoutRoute,
-  path: '/properties/new',
-  component: PropertyNewPage,
+  component: PropertyPage,
 });
 
 const tenantsListRoute = createRoute({
@@ -145,7 +139,6 @@ const routeTree = rootRoute.addChildren([
     dashboardRoute,
     propertiesListRoute,
     propertyDetailRoute,
-    propertyNewRoute,
     tenantsListRoute,
     tenantDetailRoute,
     leasesListRoute,

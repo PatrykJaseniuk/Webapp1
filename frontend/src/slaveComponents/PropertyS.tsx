@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { match } from 'ts-pattern';
-import type { PropertySProps, SubmitState } from '@/masterComponents/PropertyM';
+import type { PropertySProps } from '@/masterComponents/PropertyM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 import {
@@ -41,7 +41,8 @@ type PropertyData = NonNullable<Fulfilled>;
 type Property = NonNullable<PropertyData['property']>;
 type PropertyType = Property['property_type'];
 type PropertyStatus = Property['property_status'];
-type PropertyInsert = Parameters<PropertySProps['doEdit']>[0];
+type PropertyInsert = Parameters<PropertySProps['doSubmit']>[0];
+type SubmitState = PropertySProps['submitState'];
 type NavLinkTo = PropertySProps['navLinkTo'];
 type Leases = PropertySProps['leases'];
 type Transactions = PropertySProps['transactions'];
@@ -240,14 +241,14 @@ const DetailContent = ({
           <div><p className={labelClass}>Sypialnie</p><p className={valueClass}>{p.bedrooms ?? '—'}</p></div>
           <div>
             <p className={labelClass}>Aktualny najemca</p>
-            {occupancy?.current_tenant_name !== null && occupancy?.current_tenant_name !== undefined && occupancy?.tenant_id !== null && occupancy?.tenant_id !== undefined ?
-              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.tenant({ id: occupancy.tenant_id as string, style: {}, content: occupancy.current_tenant_name })}</div> :
+            {occupancy !== null && occupancy.tenant_id !== null && occupancy.current_tenant_name !== null ?
+              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.tenant({ id: occupancy.tenant_id, style: {}, content: occupancy.current_tenant_name })}</div> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
           <div>
             <p className={labelClass}>Aktualna umowa</p>
-            {occupancy?.current_lease_id !== null && occupancy?.current_lease_id !== undefined ?
-              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.lease({ id: occupancy.current_lease_id as string, style: {}, content: 'Umowa najmu' })}</div> :
+            {occupancy !== null && occupancy.current_lease_id !== null ?
+              <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.lease({ id: occupancy.current_lease_id, style: {}, content: 'Umowa najmu' })}</div> :
               <p className={`${valueClass} text-gray-400`}>—</p>}
           </div>
         </div>
@@ -466,7 +467,7 @@ const DetailContent = ({
 type FormProps = {
   readonly initial: PropertyDraft;
   readonly submitState: SubmitState;
-  readonly doEdit: (newRecord: PropertyInsert) => void;
+  readonly doSubmit: (newRecord: PropertyInsert) => void;
   readonly doDelete: (() => void) | null;
   readonly onCancel: () => void;
 };
@@ -474,20 +475,21 @@ type FormProps = {
 const PropertyForm = ({
   initial,
   submitState,
-  doEdit,
+  doSubmit,
   doDelete,
   onCancel,
 }: FormProps): JSX.Element => {
   const [form, setForm] = useState<PropertyDraft>(initial);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const setField = (field: keyof PropertyDraft) =>
     (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
-      setForm((prev) => ({ ...prev, [field]: e.target.value }) as PropertyDraft);
+      setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
-    doEdit(toInsert(form));
+    doSubmit(toInsert(form));
   };
 
   return (
@@ -558,14 +560,33 @@ const PropertyForm = ({
             </button>
           </div>
           {doDelete !== null ?
-            <button
-              type="button"
-              onClick={() => { window.confirm('Usunąć nieruchomość?') && doDelete !== null && doDelete(); }}
-              disabled={submitState.tag === 'submitting'}
-              className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-            >
-              Usuń
-            </button> :
+            confirmDelete ?
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { doDelete(); setConfirmDelete(false); }}
+                  disabled={submitState.tag === 'submitting'}
+                  className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+                >
+                  Potwierdź usunięcie
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={submitState.tag === 'submitting'}
+                  className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Nie usuwaj
+                </button>
+              </div> :
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(true)}
+                disabled={submitState.tag === 'submitting'}
+                className="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+              >
+                Usuń
+              </button> :
             null}
         </div>
       </form>
@@ -579,8 +600,9 @@ const PropertyDetail = ({
   leases,
   transactions,
   attachments,
-  doEdit,
+  doSubmit,
   doDelete,
+  onEditStart,
   submitState,
 }: {
   readonly data: PropertyData;
@@ -588,8 +610,9 @@ const PropertyDetail = ({
   readonly leases: Leases;
   readonly transactions: Transactions;
   readonly attachments: Attachments;
-  readonly doEdit: (newRecord: PropertyInsert) => void;
+  readonly doSubmit: (newRecord: PropertyInsert) => void;
   readonly doDelete: (() => void) | null;
+  readonly onEditStart: () => void;
   readonly submitState: SubmitState;
 }): JSX.Element => {
   const [editing, setEditing] = useState(false);
@@ -597,10 +620,13 @@ const PropertyDetail = ({
   const property = data.property;
 
   useEffect(() => {
-    const isSuccess = submitState.tag === 'success';
-    isSuccess ? setEditing(false) : undefined;
-    isSuccess ? setShowSuccess(true) : undefined;
-    const timer = isSuccess ? setTimeout(() => setShowSuccess(false), 4000) : null;
+    const timer = match(submitState.tag)
+      .with('success', () => {
+        setEditing(false);
+        setShowSuccess(true);
+        return setTimeout(() => setShowSuccess(false), 4000);
+      })
+      .otherwise(() => null);
     return () => (timer !== null ? clearTimeout(timer) : undefined);
   }, [submitState.tag]);
 
@@ -625,7 +651,7 @@ const PropertyDetail = ({
             <PropertyForm
               initial={toDraft(p)}
               submitState={submitState}
-              doEdit={doEdit}
+              doSubmit={doSubmit}
               doDelete={doDelete}
               onCancel={() => setEditing(false)}
             /> :
@@ -636,7 +662,7 @@ const PropertyDetail = ({
               leases={leases}
               transactions={transactions}
               attachments={attachments}
-              onEdit={() => { setEditing(true); setShowSuccess(false); }}
+              onEdit={() => { setEditing(true); setShowSuccess(false); onEditStart(); }}
             />
         )}
     </>
@@ -653,7 +679,7 @@ export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
           <PropertyForm
             initial={EMPTY_DRAFT}
             submitState={props.submitState}
-            doEdit={props.doEdit}
+            doSubmit={props.doSubmit}
             doDelete={null}
             onCancel={props.doCancel}
           /> :
@@ -663,8 +689,9 @@ export const PropertyDetailS = (props: PropertySProps): JSX.Element => (
             leases={props.leases}
             transactions={props.transactions}
             attachments={props.attachments}
-            doEdit={props.doEdit}
+            doSubmit={props.doSubmit}
             doDelete={props.doDelete}
+            onEditStart={props.onEditStart}
             submitState={props.submitState}
           />
       )
