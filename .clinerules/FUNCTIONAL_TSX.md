@@ -17,8 +17,10 @@
   Every field `readonly`.
 - Destructure props in the signature. Never access `props.` in the body.
 - Named exports only — never `export default`.
-- One component per file. File name = component name (PascalCase, plus the
-  M/S/P suffix from FRONTEND_ARCH.md).
+- Exactly one EXPORTED component per file. File name = the exported component's
+  name (PascalCase, plus the M/S/P suffix from FRONTEND_ARCH.md). Non-exported
+  helper components used only within the same file MAY be defined alongside it
+  (e.g. `DetailContent`, `PropertyForm` inside `PropertyS.tsx`).
 
 # ───────────────────────────────────────────────────────────────
 # 2. STATE & IMMUTABILITY
@@ -29,10 +31,10 @@
     ❌  state.field = value;
 - Server state NEVER lives in `useState` — it belongs to TanStack Query in
   master components (FRONTEND_ARCH.md §1). Slave (presentational) components MAY
-  hold local `useState`/`useReducer` for purely presentational UI concerns
-  (panel visibility, focus, local input), but MUST NOT fetch data or read from
-  outside context (route params, auth, store/query) — server state arrives only
-  via props.
+  hold their own local state (`useState`/`useReducer`) — UI concerns (panel
+  visibility, focus, local input) as well as form draft state (controlled
+  inputs) — but MUST NOT fetch data or read from outside context (route params,
+  auth, store/query) — server state arrives only via props.
 - `useRef` only for DOM node references, never for mutable data storage.
 - Model component state machines with discriminated unions:
     type State =

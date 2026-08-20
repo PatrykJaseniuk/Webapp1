@@ -69,12 +69,12 @@
 
 - Pure functions. Zero side effects. Zero DB knowledge. Zero application
   knowledge. Local React state (`useState`, `useReducer`, `useRef`) is allowed
-  for purely presentational UI concerns (e.g. toggling a filter panel,
-  click-outside handling, local input focus). A slave MUST NOT fetch data and
-  MUST NOT read from outside context (no route params, no auth state, no
-  backend/store/query access). Server/asynchronous state arrives only via the
-  `asyncData` prop (see §2a) — a slave never owns the loading/error/data
-  lifecycle itself.
+  — a slave MAY own its own local state, including UI state (panel toggling,
+  click-outside handling, local input focus) and form draft state (controlled
+  inputs). A slave MUST NOT fetch data and MUST NOT read from outside context
+  (no route params, no auth state, no backend/store/query access).
+  Server/asynchronous state arrives only via the `asyncData` prop (see §2a) —
+  a slave never owns the loading/error/data lifecycle itself.
 
 - Imports — whitelist:
   - TYPE imports: exactly ONE from its master — the slave props interface
@@ -129,10 +129,13 @@
 # 2b. FORM PATTERN
 # ───────────────────────────────────────────────────────────────
 
-- Form slaves render uncontrolled inputs (`defaultValue`, never
-  `value` + `onChange`).
-- The slave defines a pure module-level `extractFormData(fd: FormData)`
-  function returning a typed input object, and exports it for reuse/tests.
+- Form slaves MAY hold their own form draft state — controlled inputs
+  (`value` + `onChange`) are allowed. Uncontrolled inputs (`defaultValue`)
+  + module-level `extractFormData(fd: FormData)` remain the recommended
+  pattern for simple forms.
+- When using the uncontrolled pattern, the slave defines a pure module-level
+  `extractFormData(fd: FormData)` function returning a typed input object,
+  and exports it for reuse/tests.
 - The master owns the whole form lifecycle: submission via `useMutation`,
   validation of the extracted input (validate at this boundary — a zod
   schema is the recommended tool), and field/server error state. It passes
@@ -226,8 +229,8 @@ tables), slaves stay pure render, a page wires them.
 #     label lookups / helper functions — derive tight key types from `<Name>SProps`
 # ❌ Slave uses `window.location.href` or raw `<a href>` for internal navigation —
 #     navigation arrives via `navLinkTo` render-props (see §2c)
-# ❌ Slave holds form lifecycle state, or uses controlled inputs
-#     (`value` + `onChange`) — uncontrolled + `FormData` extraction (see §2b)
+# ❌ Slave owns submission, validation or server-error state — those belong
+#     to the master (see §2b)
 # ❌ Slave imports domain-specific components that should come through props
 # ❌ Master imports a slave or a page — the slave arrives via the `Slave` prop
 # ❌ Master reads URL params or calls `useAuth` — those are Page inputs, passed as props
