@@ -6,14 +6,10 @@ import { ErrorMessage } from './ErrorMessageS';
 import {
   LEASE_STATUS_LABEL,
   TENANT_STATUS_LABEL,
-  TRANSACTION_STATUS_LABEL,
-  TRANSACTION_TYPE_LABEL,
 } from './domain';
 import {
-  amountClass,
   leaseStatusPillClass,
   tenantStatusPillClass,
-  txnStatusPillClass,
 } from './pills';
 import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
@@ -44,17 +40,11 @@ type SubmitState = TenantSProps['submitState'];
 type DeleteAction = TenantSProps['deleteAction'];
 type NavLinkTo = TenantSProps['navLinkTo'];
 type Leases = TenantSProps['leases'];
-type Transactions = TenantSProps['transactions'];
 type Attachments = TenantSProps['attachments'];
 type LeaseRow = Extract<Leases['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type LeaseSortColumn = Leases['sort']['config']['column'];
 type LeaseFilter = Leases['filter'];
 type LeaseStatus = LeaseRow['lease_status'];
-type TransactionRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
-type TransactionSortColumn = Transactions['sort']['config']['column'];
-type TransactionFilter = Transactions['filter'];
-type TxnType = TransactionRow['type'];
-type TxnStatus = TransactionRow['transaction_status'];
 
 const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
@@ -65,14 +55,6 @@ const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
   { key: 'lease_status', label: 'Status', sortColumn: 'lease_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
 ];
 
-const TRANSACTION_COLUMNS: readonly ColumnDef<TransactionSortColumn>[] = [
-  { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
-  { key: 'type', label: 'Typ', sortColumn: 'type', align: 'left', className: 'pr-4 whitespace-nowrap' },
-  { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
-  { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
-];
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
@@ -91,20 +73,6 @@ const LEASE_SKELETON_ROWS = (
   </>
 );
 
-const TRANSACTION_SKELETON_ROWS = (
-  <>
-    {Array.from({ length: 6 }, (_, i) => (
-      <tr key={`txn-skel-${i}`} className="border-b border-gray-100">
-        <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
-      </tr>
-    ))}
-  </>
-);
 
 const LEASE_EMPTY = (
   <EmptyStateS
@@ -114,13 +82,6 @@ const LEASE_EMPTY = (
   />
 );
 
-const TRANSACTION_EMPTY = (
-  <EmptyStateS
-    iconPath="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z"
-    title="Brak transakcji do wyświetlenia"
-    description="Brak transakcji powiązanych z tym najemcą."
-  />
-);
 
 const buildLeaseFilterChips = (filter: LeaseFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
@@ -131,16 +92,6 @@ const buildLeaseFilterChips = (filter: LeaseFilter): readonly FilterChip[] => {
   return base.filter((c): c is FilterChip => c.label !== null);
 };
 
-const buildTransactionFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
-  const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
-    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
-    { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[(filter.config.status ?? '') as TxnStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
-    { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
-    { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
-  ]);
-  return base.filter((c): c is FilterChip => c.label !== null);
-};
 
 type TenantDraft = {
   readonly first_name: string;
@@ -194,7 +145,6 @@ type DetailContentProps = {
   readonly data: TenantData;
   readonly navLinkTo: NavLinkTo;
   readonly leases: Leases;
-  readonly transactions: Transactions;
   readonly attachments: Attachments;
   readonly onEdit: () => void;
 };
@@ -203,13 +153,11 @@ const DetailContent = ({
   data,
   navLinkTo,
   leases,
-  transactions,
   attachments,
   onEdit,
 }: DetailContentProps): JSX.Element => {
   const t = data.tenant;
   const leaseFilter = leases.filter;
-  const transactionFilter = transactions.filter;
   return t === null ? (
     <div className="flex items-center justify-center min-h-[300px]">
       <p className="text-sm text-gray-500">Nie znaleziono najemcy.</p>
@@ -315,110 +263,6 @@ const DetailContent = ({
               <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{l.end_date !== null ? formatDate(l.end_date) : '—'}</td>
               <td className="h-12 py-0 pr-4 text-right text-gray-900">{formatPln(l.monthly_rent)}</td>
               <td className="h-12 py-0 pr-4"><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></td>
-            </tr>
-          )}
-        />
-      </div>
-
-      <div className={sectionClass}>
-        <h2 className={sectionTitleClass}>Ostatnie transakcje</h2>
-        <FilterToolbarS
-          isFilterActive={isFilterActive(transactionFilter.config)}
-          activeFilterCount={activeFilterCount(transactionFilter.config)}
-          clearFilter={() => transactionFilter.doFilter({})}
-          chips={buildTransactionFilterChips(transactionFilter)}
-          resultCount={match(transactions.asyncData)
-            .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${isFilterActive(transactionFilter.config) ? ' (filtrowane)' : ''}`)
-            .otherwise(() => null)}
-          panel={
-            <div className="flex flex-wrap items-end gap-4">
-              <div className="min-w-[220px]">
-                <label htmlFor="tenant-txn-filter" className={filterLabelClass}>Szukaj (opis)</label>
-                <input
-                  id="tenant-txn-filter"
-                  type="search"
-                  value={transactionFilter.config.text ?? ''}
-                  onChange={onFilterInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'text', v)))}
-                  placeholder="Wpisz fragment opisu…"
-                  className={`${filterInputClass} w-full`}
-                />
-              </div>
-              <div>
-                <label htmlFor="tenant-txn-type" className={filterLabelClass}>Typ</label>
-                <select
-                  id="tenant-txn-type"
-                  value={transactionFilter.config.type ?? ''}
-                  onChange={onSelectInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'type', v)))}
-                  className={filterInputClass}
-                >
-                  <option value="">Wszystkie</option>
-                  {optionEntries(TRANSACTION_TYPE_LABEL).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="tenant-txn-status" className={filterLabelClass}>Status</label>
-                <select
-                  id="tenant-txn-status"
-                  value={transactionFilter.config.status ?? ''}
-                  onChange={onSelectInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'status', v)))}
-                  className={filterInputClass}
-                >
-                  <option value="">Wszystkie</option>
-                  {optionEntries(TRANSACTION_STATUS_LABEL).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="tenant-txn-date-from" className={filterLabelClass}>Termin od</label>
-                <input
-                  id="tenant-txn-date-from"
-                  type="date"
-                  value={transactionFilter.config.dateFrom ?? ''}
-                  onChange={onFilterInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'dateFrom', v)))}
-                  className={filterInputClass}
-                />
-              </div>
-              <div>
-                <label htmlFor="tenant-txn-date-to" className={filterLabelClass}>Termin do</label>
-                <input
-                  id="tenant-txn-date-to"
-                  type="date"
-                  value={transactionFilter.config.dateTo ?? ''}
-                  onChange={onFilterInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'dateTo', v)))}
-                  className={filterInputClass}
-                />
-              </div>
-            </div>
-          }
-        />
-        <AsyncStateTableS<TransactionRow, TransactionSortColumn>
-          asyncData={transactions.asyncData}
-          columns={TRANSACTION_COLUMNS}
-          sort={transactions.sort}
-          pagination={transactions.pagination}
-          skeletonRows={TRANSACTION_SKELETON_ROWS}
-          emptyState={TRANSACTION_EMPTY}
-          filteredEmptyState={<FilterEmptyStateS clearFilter={() => transactionFilter.doFilter({})} />}
-          isFilterActive={isFilterActive(transactionFilter.config)}
-          maxHeight={null}
-          pageSizeOptions={[5, 20, 50, 100]}
-          renderRow={(tx) => (
-            <tr key={tx.id} className="group border-b border-gray-100 text-sm hover:bg-gray-50">
-              <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
-                {navLinkTo.toTransaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
-              </td>
-              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
-              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
-              <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
-                <div className="truncate">{tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}</div>
-              </td>
-              <td className="h-12 py-0 pr-4">
-                <span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span>
-              </td>
-              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
             </tr>
           )}
         />
@@ -586,7 +430,6 @@ const TenantDetail = ({
   data,
   navLinkTo,
   leases,
-  transactions,
   attachments,
   doSubmit,
   deleteAction,
@@ -596,7 +439,6 @@ const TenantDetail = ({
   readonly data: TenantData;
   readonly navLinkTo: NavLinkTo;
   readonly leases: Leases;
-  readonly transactions: Transactions;
   readonly attachments: Attachments;
   readonly doSubmit: (newRecord: TenantInsert) => void;
   readonly deleteAction: DeleteAction;
@@ -647,7 +489,6 @@ const TenantDetail = ({
               data={data}
               navLinkTo={navLinkTo}
               leases={leases}
-              transactions={transactions}
               attachments={attachments}
               onEdit={() => { setEditing(true); setShowSuccess(false); onEditStart(); }}
             />
@@ -674,7 +515,6 @@ export const TenantDetailS = (props: TenantSProps): JSX.Element => (
             data={data}
             navLinkTo={props.navLinkTo}
             leases={props.leases}
-            transactions={props.transactions}
             attachments={props.attachments}
             doSubmit={props.doSubmit}
             deleteAction={props.deleteAction}

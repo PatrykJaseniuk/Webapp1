@@ -19,10 +19,7 @@ type TenantRow = Database['public']['Tables']['tenants']['Row'];
 type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
 type TenantUpdate = Database['public']['Tables']['tenants']['Update'];
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
-type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 type AttachmentRow = Database['public']['Tables']['attachments']['Row'];
-type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
-type TransactionStatusDb = Database['public']['Enums']['transaction_status'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
 
 export const tenantInsertSchema = z.object({
@@ -74,24 +71,15 @@ type NavLinkTo = Readonly<{
 }>;
 
 type LeaseSortColumn = Extract<keyof LeaseAgreementDbRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status'>;
-type TransactionSortColumn = Extract<keyof TransactionRow, 'due_date' | 'type' | 'amount' | 'transaction_status'>;
 type AttachmentSortColumn = 'created_at';
 
 type LeaseFilter = 'status' | 'dateFrom' | 'dateTo';
-type TransactionFilter = 'text' | 'type' | 'status' | 'dateFrom' | 'dateTo';
 
 const LEASE_SORT_COLUMN_MAP: Readonly<Record<LeaseSortColumn, string>> = Object.freeze({
   start_date: 'start_date',
   end_date: 'end_date',
   monthly_rent: 'monthly_rent',
   lease_status: 'lease_status',
-});
-
-const TRANSACTION_SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.freeze({
-  due_date: 'due_date',
-  type: 'type',
-  amount: 'amount',
-  transaction_status: 'transaction_status',
 });
 
 type SubmitState =
@@ -114,7 +102,6 @@ export type TenantSProps = {
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
   readonly leases: FilteredQueryResult<LeaseRow, LeaseSortColumn, LeaseFilter>;
-  readonly transactions: FilteredQueryResult<TransactionRow, TransactionSortColumn, TransactionFilter>;
   readonly attachments: FilteredQueryResult<AttachmentRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
@@ -148,11 +135,6 @@ const updateTenant = async (tenantId: string, newRecord: TenantUpdate): Promise<
 const deleteTenant = async (tenantId: string): Promise<void> => {
   const result = await backendConnector.from('tenants').delete().eq('id', tenantId);
   return result.error !== null ? Promise.reject(result.error) : undefined;
-};
-
-const fetchTenantLeaseIds = async (id: string): Promise<readonly string[]> => {
-  const result = await backendConnector.from('lease_agreements').select('id').eq('tenant_id', id);
-  return result.data?.map((l) => l.id) ?? [];
 };
 
 export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
@@ -198,36 +180,6 @@ export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
       const withStatus = status.length > 0 ? baseQuery.eq('lease_status', status as LeaseStatusDb) : baseQuery;
       const withDateFrom = dateFrom.length > 0 ? withStatus.gte('start_date', dateFrom) : withStatus;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('start_date', dateTo) : withDateFrom;
-      const result = await queryWithFilters.range(from, to);
-      return result.error !== null
-        ? Promise.reject(result.error)
-        : { rows: result.data ?? [], totalCount: result.count ?? 0 };
-    },
-  });
-
-  const transactions = useFilteredPaginatedQuery<TransactionRow, TransactionSortColumn, TransactionFilter>({
-    queryKey: ['transactions', 'tenant', tenantId ?? ''],
-    defaultSort: { column: 'due_date', direction: 'desc' },
-    pageSize: 5,
-    enabled: tenantId !== null,
-    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
-      const leaseIds = await fetchTenantLeaseIds(tenantId ?? '');
-      const ascending = sortConfig.direction === 'asc';
-      const baseQuery = backendConnector
-        .from('transactions')
-        .select('*', { count: 'exact' })
-        .in('lease_id', leaseIds.length > 0 ? leaseIds : ['__none__'])
-        .order(TRANSACTION_SORT_COLUMN_MAP[sortConfig.column], { ascending });
-      const text = filterConfig.text ?? '';
-      const type = filterConfig.type ?? '';
-      const status = filterConfig.status ?? '';
-      const dateFrom = filterConfig.dateFrom ?? '';
-      const dateTo = filterConfig.dateTo ?? '';
-      const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
-      const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
-      const withStatus = status.length > 0 ? withType.eq('transaction_status', status as TransactionStatusDb) : withType;
-      const withDateFrom = dateFrom.length > 0 ? withStatus.gte('due_date', dateFrom) : withStatus;
-      const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('due_date', dateTo) : withDateFrom;
       const result = await queryWithFilters.range(from, to);
       return result.error !== null
         ? Promise.reject(result.error)
@@ -365,7 +317,6 @@ export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
       onEditStart={onEditStart}
       submitState={submitState}
       leases={leases}
-      transactions={transactions}
       attachments={attachments}
       navLinkTo={navLinkTo}
     />
