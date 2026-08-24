@@ -55,9 +55,7 @@ const formatDeleteError = (error: Error | null): string => {
     : error?.message ?? 'Wystąpił nieznany błąd';
 };
 
-type LeaseRow = LeaseAgreementDbRow & {
-  readonly properties: { readonly name: string };
-};
+type LeaseRow = LeaseAgreementDbRow
 
 type TenantData = Readonly<{
   readonly tenant: TenantRow | null;
