@@ -36,10 +36,5 @@ CREATE INDEX idx_attachments_created_at ON public.attachments(created_at DESC);
 -- TRANSACTIONS INDEXES
 CREATE INDEX idx_transactions_lease_id ON public.transactions(lease_id);
 CREATE INDEX idx_transactions_property_id ON public.transactions(property_id);
-CREATE INDEX idx_transactions_status ON public.transactions(transaction_status);
 CREATE INDEX idx_transactions_due_date ON public.transactions(due_date);
-CREATE INDEX idx_transactions_type ON public.transactions(type);
 CREATE INDEX idx_transactions_created_by ON public.transactions(created_by);
--- Composite index for unpaid/overdue transactions
-CREATE INDEX idx_transactions_unpaid ON public.transactions(transaction_status, due_date) 
-    WHERE transaction_status IN ('pending', 'overdue');

@@ -3,12 +3,8 @@ import { match } from 'ts-pattern';
 import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
-import {
-  LEASE_STATUS_LABEL,
-  TRANSACTION_STATUS_LABEL,
-  TRANSACTION_TYPE_LABEL,
-} from './domain';
-import { amountClass, leaseStatusPillClass, txnStatusPillClass } from './pills';
+import { LEASE_STATUS_LABEL } from './domain';
+import { amountClass, leaseStatusPillClass } from './pills';
 import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { AsyncStateTableS } from './AsyncStateTableS';
@@ -21,7 +17,6 @@ import {
   isFilterActive,
   labelClass as filterLabelClass,
   onFilterInput,
-  onSelectInput,
   optionEntries,
   setFilterString,
   type FilterChip,
@@ -43,15 +38,11 @@ type Attachments = LeaseAgreementSProps['attachments'];
 type TransactionFilter = Transactions['filter'];
 type TransactionRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type TransactionSortColumn = Transactions['sort']['config']['column'];
-type TxnType = TransactionRow['type'];
-type TxnStatus = TransactionRow['transaction_status'];
 
 const COLUMNS: readonly ColumnDef<TransactionSortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
-  { key: 'type', label: 'Typ', sortColumn: 'type', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
 
@@ -63,9 +54,7 @@ const SKELETON_ROWS = (
       <tr key={`skel-${i}`} className="border-b border-gray-100">
         <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
       </tr>
     ))}
@@ -83,8 +72,6 @@ const EMPTY_DATABASE = (
 const buildFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
     { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
-    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
-    { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[(filter.config.status ?? '') as TxnStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
     { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
@@ -213,42 +200,6 @@ const DetailContent = ({
                   />
                 </div>
                 <div>
-                  <label htmlFor="lease-txn-type" className={filterLabelClass}>
-                    Typ
-                  </label>
-                  <select
-                    id="lease-txn-type"
-                    value={filter.config.type ?? ''}
-                    onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'type', v)))}
-                    className={filterInputClass}
-                  >
-                    <option value="">Wszystkie</option>
-                    {optionEntries(TRANSACTION_TYPE_LABEL).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="lease-txn-status" className={filterLabelClass}>
-                    Status
-                  </label>
-                  <select
-                    id="lease-txn-status"
-                    value={filter.config.status ?? ''}
-                    onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'status', v)))}
-                    className={filterInputClass}
-                  >
-                    <option value="">Wszystkie</option>
-                    {optionEntries(TRANSACTION_STATUS_LABEL).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
                   <label htmlFor="lease-txn-date-from" className={filterLabelClass}>
                     Termin od
                   </label>
@@ -295,16 +246,10 @@ const DetailContent = ({
                   {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
                 </td>
                 <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
-                <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
                 <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
                   <div className="truncate">
                     {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
                   </div>
-                </td>
-                <td className="h-12 py-0 pr-4">
-                  <span className={txnStatusPillClass(tx.transaction_status)}>
-                    {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
-                  </span>
                 </td>
                 <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
               </tr>

@@ -190,10 +190,8 @@ describe('complex queries', () => {
         (await (async () => {
           const { data, error } = await client
             .from('transactions')
-            .select('id, transaction_status, amount')
-            .or(
-              'transaction_status.eq.pending,transaction_status.eq.overdue',
-            );
+            .select('id, amount, due_date')
+            .or('amount.gt.0,amount.lt.0');
           expect(error).toBeNull();
           expect(data).not.toBeNull();
         })());
@@ -364,11 +362,10 @@ describe('complex queries', () => {
         (await (async () => {
           const { data, error } = await client
             .from('transactions')
-            .select('id, transaction_status, amount')
+            .select('id, amount')
             .eq('lease_id', TEST_UUIDS.lease1);
           expect(error).toBeNull();
           const rows = data as ReadonlyArray<{
-            readonly transaction_status: string;
             readonly amount: number;
           }>;
           expect(rows.length).toBeGreaterThanOrEqual(1);

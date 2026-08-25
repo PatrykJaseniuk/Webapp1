@@ -3,7 +3,7 @@
 -- ================================================
 
 BEGIN;
-SELECT plan(42);
+SELECT plan(38);
 
 -- ── lease_agreements ────────────────────────────
 SELECT has_column('public', 'lease_agreements', 'id',               'leases.id');
@@ -44,19 +44,13 @@ SELECT col_type_is('public', 'attachments', 'file_type', 'public.file_type',
 SELECT has_column('public', 'transactions', 'id',                 'transactions.id');
 SELECT has_column('public', 'transactions', 'lease_id',           'transactions.lease_id');
 SELECT has_column('public', 'transactions', 'property_id',        'transactions.property_id');
-SELECT has_column('public', 'transactions', 'type',               'transactions.type');
 SELECT has_column('public', 'transactions', 'description',        'transactions.description');
 SELECT has_column('public', 'transactions', 'amount',             'transactions.amount');
 SELECT has_column('public', 'transactions', 'due_date',           'transactions.due_date');
-SELECT has_column('public', 'transactions', 'transaction_status', 'transactions.transaction_status');
 SELECT has_column('public', 'transactions', 'created_at',         'transactions.created_at');
 SELECT has_column('public', 'transactions', 'updated_at',         'transactions.updated_at');
 SELECT has_column('public', 'transactions', 'created_by',         'transactions.created_by');
 SELECT col_is_pk('public', 'transactions', 'id',                  'transactions PK');
-SELECT col_type_is('public', 'transactions', 'type', 'public.transaction_type',
-    'transactions.type type');
-SELECT col_type_is('public', 'transactions', 'transaction_status', 'public.transaction_status',
-    'transactions.transaction_status type');
 
 SELECT finish();
 ROLLBACK;

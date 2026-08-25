@@ -55,10 +55,8 @@ describe('transactions RLS', () => {
             .from('transactions')
             .insert({
               lease_id: TEST_UUIDS.lease1,
-              type: 'rent',
               description: 'Test transaction',
               amount: -100,
-              transaction_status: 'pending',
               due_date: '2026-06-01',
             })
             .select('id')
@@ -113,8 +111,6 @@ describe('transactions RLS', () => {
             .insert({
               lease_id: TEST_UUIDS.lease2,
               amount: 9999,
-              type: 'rent',
-              status: 'paid',
               due_date: '2026-01-01',
             });
           expect(error).not.toBeNull();

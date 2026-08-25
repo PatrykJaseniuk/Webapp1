@@ -7,11 +7,9 @@ import { transactionInsertSchema, type TransactionInsertInput } from '@/masterCo
 vi.mock('@/backendConnector/backendConnector', () => ({ backendConnector: {} }));
 
 const validInput: TransactionInsertInput = {
-  type: 'rent',
   description: 'Czynsz za styczeń',
   amount: -2500,
   due_date: '2026-01-15',
-  transaction_status: 'pending',
   lease_id: 'c0000000-0000-0000-0000-000000000001',
   property_id: 'a0000000-0000-0000-0000-000000000001',
 };
@@ -25,16 +23,20 @@ const failureMessages = (input: TransactionInsertInput): ReadonlyArray<string> =
     .exhaustive();
 
 describe('transactionInsertSchema', () => {
-  it('accepts a valid expense payload (negative amount)', () => {
+  it('accepts a valid charge payload (negative amount, lease + property)', () => {
     expect(parsed(validInput).success).toBe(true);
   });
 
-  it('accepts a valid income payload (positive amount)', () => {
-    expect(parsed({ ...validInput, type: 'payment', amount: 2500 }).success).toBe(true);
+  it('accepts a valid payment payload (positive amount)', () => {
+    expect(parsed({ ...validInput, amount: 2500 }).success).toBe(true);
   });
 
   it('accepts a null lease_id when property_id is set', () => {
     expect(parsed({ ...validInput, lease_id: null }).success).toBe(true);
+  });
+
+  it('accepts a null property_id when lease_id is set', () => {
+    expect(parsed({ ...validInput, property_id: null }).success).toBe(true);
   });
 
   it('rejects when both lease_id and property_id are null', () => {
@@ -43,14 +45,8 @@ describe('transactionInsertSchema', () => {
     );
   });
 
-  it('rejects a positive amount for an expense type', () => {
-    expect(failureMessages({ ...validInput, amount: 2500 })).toContain('Typ kosztowy wymaga kwoty ujemnej');
-  });
-
-  it('rejects a negative amount for an income type', () => {
-    expect(failureMessages({ ...validInput, type: 'payment', amount: -100 })).toContain(
-      'Typ przychodowy wymaga kwoty dodatniej',
-    );
+  it('rejects a zero amount', () => {
+    expect(failureMessages({ ...validInput, amount: 0 })).toContain('Kwota nie może być zerowa');
   });
 
   it('rejects an empty description', () => {
@@ -64,12 +60,6 @@ describe('transactionInsertSchema', () => {
   it('rejects a due_date earlier than 2020-01-01', () => {
     expect(failureMessages({ ...validInput, due_date: '2019-12-31' })).toContain(
       'Termin płatności nie może być wcześniejszy niż 2020-01-01',
-    );
-  });
-
-  it('rejects an invalid type', () => {
-    expect(failureMessages({ ...validInput, type: 'bogus' } as unknown as TransactionInsertInput)).toContain(
-      'Nieprawidłowy typ transakcji',
     );
   });
 

@@ -26,9 +26,7 @@ CREATE TYPE public.lease_status AS ENUM ('active', 'expired', 'terminated');
 CREATE TYPE public.related_to_type AS ENUM ('property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense');
 CREATE TYPE public.file_type AS ENUM ('image', 'video', 'pdf', 'document', 'other');
 
--- Transactions
-CREATE TYPE public.transaction_type AS ENUM ('rent', 'utility', 'expense', 'payment', 'withdraw', 'fee', 'other');
-CREATE TYPE public.transaction_status AS ENUM ('pending', 'paid', 'overdue');
+
 
 -- 1. USER ROLES TABLE
 -- Manages user access levels: tenant, landlord, admin
@@ -108,24 +106,21 @@ CREATE TABLE public.attachments (
 );
 
 -- 6. TRANSACTIONS TABLE
--- all kind of finans operations (incomes, outcomes)
--- filed 'amout' can have positive, or negative value:
--- - Positive are all of this transactions that rise account balance (payment, other)
--- - Negative are transaction that lower account balance (rent, utility, expense,withdraw,fee,other)
--- Note: lease_id and property_id are nullable to allow flexible references:
--- - A transaction can reference only a lease, only a property, or both
--- - If both are set, they must be consistent (lease.property_id = transaction.property_id)
--- - Property-level expenses have only property_id (lease_id = NULL)
--- - Lease-level transactions (rent, utilities) have both lease_id and property_id
+-- A pure signed ledger of money movements.
+-- 'amount' is signed: negative = outflow, positive = inflow.
+-- The reference pattern determines scope:
+-- - lease_id only     -> tenant-scoped (charge/credit)
+-- - property_id only  -> landlord-scoped (expense/income)
+-- - both set          -> shared (payment/refund)
+-- No 'type' or 'status' columns: the kind is derived from (reference, sign)
+-- and the paid/overdue state is derived from the running balance.
 CREATE TABLE public.transactions (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     lease_id uuid REFERENCES public.lease_agreements(id) ON DELETE RESTRICT,
     property_id uuid REFERENCES public.properties(id) ON DELETE RESTRICT,
-    type public.transaction_type NOT NULL,
     description text NOT NULL,
     amount decimal(10,2) NOT NULL,
     due_date date NOT NULL,
-    transaction_status public.transaction_status NOT NULL DEFAULT 'pending',
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL

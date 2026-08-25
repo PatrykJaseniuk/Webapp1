@@ -1,8 +1,7 @@
 import { match } from 'ts-pattern';
 import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
 import type { ColumnDef } from './DataTableS';
-import { TRANSACTION_STATUS_LABEL, TRANSACTION_TYPE_LABEL } from './domain';
-import { amountClass, txnStatusPillClass } from './pills';
+import { amountClass } from './pills';
 import { formatDate, formatPln } from './format';
 import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
 import {
@@ -11,8 +10,6 @@ import {
   isFilterActive,
   labelClass,
   onFilterInput,
-  onSelectInput,
-  optionEntries,
   setFilterString,
   type FilterChip,
 } from './filter';
@@ -24,16 +21,13 @@ type Row = PageData['rows'][number];
 type Sort = TransactionsSProps['sort'];
 type SortColumn = Sort['config']['column'];
 type Filter = TransactionsSProps['filter'];
-type TxnType = Row['type'];
 
 const COLUMNS: readonly ColumnDef<SortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
-  { key: 'type', label: 'Typ', sortColumn: 'type', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
   { key: 'properties', label: 'Nieruchomość', sortColumn: 'properties', align: 'left', className: 'min-w-[140px] pr-4' },
   { key: 'lease', label: 'Umowa', sortColumn: null, align: 'left', className: 'min-w-[140px] pr-4' },
-  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
 
@@ -45,11 +39,9 @@ const SKELETON_ROWS = (
       <tr key={`skel-${i}`} className="border-b border-gray-100">
         <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-28`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-24`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
       </tr>
     ))}
@@ -77,7 +69,6 @@ const buildFilterChips = (
 ): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
     { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Nieruchomość: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
-    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
     { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
@@ -125,24 +116,6 @@ export const TransactionsS = ({
             />
           </div>
           <div>
-            <label htmlFor="txn-type" className={labelClass}>
-              Typ
-            </label>
-            <select
-              id="txn-type"
-              value={filter.config.type ?? ''}
-              onChange={onSelectInput((v) => filter.doFilter(setFilterString(filter.config, 'type', v)))}
-              className={inputClass}
-            >
-              <option value="">Wszystkie</option>
-              {optionEntries(TRANSACTION_TYPE_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
             <label htmlFor="txn-date-from" className={labelClass}>
               Termin od
             </label>
@@ -187,7 +160,6 @@ export const TransactionsS = ({
             {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
           </td>
           <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
-          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
           <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
             <div className="truncate">
               {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
@@ -206,11 +178,6 @@ export const TransactionsS = ({
                 navLinkTo.lease({ id: tx.lease_id, style: {}, content: leaseLabel(tx) }) :
                 <span className="text-gray-400">—</span>}
             </div>
-          </td>
-          <td className="h-12 py-0 pr-4">
-            <span className={txnStatusPillClass(tx.transaction_status)}>
-              {TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}
-            </span>
           </td>
           <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
         </tr>

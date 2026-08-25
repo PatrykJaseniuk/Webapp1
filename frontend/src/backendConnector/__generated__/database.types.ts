@@ -253,8 +253,6 @@ export type Database = {
           id: string
           lease_id: string | null
           property_id: string | null
-          transaction_status: Database["public"]["Enums"]["transaction_status"]
-          type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string | null
         }
         Insert: {
@@ -266,8 +264,6 @@ export type Database = {
           id?: string
           lease_id?: string | null
           property_id?: string | null
-          transaction_status?: Database["public"]["Enums"]["transaction_status"]
-          type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
         }
         Update: {
@@ -279,8 +275,6 @@ export type Database = {
           id?: string
           lease_id?: string | null
           property_id?: string | null
-          transaction_status?: Database["public"]["Enums"]["transaction_status"]
-          type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
         }
         Relationships: [
@@ -459,6 +453,7 @@ export type Database = {
       }
       unpaid_transactions_summary: {
         Row: {
+          balance: number | null
           earliest_due_date: string | null
           lease_id: string | null
           overdue_items_count: number | null
@@ -466,9 +461,7 @@ export type Database = {
           property_name: string | null
           tenant_id: string | null
           tenant_name: string | null
-          total_overdue_amount: number | null
           total_unpaid_amount: number | null
-          unpaid_items_count: number | null
         }
         Relationships: [
           {
@@ -525,15 +518,6 @@ export type Database = {
         | "meter_reading"
         | "expense"
       tenant_status: "active" | "past" | "applicant"
-      transaction_status: "pending" | "paid" | "overdue"
-      transaction_type:
-        | "rent"
-        | "utility"
-        | "expense"
-        | "payment"
-        | "withdraw"
-        | "fee"
-        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -678,16 +662,6 @@ export const Constants = {
         "expense",
       ],
       tenant_status: ["active", "past", "applicant"],
-      transaction_status: ["pending", "paid", "overdue"],
-      transaction_type: [
-        "rent",
-        "utility",
-        "expense",
-        "payment",
-        "withdraw",
-        "fee",
-        "other",
-      ],
     },
   },
 } as const

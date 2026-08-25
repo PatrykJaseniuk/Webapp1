@@ -7,15 +7,12 @@ import {
   LEASE_STATUS_LABEL,
   PROPERTY_STATUS_LABEL,
   PROPERTY_TYPE_LABEL,
-  TRANSACTION_STATUS_LABEL,
-  TRANSACTION_TYPE_LABEL,
 } from './domain';
 import { buttonClass, FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
 import {
   amountClass,
   leaseStatusPillClass,
   propertyStatusPillClass,
-  txnStatusPillClass,
 } from './pills';
 import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
@@ -55,8 +52,6 @@ type LeaseStatus = LeaseRow['lease_status'];
 type TransactionRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type TransactionSortColumn = Transactions['sort']['config']['column'];
 type TransactionFilter = Transactions['filter'];
-type TxnType = TransactionRow['type'];
-type TxnStatus = TransactionRow['transaction_status'];
 
 const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
@@ -70,9 +65,7 @@ const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
 const TRANSACTION_COLUMNS: readonly ColumnDef<TransactionSortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
-  { key: 'type', label: 'Typ', sortColumn: 'type', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'status', label: 'Status', sortColumn: 'transaction_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
 
@@ -99,9 +92,7 @@ const TRANSACTION_SKELETON_ROWS = (
       <tr key={`txn-skel-${i}`} className="border-b border-gray-100">
         <td className="pl-4 h-12 py-0 pr-6"><div className={`${skeletonBar} w-6`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
-        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-16`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
       </tr>
     ))}
@@ -184,8 +175,6 @@ const buildLeaseFilterChips = (filter: LeaseFilter): readonly FilterChip[] => {
 const buildTransactionFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
     { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
-    { key: 'type', label: (filter.config.type ?? '').length > 0 ? `Typ: ${TRANSACTION_TYPE_LABEL[(filter.config.type ?? '') as TxnType] ?? (filter.config.type ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'type', '')) },
-    { key: 'status', label: (filter.config.status ?? '').length > 0 ? `Status: ${TRANSACTION_STATUS_LABEL[(filter.config.status ?? '') as TxnStatus] ?? (filter.config.status ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'status', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
     { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
@@ -372,34 +361,6 @@ const DetailContent = ({
                 />
               </div>
               <div>
-                <label htmlFor="property-txn-type" className={filterLabelClass}>Typ</label>
-                <select
-                  id="property-txn-type"
-                  value={transactionFilter.config.type ?? ''}
-                  onChange={onSelectInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'type', v)))}
-                  className={filterInputClass}
-                >
-                  <option value="">Wszystkie</option>
-                  {optionEntries(TRANSACTION_TYPE_LABEL).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="property-txn-status" className={filterLabelClass}>Status</label>
-                <select
-                  id="property-txn-status"
-                  value={transactionFilter.config.status ?? ''}
-                  onChange={onSelectInput((v) => transactionFilter.doFilter(setFilterString(transactionFilter.config, 'status', v)))}
-                  className={filterInputClass}
-                >
-                  <option value="">Wszystkie</option>
-                  {optionEntries(TRANSACTION_STATUS_LABEL).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
                 <label htmlFor="property-txn-date-from" className={filterLabelClass}>Termin od</label>
                 <input
                   id="property-txn-date-from"
@@ -439,12 +400,8 @@ const DetailContent = ({
                 {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
               </td>
               <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
-              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{TRANSACTION_TYPE_LABEL[tx.type] ?? tx.type}</td>
               <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
                 <div className="truncate">{tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}</div>
-              </td>
-              <td className="h-12 py-0 pr-4">
-                <span className={txnStatusPillClass(tx.transaction_status)}>{TRANSACTION_STATUS_LABEL[tx.transaction_status] ?? tx.transaction_status}</span>
               </td>
               <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
             </tr>

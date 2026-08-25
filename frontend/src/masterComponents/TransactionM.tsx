@@ -17,34 +17,20 @@ type TransactionRow = Database['public']['Tables']['transactions']['Row'];
 type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
 type TransactionUpdate = Database['public']['Tables']['transactions']['Update'];
 
-export const TRANSACTION_TYPES = ['rent', 'utility', 'expense', 'payment', 'withdraw', 'fee', 'other'] as const;
-const INCOME_TYPES: readonly string[] = ['payment', 'other'];
-
 export const transactionInsertSchema = z
   .object({
-    type: z.enum(TRANSACTION_TYPES, { message: 'Nieprawidłowy typ transakcji' }),
     description: z.string().trim().min(1, 'Opis jest wymagany'),
     amount: z
       .number({ invalid_type_error: 'Kwota musi być liczbą' })
-      .finite('Kwota musi być liczbą'),
+      .finite('Kwota musi być liczbą')
+      .refine((v) => v !== 0, { message: 'Kwota nie może być zerowa' }),
     due_date: z.string().min(1, 'Termin płatności jest wymagany'),
-    transaction_status: z.enum(['pending', 'paid', 'overdue'], {
-      message: 'Nieprawidłowy status transakcji',
-    }),
     lease_id: z.string().uuid('Nieprawidłowa umowa').nullable(),
     property_id: z.string().uuid('Nieprawidłowa nieruchomość').nullable(),
   })
   .refine((v) => v.lease_id !== null || v.property_id !== null, {
     message: 'Wybierz umowę lub nieruchomość',
     path: ['property_id'],
-  })
-  .refine((v) => !INCOME_TYPES.includes(v.type) || v.amount > 0, {
-    message: 'Typ przychodowy wymaga kwoty dodatniej',
-    path: ['amount'],
-  })
-  .refine((v) => INCOME_TYPES.includes(v.type) || v.amount < 0, {
-    message: 'Typ kosztowy wymaga kwoty ujemnej',
-    path: ['amount'],
   })
   .refine((v) => v.due_date.length === 0 || v.due_date >= '2020-01-01', {
     message: 'Termin płatności nie może być wcześniejszy niż 2020-01-01',

@@ -6,7 +6,6 @@ import type { AppRole } from '@/hooks/AuthContext';
 import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
-type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
 
 type TransactionListRow = TransactionDbRow & {
   readonly properties: { readonly name: string };
@@ -20,17 +19,15 @@ type NavLinkTo = Readonly<{
   readonly create?: NavLink;
 }>;
 
-type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'> | 'properties';
+type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'amount'> | 'properties';
 
 const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.freeze({
   due_date: 'due_date',
-  type: 'type',
   amount: 'amount',
-  transaction_status: 'transaction_status',
   properties: 'properties(name)',
 });
 
-type TransactionFilter = 'text' | 'type' | 'dateFrom' | 'dateTo';
+type TransactionFilter = 'text' | 'dateFrom' | 'dateTo';
 
 export type TransactionsSProps = ManyRecordsSlaveProps<TransactionListRow, TransactionSortColumn, NavLinkTo, TransactionFilter>;
 
@@ -54,12 +51,10 @@ export const TransactionsM = ({
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
         .range(from, to);
       const text = filterConfig.text ?? '';
-      const type = filterConfig.type ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
       const withText = text.length > 0 ? baseQuery.ilike('properties.name', `*${text}*`) : baseQuery;
-      const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
-      const withDateFrom = dateFrom.length > 0 ? withType.gte('due_date', dateFrom) : withType;
+      const withDateFrom = dateFrom.length > 0 ? withText.gte('due_date', dateFrom) : withText;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('due_date', dateTo) : withDateFrom;
       const result = await queryWithFilters;
       return result.error !== null ? Promise.reject(result.error) : { rows: result.data ?? [], totalCount: result.count ?? 0 };

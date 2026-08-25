@@ -20,8 +20,6 @@ type LeaseAgreementInsert = Database['public']['Tables']['lease_agreements']['In
 type LeaseAgreementUpdate = Database['public']['Tables']['lease_agreements']['Update'];
 type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
 type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
-type TransactionTypeDb = Database['public']['Enums']['transaction_type'];
-type TransactionStatusDb = Database['public']['Enums']['transaction_status'];
 
 export const leaseAgreementInsertSchema = z
   .object({
@@ -83,16 +81,14 @@ type NavLinkTo = Readonly<{
   readonly toList: NavLink;
 }>;
 
-type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'type' | 'amount' | 'transaction_status'>;
+type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'amount'>;
 type AttachmentSortColumn = 'created_at';
 
-type LeaseTransactionFilter = 'text' | 'type' | 'status' | 'dateFrom' | 'dateTo';
+type LeaseTransactionFilter = 'text' | 'dateFrom' | 'dateTo';
 
 const SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.freeze({
   due_date: 'due_date',
-  type: 'type',
   amount: 'amount',
-  transaction_status: 'transaction_status',
 });
 
 type SubmitState =
@@ -217,14 +213,10 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
         .eq('lease_id', leaseId ?? '')
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const text = filterConfig.text ?? '';
-      const type = filterConfig.type ?? '';
-      const status = filterConfig.status ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
       const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
-      const withType = type.length > 0 ? withText.eq('type', type as TransactionTypeDb) : withText;
-      const withStatus = status.length > 0 ? withType.eq('transaction_status', status as TransactionStatusDb) : withType;
-      const withDateFrom = dateFrom.length > 0 ? withStatus.gte('due_date', dateFrom) : withStatus;
+      const withDateFrom = dateFrom.length > 0 ? withText.gte('due_date', dateFrom) : withText;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('due_date', dateTo) : withDateFrom;
       const result = await queryWithFilters.range(from, to);
       return result.error !== null

@@ -2,7 +2,6 @@ import type {
   LeaseStatus,
   PropertyStatus,
   TenantStatus,
-  TransactionStatus,
 } from './domain';
 
 export const pillClass = 'inline-block rounded-full px-2 py-0.5 text-xs font-medium';
@@ -26,13 +25,6 @@ export const tenantStatusPillClass = (status: TenantStatus): string =>
     `${pillClass} bg-green-50 text-green-700` :
     status === 'past' ?
       `${pillClass} bg-gray-50 text-gray-600` :
-      `${pillClass} bg-yellow-50 text-yellow-700`;
-
-export const txnStatusPillClass = (status: TransactionStatus): string =>
-  status === 'paid' ?
-    `${pillClass} bg-green-50 text-green-700` :
-    status === 'overdue' ?
-      `${pillClass} bg-red-50 text-red-700` :
       `${pillClass} bg-yellow-50 text-yellow-700`;
 
 export const amountClass = (amount: number): string =>

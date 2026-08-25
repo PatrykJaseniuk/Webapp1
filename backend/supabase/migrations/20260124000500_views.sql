@@ -52,9 +52,10 @@ LEFT JOIN public.lease_agreements la ON p.id = la.property_id AND la.lease_statu
 LEFT JOIN public.tenants t ON la.tenant_id = t.id;
 
 -- ================================================
--- VIEW 3: UNPAID TRANSACTIONS SUMMARY
+-- VIEW 3: LEASE BALANCE SUMMARY
 -- ================================================
--- Shows unpaid and overdue transactions per lease
+-- Shows outstanding balance per active lease.
+-- Derived from the signed ledger: charges (negative) offset by payments (positive).
 -- SECURITY INVOKER: Respects RLS policies of querying user
 
 CREATE VIEW public.unpaid_transactions_summary 
@@ -65,25 +66,23 @@ SELECT
     la.property_id,
     t.first_name || ' ' || t.last_name as tenant_name,
     p.name as property_name,
-    COUNT(tr.id) as unpaid_items_count,
-    SUM(tr.amount) as total_unpaid_amount,
+    COALESCE(SUM(tr.amount), 0) as balance,
+    GREATEST(0, -COALESCE(SUM(tr.amount), 0)) as total_unpaid_amount,
     MIN(tr.due_date) as earliest_due_date,
-    COUNT(CASE WHEN tr.transaction_status = 'overdue' THEN 1 END) as overdue_items_count,
-    SUM(CASE WHEN tr.transaction_status = 'overdue' THEN tr.amount ELSE 0 END) as total_overdue_amount
+    COUNT(CASE WHEN tr.amount < 0 AND tr.due_date < CURRENT_DATE THEN 1 END) as overdue_items_count
 FROM public.lease_agreements la
 JOIN public.tenants t ON la.tenant_id = t.id
 JOIN public.properties p ON la.property_id = p.id
-LEFT JOIN public.transactions tr ON la.id = tr.lease_id AND tr.transaction_status IN ('pending', 'overdue')
+LEFT JOIN public.transactions tr ON la.id = tr.lease_id
 WHERE la.lease_status = 'active'
 GROUP BY la.id, la.tenant_id, la.property_id, t.first_name, t.last_name, p.name;
 
 -- ================================================
 -- VIEW 4: PROPERTY FINANCIAL SUMMARY
 -- ================================================
--- Shows income and expenses per property using transactions
+-- Shows income and expenses per property, derived from the signed ledger.
 -- SECURITY INVOKER: Respects RLS policies of querying user
--- Note: Income types (payment, deposit, other) have positive amounts
---       Expense types (rent, utility, expense, withdraw, fee) have negative amounts
+-- Income = positive amounts (payments/income); expenses = negative amounts.
 
 CREATE VIEW public.property_financial_summary 
 WITH (security_invoker = true) AS
@@ -91,14 +90,9 @@ SELECT
     p.id as property_id,
     p.name as property_name,
     p.address,
-    -- Income from payments (must be paid) - positive amounts
-    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.transaction_status = 'paid' THEN tr.amount ELSE 0 END), 0) as total_income,
-    -- Expenses (property-level or lease-level) - already negative, use ABS for calculation
-    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') THEN ABS(tr.amount) ELSE 0 END), 0) as total_expenses,
-    -- Net profit/loss: income (positive) + expenses (negative) = net
-    COALESCE(SUM(CASE WHEN tr.type IN ('payment', 'other') AND tr.transaction_status = 'paid' THEN tr.amount ELSE 0 END), 0) + 
-    COALESCE(SUM(CASE WHEN tr.type IN ('rent', 'utility', 'expense', 'withdraw', 'fee') THEN tr.amount ELSE 0 END), 0) as net_profit,
-    -- Current lease status
+    COALESCE(SUM(CASE WHEN tr.amount > 0 THEN tr.amount ELSE 0 END), 0) as total_income,
+    COALESCE(SUM(CASE WHEN tr.amount < 0 THEN ABS(tr.amount) ELSE 0 END), 0) as total_expenses,
+    COALESCE(SUM(tr.amount), 0) as net_profit,
     p.property_status,
     p.monthly_rent
 FROM public.properties p

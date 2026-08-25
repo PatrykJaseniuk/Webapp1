@@ -3,18 +3,13 @@ import { match } from 'ts-pattern';
 import type { TransactionSProps } from '@/masterComponents/TransactionM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
-import { TRANSACTION_STATUS_LABEL, TRANSACTION_TYPE_LABEL } from './domain';
-import { txnStatusPillClass } from './pills';
 import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
-import { optionEntries } from './filter';
 
 type Fulfilled = Extract<TransactionSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type TransactionData = NonNullable<Fulfilled>;
 type Transaction = NonNullable<TransactionData['transaction']>;
-type TxnType = Transaction['type'];
-type TxnStatus = Transaction['transaction_status'];
 type FormOptions = TransactionSProps['formOptions'];
 type TransactionInsert = Parameters<TransactionSProps['doSubmit']>[0];
 type SubmitState = TransactionSProps['submitState'];
@@ -54,8 +49,6 @@ const DetailContent = ({
       <div className={sectionClass}>
         <h2 className={sectionTitleClass}>Dane transakcji</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <div><p className={labelClass}>Typ</p><p className={valueClass}>{TRANSACTION_TYPE_LABEL[t.type] ?? t.type}</p></div>
-          <div><p className={labelClass}>Status</p><span className={txnStatusPillClass(t.transaction_status)}>{TRANSACTION_STATUS_LABEL[t.transaction_status] ?? t.transaction_status}</span></div>
           <div><p className={labelClass}>Kwota</p><p className={`text-sm font-semibold ${t.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{formatPln(t.amount)}</p></div>
           <div><p className={labelClass}>Termin płatności</p><p className={valueClass}>{formatDate(t.due_date)}</p></div>
           {t.property_id !== null && data.propertyName !== null ?
@@ -72,41 +65,33 @@ const DetailContent = ({
 };
 
 type TransactionDraft = {
-  readonly type: TxnType;
   readonly description: string;
   readonly amount: string;
   readonly due_date: string;
-  readonly transaction_status: TxnStatus;
   readonly lease_id: string;
   readonly property_id: string;
 };
 
 const toDraft = (t: Transaction): TransactionDraft => ({
-  type: t.type,
   description: t.description,
   amount: String(t.amount),
   due_date: t.due_date,
-  transaction_status: t.transaction_status,
   lease_id: t.lease_id ?? '',
   property_id: t.property_id ?? '',
 });
 
 const EMPTY_DRAFT: TransactionDraft = Object.freeze({
-  type: 'rent',
   description: '',
   amount: '',
   due_date: '',
-  transaction_status: 'pending',
   lease_id: '',
   property_id: '',
 });
 
 const toInsert = (d: TransactionDraft): TransactionInsert => ({
-  type: d.type,
   description: d.description,
   amount: d.amount === '' ? 0 : Number(d.amount),
   due_date: d.due_date,
-  transaction_status: d.transaction_status,
   lease_id: d.lease_id === '' ? null : d.lease_id,
   property_id: d.property_id === '' ? null : d.property_id,
 });
@@ -152,22 +137,6 @@ const TransactionForm = ({
         .exhaustive()}
       <form onSubmit={handleSubmit} className={`${sectionClass} space-y-4`}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="txn-type" className={formLabelClass}>Typ</label>
-            <select id="txn-type" name="type" value={form.type} onChange={setField('type')} className={inputClass}>
-              {optionEntries(TRANSACTION_TYPE_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="txn-status" className={formLabelClass}>Status</label>
-            <select id="txn-status" name="transaction_status" value={form.transaction_status} onChange={setField('transaction_status')} className={inputClass}>
-              {optionEntries(TRANSACTION_STATUS_LABEL).map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-          </div>
           <div>
             <label htmlFor="txn-amount" className={formLabelClass}>Kwota (zł)</label>
             <input id="txn-amount" name="amount" type="number" step="0.01" required value={form.amount} onChange={setField('amount')} className={inputClass} />
