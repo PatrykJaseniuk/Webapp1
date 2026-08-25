@@ -21,8 +21,10 @@ import { TenantsListPage } from '@/pages/TenantsP';
 import { TenantDetailPage } from '@/pages/TenantP';
 import { LeaseAgreementsListPage } from '@/pages/LeaseAgreementsP';
 import { LeaseAgreementDetailPage } from '@/pages/LeaseAgreementP';
-import { TransactionDetailPage } from '@/pages/TransactionP';
-import { TransactionsListPage } from '@/pages/TransactionsP';
+import { FinancialEntryDetailPage } from '@/pages/FinancialEntryP';
+import { FinancialEntriesListPage } from '@/pages/FinancialEntriesP';
+import { TreasuryDetailPage } from '@/pages/TreasuryP';
+import { TreasuriesListPage } from '@/pages/TreasuriesP';
 
 // ── Root route ──
 
@@ -105,16 +107,28 @@ export const leaseDetailRoute = createRoute({
   component: LeaseAgreementDetailPage,
 });
 
-const transactionsListRoute = createRoute({
+const financialEntriesListRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: '/transactions',
-  component: TransactionsListPage,
+  path: '/financial-entries',
+  component: FinancialEntriesListPage,
 });
 
-export const transactionDetailRoute = createRoute({
+export const financialEntryDetailRoute = createRoute({
   getParentRoute: () => appLayoutRoute,
-  path: '/transactions/$id',
-  component: TransactionDetailPage,
+  path: '/financial-entries/$id',
+  component: FinancialEntryDetailPage,
+});
+
+const treasuriesListRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: '/treasuries',
+  component: TreasuriesListPage,
+});
+
+export const treasuryDetailRoute = createRoute({
+  getParentRoute: () => appLayoutRoute,
+  path: '/treasuries/$id',
+  component: TreasuryDetailPage,
 });
 
 // ══════════════════════════════════════════════════════════════
@@ -143,8 +157,10 @@ const routeTree = rootRoute.addChildren([
     tenantDetailRoute,
     leasesListRoute,
     leaseDetailRoute,
-    transactionsListRoute,
-    transactionDetailRoute,
+    financialEntriesListRoute,
+    financialEntryDetailRoute,
+    treasuriesListRoute,
+    treasuryDetailRoute,
   ]),
   notFoundRoute,
 ]);

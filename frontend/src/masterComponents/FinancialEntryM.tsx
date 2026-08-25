@@ -13,31 +13,39 @@ import {
   type NavLinkWithId,
 } from '@/generic';
 
-type TransactionRow = Database['public']['Tables']['transactions']['Row'];
-type TransactionInsert = Database['public']['Tables']['transactions']['Insert'];
-type TransactionUpdate = Database['public']['Tables']['transactions']['Update'];
+type FinancialEntryRow = Database['public']['Tables']['financial_entry']['Row'];
+type FinancialEntryInsert = Database['public']['Tables']['financial_entry']['Insert'];
+type FinancialEntryUpdate = Database['public']['Tables']['financial_entry']['Update'];
 
-export const transactionInsertSchema = z
+export const financialEntryInsertSchema = z
   .object({
     description: z.string().trim().min(1, 'Opis jest wymagany'),
     amount: z
       .number({ invalid_type_error: 'Kwota musi być liczbą' })
       .finite('Kwota musi być liczbą')
       .refine((v) => v !== 0, { message: 'Kwota nie może być zerowa' }),
-    due_date: z.string().min(1, 'Termin płatności jest wymagany'),
+    value_date: z.string().min(1, 'Data jest wymagana'),
     lease_id: z.string().uuid('Nieprawidłowa umowa').nullable(),
     property_id: z.string().uuid('Nieprawidłowa nieruchomość').nullable(),
+    treasury_id: z.string().uuid('Nieprawidłowy skarbiec').nullable(),
   })
-  .refine((v) => v.lease_id !== null || v.property_id !== null, {
-    message: 'Wybierz umowę lub nieruchomość',
-    path: ['property_id'],
+  .refine(
+    (v) => v.lease_id !== null || v.property_id !== null || v.treasury_id !== null,
+    {
+      message: 'Wybierz umowę, nieruchomość lub skarbiec',
+      path: ['treasury_id'],
+    },
+  )
+  .refine((v) => v.value_date.length === 0 || v.value_date >= '2020-01-01', {
+    message: 'Data nie może być wcześniejsza niż 2020-01-01',
+    path: ['value_date'],
   })
-  .refine((v) => v.due_date.length === 0 || v.due_date >= '2020-01-01', {
-    message: 'Termin płatności nie może być wcześniejszy niż 2020-01-01',
-    path: ['due_date'],
+  .refine((v) => v.value_date.length === 0 || v.value_date < '2100-01-01', {
+    message: 'Data nie może być późniejsza niż 2099-12-31',
+    path: ['value_date'],
   });
 
-export type TransactionInsertInput = z.input<typeof transactionInsertSchema>;
+export type FinancialEntryInsertInput = z.input<typeof financialEntryInsertSchema>;
 
 const formatZodIssues = (error: z.ZodError): string =>
   error.issues.map((issue) => issue.message).join('; ');
@@ -47,16 +55,19 @@ const formatDeleteError = (error: Error | null): string =>
 
 type PropertyOption = { readonly id: string; readonly label: string };
 type LeaseOption = { readonly id: string; readonly label: string; readonly propertyId: string };
+type TreasuryOption = { readonly id: string; readonly label: string };
 
-export type TransactionFormOptions = Readonly<{
+export type FinancialEntryFormOptions = Readonly<{
   readonly properties: readonly PropertyOption[];
   readonly leases: readonly LeaseOption[];
+  readonly treasuries: readonly TreasuryOption[];
 }>;
 
-type TransactionData = Readonly<{
-  readonly transaction: TransactionRow | null;
+type FinancialEntryData = Readonly<{
+  readonly financialEntry: FinancialEntryRow | null;
   readonly propertyName: string | null;
   readonly leaseDescription: string | null;
+  readonly treasuryName: string | null;
 }>;
 
 type NavLinkTo = Readonly<{
@@ -71,35 +82,35 @@ type SubmitState =
   | { readonly tag: 'success' }
   | { readonly tag: 'error'; readonly message: string };
 
-type TransactionDeleteAction =
+type FinancialEntryDeleteAction =
   | { readonly tag: 'absent' }
   | { readonly tag: 'allowed'; readonly doDelete: () => void };
 
-export type TransactionSProps = {
-  readonly asyncData: AsyncData<TransactionData | null>;
-  readonly formOptions: AsyncData<TransactionFormOptions>;
-  readonly doSubmit: (newRecord: TransactionInsertInput) => void;
-  readonly deleteAction: TransactionDeleteAction;
+export type FinancialEntrySProps = {
+  readonly asyncData: AsyncData<FinancialEntryData | null>;
+  readonly formOptions: AsyncData<FinancialEntryFormOptions>;
+  readonly doSubmit: (newRecord: FinancialEntryInsertInput) => void;
+  readonly deleteAction: FinancialEntryDeleteAction;
   readonly doCancel: () => void;
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
   readonly navLinkTo: NavLinkTo;
 };
 
-export type TransactionDetailMode =
+export type FinancialEntryDetailMode =
   | { readonly tag: 'create' }
   | { readonly tag: 'edit'; readonly id: string };
 
 type Props = {
-  readonly Slave: ComponentType<TransactionSProps>;
-  readonly mode: TransactionDetailMode;
+  readonly Slave: ComponentType<FinancialEntrySProps>;
+  readonly mode: FinancialEntryDetailMode;
 };
 
-const resolveDetail = async (txn: TransactionRow): Promise<TransactionData> => {
+const resolveDetail = async (txn: FinancialEntryRow): Promise<FinancialEntryData> => {
   const propertyName: string | null =
     txn.property_id !== null
       ? (await backendConnector
-          .from('properties')
+          .from('property')
           .select('name')
           .eq('id', txn.property_id)
           .single()
@@ -109,7 +120,7 @@ const resolveDetail = async (txn: TransactionRow): Promise<TransactionData> => {
   const leaseDescription: string | null =
     txn.lease_id !== null
       ? (await backendConnector
-          .from('lease_agreements')
+          .from('lease_agreement')
           .select('id')
           .eq('id', txn.lease_id)
           .single()
@@ -118,33 +129,45 @@ const resolveDetail = async (txn: TransactionRow): Promise<TransactionData> => {
         : null
       : null;
 
-  return { transaction: txn, propertyName, leaseDescription };
+  const treasuryName: string | null =
+    txn.treasury_id !== null
+      ? (await backendConnector
+          .from('treasury')
+          .select('name')
+          .eq('id', txn.treasury_id)
+          .single()
+        ).data?.name ?? null
+      : null;
+
+  return { financialEntry: txn, propertyName, leaseDescription, treasuryName };
 };
 
-const fetchTransactionData = async (id: string): Promise<TransactionData> => {
+const fetchFinancialEntryData = async (id: string): Promise<FinancialEntryData> => {
   const { data, error } = await backendConnector
-    .from('transactions')
+    .from('financial_entry')
     .select('*')
     .eq('id', id)
     .single();
   return error !== null
     ? Promise.reject(error)
-    : resolveDetail(data as TransactionRow);
+    : resolveDetail(data as FinancialEntryRow);
 };
 
-const fetchFormOptions = async (): Promise<TransactionFormOptions> => {
-  const [propertiesResult, leasesResult] = await Promise.all([
-    backendConnector.from('properties').select('id, name').order('name'),
-    backendConnector.from('lease_agreements').select('id, property_id, start_date, properties(name), tenants(first_name,last_name)').order('start_date', { ascending: false }),
+const fetchFormOptions = async (): Promise<FinancialEntryFormOptions> => {
+  const [propertiesResult, leasesResult, treasuriesResult] = await Promise.all([
+    backendConnector.from('property').select('id, name').order('name'),
+    backendConnector.from('lease_agreement').select('id, property_id, start_date, property(name), tenant(first_name,last_name)').order('start_date', { ascending: false }),
+    backendConnector.from('treasury').select('id, name').eq('is_active', true).order('name'),
   ]);
-  const combinedError = propertiesResult.error ?? leasesResult.error;
+  const combinedError = propertiesResult.error ?? leasesResult.error ?? treasuriesResult.error;
   return combinedError !== null
     ? Promise.reject(combinedError)
     : {
         properties: (propertiesResult.data ?? []).map((p) => ({ id: p.id, label: p.name })),
+        treasuries: (treasuriesResult.data ?? []).map((t) => ({ id: t.id, label: t.name })),
         leases: (leasesResult.data ?? []).map((l) => {
-          const propertyName = (l as { readonly properties?: { readonly name?: string } | null }).properties?.name ?? '';
-          const tenant = (l as { readonly tenants?: { readonly first_name: string; readonly last_name: string } | null }).tenants;
+          const propertyName = (l as { readonly property?: { readonly name?: string } | null }).property?.name ?? '';
+          const tenant = (l as { readonly tenant?: { readonly first_name: string; readonly last_name: string } | null }).tenant;
           const tenantName = tenant !== null && tenant !== undefined ? `${tenant.first_name} ${tenant.last_name}`.trim() : '';
           const label = [propertyName, tenantName].filter((s) => s.length > 0).join(' — ');
           return { id: l.id, label: label.length > 0 ? label : `Umowa #${l.id.slice(0, 8)}`, propertyId: l.property_id };
@@ -152,25 +175,25 @@ const fetchFormOptions = async (): Promise<TransactionFormOptions> => {
       };
 };
 
-const insertTransaction = async (newRecord: TransactionInsert): Promise<string> => {
-  const result = await backendConnector.from('transactions').insert(newRecord).select('id').single();
+const insertFinancialEntry = async (newRecord: FinancialEntryInsert): Promise<string> => {
+  const result = await backendConnector.from('financial_entry').insert(newRecord).select('id').single();
   return result.error !== null ? Promise.reject(result.error) : result.data.id;
 };
 
-const updateTransaction = async (id: string, newRecord: TransactionUpdate): Promise<void> => {
-  const result = await backendConnector.from('transactions').update(newRecord).eq('id', id);
+const updateFinancialEntry = async (id: string, newRecord: FinancialEntryUpdate): Promise<void> => {
+  const result = await backendConnector.from('financial_entry').update(newRecord).eq('id', id);
   return result.error !== null ? Promise.reject(result.error) : undefined;
 };
 
-const deleteTransaction = async (id: string): Promise<void> => {
-  const result = await backendConnector.from('transactions').delete().eq('id', id);
+const deleteFinancialEntry = async (id: string): Promise<void> => {
+  const result = await backendConnector.from('financial_entry').delete().eq('id', id);
   return result.error !== null ? Promise.reject(result.error) : undefined;
 };
 
 const leasePropertyMismatch = (
   leaseId: string | null,
   propertyId: string | null,
-  options: TransactionFormOptions | null,
+  options: FinancialEntryFormOptions | null,
 ): string | null => {
   const lease = leaseId !== null ? (options?.leases ?? []).find((l) => l.id === leaseId) : undefined;
   return lease !== undefined && propertyId !== null && lease.propertyId !== propertyId
@@ -178,66 +201,66 @@ const leasePropertyMismatch = (
     : null;
 };
 
-export const TransactionDetailM = ({ Slave, mode }: Props): JSX.Element => {
+export const FinancialEntryDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const transactionId = match(mode)
+  const entryId = match(mode)
     .with({ tag: 'create' }, () => null)
     .with({ tag: 'edit' }, ({ id }) => id)
     .exhaustive();
 
   const query = useQuery({
-    queryKey: ['transaction', transactionId],
-    queryFn: (): Promise<TransactionData> =>
+    queryKey: ['financialEntry', entryId],
+    queryFn: (): Promise<FinancialEntryData> =>
       match(mode)
-        .with({ tag: 'create' }, () => Promise.reject(new Error('Brak identyfikatora transakcji')))
-        .with({ tag: 'edit' }, ({ id }) => fetchTransactionData(id))
+        .with({ tag: 'create' }, () => Promise.reject(new Error('Brak identyfikatora zapisu finansowego')))
+        .with({ tag: 'edit' }, ({ id }) => fetchFinancialEntryData(id))
         .exhaustive(),
-    enabled: transactionId !== null,
+    enabled: entryId !== null,
   });
 
-  const asyncData: AsyncData<TransactionData | null> = match(mode)
+  const asyncData: AsyncData<FinancialEntryData | null> = match(mode)
     .with({ tag: 'create' }, () => ({ tag: 'fulfilled' as const, data: null }))
     .with({ tag: 'edit' }, () => toAsyncData(query, () => { void query.refetch(); }))
     .exhaustive();
 
   const formOptionsQuery = useQuery({
-    queryKey: ['transactionFormOptions'],
-    queryFn: (): Promise<TransactionFormOptions> => fetchFormOptions(),
+    queryKey: ['financialEntryFormOptions'],
+    queryFn: (): Promise<FinancialEntryFormOptions> => fetchFormOptions(),
   });
 
   const formOptions = toAsyncData(formOptionsQuery, () => { void formOptionsQuery.refetch(); });
 
   const insertMutation = useMutation({
-    mutationFn: (newRecord: TransactionInsert): Promise<string> => insertTransaction(newRecord),
+    mutationFn: (newRecord: FinancialEntryInsert): Promise<string> => insertFinancialEntry(newRecord),
     onSuccess: (newId) => {
-      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      void navigate({ to: '/app/transactions/$id', params: { id: newId } });
+      void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
+      void navigate({ to: '/app/financial-entries/$id', params: { id: newId } });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, record }: { readonly id: string; readonly record: TransactionUpdate }): Promise<void> =>
-      updateTransaction(id, record),
+    mutationFn: ({ id, record }: { readonly id: string; readonly record: FinancialEntryUpdate }): Promise<void> =>
+      updateFinancialEntry(id, record),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      void queryClient.invalidateQueries({ queryKey: ['transaction', transactionId] });
+      void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
+      void queryClient.invalidateQueries({ queryKey: ['financialEntry', entryId] });
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string): Promise<void> => deleteTransaction(id),
+    mutationFn: (id: string): Promise<void> => deleteFinancialEntry(id),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      void queryClient.invalidateQueries({ queryKey: ['transaction', transactionId] });
-      void navigate({ to: '/app/transactions' });
+      void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
+      void queryClient.invalidateQueries({ queryKey: ['financialEntry', entryId] });
+      void navigate({ to: '/app/financial-entries' });
     },
   });
 
-  const doSubmit = (newRecord: TransactionInsertInput): void =>
-    match(transactionInsertSchema.safeParse(newRecord))
+  const doSubmit = (newRecord: FinancialEntryInsertInput): void =>
+    match(financialEntryInsertSchema.safeParse(newRecord))
       .with({ success: true }, ({ data }) => {
         const mismatch = leasePropertyMismatch(data.lease_id, data.property_id, formOptionsQuery.data ?? null);
         setValidationError(mismatch);
@@ -262,13 +285,13 @@ export const TransactionDetailM = ({ Slave, mode }: Props): JSX.Element => {
     setValidationError(null);
   };
 
-  const deleteAction: TransactionDeleteAction = match(mode)
+  const deleteAction: FinancialEntryDeleteAction = match(mode)
     .with({ tag: 'create' }, () => ({ tag: 'absent' as const }))
     .with({ tag: 'edit' }, ({ id }) => ({ tag: 'allowed' as const, doDelete: (): void => { deleteMutation.mutate(id); } }))
     .exhaustive();
 
   const doCancel = (): void => {
-    void navigate({ to: '/app/transactions' });
+    void navigate({ to: '/app/financial-entries' });
   };
 
   const submitState: SubmitState =
@@ -287,7 +310,7 @@ export const TransactionDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navLinkTo: NavLinkTo = {
     toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
     toLease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
-    toList: ({ content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
+    toList: ({ content, style }) => <Link to="/app/financial-entries" style={style}>{content}</Link>,
   };
 
   return (

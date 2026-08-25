@@ -78,10 +78,10 @@ import type { Tables, TablesInsert, Enums } from '@/backendConnector';
 import { Constants } from '@/backendConnector';
 
 // Row type
-type PropertyRow = Tables<'properties'>;
+type PropertyRow = Tables<'property'>;
 
 // Insert type
-type PropertyInsert = TablesInsert<'properties'>;
+type PropertyInsert = TablesInsert<'property'>;
 
 // Enum type (for narrowing form string values)
 type PropertyType = Enums<'property_type'>;
@@ -113,7 +113,7 @@ CREATE POLICY "select_admin" ON table_name
   FOR SELECT
   TO authenticated
   USING (EXISTS (
-    SELECT 1 FROM user_roles
+    SELECT 1 FROM user_role
     WHERE user_id = auth.uid() AND role = 'admin'
   ));
 

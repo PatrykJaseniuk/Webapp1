@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-// RLS: transactions
+// RLS: financial entries
 // ══════════════════════════════════════════════════════════════
 
 import {
@@ -21,7 +21,7 @@ const skip = (available: boolean): void => {
   expect(available).toBeDefined();
 };
 
-describe('transactions RLS', () => {
+describe('financial entries RLS', () => {
   let available = false;
   beforeAll(async () => {
     available = await checkAvailable();
@@ -30,14 +30,14 @@ describe('transactions RLS', () => {
   describe('landlord', () => {
     let client: SupabaseClient;
 
-    it('can read all transactions', async () => {
+    it('can read all financial entries', async () => {
       skip(available);
       available || expect(true).toBe(true);
       available &&
         (await (async () => {
           client = await signInAs('landlord');
           const { data, error } = await client
-            .from('transactions')
+            .from('financial_entry')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -46,18 +46,18 @@ describe('transactions RLS', () => {
         })());
     });
 
-    it('can insert a transaction', async () => {
+    it('can insert a financial entry', async () => {
       skip(available);
       available || expect(true).toBe(true);
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('transactions')
+            .from('financial_entry')
             .insert({
               lease_id: TEST_UUIDS.lease1,
-              description: 'Test transaction',
+              description: 'Test financial entry',
               amount: -100,
-              due_date: '2026-06-01',
+              value_date: '2026-06-01',
             })
             .select('id')
             .single();
@@ -69,11 +69,11 @@ describe('transactions RLS', () => {
     afterAll(async () => {
       available &&
         (await (async () => {
-          // Cleanup: delete test transactions
+          // Cleanup: delete test financial entries
           await client
-            .from('transactions')
+            .from('financial_entry')
             .delete()
-            .eq('description', 'Test transaction');
+            .eq('description', 'Test financial entry');
           await signOut(client);
         })());
     });
@@ -82,14 +82,14 @@ describe('transactions RLS', () => {
   describe('tenant', () => {
     let client: SupabaseClient;
 
-    it('sees only own transactions', async () => {
+    it('sees only own financial entries', async () => {
       skip(available);
       available || expect(true).toBe(true);
       available &&
         (await (async () => {
           client = await signInAs('tenant1');
           const { data, error } = await client
-            .from('transactions')
+            .from('financial_entry')
             .select('*');
           expect(error).toBeNull();
           const rows =
@@ -101,17 +101,17 @@ describe('transactions RLS', () => {
         })());
     });
 
-    it('cannot insert transactions', async () => {
+    it('cannot insert financial entries', async () => {
       skip(available);
       available || expect(true).toBe(true);
       available &&
         (await (async () => {
           const { error } = await client
-            .from('transactions')
+            .from('financial_entry')
             .insert({
               lease_id: TEST_UUIDS.lease2,
               amount: 9999,
-              due_date: '2026-01-01',
+              value_date: '2026-01-01',
             });
           expect(error).not.toBeNull();
         })());

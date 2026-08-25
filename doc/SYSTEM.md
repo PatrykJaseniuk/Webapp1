@@ -146,4 +146,4 @@ src/
 | Structured source layout | `backendConnector/`, `generic/`, `main/`, `masterComponents/`, `pages/`, `slaveComponents/` — grouped by responsibility |
 | Generated types in `__generated__/` | Clearly signals "do not edit"; rebuilt every launch; ESLint + `.gitattributes` enforced |
 | Real Postgres ENUMs | Single source of truth in the database — types auto-generated, no hand-duplication |
-| RBAC at both layers | Backend: RLS policies on `user_roles`. Frontend: `RoleGuard` components derived from `allowedRoles` on each route entry — no duplicated access logic |
+| RBAC at both layers | Backend: RLS policies on `user_role`. Frontend: `RoleGuard` components derived from `allowedRoles` on each route entry — no duplicated access logic |

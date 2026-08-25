@@ -37,7 +37,7 @@ describe('attachments RLS', () => {
         (await (async () => {
           client = await signInAs('landlord');
           const { data, error } = await client
-            .from('attachments')
+            .from('attachment')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -52,7 +52,7 @@ describe('attachments RLS', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('attachments')
+            .from('attachment')
             .insert({
               related_to_type: 'property',
               related_to_id: TEST_UUIDS.property1,
@@ -73,7 +73,7 @@ describe('attachments RLS', () => {
         (await (async () => {
           // Cleanup: delete test attachment
           await client
-            .from('attachments')
+            .from('attachment')
             .delete()
             .eq('file_name', 'test.pdf');
           await signOut(client);
@@ -91,7 +91,7 @@ describe('attachments RLS', () => {
         (await (async () => {
           client = await signInAs('tenant1');
           const { data, error } = await client
-            .from('attachments')
+            .from('attachment')
             .select('*');
           expect(error).toBeNull();
           const rows =
@@ -114,7 +114,7 @@ describe('attachments RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('attachments')
+            .from('attachment')
             .insert({
               related_to_type: 'property',
               related_to_id: TEST_UUIDS.property2,

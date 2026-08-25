@@ -255,7 +255,7 @@ const DetailContent = ({
                 {navLinkTo.toLease({ id: l.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: 'Szczegóły umowy' })}
               </td>
               <td className="pl-4 h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
-                {navLinkTo.toProperty({ id: l.property_id, style: {}, content: l.properties.name })}
+                {navLinkTo.toProperty({ id: l.property_id, style: {}, content: l.property.name })}
               </td>
               <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
                 {navLinkTo.toLease({ id: l.id, style: {}, content: formatDate(l.start_date) })}

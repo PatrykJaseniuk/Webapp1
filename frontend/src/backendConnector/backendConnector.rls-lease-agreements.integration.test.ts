@@ -37,7 +37,7 @@ describe('lease_agreements RLS', () => {
         (await (async () => {
           client = await signInAs('landlord');
           const { data, error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -52,7 +52,7 @@ describe('lease_agreements RLS', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .insert({
               property_id: TEST_UUIDS.property4,
               tenant_id: TEST_UUIDS.tenant1Profile,
@@ -74,7 +74,7 @@ describe('lease_agreements RLS', () => {
         (await (async () => {
           // Cleanup: delete test lease
           await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .delete()
             .eq('monthly_rent', 900)
             .eq('deposit_amount', 900);
@@ -93,7 +93,7 @@ describe('lease_agreements RLS', () => {
         (await (async () => {
           client = await signInAs('tenant1');
           const { data, error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .select('*');
           expect(error).toBeNull();
           const rows =
@@ -109,7 +109,7 @@ describe('lease_agreements RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .insert({
               property_id: TEST_UUIDS.property1,
               tenant_id: TEST_UUIDS.tenant2Profile,

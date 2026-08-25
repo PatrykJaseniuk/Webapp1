@@ -32,7 +32,10 @@ export const LandlordDashboard = ({
         {navLinkTo.tenants({ style: navCardStyle(), content: 'Najemcy' })}
       </div>
       <div className={cardLinkClass}>
-        {navLinkTo.transactions({ style: navCardStyle(), content: 'Transakcje' })}
+        {navLinkTo.financialEntries({ style: navCardStyle(), content: 'Finanse' })}
+      </div>
+      <div className={cardLinkClass}>
+        {navLinkTo.treasuries({ style: navCardStyle(), content: 'Skarbce' })}
       </div>
     </div>
   </div>

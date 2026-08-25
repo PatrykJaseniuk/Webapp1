@@ -1,8 +1,8 @@
 // ══════════════════════════════════════════════════════════════
-// Integration: FILTERED QUERY — transactions text search
+// Integration: FILTERED QUERY — financial entries text search
 // ══════════════════════════════════════════════════════════════
-// Focused companion to TransactionsM's text filter. Documents how
-// a single PostgREST request filters transactions by a related
+// Focused companion to FinancialEntriesM's text filter. Documents how
+// a single PostgREST request filters financial entries by a related
 // (to-one) property name:
 //
 //   • a top-level joined-column filter works (properties.name)
@@ -26,7 +26,7 @@ const skip = (available: boolean): void => {
   expect(available).toBeDefined();
 };
 
-describe('transactions filtered query', () => {
+describe('financial entries filtered query', () => {
   let available = false;
   beforeAll(async () => {
     available = await checkAvailable();
@@ -45,22 +45,22 @@ describe('transactions filtered query', () => {
 
     // A single request: filter the parent rows by the embedded
     // to-one property column via a top-level .ilike().
-    it('ilike on embedded properties.name matches transactions', async () => {
+    it('ilike on embedded property.name matches financial entries', async () => {
       skip(available);
       available || true;
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('transactions')
-            .select('*, properties!inner(name)')
-            .ilike('properties.name', '*Gdańsk*');
+            .from('financial_entry')
+            .select('*, property!inner(name)')
+            .ilike('property.name', '*Gdańsk*');
           expect(error).toBeNull();
           const rows = data as ReadonlyArray<{
-            readonly properties: { readonly name: string };
+            readonly property: { readonly name: string };
           }>;
           expect(rows.length).toBeGreaterThanOrEqual(1);
           const allMatch = rows.every((r) =>
-            r.properties.name.includes('Gdańsk'),
+            r.property.name.includes('Gdańsk'),
           );
           expect(allMatch).toBe(true);
         })());
@@ -74,9 +74,9 @@ describe('transactions filtered query', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('transactions')
+            .from('financial_entry')
             .select('*')
-            .or('description.ilike.*Gdańsk*,properties.name.ilike.*Gdańsk*');
+            .or('description.ilike.*Gdańsk*,property.name.ilike.*Gdańsk*');
           expect(error).not.toBeNull();
         })());
     });

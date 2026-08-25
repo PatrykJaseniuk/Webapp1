@@ -9,7 +9,7 @@
 -- ================================================
 -- Runs before a JWT is issued. Embeds user_role claim
 -- so RLS policies can read auth.jwt() ->> 'user_role'
--- instead of querying public.user_roles (avoiding RLS
+-- instead of querying public.user_role (avoiding RLS
 -- recursion and permission-check side-effects).
 
 CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
@@ -23,7 +23,7 @@ DECLARE
     user_role text;
 BEGIN
     SELECT role INTO user_role
-    FROM public.user_roles
+    FROM public.user_role
     WHERE user_id = (event ->> 'user_id')::uuid;
 
     claims := event -> 'claims';
@@ -52,11 +52,11 @@ REVOKE EXECUTE
     FROM authenticated, anon, public;
 
 GRANT ALL
-    ON TABLE public.user_roles
+    ON TABLE public.user_role
     TO supabase_auth_admin;
 
 REVOKE ALL
-    ON TABLE public.user_roles
+    ON TABLE public.user_role
     FROM anon, public;
 
 -- Note: authenticated remains granted for admin role management via API
@@ -64,7 +64,7 @@ REVOKE ALL
 
 -- Auth admin needs to read user_roles — dedicated permissive policy
 CREATE POLICY "Allow auth admin to read user roles"
-    ON public.user_roles
+    ON public.user_role
     AS PERMISSIVE
     FOR SELECT
     TO supabase_auth_admin
@@ -74,12 +74,13 @@ CREATE POLICY "Allow auth admin to read user roles"
 -- STEP 1: ENABLE RLS ON ALL TABLES
 -- ================================================
 
-ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.properties ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.lease_agreements ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.attachments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_role ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.property ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tenant ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lease_agreement ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.attachment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.treasury ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.financial_entry ENABLE ROW LEVEL SECURITY;
 
 -- ================================================
 -- STEP 2: HELPER FUNCTIONS FOR RLS
@@ -126,7 +127,7 @@ DECLARE
     tenant_uuid uuid;
 BEGIN
     SELECT id INTO tenant_uuid
-    FROM public.tenants
+    FROM public.tenant
     WHERE user_id = auth.uid();
     
     RETURN tenant_uuid;
@@ -145,9 +146,9 @@ AS $$
         array_agg(id),
         ARRAY[]::uuid[]
     )
-    FROM public.lease_agreements
+    FROM public.lease_agreement
     WHERE tenant_id = (
-        SELECT id FROM public.tenants WHERE user_id = auth.uid()
+        SELECT id FROM public.tenant WHERE user_id = auth.uid()
     );
 $$;
 
@@ -163,9 +164,9 @@ AS $$
         array_agg(property_id),
         ARRAY[]::uuid[]
     )
-    FROM public.lease_agreements
+    FROM public.lease_agreement
     WHERE tenant_id = (
-        SELECT id FROM public.tenants WHERE user_id = auth.uid()
+        SELECT id FROM public.tenant WHERE user_id = auth.uid()
     )
     AND lease_status = 'active';
 $$;
@@ -176,7 +177,7 @@ $$;
 
 -- Consolidated SELECT policy for all authenticated users
 CREATE POLICY "Authenticated users can read user roles"
-    ON public.user_roles
+    ON public.user_role
     FOR SELECT
     TO authenticated
     USING (
@@ -189,14 +190,14 @@ CREATE POLICY "Authenticated users can read user roles"
 
 -- Admins can insert roles
 CREATE POLICY "Admins can insert roles"
-    ON public.user_roles
+    ON public.user_role
     FOR INSERT
     TO authenticated
     WITH CHECK (is_admin());
 
 -- Admins can update roles
 CREATE POLICY "Admins can update roles"
-    ON public.user_roles
+    ON public.user_role
     FOR UPDATE
     TO authenticated
     USING (is_admin())
@@ -204,7 +205,7 @@ CREATE POLICY "Admins can update roles"
 
 -- Admins can delete roles
 CREATE POLICY "Admins can delete roles"
-    ON public.user_roles
+    ON public.user_role
     FOR DELETE
     TO authenticated
     USING (is_admin());
@@ -215,7 +216,7 @@ CREATE POLICY "Admins can delete roles"
 
 -- Policy for landlords and admins: see all properties (no subquery on lease_agreements)
 CREATE POLICY "Landlords can read all properties"
-    ON public.properties
+    ON public.property
     FOR SELECT
     TO authenticated
     USING (is_landlord());
@@ -223,21 +224,21 @@ CREATE POLICY "Landlords can read all properties"
 -- Policy for tenants: see properties they are currently leasing
 -- Uses SECURITY DEFINER wrapper to avoid permission errors on lease_agreements
 CREATE POLICY "Tenants can read their leased properties"
-    ON public.properties
+    ON public.property
     FOR SELECT
     TO authenticated
     USING (id = ANY(get_tenant_visible_property_ids()));
 
 -- Landlords can insert properties
 CREATE POLICY "Landlords can insert properties"
-    ON public.properties
+    ON public.property
     FOR INSERT
     TO authenticated
     WITH CHECK (is_landlord());
 
 -- Landlords can update properties
 CREATE POLICY "Landlords can update properties"
-    ON public.properties
+    ON public.property
     FOR UPDATE
     TO authenticated
     USING (is_landlord())
@@ -245,7 +246,7 @@ CREATE POLICY "Landlords can update properties"
 
 -- Landlords can delete properties
 CREATE POLICY "Landlords can delete properties"
-    ON public.properties
+    ON public.property
     FOR DELETE
     TO authenticated
     USING (is_landlord());
@@ -256,7 +257,7 @@ CREATE POLICY "Landlords can delete properties"
 
 -- Consolidated SELECT policy for all authenticated users
 CREATE POLICY "Authenticated users can read tenants"
-    ON public.tenants
+    ON public.tenant
     FOR SELECT
     TO authenticated
     USING (
@@ -269,7 +270,7 @@ CREATE POLICY "Authenticated users can read tenants"
 
 -- Consolidated UPDATE policy for authenticated users
 CREATE POLICY "Authenticated users can update tenants"
-    ON public.tenants
+    ON public.tenant
     FOR UPDATE
     TO authenticated
     USING (
@@ -287,14 +288,14 @@ CREATE POLICY "Authenticated users can update tenants"
 
 -- Landlords can insert tenants
 CREATE POLICY "Landlords can insert tenants"
-    ON public.tenants
+    ON public.tenant
     FOR INSERT
     TO authenticated
     WITH CHECK (is_landlord());
 
 -- Landlords can delete tenants
 CREATE POLICY "Landlords can delete tenants"
-    ON public.tenants
+    ON public.tenant
     FOR DELETE
     TO authenticated
     USING (is_landlord());
@@ -305,7 +306,7 @@ CREATE POLICY "Landlords can delete tenants"
 
 -- Consolidated SELECT policy for all authenticated users
 CREATE POLICY "Authenticated users can read leases"
-    ON public.lease_agreements
+    ON public.lease_agreement
     FOR SELECT
     TO authenticated
     USING (
@@ -318,14 +319,14 @@ CREATE POLICY "Authenticated users can read leases"
 
 -- Landlords can insert leases
 CREATE POLICY "Landlords can insert leases"
-    ON public.lease_agreements
+    ON public.lease_agreement
     FOR INSERT
     TO authenticated
     WITH CHECK (is_landlord());
 
 -- Landlords can update leases
 CREATE POLICY "Landlords can update leases"
-    ON public.lease_agreements
+    ON public.lease_agreement
     FOR UPDATE
     TO authenticated
     USING (is_landlord())
@@ -333,7 +334,7 @@ CREATE POLICY "Landlords can update leases"
 
 -- Landlords can delete leases
 CREATE POLICY "Landlords can delete leases"
-    ON public.lease_agreements
+    ON public.lease_agreement
     FOR DELETE
     TO authenticated
     USING (is_landlord());
@@ -344,7 +345,7 @@ CREATE POLICY "Landlords can delete leases"
 
 -- Consolidated SELECT policy for all authenticated users
 CREATE POLICY "Authenticated users can read attachments"
-    ON public.attachments
+    ON public.attachment
     FOR SELECT
     TO authenticated
     USING (
@@ -357,14 +358,14 @@ CREATE POLICY "Authenticated users can read attachments"
 
 -- Landlords can insert attachments
 CREATE POLICY "Landlords can insert attachments"
-    ON public.attachments
+    ON public.attachment
     FOR INSERT
     TO authenticated
     WITH CHECK (is_landlord());
 
 -- Landlords can update attachments
 CREATE POLICY "Landlords can update attachments"
-    ON public.attachments
+    ON public.attachment
     FOR UPDATE
     TO authenticated
     USING (is_landlord())
@@ -372,20 +373,50 @@ CREATE POLICY "Landlords can update attachments"
 
 -- Landlords can delete attachments
 CREATE POLICY "Landlords can delete attachments"
-    ON public.attachments
+    ON public.attachment
     FOR DELETE
     TO authenticated
     USING (is_landlord());
 
 -- ================================================
--- STEP 8: TRANSACTIONS POLICIES
+-- STEP 8: TREASURIES POLICIES
+-- ================================================
+-- Cash accounts are landlord/admin only — tenants must never see them.
+
+CREATE POLICY "Landlords can read treasuries"
+    ON public.treasury
+    FOR SELECT
+    TO authenticated
+    USING (is_landlord());
+
+CREATE POLICY "Landlords can insert treasuries"
+    ON public.treasury
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (is_landlord());
+
+CREATE POLICY "Landlords can update treasuries"
+    ON public.treasury
+    FOR UPDATE
+    TO authenticated
+    USING (is_landlord())
+    WITH CHECK (is_landlord());
+
+CREATE POLICY "Landlords can delete treasuries"
+    ON public.treasury
+    FOR DELETE
+    TO authenticated
+    USING (is_landlord());
+
+-- ================================================
+-- STEP 9: FINANCIAL ENTRIES POLICIES
 -- ================================================
 
 -- Consolidated SELECT policy for all authenticated users
--- Tenants see transactions linked to any of their leases (past or present).
--- Property-level transactions (lease_id IS NULL) are landlord-only — no tenant access.
-CREATE POLICY "Authenticated users can read transactions"
-    ON public.transactions
+-- Tenants see entries linked to any of their leases (past or present).
+-- Property-level and treasury-level entries (lease_id IS NULL) are landlord-only.
+CREATE POLICY "Authenticated users can read financial entries"
+    ON public.financial_entry
     FOR SELECT
     TO authenticated
     USING (
@@ -394,30 +425,30 @@ CREATE POLICY "Authenticated users can read transactions"
         lease_id = ANY(get_tenant_lease_ids())
     );
 
--- Landlords can insert transactions
-CREATE POLICY "Landlords can insert transactions"
-    ON public.transactions
+-- Landlords can insert financial entries
+CREATE POLICY "Landlords can insert financial entries"
+    ON public.financial_entry
     FOR INSERT
     TO authenticated
     WITH CHECK (is_landlord());
 
--- Landlords can update transactions
-CREATE POLICY "Landlords can update transactions"
-    ON public.transactions
+-- Landlords can update financial entries
+CREATE POLICY "Landlords can update financial entries"
+    ON public.financial_entry
     FOR UPDATE
     TO authenticated
     USING (is_landlord())
     WITH CHECK (is_landlord());
 
--- Landlords can delete transactions
-CREATE POLICY "Landlords can delete transactions"
-    ON public.transactions
+-- Landlords can delete financial entries
+CREATE POLICY "Landlords can delete financial entries"
+    ON public.financial_entry
     FOR DELETE
     TO authenticated
     USING (is_landlord());
 
 -- ================================================
--- STEP 9: TABLE PRIVILEGES (GRANTS)
+-- STEP 10: TABLE PRIVILEGES (GRANTS)
 -- ================================================
 -- DML privileges for PostgREST (authenticated / anon roles).
 -- RLS policies still enforce row-level access — these grants only
@@ -427,17 +458,18 @@ CREATE POLICY "Landlords can delete transactions"
 -- anon is granted alongside authenticated for consistency with Supabase
 -- defaults; all RLS policies are TO authenticated, so anon sees no rows.
 GRANT SELECT, INSERT, UPDATE, DELETE
-    ON public.properties,
-           public.tenants,
-           public.lease_agreements,
-           public.attachments,
-           public.transactions
+    ON public.property,
+           public.tenant,
+           public.lease_agreement,
+           public.attachment,
+           public.treasury,
+           public.financial_entry
     TO authenticated, anon;
 
 -- ── user_roles: DML for authenticated only ─────────
 -- anon is explicitly revoked above; authenticated needs DML for admin
 -- role management via API.
 GRANT SELECT, INSERT, UPDATE, DELETE
-    ON public.user_roles
+    ON public.user_role
     TO authenticated;
 

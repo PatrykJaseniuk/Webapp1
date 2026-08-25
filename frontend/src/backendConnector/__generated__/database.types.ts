@@ -34,7 +34,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      attachments: {
+      attachment: {
         Row: {
           created_at: string | null
           created_by: string | null
@@ -73,11 +73,131 @@ export type Database = {
         }
         Relationships: []
       }
-      lease_agreements: {
+      financial_entry: {
+        Row: {
+          amount: number
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          lease_id: string | null
+          property_id: string | null
+          treasury_id: string | null
+          updated_at: string | null
+          value_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          lease_id?: string | null
+          property_id?: string | null
+          treasury_id?: string | null
+          updated_at?: string | null
+          value_date: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          lease_id?: string | null
+          property_id?: string | null
+          treasury_id?: string | null
+          updated_at?: string | null
+          value_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "active_leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "deposit_obligation"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreement"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_balance"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_closing_statement"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["current_lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_balance"
+            referencedColumns: ["treasury_id"]
+          },
+        ]
+      }
+      lease_agreement: {
         Row: {
           created_at: string | null
           created_by: string | null
           deposit_amount: number
+          deposit_entry_id: string | null
+          deposit_released: number | null
+          deposit_retained: number | null
           end_date: string | null
           id: string
           lease_status: Database["public"]["Enums"]["lease_status"]
@@ -92,6 +212,9 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           deposit_amount: number
+          deposit_entry_id?: string | null
+          deposit_released?: number | null
+          deposit_retained?: number | null
           end_date?: string | null
           id?: string
           lease_status?: Database["public"]["Enums"]["lease_status"]
@@ -106,6 +229,9 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           deposit_amount?: number
+          deposit_entry_id?: string | null
+          deposit_released?: number | null
+          deposit_retained?: number | null
           end_date?: string | null
           id?: string
           lease_status?: Database["public"]["Enums"]["lease_status"]
@@ -118,36 +244,50 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lease_agreements_property_id_fkey"
-            columns: ["property_id"]
+            foreignKeyName: "lease_agreement_deposit_entry_id_fkey"
+            columns: ["deposit_entry_id"]
             isOneToOne: false
-            referencedRelation: "properties"
+            referencedRelation: "financial_entry"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lease_agreements_property_id_fkey"
+            foreignKeyName: "lease_agreement_deposit_entry_id_fkey"
+            columns: ["deposit_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_entry_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_financial_summary"
             referencedColumns: ["property_id"]
           },
           {
-            foreignKeyName: "lease_agreements_property_id_fkey"
+            foreignKeyName: "lease_agreement_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_occupancy"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lease_agreements_tenant_id_fkey"
+            foreignKeyName: "lease_agreement_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "tenants"
+            referencedRelation: "tenant"
             referencedColumns: ["id"]
           },
         ]
       }
-      properties: {
+      property: {
         Row: {
           address: string
           bedrooms: number | null
@@ -195,7 +335,7 @@ export type Database = {
         }
         Relationships: []
       }
-      tenants: {
+      tenant: {
         Row: {
           created_at: string | null
           email: string
@@ -243,93 +383,34 @@ export type Database = {
         }
         Relationships: []
       }
-      transactions: {
+      treasury: {
         Row: {
-          amount: number
           created_at: string | null
           created_by: string | null
-          description: string
-          due_date: string
           id: string
-          lease_id: string | null
-          property_id: string | null
+          is_active: boolean
+          name: string
           updated_at: string | null
         }
         Insert: {
-          amount: number
           created_at?: string | null
           created_by?: string | null
-          description: string
-          due_date: string
           id?: string
-          lease_id?: string | null
-          property_id?: string | null
+          is_active?: boolean
+          name: string
           updated_at?: string | null
         }
         Update: {
-          amount?: number
           created_at?: string | null
           created_by?: string | null
-          description?: string
-          due_date?: string
           id?: string
-          lease_id?: string | null
-          property_id?: string | null
+          is_active?: boolean
+          name?: string
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "transactions_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "active_leases"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "lease_agreements"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["current_lease_id"]
-          },
-          {
-            foreignKeyName: "transactions_lease_id_fkey"
-            columns: ["lease_id"]
-            isOneToOne: false
-            referencedRelation: "unpaid_transactions_summary"
-            referencedColumns: ["lease_id"]
-          },
-          {
-            foreignKeyName: "transactions_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_financial_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
-            foreignKeyName: "transactions_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
-      user_roles: {
+      user_role: {
         Row: {
           created_at: string | null
           role: Database["public"]["Enums"]["app_role"]
@@ -359,6 +440,9 @@ export type Database = {
           days_active: number | null
           days_until_end: number | null
           deposit_amount: number | null
+          deposit_entry_id: string | null
+          deposit_released: number | null
+          deposit_retained: number | null
           end_date: string | null
           id: string | null
           lease_status: Database["public"]["Enums"]["lease_status"] | null
@@ -377,34 +461,303 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lease_agreements_property_id_fkey"
-            columns: ["property_id"]
+            foreignKeyName: "lease_agreement_deposit_entry_id_fkey"
+            columns: ["deposit_entry_id"]
             isOneToOne: false
-            referencedRelation: "properties"
+            referencedRelation: "financial_entry"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lease_agreements_property_id_fkey"
+            foreignKeyName: "lease_agreement_deposit_entry_id_fkey"
+            columns: ["deposit_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_entry_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_financial_summary"
             referencedColumns: ["property_id"]
           },
           {
-            foreignKeyName: "lease_agreements_property_id_fkey"
+            foreignKeyName: "lease_agreement_property_id_fkey"
             columns: ["property_id"]
             isOneToOne: false
             referencedRelation: "property_occupancy"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "lease_agreements_tenant_id_fkey"
+            foreignKeyName: "lease_agreement_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "tenants"
+            referencedRelation: "tenant"
             referencedColumns: ["id"]
           },
         ]
+      }
+      dashboard_summary: {
+        Row: {
+          active_leases: number | null
+          active_tenants: number | null
+          cash_on_hand: number | null
+          occupied_properties: number | null
+          overdue_items: number | null
+          total_properties: number | null
+          total_tenants: number | null
+          total_unpaid_amount: number | null
+        }
+        Relationships: []
+      }
+      deposit_obligation: {
+        Row: {
+          deposit_charged: number | null
+          deposit_held: number | null
+          deposit_outstanding: number | null
+          deposit_retained: number | null
+          lease_id: string | null
+          lease_status: Database["public"]["Enums"]["lease_status"] | null
+          property_name: string | null
+          tenant_id: string | null
+          tenant_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lease_agreement_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_entry_review: {
+        Row: {
+          amount: number | null
+          description: string | null
+          id: string | null
+          lease_id: string | null
+          property_id: string | null
+          review_reason: string | null
+          treasury_id: string | null
+          value_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "active_leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "deposit_obligation"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreement"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_balance"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_closing_statement"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["current_lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_balance"
+            referencedColumns: ["treasury_id"]
+          },
+        ]
+      }
+      lease_balance: {
+        Row: {
+          balance: number | null
+          deposit_held: number | null
+          earliest_unpaid_value_date: string | null
+          lease_id: string | null
+          lease_status: Database["public"]["Enums"]["lease_status"] | null
+          overdue_items_count: number | null
+          property_id: string | null
+          property_name: string | null
+          tenant_id: string | null
+          tenant_name: string | null
+          total_unpaid_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lease_closing_statement: {
+        Row: {
+          arrears: number | null
+          deposit_charged: number | null
+          deposit_entry_id: string | null
+          deposit_held: number | null
+          deposit_outstanding: number | null
+          deposit_paid: number | null
+          deposit_released: number | null
+          deposit_retained: number | null
+          lease_balance: number | null
+          lease_id: string | null
+          lease_status: Database["public"]["Enums"]["lease_status"] | null
+          property_id: string | null
+          property_name: string | null
+          tenant_id: string | null
+          tenant_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lease_agreement_deposit_entry_id_fkey"
+            columns: ["deposit_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_entry"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_deposit_entry_id_fkey"
+            columns: ["deposit_entry_id"]
+            isOneToOne: false
+            referencedRelation: "financial_entry_review"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lease_agreement_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pg_all_foreign_keys: {
+        Row: {
+          fk_columns: unknown[] | null
+          fk_constraint_name: unknown
+          fk_schema_name: unknown
+          fk_table_name: unknown
+          fk_table_oid: unknown
+          is_deferrable: boolean | null
+          is_deferred: boolean | null
+          match_type: string | null
+          on_delete: string | null
+          on_update: string | null
+          pk_columns: unknown[] | null
+          pk_constraint_name: unknown
+          pk_index_name: unknown
+          pk_schema_name: unknown
+          pk_table_name: unknown
+          pk_table_oid: unknown
+        }
+        Relationships: []
       }
       property_financial_summary: {
         Row: {
@@ -443,66 +796,157 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "lease_agreements_tenant_id_fkey"
+            foreignKeyName: "lease_agreement_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "tenants"
+            referencedRelation: "tenant"
             referencedColumns: ["id"]
           },
         ]
       }
-      unpaid_transactions_summary: {
+      tap_funky: {
+        Row: {
+          args: string | null
+          is_definer: boolean | null
+          is_strict: boolean | null
+          is_visible: boolean | null
+          kind: unknown
+          langoid: unknown
+          name: unknown
+          oid: unknown
+          owner: unknown
+          returns: string | null
+          returns_set: boolean | null
+          schema: unknown
+          volatility: string | null
+        }
+        Relationships: []
+      }
+      treasury_balance: {
         Row: {
           balance: number | null
-          earliest_due_date: string | null
-          lease_id: string | null
-          overdue_items_count: number | null
-          property_id: string | null
-          property_name: string | null
-          tenant_id: string | null
-          tenant_name: string | null
-          total_unpaid_amount: number | null
+          entry_count: number | null
+          is_active: boolean | null
+          last_value_date: string | null
+          treasury_id: string | null
+          treasury_name: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "lease_agreements_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lease_agreements_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_financial_summary"
-            referencedColumns: ["property_id"]
-          },
-          {
-            foreignKeyName: "lease_agreements_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "property_occupancy"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "lease_agreements_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Functions: {
+      _cleanup: { Args: never; Returns: boolean }
+      _contract_on: { Args: { "": string }; Returns: unknown }
+      _currtest: { Args: never; Returns: number }
+      _db_privs: { Args: never; Returns: unknown[] }
+      _extensions: { Args: never; Returns: unknown[] }
+      _get: { Args: { "": string }; Returns: number }
+      _get_latest: { Args: { "": string }; Returns: number[] }
+      _get_note: { Args: { "": string }; Returns: string }
+      _is_verbose: { Args: never; Returns: boolean }
+      _prokind: { Args: { p_oid: unknown }; Returns: unknown }
+      _query: { Args: { "": string }; Returns: string }
+      _refine_vol: { Args: { "": string }; Returns: string }
+      _retval: { Args: { "": string }; Returns: string }
+      _table_privs: { Args: never; Returns: unknown[] }
+      _temptypes: { Args: { "": string }; Returns: string }
+      _todo: { Args: never; Returns: string }
+      col_is_null:
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              schema_name: unknown
+              table_name: unknown
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              table_name: unknown
+            }
+            Returns: string
+          }
+      col_not_null:
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              schema_name: unknown
+              table_name: unknown
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              column_name: unknown
+              description?: string
+              table_name: unknown
+            }
+            Returns: string
+          }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      diag:
+        | {
+            Args: { msg: unknown }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+        | {
+            Args: { msg: string }
+            Returns: {
+              error: true
+            } & "Could not choose the best candidate function between: public.diag(msg => text), public.diag(msg => anyelement). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+          }
+      diag_test_name: { Args: { "": string }; Returns: string }
+      do_tap:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] }
+      fail:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
+      findfuncs: { Args: { "": string }; Returns: string[] }
+      finish: { Args: { exception_on_failure?: boolean }; Returns: string[] }
+      format_type_string: { Args: { "": string }; Returns: string }
       get_current_tenant_id: { Args: never; Returns: string }
       get_tenant_lease_ids: { Args: never; Returns: string[] }
       get_tenant_visible_property_ids: { Args: never; Returns: string[] }
       get_user_role: { Args: never; Returns: string }
+      has_unique: { Args: { "": string }; Returns: string }
+      in_todo: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
+      is_empty: { Args: { "": string }; Returns: string }
       is_landlord: { Args: never; Returns: boolean }
+      isnt_empty: { Args: { "": string }; Returns: string }
+      lives_ok: { Args: { "": string }; Returns: string }
+      no_plan: { Args: never; Returns: boolean[] }
+      num_failed: { Args: never; Returns: number }
+      os_name: { Args: never; Returns: string }
+      pass:
+        | { Args: never; Returns: string }
+        | { Args: { "": string }; Returns: string }
+      pg_version: { Args: never; Returns: string }
+      pg_version_num: { Args: never; Returns: number }
+      pgtap_version: { Args: never; Returns: number }
+      runtests:
+        | { Args: never; Returns: string[] }
+        | { Args: { "": string }; Returns: string[] }
+      skip:
+        | { Args: { "": string }; Returns: string }
+        | { Args: { how_many: number; why: string }; Returns: string }
+      throws_ok: { Args: { "": string }; Returns: string }
+      todo:
+        | { Args: { how_many: number }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+        | { Args: { why: string }; Returns: boolean[] }
+        | { Args: { how_many: number; why: string }; Returns: boolean[] }
+      todo_end: { Args: never; Returns: boolean[] }
+      todo_start:
+        | { Args: never; Returns: boolean[] }
+        | { Args: { "": string }; Returns: boolean[] }
     }
     Enums: {
       app_role: "tenant" | "landlord" | "admin"
@@ -517,10 +961,13 @@ export type Database = {
         | "maintenance"
         | "meter_reading"
         | "expense"
+        | "financial_entry"
       tenant_status: "active" | "past" | "applicant"
     }
     CompositeTypes: {
-      [_ in never]: never
+      _time_trial_type: {
+        a_time: number | null
+      }
     }
   }
 }
@@ -660,6 +1107,7 @@ export const Constants = {
         "maintenance",
         "meter_reading",
         "expense",
+        "financial_entry",
       ],
       tenant_status: ["active", "past", "applicant"],
     },

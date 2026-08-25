@@ -94,7 +94,7 @@ describe('views', () => {
     });
   });
 
-  describe('unpaid_transactions_summary', () => {
+  describe('lease_balance', () => {
     it('landlord sees all unpaid summaries', async () => {
       skip(available);
       available || true;
@@ -102,7 +102,7 @@ describe('views', () => {
         (await (async () => {
           const client = await signInAs('landlord');
           const { error } = await client
-            .from('unpaid_transactions_summary')
+            .from('lease_balance')
             .select('*');
           expect(error).toBeNull();
           await signOut(client);
@@ -116,7 +116,7 @@ describe('views', () => {
         (await (async () => {
           const client = await signInAs('tenant1');
           const { data, error } = await client
-            .from('unpaid_transactions_summary')
+            .from('lease_balance')
             .select('*');
           expect(error).toBeNull();
           const rows =

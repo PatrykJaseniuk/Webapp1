@@ -1,137 +1,133 @@
 -- ================================================
 -- RENTAL MANAGEMENT SYSTEM - SEED DATA (PART 4)
 -- ================================================
--- Part 4: Property-level Expenses and Attachments
+-- Part 4: Lease 4 closing (partial deposit release), property-level and
+-- treasury-level entries, attachments, and deposit settlement.
 -- This file is split to keep migration files under 400 lines
 
 -- ================================================
--- SECTION 7: TRANSACTIONS (CONTINUED - PROPERTY-LEVEL)
+-- SECTION 8: FINANCIAL ENTRIES (CONTINUED)
 -- ================================================
--- Property-level expenses (no lease_id, only property_id)
 
-INSERT INTO public.transactions (id, lease_id, property_id, description, amount, due_date, created_at, updated_at, created_by) VALUES
-    -- ===== PROPERTY 1: Warsaw Apartment Expenses =====
-    ('e0000000-0000-0000-0000-000000000001', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000001', 
-     'Maintenance - plumbing repair', 
-     -250.00, 
-     '2025-06-15', 
-     '2025-06-15 14:00:00+00', 
-     '2025-06-15 14:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    ('e0000000-0000-0000-0000-000000000002', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000001', 
-     'Annual property tax', 
-     -1200.00, 
-     '2025-03-15', 
-     '2025-03-15 09:00:00+00', 
-     '2025-03-15 09:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    -- ===== PROPERTY 2: Kraków Apartment Expenses =====
-    ('e0000000-0000-0000-0000-000000000003', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000002', 
-     'Kitchen renovation', 
-     -3500.00, 
-     '2025-04-10', 
-     '2025-04-10 09:00:00+00', 
-     '2025-04-10 09:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    ('e0000000-0000-0000-0000-000000000004', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000002', 
-     'Annual property tax', 
-     -980.00, 
-     '2025-03-15', 
-     '2025-03-15 09:00:00+00', 
-     '2025-03-15 09:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    -- ===== PROPERTY 3: Gdańsk House Expenses =====
-    ('e0000000-0000-0000-0000-000000000005', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000003', 
-     'Garden maintenance - annual service', 
-     -800.00, 
-     '2025-04-01', 
-     '2025-04-01 10:00:00+00', 
-     '2025-04-01 10:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    ('e0000000-0000-0000-0000-000000000006', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000003', 
-     'Property insurance - annual', 
-     -2400.00, 
-     '2025-01-10', 
-     '2025-01-10 09:00:00+00', 
-     '2025-01-10 09:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    ('e0000000-0000-0000-0000-000000000007', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000003', 
-     'Annual property tax', 
-     -2100.00, 
-     '2025-03-15', 
-     '2025-03-15 09:00:00+00', 
-     '2025-03-15 09:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    ('e0000000-0000-0000-0000-000000000008', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000003', 
-     'Roof repair', 
-     -1500.00, 
-     '2025-07-20', 
-     '2025-07-20 11:00:00+00', 
-     '2025-07-20 11:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    -- ===== PROPERTY 4: Poznań Commercial Expenses =====
-    ('e0000000-0000-0000-0000-000000000009', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000004', 
-     'Building maintenance fee', 
-     -500.00, 
-     '2025-06-01', 
-     '2025-06-01 10:00:00+00', 
-     '2025-06-01 10:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    -- ===== PROPERTY 6: Łódź Apartment Expenses =====
-    ('e0000000-0000-0000-0000-000000000010', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000006', 
-     'Renovation materials', 
-     -1800.00, 
-     '2025-02-01', 
-     '2025-02-01 14:00:00+00', 
-     '2025-02-01 14:00:00+00', 
-     '00000000-0000-0000-0000-000000000002'),
-    
-    ('e0000000-0000-0000-0000-000000000011', 
-     NULL, 
-     'a0000000-0000-0000-0000-000000000006', 
-     'Painting service', 
-     -2200.00, 
-     '2025-02-15', 
-     '2025-02-15 14:00:00+00', 
-     '2025-02-15 14:00:00+00', 
-     '00000000-0000-0000-0000-000000000002');
+-- ===== LEASE 4: Lodz Apartment (Maria Lewandowska) - EXPIRED, DEPOSIT PARTIALLY RELEASED =====
+-- Deposit 2800.00: 2300.00 returned to the tenant, 500.00 retained and granted
+-- to the property for damages. The lease account nets to zero, deposit_held
+-- drops to 500.00 and deposit_outstanding to 0.00 once deposit_retained is set.
 
--- ================================================
+INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
+    ('d0000000-0000-0000-0000-000000000300',
+     'c0000000-0000-0000-0000-000000000004', NULL, NULL,
+     'Security deposit - charged', -2800.00, '2024-01-01',
+     '2023-12-20 11:00:00+00', '2023-12-20 11:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('d0000000-0000-0000-0000-000000000301',
+     'c0000000-0000-0000-0000-000000000004', NULL, 'f0000000-0000-0000-0000-000000000001',
+     'Security deposit - received', 2800.00, '2024-01-01',
+     '2024-01-01 11:00:00+00', '2024-01-01 11:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('d0000000-0000-0000-0000-000000000302',
+     'c0000000-0000-0000-0000-000000000004', NULL, NULL,
+     'Monthly rent - January 2024 - charged', -2800.00, '2024-01-01',
+     '2024-01-01 09:00:00+00', '2024-01-01 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('d0000000-0000-0000-0000-000000000303',
+     'c0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000001',
+     'Monthly rent - January 2024 - paid', 2800.00, '2024-01-04',
+     '2024-01-04 09:00:00+00', '2024-01-04 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('d0000000-0000-0000-0000-000000000304',
+     'c0000000-0000-0000-0000-000000000004', NULL, NULL,
+     'Monthly rent - February 2024 - charged', -2800.00, '2024-02-01',
+     '2024-02-01 09:00:00+00', '2024-02-01 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('d0000000-0000-0000-0000-000000000305',
+     'c0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000001',
+     'Monthly rent - February 2024 - paid', 2800.00, '2024-02-05',
+     '2024-02-05 09:00:00+00', '2024-02-05 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    -- Deposit settlement, step 1: release the portion returned to the tenant
+    ('d0000000-0000-0000-0000-000000000306',
+     'c0000000-0000-0000-0000-000000000004', NULL, NULL,
+     'Security deposit - released to tenant', 2300.00, '2025-01-15',
+     '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    -- Deposit settlement, step 2: pay that portion out
+    ('d0000000-0000-0000-0000-000000000307',
+     'c0000000-0000-0000-0000-000000000004', NULL, 'f0000000-0000-0000-0000-000000000001',
+     'Security deposit - returned to tenant', -2300.00, '2025-01-15',
+     '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    -- Deposit settlement, step 3: retained portion granted to the property.
+    -- Property only: the cash arrived earlier as the deposit, so no cash leg.
+    ('d0000000-0000-0000-0000-000000000308',
+     NULL, 'a0000000-0000-0000-0000-000000000006', NULL,
+     'Security deposit - retained for damages, granted to property', 500.00, '2025-01-15',
+     '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00', '00000000-0000-0000-0000-000000000002');
+
+
+-- ===== PROPERTY-LEVEL ENTRIES (property + treasury: expense paid in cash) =====
+
+INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
+    ('e0000000-0000-0000-0000-000000000001', NULL, 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000001',
+     'Maintenance - plumbing repair', -250.00, '2025-06-15',
+     '2025-06-15 14:00:00+00', '2025-06-15 14:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000002', NULL, 'a0000000-0000-0000-0000-000000000001', 'f0000000-0000-0000-0000-000000000001',
+     'Annual property tax', -1200.00, '2025-03-15',
+     '2025-03-15 09:00:00+00', '2025-03-15 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000003', NULL, 'a0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000001',
+     'Kitchen renovation', -3500.00, '2025-04-10',
+     '2025-04-10 09:00:00+00', '2025-04-10 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000004', NULL, 'a0000000-0000-0000-0000-000000000002', 'f0000000-0000-0000-0000-000000000001',
+     'Annual property tax', -980.00, '2025-03-15',
+     '2025-03-15 09:00:00+00', '2025-03-15 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000005', NULL, 'a0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000001',
+     'Garden maintenance - annual service', -800.00, '2025-04-01',
+     '2025-04-01 10:00:00+00', '2025-04-01 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000006', NULL, 'a0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000001',
+     'Property insurance - annual', -2400.00, '2025-01-10',
+     '2025-01-10 09:00:00+00', '2025-01-10 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000007', NULL, 'a0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000001',
+     'Annual property tax', -2100.00, '2025-03-15',
+     '2025-03-15 09:00:00+00', '2025-03-15 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000008', NULL, 'a0000000-0000-0000-0000-000000000003', 'f0000000-0000-0000-0000-000000000001',
+     'Roof repair', -1500.00, '2025-07-20',
+     '2025-07-20 11:00:00+00', '2025-07-20 11:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000009', NULL, 'a0000000-0000-0000-0000-000000000004', 'f0000000-0000-0000-0000-000000000001',
+     'Building maintenance fee', -500.00, '2025-06-01',
+     '2025-06-01 10:00:00+00', '2025-06-01 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    ('e0000000-0000-0000-0000-000000000010', NULL, 'a0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000001',
+     'Renovation after tenant moved out', -4000.00, '2025-02-01',
+     '2025-02-01 09:00:00+00', '2025-02-01 09:00:00+00', '00000000-0000-0000-0000-000000000002');
+
+
+-- ===== TREASURY-LEVEL ENTRIES (treasury only: no property, no lease) =====
+
+INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
+    ('e0000000-0000-0000-0000-000000000011', NULL, NULL, 'f0000000-0000-0000-0000-000000000001',
+     'Bank account fees - June 2025', -45.00, '2025-06-30',
+     '2025-06-30 23:00:00+00', '2025-06-30 23:00:00+00', '00000000-0000-0000-0000-000000000002'),
+
+    -- Opening balance pattern: a treasury-only entry, no property, no lease
+    ('e0000000-0000-0000-0000-000000000012', NULL, NULL, 'f0000000-0000-0000-0000-000000000002',
+     'Saldo otwarcia - kasa gotowkowa', 1000.00, '2025-01-01',
+     '2025-01-01 08:00:00+00', '2025-01-01 08:00:00+00', '00000000-0000-0000-0000-000000000002');
+
+
 -- SECTION 8: ATTACHMENTS
 -- ================================================
 -- Sample document and image attachments
 -- Note: Only valid related_to_type values: property, tenant, lease, maintenance
 
-INSERT INTO public.attachments (id, related_to_type, related_to_id, file_name, file_url, file_type, file_size, description, created_by, created_at) VALUES
+INSERT INTO public.attachment (id, related_to_type, related_to_id, file_name, file_url, file_type, file_size, description, created_by, created_at) VALUES
     -- Property attachments
     ('aad00000-0000-0000-0000-000000000001', 'property', 'a0000000-0000-0000-0000-000000000001', 'floor_plan_warsaw.pdf', '/uploads/properties/warsaw/floor_plan.pdf', 'pdf', 245000, 'Floor plan document', '00000000-0000-0000-0000-000000000002', '2024-06-01 10:00:00+00'),
     ('aad00000-0000-0000-0000-000000000002', 'property', 'a0000000-0000-0000-0000-000000000001', 'living_room.jpg', '/uploads/properties/warsaw/living_room.jpg', 'image', 1500000, 'Living room photo', '00000000-0000-0000-0000-000000000002', '2024-06-01 10:00:00+00'),
@@ -172,3 +168,33 @@ INSERT INTO public.attachments (id, related_to_type, related_to_id, file_name, f
 -- Note: Actual auth.users records need to be created through
 -- Supabase Auth before the user_roles references will work.
 -- The UUIDs used here are placeholders for testing purposes.
+
+-- ================================================
+-- SECTION 9: ATTACHMENT ON A FINANCIAL ENTRY
+-- ================================================
+-- An invoice attached directly to the money row it documents.
+
+INSERT INTO public.attachment (id, related_to_type, related_to_id, file_name, file_url, file_type, file_size, description, created_by, created_at) VALUES
+    ('aad00000-0000-0000-0000-000000000040', 'financial_entry', 'e0000000-0000-0000-0000-000000000001', 'plumbing_invoice_fv.pdf', '/uploads/entries/warsaw_plumbing_fv.pdf', 'pdf', 180000, 'Invoice for the plumbing repair entry', '00000000-0000-0000-0000-000000000002', '2025-06-15 14:00:00+00');
+
+
+-- ================================================
+-- SECTION 10: DEPOSIT SETTLEMENT
+-- ================================================
+-- Link each lease to its deposit charge so a deposit charge can be told apart
+-- from a rent charge (both are lease-only negative entries).
+
+UPDATE public.lease_agreement SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000001'
+    WHERE id = 'c0000000-0000-0000-0000-000000000001';
+UPDATE public.lease_agreement SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000100'
+    WHERE id = 'c0000000-0000-0000-0000-000000000002';
+UPDATE public.lease_agreement SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000200'
+    WHERE id = 'c0000000-0000-0000-0000-000000000003';
+
+-- Lease 4 is settled: 2300.00 returned to the tenant + 500.00 retained = 2800.00 charged.
+-- The check_deposit_settlement constraint enforces that these add up to deposit_amount.
+UPDATE public.lease_agreement
+    SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000300',
+        deposit_released = 2300.00,
+        deposit_retained = 500.00
+    WHERE id = 'c0000000-0000-0000-0000-000000000004';

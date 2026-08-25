@@ -1,23 +1,23 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from 'react';
 import { match } from 'ts-pattern';
-import type { TransactionSProps } from '@/masterComponents/TransactionM';
+import type { FinancialEntrySProps } from '@/masterComponents/FinancialEntryM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 import { formatDate, formatPln } from './format';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
 
-type Fulfilled = Extract<TransactionSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
-type TransactionData = NonNullable<Fulfilled>;
-type Transaction = NonNullable<TransactionData['transaction']>;
-type FormOptions = TransactionSProps['formOptions'];
-type TransactionInsert = Parameters<TransactionSProps['doSubmit']>[0];
-type SubmitState = TransactionSProps['submitState'];
-type DeleteAction = TransactionSProps['deleteAction'];
-type NavLinkTo = TransactionSProps['navLinkTo'];
+type Fulfilled = Extract<FinancialEntrySProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type FinancialEntryData = NonNullable<Fulfilled>;
+type Entry = NonNullable<FinancialEntryData['financialEntry']>;
+type FormOptions = FinancialEntrySProps['formOptions'];
+type FinancialEntryInsert = Parameters<FinancialEntrySProps['doSubmit']>[0];
+type SubmitState = FinancialEntrySProps['submitState'];
+type DeleteAction = FinancialEntrySProps['deleteAction'];
+type NavLinkTo = FinancialEntrySProps['navLinkTo'];
 
 type DetailContentProps = {
-  readonly data: TransactionData;
+  readonly data: FinancialEntryData;
   readonly navLinkTo: NavLinkTo;
   readonly onEdit: () => void;
 };
@@ -27,10 +27,10 @@ const DetailContent = ({
   navLinkTo,
   onEdit,
 }: DetailContentProps): JSX.Element => {
-  const t = data.transaction;
+  const t = data.financialEntry;
   return t === null ? (
     <div className="flex items-center justify-center min-h-[300px]">
-      <p className="text-sm text-gray-500">Nie znaleziono transakcji.</p>
+      <p className="text-sm text-gray-500">Nie znaleziono zapisu finansowego.</p>
     </div>
   ) : (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
@@ -47,10 +47,18 @@ const DetailContent = ({
       </div>
 
       <div className={sectionClass}>
-        <h2 className={sectionTitleClass}>Dane transakcji</h2>
+        <h2 className={sectionTitleClass}>Dane zapisu finansowego</h2>
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div><p className={labelClass}>Kwota</p><p className={`text-sm font-semibold ${t.amount >= 0 ? 'text-green-700' : 'text-red-700'}`}>{formatPln(t.amount)}</p></div>
-          <div><p className={labelClass}>Termin płatności</p><p className={valueClass}>{formatDate(t.due_date)}</p></div>
+          <div><p className={labelClass}>Data</p><p className={valueClass}>{formatDate(t.value_date)}</p></div>
+          <div>
+            <p className={labelClass}>Ruch pieniędzy</p>
+            <p className={valueClass}>
+              {t.treasury_id !== null
+                ? (data.treasuryName ?? 'Skarbiec')
+                : 'Naliczenie (bez ruchu pieniędzy)'}
+            </p>
+          </div>
           {t.property_id !== null && data.propertyName !== null ?
             <div><p className={labelClass}>Nieruchomość</p><span className="[&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">{navLinkTo.toProperty({ id: t.property_id, style: {}, content: data.propertyName })}</span></div> :
             undefined}
@@ -64,48 +72,52 @@ const DetailContent = ({
   );
 };
 
-type TransactionDraft = {
+type EntryDraft = {
   readonly description: string;
   readonly amount: string;
-  readonly due_date: string;
+  readonly value_date: string;
   readonly lease_id: string;
   readonly property_id: string;
+  readonly treasury_id: string;
 };
 
-const toDraft = (t: Transaction): TransactionDraft => ({
+const toDraft = (t: Entry): EntryDraft => ({
   description: t.description,
   amount: String(t.amount),
-  due_date: t.due_date,
+  value_date: t.value_date,
   lease_id: t.lease_id ?? '',
   property_id: t.property_id ?? '',
+  treasury_id: t.treasury_id ?? '',
 });
 
-const EMPTY_DRAFT: TransactionDraft = Object.freeze({
+const EMPTY_DRAFT: EntryDraft = Object.freeze({
   description: '',
   amount: '',
-  due_date: '',
+  value_date: '',
   lease_id: '',
   property_id: '',
+  treasury_id: '',
 });
 
-const toInsert = (d: TransactionDraft): TransactionInsert => ({
+const toInsert = (d: EntryDraft): FinancialEntryInsert => ({
   description: d.description,
   amount: d.amount === '' ? 0 : Number(d.amount),
-  due_date: d.due_date,
+  value_date: d.value_date,
   lease_id: d.lease_id === '' ? null : d.lease_id,
   property_id: d.property_id === '' ? null : d.property_id,
+  treasury_id: d.treasury_id === '' ? null : d.treasury_id,
 });
 
 type FormProps = {
-  readonly initial: TransactionDraft;
+  readonly initial: EntryDraft;
   readonly formOptions: FormOptions;
   readonly submitState: SubmitState;
-  readonly doSubmit: (newRecord: TransactionInsert) => void;
+  readonly doSubmit: (newRecord: FinancialEntryInsert) => void;
   readonly deleteAction: DeleteAction;
   readonly onCancel: () => void;
 };
 
-const TransactionForm = ({
+const EntryForm = ({
   initial,
   formOptions,
   submitState,
@@ -113,10 +125,10 @@ const TransactionForm = ({
   deleteAction,
   onCancel,
 }: FormProps): JSX.Element => {
-  const [form, setForm] = useState<TransactionDraft>(initial);
+  const [form, setForm] = useState<EntryDraft>(initial);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const setField = (field: keyof TransactionDraft) =>
+  const setField = (field: keyof EntryDraft) =>
     (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>): void => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
     };
@@ -128,7 +140,7 @@ const TransactionForm = ({
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 py-8">
-      <h1 className="text-2xl font-bold text-gray-900">{deleteAction.tag === 'absent' ? 'Nowa transakcja' : 'Edytuj transakcję'}</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{deleteAction.tag === 'absent' ? 'Nowy zapis finansowy' : 'Edytuj zapis finansowy'}</h1>
       {match(submitState)
         .with({ tag: 'idle' }, () => null)
         .with({ tag: 'submitting' }, () => null)
@@ -142,8 +154,8 @@ const TransactionForm = ({
             <input id="txn-amount" name="amount" type="number" step="0.01" required value={form.amount} onChange={setField('amount')} className={inputClass} />
           </div>
           <div>
-            <label htmlFor="txn-due-date" className={formLabelClass}>Termin płatności</label>
-            <input id="txn-due-date" name="due_date" type="date" required value={form.due_date} onChange={setField('due_date')} className={inputClass} />
+            <label htmlFor="txn-value-date" className={formLabelClass}>Data</label>
+            <input id="txn-value-date" name="value_date" type="date" required value={form.value_date} onChange={setField('value_date')} className={inputClass} />
           </div>
         </div>
         {match(formOptions)
@@ -178,6 +190,15 @@ const TransactionForm = ({
                     <option value="">—</option>
                     {options.leases.map((l) => (
                       <option key={l.id} value={l.id}>{matchingLeaseIds.includes(l.id) ? `✓ ${l.label}` : l.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="txn-treasury" className={formLabelClass}>Skarbiec (ustaw, gdy pieniądze faktycznie wpływają lub wypływają)</label>
+                  <select id="txn-treasury" name="treasury_id" value={form.treasury_id} onChange={setField('treasury_id')} className={inputClass}>
+                    <option value="">— brak (naliczenie, bez ruchu pieniędzy)</option>
+                    {options.treasuries.map((tr) => (
+                      <option key={tr.id} value={tr.id}>{tr.label}</option>
                     ))}
                   </select>
                 </div>
@@ -236,7 +257,7 @@ const TransactionForm = ({
   );
 };
 
-const TransactionDetail = ({
+const EntryDetail = ({
   data,
   navLinkTo,
   formOptions,
@@ -245,17 +266,17 @@ const TransactionDetail = ({
   onEditStart,
   submitState,
 }: {
-  readonly data: TransactionData;
+  readonly data: FinancialEntryData;
   readonly navLinkTo: NavLinkTo;
   readonly formOptions: FormOptions;
-  readonly doSubmit: (newRecord: TransactionInsert) => void;
+  readonly doSubmit: (newRecord: FinancialEntryInsert) => void;
   readonly deleteAction: DeleteAction;
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
 }): JSX.Element => {
   const [editing, setEditing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const transaction = data.transaction;
+  const entry = data.financialEntry;
 
   useEffect(() => {
     const timer = match(submitState.tag)
@@ -278,15 +299,15 @@ const TransactionDetail = ({
           </button>
         </div>
       ) : null}
-      {match(transaction)
+      {match(entry)
         .with(null, () => (
           <div className="flex items-center justify-center min-h-[300px]">
-            <p className="text-sm text-gray-500">Nie znaleziono transakcji.</p>
+            <p className="text-sm text-gray-500">Nie znaleziono zapisu finansowego.</p>
           </div>
         ))
         .otherwise((t) =>
           editing ?
-            <TransactionForm
+            <EntryForm
               initial={toDraft(t)}
               formOptions={formOptions}
               submitState={submitState}
@@ -304,14 +325,14 @@ const TransactionDetail = ({
   );
 };
 
-export const TransactionDetailS = (props: TransactionSProps): JSX.Element => (
+export const FinancialEntryDetailS = (props: FinancialEntrySProps): JSX.Element => (
   <div className="flex min-h-[400px] flex-col">
     {match(props.asyncData)
       .with({ tag: 'pending' }, () => <LoadingSpinner />)
       .with({ tag: 'rejected' }, ({ message, onRetry }) => (<ErrorMessage message={message} onRetry={onRetry} />))
       .with({ tag: 'fulfilled' }, ({ data }) =>
         data === null ?
-          <TransactionForm
+          <EntryForm
             initial={EMPTY_DRAFT}
             formOptions={props.formOptions}
             submitState={props.submitState}
@@ -319,7 +340,7 @@ export const TransactionDetailS = (props: TransactionSProps): JSX.Element => (
             deleteAction={{ tag: 'absent' }}
             onCancel={props.doCancel}
           /> :
-          <TransactionDetail
+          <EntryDetail
             data={data}
             navLinkTo={props.navLinkTo}
             formOptions={props.formOptions}

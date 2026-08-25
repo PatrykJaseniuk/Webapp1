@@ -1,34 +1,34 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MemoryRouterProvider } from '@/test-router-utils';
 import { within, expect } from 'storybook/test';
-import { TransactionsS } from './TransactionsS';
-import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
+import { FinancialEntriesS } from './FinancialEntriesS';
+import type { FinancialEntriesSProps } from '@/masterComponents/FinancialEntriesM';
 
-type PageData = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type PageData = Extract<FinancialEntriesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type Row = PageData['rows'][number];
 
-const makeTransaction = (overrides?: Partial<Row>): Row =>
+const makeEntry = (overrides?: Partial<Row>): Row =>
   ({
     id: '00000000-0000-0000-0000-000000000001',
     property_id: '00000000-0000-0000-0000-000000000010',
     lease_id: '00000000-0000-0000-0000-000000000020',
     created_by: '00000000-0000-0000-0000-000000000099',
-    due_date: '2026-01-15',
+    value_date: '2026-01-15',
     description: 'Czynsz za styczeń',
     amount: 2500,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
-    properties: { name: 'Apartament Rynek 1' },
-    lease_agreements: { start_date: '2025-06-01' },
+    property: { name: 'Apartament Rynek 1' },
+    lease_agreement: { start_date: '2025-06-01' },
     ...overrides,
   }) as Row;
 
 const noop = (): void => {};
 
-type SortColumn = TransactionsSProps['sort']['config']['column'];
-const sort = { config: { column: 'due_date' as SortColumn, direction: 'desc' as const }, doSort: noop };
+type SortColumn = FinancialEntriesSProps['sort']['config']['column'];
+const sort = { config: { column: 'value_date' as SortColumn, direction: 'desc' as const }, doSort: noop };
 
-const pagination: TransactionsSProps['pagination'] = {
+const pagination: FinancialEntriesSProps['pagination'] = {
   page: 1,
   pageSize: 20,
   goToPage: noop,
@@ -39,18 +39,18 @@ const pagination: TransactionsSProps['pagination'] = {
 
 const pageData = (rows: readonly Row[], totalCount: number): PageData => ({ rows, totalCount });
 
-const navLinkTo: TransactionsSProps['navLinkTo'] = {
-  transaction: ({ id, content, style, ariaLabel }) =>
-    <a href={`#/transactions/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
+const navLinkTo: FinancialEntriesSProps['navLinkTo'] = {
+  financialEntry: ({ id, content, style, ariaLabel }) =>
+    <a href={`#/financial-entries/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
   property: ({ id, content, style }) =>
     <a href={`#/properties/${id}`} style={style}>{content}</a>,
   lease: ({ id, content, style }) =>
     <a href={`#/leases/${id}`} style={style}>{content}</a>,
 };
 
-const meta: Meta<typeof TransactionsS> = {
-  component: TransactionsS,
-  title: 'slaveComponents/TransactionsS',
+const meta: Meta<typeof FinancialEntriesS> = {
+  component: FinancialEntriesS,
+  title: 'slaveComponents/FinancialEntriesS',
   decorators: [
     (Story) => (
       <MemoryRouterProvider>
@@ -71,7 +71,7 @@ const meta: Meta<typeof TransactionsS> = {
 
 export default meta;
 
-type Story = StoryObj<typeof TransactionsS>;
+type Story = StoryObj<typeof FinancialEntriesS>;
 
 export const Pending: Story = {
   args: { asyncData: { tag: 'pending' } },
@@ -94,7 +94,7 @@ export const Empty: Story = {
   args: { asyncData: { tag: 'fulfilled', data: pageData([], 0), isFetching: false } },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('Brak transakcji do wyświetlenia')).toBeVisible();
+    await expect(canvas.getByText('Brak zapisów finansowych')).toBeVisible();
   },
 };
 
@@ -104,19 +104,19 @@ export const WithRows: Story = {
       tag: 'fulfilled',
       isFetching: false,
       data: pageData([
-        makeTransaction({ id: '1', amount: 2500, due_date: '2026-01-15', description: 'Czynsz za styczeń' }),
-        makeTransaction({ id: '2', amount: 320.5, due_date: '2026-02-01', description: 'Prąd i gaz — bardzo długa nazwa która powinna być obcięta przez truncate', properties: { name: 'Kawalerka Gdańska 12' }, property_id: 'prop-2' }),
-        makeTransaction({ id: '3', amount: 2820.5, due_date: '2026-01-10', description: 'Wpłata od najemcy', lease_agreements: null, lease_id: null }),
-        makeTransaction({ id: '4', amount: 150, due_date: '2026-01-05', description: 'Naprawa pieca' }),
-        makeTransaction({ id: '5', amount: 45, due_date: '2026-01-20', description: 'Opłata administracyjna' }),
-        makeTransaction({ id: '6', amount: 800, due_date: '2026-01-08', description: 'Wypłata dla właściciela' }),
+        makeEntry({ id: '1', amount: 2500, value_date: '2026-01-15', description: 'Czynsz za styczeń' }),
+        makeEntry({ id: '2', amount: 320.5, value_date: '2026-02-01', description: 'Prąd i gaz — bardzo długa nazwa która powinna być obcięta przez truncate', property: { name: 'Kawalerka Gdańska 12' }, property_id: 'prop-2' }),
+        makeEntry({ id: '3', amount: 2820.5, value_date: '2026-01-10', description: 'Wpłata od najemcy', lease_agreement: null, lease_id: null }),
+        makeEntry({ id: '4', amount: 150, value_date: '2026-01-05', description: 'Naprawa pieca' }),
+        makeEntry({ id: '5', amount: 45, value_date: '2026-01-20', description: 'Opłata administracyjna' }),
+        makeEntry({ id: '6', amount: 800, value_date: '2026-01-08', description: 'Wypłata dla właściciela' }),
       ], 6),
     },
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getAllByRole('row')).toHaveLength(7); // header + 6 data rows
-    const navLinks = canvas.getAllByRole('link', { name: /Szczegóły transakcji/i });
+    const navLinks = canvas.getAllByRole('link', { name: /Szczegóły zapisu finansowego/i });
     await expect(navLinks).toHaveLength(6);
   },
 };
@@ -127,8 +127,8 @@ export const Fetching: Story = {
       tag: 'fulfilled',
       isFetching: true,
       data: pageData([
-        makeTransaction({ id: '1', amount: 2500, }),
-        makeTransaction({ id: '2', amount: 150, }),
+        makeEntry({ id: '1', amount: 2500, }),
+        makeEntry({ id: '2', amount: 150, }),
       ], 2),
     },
   },
@@ -139,13 +139,13 @@ export const Fetching: Story = {
   },
 };
 
-export const SingleTransaction: Story = {
+export const SingleEntry: Story = {
   args: {
     asyncData: {
       tag: 'fulfilled',
       isFetching: false,
       data: pageData([
-        makeTransaction({ id: '1', amount: 2500, due_date: '2026-01-15' }),
+        makeEntry({ id: '1', amount: 2500, value_date: '2026-01-15' }),
       ], 1),
     },
   },
@@ -161,13 +161,13 @@ export const AllTypes: Story = {
       tag: 'fulfilled',
       isFetching: false,
       data: pageData([
-        makeTransaction({ id: '1', amount: 2500, description: 'Czynsz' }),
-        makeTransaction({ id: '2', amount: 320, description: 'Media' }),
-        makeTransaction({ id: '3', amount: 500, description: 'Wydatek' }),
-        makeTransaction({ id: '4', amount: 2820, description: 'Wpłata' }),
-        makeTransaction({ id: '5', amount: 1000, description: 'Wypłata' }),
-        makeTransaction({ id: '6', amount: 45, description: 'Opłata' }),
-        makeTransaction({ id: '7', amount: -50, description: 'Inne (ujemne)' }),
+        makeEntry({ id: '1', amount: 2500, description: 'Czynsz' }),
+        makeEntry({ id: '2', amount: 320, description: 'Media' }),
+        makeEntry({ id: '3', amount: 500, description: 'Wydatek' }),
+        makeEntry({ id: '4', amount: 2820, description: 'Wpłata' }),
+        makeEntry({ id: '5', amount: 1000, description: 'Wypłata' }),
+        makeEntry({ id: '6', amount: 45, description: 'Opłata' }),
+        makeEntry({ id: '7', amount: -50, description: 'Inne (ujemne)' }),
       ], 7),
     },
   },

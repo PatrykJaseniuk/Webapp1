@@ -5,12 +5,12 @@ import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
 import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
-type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
+type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
 
 type LeaseAgreementRow = LeaseAgreementDbRow & {
-  readonly tenants: { readonly first_name: string; readonly last_name: string };
-  readonly properties: { readonly name: string };
+  readonly tenant: { readonly first_name: string; readonly last_name: string };
+  readonly property: { readonly name: string };
 };
 
 type NavLinkTo = Readonly<{
@@ -20,7 +20,7 @@ type NavLinkTo = Readonly<{
   readonly create?: NavLink;
 }>;
 
-type LeaseAgreementSortColumn = Extract<keyof LeaseAgreementRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status' | 'tenants' | 'properties'>;
+type LeaseAgreementSortColumn = Extract<keyof LeaseAgreementRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status' | 'tenant' | 'property'>;
 
 type LeaseAgreementFilter = 'text' | 'leaseStatus' | 'dateFrom' | 'dateTo';
 
@@ -36,8 +36,8 @@ const SORT_COLUMN_MAP: Readonly<Record<LeaseAgreementSortColumn, string>> = Obje
   end_date: 'end_date',
   monthly_rent: 'monthly_rent',
   lease_status: 'lease_status',
-  tenants: 'tenants(last_name)',
-  properties: 'properties(name)',
+  tenant: 'tenant(last_name)',
+  property: 'property(name)',
 });
 
 const resolveSearchIds = async (search: string): Promise<{
@@ -46,8 +46,8 @@ const resolveSearchIds = async (search: string): Promise<{
 }> => {
   const pattern = `*${search}*`;
   const [tenantRes, propertyRes] = await Promise.all([
-    backendConnector.from('tenants').select('id').or(`first_name.ilike.${pattern},last_name.ilike.${pattern}`),
-    backendConnector.from('properties').select('id').ilike('name', pattern),
+    backendConnector.from('tenant').select('id').or(`first_name.ilike.${pattern},last_name.ilike.${pattern}`),
+    backendConnector.from('property').select('id').ilike('name', pattern),
   ]);
   const tenantIds = (tenantRes.data ?? []).map((t: { readonly id: string }) => t.id);
   const propertyIds = (propertyRes.data ?? []).map((p: { readonly id: string }) => p.id);
@@ -64,8 +64,8 @@ export const LeaseAgreementsM = ({
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('lease_agreements')
-        .select('*, tenants(first_name,last_name), properties(name)', { count: 'exact' })
+        .from('lease_agreement')
+        .select('*, tenant(first_name,last_name), property(name)', { count: 'exact' })
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const leaseStatus = filterConfig.leaseStatus ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';

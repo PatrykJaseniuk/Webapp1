@@ -9,7 +9,7 @@ const navLinksTo: AppLayoutSProps['navLinkTo'] = {
   properties: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="properties" href="/app/properties">{content}</a>,
   tenants: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="tenants" href="/app/tenants">{content}</a>,
   leases: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="leases" href="/app/leases">{content}</a>,
-  transactions: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="transactions" href="/app/transactions">{content}</a>,
+  financialEntries: ({ content, style: _style }: { readonly content: string; readonly style: CSSProperties }) => <a key="financialEntries" href="/app/financial-entries">{content}</a>,
 };
 
 const noop = (): void => { };

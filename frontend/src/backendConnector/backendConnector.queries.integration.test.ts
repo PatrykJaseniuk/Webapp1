@@ -50,9 +50,9 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select(
-              'id, name, lease_agreements(id, start_date, lease_status)',
+              'id, name, lease_agreement(id, start_date, lease_status)',
             )
             .eq('id', TEST_UUIDS.property1);
           expect(error).toBeNull();
@@ -69,9 +69,9 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .select(
-              'id, monthly_rent, tenants(first_name, last_name), properties(name, address)',
+              'id, monthly_rent, tenant(first_name, last_name), property(name, address)',
             )
             .eq('id', TEST_UUIDS.lease1);
           expect(error).toBeNull();
@@ -82,20 +82,20 @@ describe('complex queries', () => {
         })());
     });
 
-    it('transactions with nested properties name', async () => {
+    it('financial entries with nested properties name', async () => {
       skip(available);
       available || true;
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('transactions')
-            .select('id, amount, properties(name)')
-            .eq('id', TEST_UUIDS.transaction1);
+            .from('financial_entry')
+            .select('id, amount, property(name)')
+            .eq('id', TEST_UUIDS.financialEntry1);
           expect(error).toBeNull();
           const rows =
             data as ReadonlyArray<{ readonly id: string }>;
           expect(rows.length).toBe(1);
-          expect(rows[0]!.id).toBe(TEST_UUIDS.transaction1);
+          expect(rows[0]!.id).toBe(TEST_UUIDS.financialEntry1);
         })());
     });
 
@@ -109,7 +109,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id')
             .or('property_type.eq.apartment,property_type.eq.house');
           expect(error).toBeNull();
@@ -124,7 +124,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id, property_status')
             .in('property_status', ['available', 'occupied']);
           expect(error).toBeNull();
@@ -146,7 +146,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id, monthly_rent')
             .gt('monthly_rent', 1000)
             .lt('monthly_rent', 3000);
@@ -168,7 +168,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id, address')
             .ilike('address', '%Warszawa%');
           expect(error).toBeNull();
@@ -183,14 +183,14 @@ describe('complex queries', () => {
         })());
     });
 
-    it('combined or + comparison on transactions', async () => {
+    it('combined or + comparison on financial entries', async () => {
       skip(available);
       available || true;
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('transactions')
-            .select('id, amount, due_date')
+            .from('financial_entry')
+            .select('id, amount, value_date')
             .or('amount.gt.0,amount.lt.0');
           expect(error).toBeNull();
           expect(data).not.toBeNull();
@@ -207,7 +207,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id, monthly_rent')
             .order('monthly_rent', { ascending: false })
             .limit(3);
@@ -231,7 +231,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id, monthly_rent')
             .order('monthly_rent', { ascending: true })
             .range(0, 1);
@@ -252,16 +252,16 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('transactions')
-            .select('id, due_date')
-            .order('due_date', {
+            .from('financial_entry')
+            .select('id, value_date')
+            .order('value_date', {
               ascending: true,
               nullsFirst: false,
             })
             .limit(10);
           expect(error).toBeNull();
           const rows = data as ReadonlyArray<{
-            readonly due_date: string | null;
+            readonly value_date: string | null;
           }>;
           expect(rows.length).toBeGreaterThanOrEqual(1);
         })());
@@ -277,7 +277,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, count, error } = await client
-            .from('properties')
+            .from('property')
             .select('*', { count: 'exact' });
           expect(error).toBeNull();
           expect(count).not.toBeNull();
@@ -294,7 +294,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, count, error } = await client
-            .from('properties')
+            .from('property')
             .select('*', { count: 'exact', head: true });
           expect(error).toBeNull();
           expect(count).toBeGreaterThanOrEqual(5);
@@ -312,7 +312,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id, name, monthly_rent, property_status')
             .in('property_status', ['available', 'occupied'])
             .gte('monthly_rent', 500)
@@ -340,8 +340,8 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('lease_agreements')
-            .select('id, lease_status, start_date, properties(name)')
+            .from('lease_agreement')
+            .select('id, lease_status, start_date, property(name)')
             .eq('lease_status', 'active')
             .order('start_date', { ascending: false });
           expect(error).toBeNull();
@@ -355,13 +355,13 @@ describe('complex queries', () => {
         })());
     });
 
-    it('aggregate transactions per lease', async () => {
+    it('aggregate financial entries per lease', async () => {
       skip(available);
       available || true;
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('transactions')
+            .from('financial_entry')
             .select('id, amount')
             .eq('lease_id', TEST_UUIDS.lease1);
           expect(error).toBeNull();
@@ -387,7 +387,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('*')
             .limit(0);
           expect(error).toBeNull();
@@ -402,7 +402,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('id')
             .eq('id', '00000000-0000-0000-0000-000000000000');
           expect(error).toBeNull();
@@ -416,7 +416,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .select('id, end_date')
             .is('end_date', null);
           expect(error).toBeNull();
@@ -434,7 +434,7 @@ describe('complex queries', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('lease_agreements')
+            .from('lease_agreement')
             .select('id, start_date')
             .not('start_date', 'is', null);
           expect(error).toBeNull();

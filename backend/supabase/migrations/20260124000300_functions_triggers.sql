@@ -46,14 +46,17 @@ AS $$
 BEGIN
     -- When a new lease becomes active, mark property as occupied
     IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') AND NEW.lease_status = 'active' THEN
-        UPDATE public.properties 
+        UPDATE public.property 
         SET property_status = 'occupied' 
         WHERE id = NEW.property_id 
         AND property_status != 'inactive';  -- Don't override inactive status
     END IF;
     
-    -- When a lease ends (terminated or expired), check if property should be available
-    IF (TG_OP = 'UPDATE' OR TG_OP = 'DELETE') THEN
+    -- When a lease stops being active (terminated, expired or deleted), check if
+    -- the property should be released. Guarded on the lease no longer being
+    -- active, so an unrelated UPDATE of a still-active lease (e.g. setting
+    -- deposit_entry_id) cannot free an occupied property.
+    IF (TG_OP = 'DELETE') OR (TG_OP = 'UPDATE' AND NEW.lease_status <> 'active') THEN
         -- Use OLD for DELETE, NEW for UPDATE
         DECLARE
             lease_property_id uuid;
@@ -67,14 +70,14 @@ BEGIN
             
             -- Check if there are any other active leases for this property
             SELECT COUNT(*) INTO active_lease_count
-            FROM public.lease_agreements
+            FROM public.lease_agreement
             WHERE property_id = lease_property_id 
             AND lease_status = 'active'
             AND id != COALESCE(NEW.id, OLD.id);
             
             -- If no active leases remain, mark property as available
             IF active_lease_count = 0 THEN
-                UPDATE public.properties 
+                UPDATE public.property 
                 SET property_status = 'available' 
                 WHERE id = lease_property_id 
                 AND property_status = 'occupied';  -- Only change if currently occupied
@@ -94,7 +97,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-    INSERT INTO public.user_roles (user_id, role)
+    INSERT INTO public.user_role (user_id, role)
     VALUES (NEW.id, 'tenant');
     RETURN NEW;
 END;
@@ -106,7 +109,7 @@ $$;
 
 -- USER ROLES TRIGGERS
 CREATE TRIGGER update_user_roles_updated_at 
-    BEFORE UPDATE ON public.user_roles
+    BEFORE UPDATE ON public.user_role
     FOR EACH ROW 
     EXECUTE FUNCTION public.update_updated_at_column();
 
@@ -118,43 +121,43 @@ CREATE TRIGGER on_auth_user_created
 
 -- PROPERTIES TRIGGERS
 CREATE TRIGGER update_properties_updated_at 
-    BEFORE UPDATE ON public.properties
+    BEFORE UPDATE ON public.property
     FOR EACH ROW 
     EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER set_properties_created_by 
-    BEFORE INSERT ON public.properties
+    BEFORE INSERT ON public.property
     FOR EACH ROW 
     WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();
 
 -- TENANTS TRIGGERS
 CREATE TRIGGER update_tenants_updated_at 
-    BEFORE UPDATE ON public.tenants
+    BEFORE UPDATE ON public.tenant
     FOR EACH ROW 
     EXECUTE FUNCTION public.update_updated_at_column();
 
 -- LEASE AGREEMENTS TRIGGERS
 CREATE TRIGGER update_leases_updated_at 
-    BEFORE UPDATE ON public.lease_agreements
+    BEFORE UPDATE ON public.lease_agreement
     FOR EACH ROW 
     EXECUTE FUNCTION public.update_updated_at_column();
 
 CREATE TRIGGER set_leases_created_by 
-    BEFORE INSERT ON public.lease_agreements
+    BEFORE INSERT ON public.lease_agreement
     FOR EACH ROW 
     WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();
 
 -- Auto-update property status when lease status changes
 CREATE TRIGGER auto_property_status_on_lease_change
-    AFTER INSERT OR UPDATE OR DELETE ON public.lease_agreements
+    AFTER INSERT OR UPDATE OR DELETE ON public.lease_agreement
     FOR EACH ROW 
     EXECUTE FUNCTION public.auto_update_property_status();
 
--- TRANSACTIONS TRIGGERS
+-- FINANCIAL ENTRIES TRIGGERS
 -- Function to validate lease-property consistency
-CREATE OR REPLACE FUNCTION public.validate_transaction_lease_property()
+CREATE OR REPLACE FUNCTION public.validate_financial_entry_refs()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SET search_path = public
@@ -166,40 +169,132 @@ BEGIN
     IF NEW.lease_id IS NOT NULL AND NEW.property_id IS NOT NULL THEN
         -- Get the property_id from the lease
         SELECT property_id INTO lease_property_id
-        FROM public.lease_agreements
+        FROM public.lease_agreement
         WHERE id = NEW.lease_id;
-        
+
         -- If lease exists and property doesn't match, raise error
         IF lease_property_id IS NOT NULL AND lease_property_id != NEW.property_id THEN
-            RAISE EXCEPTION 'Transaction property_id (%) does not match lease property_id (%)', 
+            RAISE EXCEPTION 'Financial entry property_id (%) does not match lease property_id (%)',
                 NEW.property_id, lease_property_id;
         END IF;
     END IF;
-    
+
     RETURN NEW;
 END;
 $$;
 
-CREATE TRIGGER update_transactions_updated_at 
-    BEFORE UPDATE ON public.transactions
-    FOR EACH ROW 
+-- Function to re-validate existing entries when a lease is moved to another property.
+-- Without this, changing lease_agreement.property_id would silently leave financial
+-- entries pointing at a property that no longer matches their lease.
+CREATE OR REPLACE FUNCTION public.revalidate_lease_entry_refs()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+    mismatched_count integer;
+BEGIN
+    IF NEW.property_id IS DISTINCT FROM OLD.property_id THEN
+        SELECT COUNT(*) INTO mismatched_count
+        FROM public.financial_entry
+        WHERE lease_id = NEW.id
+        AND property_id IS NOT NULL
+        AND property_id != NEW.property_id;
+
+        IF mismatched_count > 0 THEN
+            RAISE EXCEPTION 'Cannot change lease property_id: % financial entries reference the previous property',
+                mismatched_count;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+-- Function to validate that lease_agreement.deposit_entry_id really points at the
+-- deposit charge of that lease: a lease-only negative entry of the same lease whose
+-- absolute amount equals the contractual deposit_amount.
+CREATE OR REPLACE FUNCTION public.validate_lease_deposit_entry()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SET search_path = public
+AS $$
+DECLARE
+    entry_lease_id uuid;
+    entry_property_id uuid;
+    entry_treasury_id uuid;
+    entry_amount decimal(10,2);
+BEGIN
+    IF NEW.deposit_entry_id IS NOT NULL THEN
+        SELECT lease_id, property_id, treasury_id, amount
+        INTO entry_lease_id, entry_property_id, entry_treasury_id, entry_amount
+        FROM public.financial_entry
+        WHERE id = NEW.deposit_entry_id;
+
+        IF entry_lease_id IS DISTINCT FROM NEW.id THEN
+            RAISE EXCEPTION 'deposit_entry_id must reference an entry of this lease';
+        END IF;
+
+        IF entry_property_id IS NOT NULL OR entry_treasury_id IS NOT NULL THEN
+            RAISE EXCEPTION 'deposit_entry_id must reference a lease-only accrual entry';
+        END IF;
+
+        IF entry_amount >= 0 THEN
+            RAISE EXCEPTION 'deposit_entry_id must reference a charge (negative amount)';
+        END IF;
+
+        IF abs(entry_amount) != NEW.deposit_amount THEN
+            RAISE EXCEPTION 'deposit charge (%) does not match lease deposit_amount (%)',
+                abs(entry_amount), NEW.deposit_amount;
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER update_financial_entries_updated_at
+    BEFORE UPDATE ON public.financial_entry
+    FOR EACH ROW
     EXECUTE FUNCTION public.update_updated_at_column();
 
-CREATE TRIGGER set_transactions_created_by 
-    BEFORE INSERT ON public.transactions
-    FOR EACH ROW 
+CREATE TRIGGER set_financial_entries_created_by
+    BEFORE INSERT ON public.financial_entry
+    FOR EACH ROW
     WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();
 
-CREATE TRIGGER validate_transaction_lease_property_trigger
-    BEFORE INSERT OR UPDATE ON public.transactions
-    FOR EACH ROW 
-    EXECUTE FUNCTION public.validate_transaction_lease_property();
+CREATE TRIGGER validate_financial_entry_refs_trigger
+    BEFORE INSERT OR UPDATE ON public.financial_entry
+    FOR EACH ROW
+    EXECUTE FUNCTION public.validate_financial_entry_refs();
+
+CREATE TRIGGER revalidate_lease_entry_refs_trigger
+    BEFORE UPDATE ON public.lease_agreement
+    FOR EACH ROW
+    EXECUTE FUNCTION public.revalidate_lease_entry_refs();
+
+CREATE TRIGGER validate_lease_deposit_entry_trigger
+    BEFORE INSERT OR UPDATE ON public.lease_agreement
+    FOR EACH ROW
+    EXECUTE FUNCTION public.validate_lease_deposit_entry();
+
+-- TREASURIES TRIGGERS
+CREATE TRIGGER update_treasuries_updated_at
+    BEFORE UPDATE ON public.treasury
+    FOR EACH ROW
+    EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE TRIGGER set_treasuries_created_by
+    BEFORE INSERT ON public.treasury
+    FOR EACH ROW
+    WHEN (NEW.created_by IS NULL)
+    EXECUTE FUNCTION public.set_created_by();
 
 -- ATTACHMENTS TRIGGERS
 -- Note: created_by auto-populated if not provided
 CREATE TRIGGER set_attachments_created_by 
-    BEFORE INSERT ON public.attachments
+    BEFORE INSERT ON public.attachment
     FOR EACH ROW 
     WHEN (NEW.created_by IS NULL)
     EXECUTE FUNCTION public.set_created_by();

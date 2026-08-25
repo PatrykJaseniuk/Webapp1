@@ -12,7 +12,7 @@ const TEST_PASSWORD = 'password123';
 
 const checkAvailable = async (): Promise<boolean> => {
   const { error } = await backendConnector
-    .from('properties')
+    .from('property')
     .select('id', { count: 'exact', head: true });
   return error === null;
 };
@@ -39,7 +39,7 @@ describe('backendConnector', () => {
     available &&
       (await (async () => {
         const { data, error } = await backendConnector
-          .from('properties')
+          .from('property')
           .select('*');
         expect(error).toBeNull();
         expect(data).not.toBeNull();
@@ -88,7 +88,7 @@ describe('backendConnector', () => {
         expect(signInResult.data.session).not.toBeNull();
 
         const { data, error } = await backendConnector
-          .from('properties')
+          .from('property')
           .select('id')
           .limit(1);
         expect(error).toBeNull();

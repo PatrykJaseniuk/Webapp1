@@ -37,7 +37,7 @@ describe('user_roles RLS', () => {
         (await (async () => {
           client = await signInAs('admin');
           const { data, error } = await client
-            .from('user_roles')
+            .from('user_role')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -52,7 +52,7 @@ describe('user_roles RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('user_roles')
+            .from('user_role')
             .upsert({
               user_id: '00000000-0000-0000-0000-000000000999',
               role: 'tenant',
@@ -67,7 +67,7 @@ describe('user_roles RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('user_roles')
+            .from('user_role')
             .update({ role: 'admin' })
             .eq('user_id', '00000000-0000-0000-0000-000000000999');
           expect(error).toBeNull();
@@ -79,7 +79,7 @@ describe('user_roles RLS', () => {
         (await (async () => {
           // Cleanup: delete test role
           await client
-            .from('user_roles')
+            .from('user_role')
             .delete()
             .eq('user_id', '00000000-0000-0000-0000-000000000999');
           await signOut(client);
@@ -97,7 +97,7 @@ describe('user_roles RLS', () => {
         (await (async () => {
           client = await signInAs('landlord');
           const { data, error } = await client
-            .from('user_roles')
+            .from('user_role')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -112,7 +112,7 @@ describe('user_roles RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('user_roles')
+            .from('user_role')
             .insert({
               user_id: '00000000-0000-0000-0000-000000000999',
               role: 'tenant',
@@ -127,7 +127,7 @@ describe('user_roles RLS', () => {
       available &&
         (await (async () => {
           await client
-            .from('user_roles')
+            .from('user_role')
             .delete()
             .eq('user_id', TEST_UUIDS.tenant1);
           // RLS USING (is_admin()) filters all rows for landlords →
@@ -135,7 +135,7 @@ describe('user_roles RLS', () => {
           // Verify the landlord's own role still exists (landlords can only see
           // their own role, so verify the landlord data is intact).
           const { data: after } = await client
-            .from('user_roles')
+            .from('user_role')
             .select('*');
           expect(
             (after as readonly unknown[]).length,
@@ -158,7 +158,7 @@ describe('user_roles RLS', () => {
         (await (async () => {
           client = await signInAs('tenant1');
           const { data, error } = await client
-            .from('user_roles')
+            .from('user_role')
             .select('*');
           expect(error).toBeNull();
           const rows =
@@ -174,7 +174,7 @@ describe('user_roles RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('user_roles')
+            .from('user_role')
             .insert({
               user_id: '00000000-0000-0000-0000-000000000999',
               role: 'admin',

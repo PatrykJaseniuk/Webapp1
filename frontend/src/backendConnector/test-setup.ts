@@ -45,7 +45,10 @@ export const TEST_UUIDS = {
 
   attachment1: 'aad00000-0000-0000-0000-000000000001',
 
-  transaction1: 'd0000000-0000-0000-0000-000000000001',
+  financialEntry1: 'd0000000-0000-0000-0000-000000000001',
+
+  treasuryBank: 'f0000000-0000-0000-0000-000000000001',
+  treasuryCash: 'f0000000-0000-0000-0000-000000000002',
 } as const;
 
 // ── Client factory ──────────────────────────────
@@ -85,7 +88,7 @@ export type { SupabaseClient, RoleName };
 export const checkAvailable = async (): Promise<boolean> => {
   const client = createAnonClient();
   const { error } = await client
-    .from('properties')
+    .from('property')
     .select('id', { count: 'exact', head: true });
   return error === null;
 };

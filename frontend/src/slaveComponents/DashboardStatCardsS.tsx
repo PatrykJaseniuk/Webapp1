@@ -7,6 +7,7 @@ export type DashboardSummary = {
   readonly activeTenants: number;
   readonly overdueItems: number;
   readonly totalUnpaidAmount: number;
+  readonly cashOnHand: number;
 };
 
 export const cardLinkClass =
@@ -56,7 +57,7 @@ const MoneyIcon = ({ className }: IconProps): JSX.Element => (
 );
 
 export const DashboardStatCardsS = ({ summary }: { readonly summary: DashboardSummary }): JSX.Element => (
-  <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+  <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-5">
     <div className={statCardClass}>
       <PropertiesIcon className="mx-auto mb-2 h-6 w-6 text-blue-700" />
       <p className={`${statValueClass} text-blue-700`}>
@@ -86,6 +87,13 @@ export const DashboardStatCardsS = ({ summary }: { readonly summary: DashboardSu
         {formatPln(summary.totalUnpaidAmount)}
       </p>
       <p className={statLabelClass}>Nieopłacone</p>
+    </div>
+    <div className={statCardClass}>
+      <MoneyIcon className="mx-auto mb-2 h-6 w-6 text-emerald-700" />
+      <p className={`${statValueClass} text-emerald-700`}>
+        {formatPln(summary.cashOnHand)}
+      </p>
+      <p className={statLabelClass}>Stan skarbców</p>
     </div>
   </div>
 );

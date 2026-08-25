@@ -18,16 +18,17 @@ type AdminLandlordNavLInkTo = {
   readonly properties: NavLink,
   readonly tenants: NavLink,
   readonly leases: NavLink,
-  readonly transactions: NavLink,
+  readonly financialEntries: NavLink,
+  readonly treasuries: NavLink,
 }
 
 type TenantNavLInkTo = {
   readonly dashboard: NavLink,
   readonly leases: NavLink,
-  readonly transactions: NavLink,
+  readonly financialEntries: NavLink,
 }
 
-type NavKey = 'dashboard' | 'properties' | 'tenants' | 'leases' | 'transactions';
+type NavKey = 'dashboard' | 'properties' | 'tenants' | 'leases' | 'financialEntries' | 'treasuries';
 
 export type AppLayoutSProps = {
   readonly navLinkTo: AdminLandlordNavLInkTo | TenantNavLInkTo;
@@ -64,7 +65,9 @@ export const AppLayoutM = ({
           'tenants' :
           location.pathname.startsWith('/app/leases') ?
             'leases' :
-            'transactions');
+            location.pathname.startsWith('/app/treasuries') ?
+              'treasuries' :
+              'financialEntries');
 
   const handleLogout = (): void => {
     void backendConnector.auth.signOut().then(() => {
@@ -85,14 +88,15 @@ export const AppLayoutM = ({
     properties: ({ content, style }) => <Link to="/app/properties" style={style}>{content}</Link>,
     tenants: ({ content, style }) => <Link to="/app/tenants" style={style}>{content}</Link>,
     leases: ({ content, style }) => <Link to="/app/leases" style={style}>{content}</Link>,
-    transactions: ({ content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
+    financialEntries: ({ content, style }) => <Link to="/app/financial-entries" style={style}>{content}</Link>,
+    treasuries: ({ content, style }) => <Link to="/app/treasuries" style={style}>{content}</Link>,
   };
 
   const tenantNavLinksTo: TenantNavLInkTo =
   {
     dashboard: ({ content, style }) => <Link to="/app" style={style}>{content}</Link>,
     leases: ({ content, style }) => <Link to="/app/leases" style={style}>{content}</Link>,
-    transactions: ({ content, style }) => <Link to="/app/transactions" style={style}>{content}</Link>,
+    financialEntries: ({ content, style }) => <Link to="/app/financial-entries" style={style}>{content}</Link>,
   }
 
   const navLinkTo = match(role)

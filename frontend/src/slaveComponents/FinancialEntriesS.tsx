@@ -1,5 +1,5 @@
 import { match } from 'ts-pattern';
-import type { TransactionsSProps } from '@/masterComponents/TransactionsM';
+import type { FinancialEntriesSProps } from '@/masterComponents/FinancialEntriesM';
 import type { ColumnDef } from './DataTableS';
 import { amountClass } from './pills';
 import { formatDate, formatPln } from './format';
@@ -16,17 +16,17 @@ import {
 import { FilterToolbarS } from './FilterToolbarS';
 import { AsyncStateTableS } from './AsyncStateTableS';
 
-type PageData = Extract<TransactionsSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
+type PageData = Extract<FinancialEntriesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type Row = PageData['rows'][number];
-type Sort = TransactionsSProps['sort'];
+type Sort = FinancialEntriesSProps['sort'];
 type SortColumn = Sort['config']['column'];
-type Filter = TransactionsSProps['filter'];
+type Filter = FinancialEntriesSProps['filter'];
 
 const COLUMNS: readonly ColumnDef<SortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'properties', label: 'Nieruchomość', sortColumn: 'properties', align: 'left', className: 'min-w-[140px] pr-4' },
+  { key: 'property', label: 'Nieruchomość', sortColumn: 'property', align: 'left', className: 'min-w-[140px] pr-4' },
   { key: 'lease', label: 'Umowa', sortColumn: null, align: 'left', className: 'min-w-[140px] pr-4' },
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
@@ -51,13 +51,13 @@ const SKELETON_ROWS = (
 const EMPTY_DATABASE = (
   <EmptyStateS
     iconPath="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z"
-    title="Brak transakcji do wyświetlenia"
-    description="Dodaj pierwszą transakcję, aby zobaczyć ją na liście."
+    title="Brak zapisów finansowych"
+    description="Dodaj pierwszy zapis finansowy, aby zobaczyć go na liście."
   />
 );
 
 const leaseLabel = (tx: Row): string => {
-  const startDate = tx.lease_agreements?.start_date;
+  const startDate = tx.lease_agreement?.start_date;
   const id8 = tx.lease_id?.slice(0, 8);
   return startDate !== null && startDate !== undefined ?
     `Umowa od ${formatDate(startDate)}` :
@@ -76,19 +76,19 @@ const buildFilterChips = (
   return base.filter((c): c is FilterChip => c.label !== null);
 };
 
-export const TransactionsS = ({
+export const FinancialEntriesS = ({
   asyncData,
   navLinkTo,
   sort,
   pagination,
   filter,
-}: TransactionsSProps): JSX.Element => (
+}: FinancialEntriesSProps): JSX.Element => (
   <div className="min-h-[300px]">
     <div className="mb-4 flex items-center justify-between">
-      <h1 className="text-xl font-semibold text-gray-900">Transakcje</h1>
+      <h1 className="text-xl font-semibold text-gray-900">Zapisy finansowe</h1>
       {navLinkTo.create !== undefined ? (
         <div className="[&_a]:rounded [&_a]:bg-blue-600 [&_a]:px-4 [&_a]:py-2 [&_a]:text-sm [&_a]:font-medium [&_a]:text-white hover:[&_a]:bg-blue-700">
-          {navLinkTo.create({ style: {}, content: 'Dodaj transakcję' })}
+          {navLinkTo.create({ style: {}, content: 'Dodaj zapis' })}
         </div>
       ) : null}
     </div>
@@ -157,18 +157,18 @@ export const TransactionsS = ({
           className="group border-b border-gray-100 text-sm hover:bg-gray-50"
         >
           <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
-            {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
+            {navLinkTo.financialEntry({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły zapisu finansowego${tx.description !== null ? ': ' + tx.description : ''}` })}
           </td>
-          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
+          <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.value_date)}</td>
           <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
             <div className="truncate">
               {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
             </div>
           </td>
-          <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.properties?.name ?? undefined}>
+          <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={tx.property?.name ?? undefined}>
             <div className="truncate">
-              {tx.property_id !== null && tx.properties !== null && tx.properties.name !== null ?
-                navLinkTo.property({ id: tx.property_id, style: {}, content: tx.properties.name }) :
+              {tx.property_id !== null && tx.property !== null && tx.property.name !== null ?
+                navLinkTo.property({ id: tx.property_id, style: {}, content: tx.property.name }) :
                 <span className="text-gray-400">—</span>}
             </div>
           </td>

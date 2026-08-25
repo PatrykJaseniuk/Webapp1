@@ -15,11 +15,11 @@ import {
   type NavLinkWithId,
 } from '@/generic';
 
-type TenantRow = Database['public']['Tables']['tenants']['Row'];
-type TenantInsert = Database['public']['Tables']['tenants']['Insert'];
-type TenantUpdate = Database['public']['Tables']['tenants']['Update'];
-type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
-type AttachmentRow = Database['public']['Tables']['attachments']['Row'];
+type TenantRow = Database['public']['Tables']['tenant']['Row'];
+type TenantInsert = Database['public']['Tables']['tenant']['Insert'];
+type TenantUpdate = Database['public']['Tables']['tenant']['Update'];
+type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
+type AttachmentRow = Database['public']['Tables']['attachment']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
 
 export const tenantInsertSchema = z.object({
@@ -55,7 +55,9 @@ const formatDeleteError = (error: Error | null): string => {
     : error?.message ?? 'Wystąpił nieznany błąd';
 };
 
-type LeaseRow = LeaseAgreementDbRow
+type LeaseRow = LeaseAgreementDbRow & {
+  readonly property: { readonly name: string };
+};
 
 type TenantData = Readonly<{
   readonly tenant: TenantRow | null;
@@ -64,7 +66,7 @@ type TenantData = Readonly<{
 type NavLinkTo = Readonly<{
   readonly toProperty: NavLinkWithId;
   readonly toLease: NavLinkWithId;
-  readonly toTransaction: NavLinkWithId;
+  readonly toFinancialEntry: NavLinkWithId;
   readonly toList: NavLink;
 }>;
 
@@ -114,24 +116,24 @@ type Props = {
 };
 
 const fetchTenantData = async (tenantId: string): Promise<TenantData> => {
-  const result = await backendConnector.from('tenants').select('*').eq('id', tenantId).single();
+  const result = await backendConnector.from('tenant').select('*').eq('id', tenantId).single();
   return result.error !== null
     ? Promise.reject(result.error)
     : { tenant: result.data ?? null };
 };
 
 const insertTenant = async (newRecord: TenantInsert): Promise<string> => {
-  const result = await backendConnector.from('tenants').insert(newRecord).select('id').single();
+  const result = await backendConnector.from('tenant').insert(newRecord).select('id').single();
   return result.error !== null ? Promise.reject(result.error) : result.data.id;
 };
 
 const updateTenant = async (tenantId: string, newRecord: TenantUpdate): Promise<void> => {
-  const result = await backendConnector.from('tenants').update(newRecord).eq('id', tenantId);
+  const result = await backendConnector.from('tenant').update(newRecord).eq('id', tenantId);
   return result.error !== null ? Promise.reject(result.error) : undefined;
 };
 
 const deleteTenant = async (tenantId: string): Promise<void> => {
-  const result = await backendConnector.from('tenants').delete().eq('id', tenantId);
+  const result = await backendConnector.from('tenant').delete().eq('id', tenantId);
   return result.error !== null ? Promise.reject(result.error) : undefined;
 };
 
@@ -168,8 +170,8 @@ export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('lease_agreements')
-        .select('*, properties(name)', { count: 'exact' })
+        .from('lease_agreement')
+        .select('*, property(name)', { count: 'exact' })
         .eq('tenant_id', tenantId ?? '')
         .order(LEASE_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const status = filterConfig.status ?? '';
@@ -193,7 +195,7 @@ export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
     fetchPage: async ({ sort: sortConfig, from, to }) => {
       const ascending = sortConfig.direction === 'asc';
       const result = await backendConnector
-        .from('attachments')
+        .from('attachment')
         .select('*', { count: 'exact' })
         .eq('related_to_type', 'tenant')
         .eq('related_to_id', tenantId ?? '')
@@ -209,7 +211,7 @@ export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
     queryKey: ['tenant', tenantId, 'deleteGuard'],
     queryFn: async (): Promise<{ readonly leaseCount: number }> => {
       const result = await backendConnector
-        .from('lease_agreements')
+        .from('lease_agreement')
         .select('id', { count: 'exact', head: true })
         .eq('tenant_id', tenantId ?? '');
       return result.error !== null
@@ -302,7 +304,7 @@ export const TenantDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navLinkTo: NavLinkTo = {
     toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
     toLease: ({ id: leaseId, content, style }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style}>{content}</Link>,
-    toTransaction: ({ id: transactionId, content, style }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style}>{content}</Link>,
+    toFinancialEntry: ({ id: entryId, content, style }) => <Link to="/app/financial-entries/$id" params={{ id: entryId }} style={style}>{content}</Link>,
     toList: ({ content, style }) => <Link to="/app/tenants" style={style}>{content}</Link>,
   };
 

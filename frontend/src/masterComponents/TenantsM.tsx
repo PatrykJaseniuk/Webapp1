@@ -4,7 +4,7 @@ import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
 
-type TenantDbRow = Database['public']['Tables']['tenants']['Row'];
+type TenantDbRow = Database['public']['Tables']['tenant']['Row'];
 type TenantStatusDb = Database['public']['Enums']['tenant_status'];
 
 type TenantListRow = TenantDbRow;
@@ -34,7 +34,7 @@ export const TenantsM = ({
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('tenants')
+        .from('tenant')
         .select('*', { count: 'exact' })
         .order(sortConfig.column, { ascending })
         .range(from, to);

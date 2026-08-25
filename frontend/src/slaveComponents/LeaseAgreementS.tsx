@@ -33,15 +33,17 @@ type LeaseInsert = Parameters<LeaseAgreementSProps['doSubmit']>[0];
 type SubmitState = LeaseAgreementSProps['submitState'];
 type DeleteAction = LeaseAgreementSProps['deleteAction'];
 type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
-type Transactions = LeaseAgreementSProps['transactions'];
+type FinancialEntries = LeaseAgreementSProps['financialEntries'];
+type LeaseData = NonNullable<Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data']>;
+type ClosingStatement = NonNullable<LeaseData['closingStatement']>;
 type Attachments = LeaseAgreementSProps['attachments'];
-type TransactionFilter = Transactions['filter'];
-type TransactionRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
-type TransactionSortColumn = Transactions['sort']['config']['column'];
+type FinancialEntryFilter = FinancialEntries['filter'];
+type FinancialEntryRow = Extract<FinancialEntries['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
+type FinancialEntrySortColumn = FinancialEntries['sort']['config']['column'];
 
-const COLUMNS: readonly ColumnDef<TransactionSortColumn>[] = [
+const COLUMNS: readonly ColumnDef<FinancialEntrySortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'due_date', label: 'Termin', sortColumn: 'due_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
   { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
@@ -64,12 +66,12 @@ const SKELETON_ROWS = (
 const EMPTY_DATABASE = (
   <EmptyStateS
     iconPath="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z"
-    title="Brak transakcji do wyświetlenia"
-    description="Dodaj pierwszą transakcję, aby zobaczyć ją na liście."
+    title="Brak zapisów finansowych"
+    description="Dodaj pierwszy zapis finansowy, aby zobaczyć go na liście."
   />
 );
 
-const buildFilterChips = (filter: TransactionFilter): readonly FilterChip[] => {
+const buildFilterChips = (filter: FinancialEntryFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
     { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
@@ -123,10 +125,55 @@ const toInsert = (d: LeaseDraft): LeaseInsert => ({
   notes: d.notes === '' ? null : d.notes,
 });
 
+// Deposit settlement panel: every figure comes from lease_closing_statement,
+// so the slave performs no arithmetic of its own.
+const DepositPanel = ({ statement }: { readonly statement: ClosingStatement }): JSX.Element => {
+  const outstanding = statement.deposit_outstanding ?? 0;
+  const settled = statement.deposit_released !== null;
+  return (
+    <div className={sectionClass}>
+      <h2 className={sectionTitleClass}>Kaucja</h2>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div>
+          <p className={labelClass}>Naliczona</p>
+          <p className={valueClass}>{formatPln(statement.deposit_charged ?? 0)}</p>
+        </div>
+        <div>
+          <p className={labelClass}>Wpłacona</p>
+          <p className={valueClass}>{formatPln(statement.deposit_paid ?? 0)}</p>
+        </div>
+        <div>
+          <p className={labelClass}>W posiadaniu</p>
+          <p className={valueClass}>{formatPln(statement.deposit_held ?? 0)}</p>
+        </div>
+        {settled ? (
+          <div>
+            <p className={labelClass}>Zwrócona najemcy</p>
+            <p className={valueClass}>{formatPln(statement.deposit_released ?? 0)}</p>
+          </div>
+        ) : undefined}
+        {settled ? (
+          <div>
+            <p className={labelClass}>Zatrzymana</p>
+            <p className={valueClass}>{formatPln(statement.deposit_retained ?? 0)}</p>
+          </div>
+        ) : undefined}
+        <div>
+          <p className={labelClass}>Do zwrotu</p>
+          <p className={`text-sm font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-green-700'}`}>
+            <span aria-hidden="true">{outstanding > 0 ? '● ' : '✓ '}</span>
+            {formatPln(outstanding)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 type DetailContentProps = {
   readonly data: LeaseAgreementData;
   readonly navLinkTo: NavLinkTo;
-  readonly transactions: Transactions;
+  readonly financialEntries: FinancialEntries;
   readonly attachments: Attachments;
   readonly onEdit: () => void;
 };
@@ -134,12 +181,13 @@ type DetailContentProps = {
 const DetailContent = ({
   data,
   navLinkTo,
-  transactions,
+  financialEntries,
   attachments,
   onEdit,
 }: DetailContentProps): JSX.Element => {
   const l = data.leaseAgreement;
-  const filter = transactions.filter;
+  const closingStatement = data.closingStatement;
+  const filter = financialEntries.filter;
   return l === null ?
     (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -151,7 +199,7 @@ const DetailContent = ({
         <div className="flex items-center justify-between">
           <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline">
             {navLinkTo.toList({ style: {}, content: '← Powrót' })}
-            <h1 className="mt-1 text-2xl font-bold text-gray-900">{`Umowa najmu: ${l.properties?.name ?? ''}${l.tenants !== null ? ` — ${l.tenants.first_name} ${l.tenants.last_name}` : ''}`}</h1>
+            <h1 className="mt-1 text-2xl font-bold text-gray-900">{`Umowa najmu: ${l.property?.name ?? ''}${l.tenant !== null ? ` — ${l.tenant.first_name} ${l.tenant.last_name}` : ''}`}</h1>
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={onEdit} className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
@@ -163,8 +211,8 @@ const DetailContent = ({
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Dane umowy</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline"><p className={labelClass}>Najemca</p>{navLinkTo.tenant({ id: l.tenant_id, style: {}, content: (l.tenants ? `${l.tenants.first_name ?? ''} ${l.tenants.last_name ?? ''}`.trim() : '') })}</div>
-            <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline"><p className={labelClass}>Nieruchomość</p>{navLinkTo.property({ id: l.property_id, style: {}, content: l.properties?.name ?? '' })}</div>
+            <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline"><p className={labelClass}>Najemca</p>{navLinkTo.tenant({ id: l.tenant_id, style: {}, content: (l.tenant ? `${l.tenant.first_name ?? ''} ${l.tenant.last_name ?? ''}`.trim() : '') })}</div>
+            <div className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline"><p className={labelClass}>Nieruchomość</p>{navLinkTo.property({ id: l.property_id, style: {}, content: l.property?.name ?? '' })}</div>
             <div><p className={labelClass}>Status</p><span className={leaseStatusPillClass(l.lease_status)}>{LEASE_STATUS_LABEL[l.lease_status] ?? l.lease_status}</span></div>
             <div><p className={labelClass}>Data rozpoczęcia</p><p className={valueClass}>{formatDate(l.start_date)}</p></div>
             <div><p className={labelClass}>Data zakończenia</p><p className={valueClass}>{l.end_date !== null ? formatDate(l.end_date) : 'Bezterminowo'}</p></div>
@@ -174,14 +222,16 @@ const DetailContent = ({
           {l.notes !== null ? <div className="mt-4"><p className={labelClass}>Notatki</p><p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{l.notes}</p></div> : undefined}
         </div>
 
+        {closingStatement !== null ? <DepositPanel statement={closingStatement} /> : undefined}
+
         <div className={sectionClass}>
-          <h2 className={sectionTitleClass}>Ostatnie transakcje</h2>
+          <h2 className={sectionTitleClass}>Zapisy finansowe</h2>
           <FilterToolbarS
             isFilterActive={isFilterActive(filter.config)}
             activeFilterCount={activeFilterCount(filter.config)}
             clearFilter={() => filter.doFilter({})}
             chips={buildFilterChips(filter)}
-            resultCount={match(transactions.asyncData)
+            resultCount={match(financialEntries.asyncData)
               .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}${isFilterActive(filter.config) ? ' (filtrowane)' : ''}`)
               .otherwise(() => null)}
             panel={
@@ -226,11 +276,11 @@ const DetailContent = ({
               </>
             }
           />
-          <AsyncStateTableS<TransactionRow, TransactionSortColumn>
-            asyncData={transactions.asyncData}
+          <AsyncStateTableS<FinancialEntryRow, FinancialEntrySortColumn>
+            asyncData={financialEntries.asyncData}
             columns={COLUMNS}
-            sort={transactions.sort}
-            pagination={transactions.pagination}
+            sort={financialEntries.sort}
+            pagination={financialEntries.pagination}
             skeletonRows={SKELETON_ROWS}
             emptyState={EMPTY_DATABASE}
             filteredEmptyState={<FilterEmptyStateS clearFilter={() => filter.doFilter({})} />}
@@ -243,9 +293,9 @@ const DetailContent = ({
                 className="group border-b border-gray-100 text-sm hover:bg-gray-50"
               >
                 <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
-                  {navLinkTo.transaction({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły transakcji${tx.description !== null ? ': ' + tx.description : ''}` })}
+                  {navLinkTo.financialEntry({ id: tx.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły zapisu finansowego${tx.description !== null ? ': ' + tx.description : ''}` })}
                 </td>
-                <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.due_date)}</td>
+                <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(tx.value_date)}</td>
                 <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
                   <div className="truncate">
                     {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
@@ -441,7 +491,7 @@ const LeaseAgreementDetail = ({
   data,
   navLinkTo,
   formOptions,
-  transactions,
+  financialEntries,
   attachments,
   doSubmit,
   deleteAction,
@@ -451,7 +501,7 @@ const LeaseAgreementDetail = ({
   readonly data: LeaseAgreementData;
   readonly navLinkTo: NavLinkTo;
   readonly formOptions: FormOptions;
-  readonly transactions: Transactions;
+  readonly financialEntries: FinancialEntries;
   readonly attachments: Attachments;
   readonly doSubmit: (newRecord: LeaseInsert) => void;
   readonly deleteAction: DeleteAction;
@@ -502,7 +552,7 @@ const LeaseAgreementDetail = ({
             <DetailContent
               data={data}
               navLinkTo={navLinkTo}
-              transactions={transactions}
+              financialEntries={financialEntries}
               attachments={attachments}
               onEdit={() => { setEditing(true); setShowSuccess(false); onEditStart(); }}
             />
@@ -530,7 +580,7 @@ export const LeaseAgreementDetailS = (props: LeaseAgreementSProps): JSX.Element 
             data={data}
             navLinkTo={props.navLinkTo}
             formOptions={props.formOptions}
-            transactions={props.transactions}
+            financialEntries={props.financialEntries}
             attachments={props.attachments}
             doSubmit={props.doSubmit}
             deleteAction={props.deleteAction}

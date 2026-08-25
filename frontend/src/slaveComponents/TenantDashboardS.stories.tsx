@@ -18,7 +18,7 @@ const meta: Meta<typeof TenantDashboardS> = {
   args: {
     navLinkTo: {
       leases: mockNavLink,
-      transactions: mockNavLink,
+      financialEntries: mockNavLink,
     },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },

@@ -37,7 +37,7 @@ describe('tenants RLS', () => {
         (await (async () => {
           client = await signInAs('landlord');
           const { data, error } = await client
-            .from('tenants')
+            .from('tenant')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -52,7 +52,7 @@ describe('tenants RLS', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('tenants')
+            .from('tenant')
             .insert({
               first_name: 'Test',
               last_name: 'User',
@@ -72,7 +72,7 @@ describe('tenants RLS', () => {
         (await (async () => {
           // Cleanup: delete the test tenant we inserted
           await client
-            .from('tenants')
+            .from('tenant')
             .delete()
             .eq('email', 'test.user@test.local');
           await signOut(client);
@@ -90,7 +90,7 @@ describe('tenants RLS', () => {
         (await (async () => {
           client = await signInAs('tenant1');
           const { data, error } = await client
-            .from('tenants')
+            .from('tenant')
             .select('*');
           expect(error).toBeNull();
           const rows =
@@ -106,7 +106,7 @@ describe('tenants RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('tenants')
+            .from('tenant')
             .insert({
               first_name: 'Hack',
               last_name: 'Attempt',

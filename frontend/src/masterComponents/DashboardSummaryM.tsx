@@ -11,13 +11,15 @@ type DashboardSummary = Readonly<{
   readonly activeTenants: number;
   readonly totalUnpaidAmount: number;
   readonly overdueItems: number;
+  readonly cashOnHand: number;
 }>;
 
 type NavLinkTo = Readonly<{
   readonly leases: NavLink;
   readonly tenants: NavLink;
   readonly properties: NavLink;
-  readonly transactions: NavLink;
+  readonly financialEntries: NavLink;
+  readonly treasuries: NavLink;
 }>;
 
 export type DashboardSummarySProps = {
@@ -29,36 +31,25 @@ type Props = {
   readonly Slave: ComponentType<DashboardSummarySProps>;
 };
 
-const buildSummary = (
-  propertiesCountResult: { readonly count: number | null; readonly error: unknown },
-  tenantsCountResult: { readonly count: number | null; readonly error: unknown },
-  unpaidResult: { readonly data: readonly { readonly total_unpaid_amount: number | null; readonly overdue_items_count: number | null }[] | null; readonly error: unknown },
-  occupiedCountResult: { readonly count: number | null; readonly error: unknown },
-  activeTenantsCountResult: { readonly count: number | null; readonly error: unknown },
-): DashboardSummary => {
-  const totalProperties = propertiesCountResult.count ?? 0;
-  const occupiedProperties = occupiedCountResult.count ?? 0;
-  const totalTenants = tenantsCountResult.count ?? 0;
-  const activeTenants = activeTenantsCountResult.count ?? 0;
+// Money is aggregated by the dashboard_summary view (numeric in SQL) rather than
+// reduced over rows in JavaScript, so no float accumulation happens client-side.
+const fetchSummary = async (): Promise<DashboardSummary> => {
+  const { data, error } = await backendConnector
+    .from('dashboard_summary')
+    .select('*')
+    .single();
 
-  const unpaidItems = unpaidResult.data ?? [];
-  const totalUnpaidAmount = unpaidItems.reduce(
-    (sum, u) => sum + (u.total_unpaid_amount ?? 0),
-    0,
-  );
-  const overdueItems = unpaidItems.reduce(
-    (sum, u) => sum + (u.overdue_items_count ?? 0),
-    0,
-  );
-
-  return {
-    totalProperties,
-    occupiedProperties,
-    totalTenants,
-    activeTenants,
-    totalUnpaidAmount,
-    overdueItems,
-  };
+  return error !== null
+    ? Promise.reject(error)
+    : {
+        totalProperties: data.total_properties ?? 0,
+        occupiedProperties: data.occupied_properties ?? 0,
+        totalTenants: data.total_tenants ?? 0,
+        activeTenants: data.active_tenants ?? 0,
+        totalUnpaidAmount: data.total_unpaid_amount ?? 0,
+        overdueItems: data.overdue_items ?? 0,
+        cashOnHand: data.cash_on_hand ?? 0,
+      };
 };
 
 export const DashboardSummaryM = ({
@@ -66,50 +57,7 @@ export const DashboardSummaryM = ({
 }: Props): JSX.Element => {
   const query = useQuery({
     queryKey: ['dashboardSummary'],
-    queryFn: async (): Promise<DashboardSummary> => {
-      const [
-        propertiesCountResult,
-        tenantsCountResult,
-        unpaidResult,
-        occupiedCountResult,
-        activeTenantsCountResult,
-      ] = await Promise.all([
-        backendConnector
-          .from('properties')
-          .select('*', { count: 'exact', head: true }),
-        backendConnector
-          .from('tenants')
-          .select('*', { count: 'exact', head: true }),
-        backendConnector
-          .from('unpaid_transactions_summary')
-          .select('*'),
-        backendConnector
-          .from('property_occupancy')
-          .select('*', { count: 'exact', head: true })
-          .eq('property_status', 'occupied'),
-        backendConnector
-          .from('tenants')
-          .select('*', { count: 'exact', head: true })
-          .eq('tenant_status', 'active'),
-      ]);
-
-      const combinedError =
-        propertiesCountResult.error ??
-        tenantsCountResult.error ??
-        unpaidResult.error ??
-        occupiedCountResult.error ??
-        activeTenantsCountResult.error;
-
-      return combinedError !== null
-        ? Promise.reject(combinedError)
-        : buildSummary(
-            propertiesCountResult,
-            tenantsCountResult,
-            unpaidResult,
-            occupiedCountResult,
-            activeTenantsCountResult,
-          );
-    },
+    queryFn: (): Promise<DashboardSummary> => fetchSummary(),
   });
 
   const asyncData = toAsyncData(query, () => {
@@ -132,8 +80,13 @@ export const DashboardSummaryM = ({
         {content}
       </Link>
     ),
-    transactions: ({ content, style }) => (
-      <Link to="/app/transactions" style={style}>
+    financialEntries: ({ content, style }) => (
+      <Link to="/app/financial-entries" style={style}>
+        {content}
+      </Link>
+    ),
+    treasuries: ({ content, style }) => (
+      <Link to="/app/treasuries" style={style}>
         {content}
       </Link>
     ),

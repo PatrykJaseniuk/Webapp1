@@ -35,7 +35,10 @@ export const AdminDashboard = ({
         {navLinkTo.properties({ style: navCardStyle(), content: 'Nieruchomości' })}
       </div>
       <div className={cardLinkClass}>
-        {navLinkTo.transactions({ style: navCardStyle(), content: 'Transakcje' })}
+        {navLinkTo.financialEntries({ style: navCardStyle(), content: 'Finanse' })}
+      </div>
+      <div className={cardLinkClass}>
+        {navLinkTo.treasuries({ style: navCardStyle(), content: 'Skarbce' })}
       </div>
     </div>
   </div>

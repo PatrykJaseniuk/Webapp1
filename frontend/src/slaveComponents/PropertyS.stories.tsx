@@ -16,13 +16,13 @@ type Property = NonNullable<PropertyData['property']>;
 type Occupancy = NonNullable<PropertyData['occupancy']>;
 type Financial = NonNullable<PropertyData['financial']>;
 type LeaseRow = Extract<PropertySProps['leases']['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
-type TransactionRow = Extract<PropertySProps['transactions']['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
+type FinancialEntryRow = Extract<PropertySProps['financialEntries']['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type AttachmentRow = Extract<PropertySProps['attachments']['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type LeaseSortColumn = PropertySProps['leases']['sort']['config']['column'];
-type TransactionSortColumn = PropertySProps['transactions']['sort']['config']['column'];
+type FinancialEntrySortColumn = PropertySProps['financialEntries']['sort']['config']['column'];
 type AttachmentSortColumn = PropertySProps['attachments']['sort']['config']['column'];
 type LeaseFilterKey = keyof PropertySProps['leases']['filter']['config'];
-type TransactionFilterKey = keyof PropertySProps['transactions']['filter']['config'];
+type FinancialEntryFilterKey = keyof PropertySProps['financialEntries']['filter']['config'];
 
 // ──────────────────────────────────────────────────────────────
 // Fixtures
@@ -96,16 +96,20 @@ const baseLease: LeaseRow = {
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
   created_by: null,
-  tenants: { first_name: 'Jan', last_name: 'Kowalski' },
+  tenant: { first_name: 'Jan', last_name: 'Kowalski' },
+  deposit_entry_id: null,
+  deposit_released: null,
+  deposit_retained: null,
 };
 
-const baseTransaction: TransactionRow = {
+const baseEntry: FinancialEntryRow = {
   id: 'txn-1',
   lease_id: 'lease-1',
   property_id: 'prop-1',
+  treasury_id: null,
   description: 'Czynsz styczeń',
   amount: -2500,
-  due_date: '2024-02-01',
+  value_date: '2024-02-01',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
   created_by: null,
@@ -148,11 +152,11 @@ const makeResult = <TRow, S extends string, F extends string>(
 });
 
 const emptyLeases: PropertySProps['leases'] = makeResult<LeaseRow, LeaseSortColumn, LeaseFilterKey>('start_date', []);
-const emptyTransactions: PropertySProps['transactions'] = makeResult<TransactionRow, TransactionSortColumn, TransactionFilterKey>('due_date', []);
+const emptyEntries: PropertySProps['financialEntries'] = makeResult<FinancialEntryRow, FinancialEntrySortColumn, FinancialEntryFilterKey>('value_date', []);
 const emptyAttachments: PropertySProps['attachments'] = makeResult<AttachmentRow, AttachmentSortColumn, never>('created_at', []);
 
 const populatedLeases: PropertySProps['leases'] = makeResult<LeaseRow, LeaseSortColumn, LeaseFilterKey>('start_date', [baseLease]);
-const populatedTransactions: PropertySProps['transactions'] = makeResult<TransactionRow, TransactionSortColumn, TransactionFilterKey>('due_date', [baseTransaction]);
+const populatedEntries: PropertySProps['financialEntries'] = makeResult<FinancialEntryRow, FinancialEntrySortColumn, FinancialEntryFilterKey>('value_date', [baseEntry]);
 const populatedAttachments: PropertySProps['attachments'] = makeResult<AttachmentRow, AttachmentSortColumn, never>('created_at', [baseAttachment]);
 
 // ──────────────────────────────────────────────────────────────
@@ -164,8 +168,8 @@ const makeNavLinkTo = () => ({
     <a href={`#/tenants/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
   lease: ({ id, content, style, ariaLabel }: { readonly id: string; readonly style: CSSProperties; readonly content: string; readonly ariaLabel?: string }) =>
     <a href={`#/leases/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
-  transaction: ({ id, content, style, ariaLabel }: { readonly id: string; readonly style: CSSProperties; readonly content: string; readonly ariaLabel?: string }) =>
-    <a href={`#/transactions/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
+  financialEntry: ({ id, content, style, ariaLabel }: { readonly id: string; readonly style: CSSProperties; readonly content: string; readonly ariaLabel?: string }) =>
+    <a href={`#/financial-entries/${id}`} style={style} aria-label={ariaLabel}>{content}</a>,
   toList: fn(({ content, style }: { readonly style: CSSProperties; readonly content: string }) =>
     <a href="#/properties" style={style}>{content}</a>),
 });
@@ -201,7 +205,7 @@ const meta: Meta<typeof PropertyDetailS> = {
     submitState: { tag: 'idle' },
     navLinkTo: makeNavLinkTo(),
     leases: emptyLeases,
-    transactions: emptyTransactions,
+    financialEntries: emptyEntries,
     attachments: emptyAttachments,
   },
 };
@@ -234,7 +238,7 @@ export const ViewWithPopulatedSubTables: Story = {
   args: {
     asyncData: filledData,
     leases: populatedLeases,
-    transactions: populatedTransactions,
+    financialEntries: populatedEntries,
     attachments: populatedAttachments,
   },
   parameters: { a11y: { test: 'off' } },

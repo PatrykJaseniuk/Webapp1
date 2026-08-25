@@ -12,7 +12,7 @@ type TenantDashboardSummary = Readonly<{
 
 type NavLinkTo = Readonly<{
   readonly leases: NavLink;
-  readonly transactions: NavLink;
+  readonly financialEntries: NavLink;
 }>;
 
 export type TenantDashboardSProps = {
@@ -28,28 +28,19 @@ export const TenantDashboardM = ({ Slave }: Props): JSX.Element => {
   const query = useQuery({
     queryKey: ['tenantDashboard'],
     queryFn: async (): Promise<TenantDashboardSummary> => {
-      const [leasesResult, unpaidResult] = await Promise.all([
-        backendConnector
-          .from('lease_agreements')
-          .select('id', { count: 'exact', head: true })
-          .eq('lease_status', 'active'),
-        backendConnector.from('unpaid_transactions_summary').select('*'),
-      ]);
+      // dashboard_summary is security_invoker, so every figure is already
+      // filtered to this tenant's own leases and summed in SQL (numeric).
+      const { data, error } = await backendConnector
+        .from('dashboard_summary')
+        .select('active_leases, total_unpaid_amount, overdue_items')
+        .single();
 
-      const combinedError = leasesResult.error ?? unpaidResult.error;
-
-      return combinedError !== null
-        ? Promise.reject(combinedError)
+      return error !== null
+        ? Promise.reject(error)
         : {
-            activeLeases: leasesResult.count ?? 0,
-            totalUnpaidAmount: (unpaidResult.data ?? []).reduce(
-              (sum, u) => sum + (u.total_unpaid_amount ?? 0),
-              0,
-            ),
-            overdueItems: (unpaidResult.data ?? []).reduce(
-              (sum, u) => sum + (u.overdue_items_count ?? 0),
-              0,
-            ),
+            activeLeases: data.active_leases ?? 0,
+            totalUnpaidAmount: data.total_unpaid_amount ?? 0,
+            overdueItems: data.overdue_items ?? 0,
           };
     },
   });
@@ -64,8 +55,8 @@ export const TenantDashboardM = ({ Slave }: Props): JSX.Element => {
         {content}
       </Link>
     ),
-    transactions: ({ content, style }) => (
-      <Link to="/app/transactions" style={style}>
+    financialEntries: ({ content, style }) => (
+      <Link to="/app/financial-entries" style={style}>
         {content}
       </Link>
     ),

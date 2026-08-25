@@ -15,7 +15,7 @@ type NavLinkTo = Readonly<{
   readonly create: NavLink;
 }>;
 
-type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
+type PropertyDbRow = Database['public']['Tables']['property']['Row'];
 type PropertySortColumn = Extract<keyof PropertyDbRow, 'name' | 'address' | 'property_type' | 'property_status' | 'monthly_rent'>;
 
 type PropertyFilter = 'text' | 'propertyType' | 'propertyStatus';

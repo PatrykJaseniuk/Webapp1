@@ -215,7 +215,7 @@ ON CONFLICT (id) DO NOTHING;
 -- Assign roles to test users
 -- Using ON CONFLICT to handle cases where trigger already created the role
 
-INSERT INTO public.user_roles (user_id, role, created_at, updated_at) VALUES
+INSERT INTO public.user_role (user_id, role, created_at, updated_at) VALUES
     -- Admin user
     ('00000000-0000-0000-0000-000000000001', 'admin', '2024-01-01 00:00:00+00', '2024-01-01 00:00:00+00'),
     -- Landlord user
@@ -235,7 +235,7 @@ ON CONFLICT (user_id) DO UPDATE SET
 -- ================================================
 -- Rental properties across major Polish cities
 
-INSERT INTO public.properties (id, name, address, property_type, size_sqm, bedrooms, monthly_rent, deposit_amount, property_status, notes, created_at, updated_at, created_by) VALUES
+INSERT INTO public.property (id, name, address, property_type, size_sqm, bedrooms, monthly_rent, deposit_amount, property_status, notes, created_at, updated_at, created_by) VALUES
     -- Property 1: Warsaw Apartment
     ('a0000000-0000-0000-0000-000000000001', 
      'Apartament Warszawa Centrum', 

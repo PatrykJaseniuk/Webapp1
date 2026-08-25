@@ -14,6 +14,7 @@ const mockSummary = {
   activeTenants: 32,
   totalUnpaidAmount: 15750.50,
   overdueItems: 7,
+  cashOnHand: 42782.50,
 };
 
 const meta: Meta<typeof LandlordDashboard> = {
@@ -31,7 +32,8 @@ const meta: Meta<typeof LandlordDashboard> = {
       leases: mockNavLink,
       tenants: mockNavLink,
       properties: mockNavLink,
-      transactions: mockNavLink,
+      financialEntries: mockNavLink,
+      treasuries: mockNavLink,
     },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },

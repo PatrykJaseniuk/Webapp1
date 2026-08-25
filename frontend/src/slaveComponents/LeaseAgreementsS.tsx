@@ -28,8 +28,8 @@ type LeaseStatus = Row['lease_status'];
 
 const COLUMNS: readonly ColumnDef<SortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'tenants', label: 'Najemca', sortColumn: 'tenants', align: 'left', className: 'w-[17%] pr-4' },
-  { key: 'properties', label: 'Nieruchomość', sortColumn: 'properties', align: 'left', className: 'w-[17%] pr-4' },
+  { key: 'tenant', label: 'Najemca', sortColumn: 'tenant', align: 'left', className: 'w-[17%] pr-4' },
+  { key: 'property', label: 'Nieruchomość', sortColumn: 'property', align: 'left', className: 'w-[17%] pr-4' },
   { key: 'start_date', label: 'Od', sortColumn: 'start_date', align: 'left', className: 'w-[12%] pr-4' },
   { key: 'end_date', label: 'Do', sortColumn: 'end_date', align: 'left', className: 'w-[12%] pr-4' },
   { key: 'monthly_rent', label: 'Czynsz', sortColumn: 'monthly_rent', align: 'right', className: 'w-[12%] pr-4' },
@@ -172,16 +172,16 @@ export const LeaseAgreementsS = ({
           className="group border-b border-gray-100 text-sm hover:bg-gray-50"
         >
           <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
-            {navLinkTo.leaseAgreement({ id: l.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: l.tenants !== null ? `Szczegóły umowy: ${l.tenants.first_name} ${l.tenants.last_name}` : 'Szczegóły umowy' })}
+            {navLinkTo.leaseAgreement({ id: l.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: l.tenant !== null ? `Szczegóły umowy: ${l.tenant.first_name} ${l.tenant.last_name}` : 'Szczegóły umowy' })}
           </td>
-          <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={`${l.tenants.first_name} ${l.tenants.last_name}`}>
+          <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={`${l.tenant.first_name} ${l.tenant.last_name}`}>
             <div className="truncate">
-              {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenants.first_name} ${l.tenants.last_name}`, style: {} })}
+              {navLinkTo.tenant({ id: l.tenant_id, content: `${l.tenant.first_name} ${l.tenant.last_name}`, style: {} })}
             </div>
           </td>
-          <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={l.properties.name ?? undefined}>
+          <td className="h-12 py-0 pr-4 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 hover:[&_a]:underline" title={l.property.name ?? undefined}>
             <div className="truncate">
-              {navLinkTo.property({ id: l.property_id, content: l.properties.name, style: {} })}
+              {navLinkTo.property({ id: l.property_id, content: l.property.name, style: {} })}
             </div>
           </td>
           <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(l.start_date)}</td>

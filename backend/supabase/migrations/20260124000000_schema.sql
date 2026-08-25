@@ -23,14 +23,14 @@ CREATE TYPE public.tenant_status AS ENUM ('active', 'past', 'applicant');
 CREATE TYPE public.lease_status AS ENUM ('active', 'expired', 'terminated');
 
 -- Attachments
-CREATE TYPE public.related_to_type AS ENUM ('property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense');
+CREATE TYPE public.related_to_type AS ENUM ('property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense', 'financial_entry');
 CREATE TYPE public.file_type AS ENUM ('image', 'video', 'pdf', 'document', 'other');
 
 
 
 -- 1. USER ROLES TABLE
 -- Manages user access levels: tenant, landlord, admin
-CREATE TABLE public.user_roles (
+CREATE TABLE public.user_role (
     user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     role public.app_role NOT NULL,
     created_at timestamptz DEFAULT now(),
@@ -39,7 +39,7 @@ CREATE TABLE public.user_roles (
 
 -- 2. PROPERTIES TABLE
 -- Stores rental property information
-CREATE TABLE public.properties (
+CREATE TABLE public.property (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     name text NOT NULL,
     address text NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE public.properties (
 
 -- 3. TENANTS TABLE
 -- Stores tenant contact and personal information
-CREATE TABLE public.tenants (
+CREATE TABLE public.tenant (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,
     first_name text NOT NULL,
@@ -75,10 +75,10 @@ CREATE TABLE public.tenants (
 
 -- 4. LEASE AGREEMENTS TABLE
 -- Links tenants to properties with rental terms
-CREATE TABLE public.lease_agreements (
+CREATE TABLE public.lease_agreement (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    tenant_id uuid NOT NULL REFERENCES public.tenants(id) ON DELETE RESTRICT,
-    property_id uuid NOT NULL REFERENCES public.properties(id) ON DELETE RESTRICT,
+    tenant_id uuid NOT NULL REFERENCES public.tenant(id) ON DELETE RESTRICT,
+    property_id uuid NOT NULL REFERENCES public.property(id) ON DELETE RESTRICT,
     start_date date NOT NULL,
     end_date date,
     monthly_rent decimal(10,2) NOT NULL,
@@ -92,7 +92,7 @@ CREATE TABLE public.lease_agreements (
 
 -- 5. ATTACHMENTS TABLE
 -- Universal file storage for documents, photos, videos
-CREATE TABLE public.attachments (
+CREATE TABLE public.attachment (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
     related_to_type public.related_to_type NOT NULL,
     related_to_id uuid NOT NULL,
@@ -105,23 +105,80 @@ CREATE TABLE public.attachments (
     created_at timestamptz DEFAULT now()
 );
 
--- 6. TRANSACTIONS TABLE
--- A pure signed ledger of money movements.
--- 'amount' is signed: negative = outflow, positive = inflow.
--- The reference pattern determines scope:
--- - lease_id only     -> tenant-scoped (charge/credit)
--- - property_id only  -> landlord-scoped (expense/income)
--- - both set          -> shared (payment/refund)
--- No 'type' or 'status' columns: the kind is derived from (reference, sign)
--- and the paid/overdue state is derived from the running balance.
-CREATE TABLE public.transactions (
+-- 6. TREASURIES TABLE
+-- Cash accounts (bank accounts, cash boxes) through which money physically moves.
+-- One treasury may be shared across many properties and lease agreements.
+CREATE TABLE public.treasury (
     id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-    lease_id uuid REFERENCES public.lease_agreements(id) ON DELETE RESTRICT,
-    property_id uuid REFERENCES public.properties(id) ON DELETE RESTRICT,
-    description text NOT NULL,
-    amount decimal(10,2) NOT NULL,
-    due_date date NOT NULL,
+    name text NOT NULL,
+    is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz DEFAULT now(),
     updated_at timestamptz DEFAULT now(),
     created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
 );
+
+-- 7. FINANCIAL ENTRIES TABLE
+-- A pure signed ledger of financial entries.
+--
+-- POSTING RULE (normative):
+--   The same signed 'amount' is posted to EVERY referenced account.
+--   The sign is taken from the landlord's point of view:
+--     +  value in  (inflow / credit to that account)
+--     -  value out (outflow / charge against that account)
+--
+-- References specify the accounts to which the entry is allocated.
+-- At least one reference must be set; combinations are meaningful:
+--   - lease_id                -> tenant/lease-scoped accrual (charge / credit)
+--   - property_id             -> landlord/property-scoped result (income / expense)
+--   - treasury_id             -> cash movement (inflow / outflow)
+--   - lease + treasury        -> deposit received / returned (cash, NOT income)
+--   - lease + property + treasury -> rent payment / refund (cash AND income)
+--   - property + treasury     -> property expense / income paid in cash
+--   - property only           -> reclassification onto the property without cash
+--                               (e.g. retained deposit granted to the property)
+--
+-- Consequences of the rule:
+--   lease account    = accrual receivable ledger (negative = tenant owes)
+--   property account = property result (cash movements + reclassifications)
+--   treasury account = cash on hand (reconcilable against a bank statement)
+--
+-- There is deliberately NO 'type', 'category' or 'status' column: the accounting
+-- kind is derived from (references, sign) and the paid/overdue state is derived
+-- from the running balance with FIFO allocation over 'value_date'.
+--
+-- 'value_date' is the economic date of the entry on the accounts it references:
+--   charge            -> the date it becomes payable (its due date)
+--   payment / refund  -> the date the money actually moved
+--   expense / income  -> the date of the cash flow
+-- Distinct from 'created_at', which records when the row was written.
+CREATE TABLE public.financial_entry (
+    id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+    lease_id uuid REFERENCES public.lease_agreement(id) ON DELETE RESTRICT,
+    property_id uuid REFERENCES public.property(id) ON DELETE RESTRICT,
+    treasury_id uuid REFERENCES public.treasury(id) ON DELETE RESTRICT,
+    description text NOT NULL,
+    amount decimal(10,2) NOT NULL,
+    value_date date NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    updated_at timestamptz DEFAULT now(),
+    created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL
+);
+
+-- ================================================
+-- DEPOSIT SETTLEMENT (on lease_agreement)
+-- ================================================
+-- Added after financial_entry because of the circular reference:
+--   financial_entry.lease_id -> lease_agreement.id
+--   lease_agreement.deposit_entry_id -> financial_entry.id
+--
+-- deposit_entry_id  identifies THE deposit charge of the lease, so a deposit
+--                   charge can be told apart from a rent/utility charge
+--                   (both are lease-only negative entries).
+-- deposit_released  how much of the deposit was returned to the tenant.
+-- deposit_retained  how much was retained and granted to the property.
+-- Both are NULL until the deposit is settled; once set they must add up to
+-- deposit_amount (enforced in the constraints migration).
+ALTER TABLE public.lease_agreement
+    ADD COLUMN deposit_entry_id uuid REFERENCES public.financial_entry(id) ON DELETE RESTRICT,
+    ADD COLUMN deposit_released decimal(10,2),
+    ADD COLUMN deposit_retained decimal(10,2);

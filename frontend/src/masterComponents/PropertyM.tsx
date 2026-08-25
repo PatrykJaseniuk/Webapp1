@@ -15,9 +15,9 @@ import {
   type NavLinkWithId,
 } from '@/generic';
 
-type PropertyDbRow = Database['public']['Tables']['properties']['Row'];
-type PropertyInsert = Database['public']['Tables']['properties']['Insert'];
-type PropertyUpdate = Database['public']['Tables']['properties']['Update'];
+type PropertyDbRow = Database['public']['Tables']['property']['Row'];
+type PropertyInsert = Database['public']['Tables']['property']['Insert'];
+type PropertyUpdate = Database['public']['Tables']['property']['Update'];
 
 export const propertyInsertSchema = z.object({
   name: z.string().trim().min(1, 'Nazwa jest wymagana'),
@@ -60,15 +60,15 @@ const formatDeleteError = (error: Error | null): string => {
     ? 'Nie można usunąć nieruchomości — jest powiązana z umowami najmu lub transakcjami.'
     : error?.message ?? 'Wystąpił nieznany błąd';
 };
-type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreements']['Row'];
-type TransactionDbRow = Database['public']['Tables']['transactions']['Row'];
+type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
+type FinancialEntryDbRow = Database['public']['Tables']['financial_entry']['Row'];
 type FinancialSummaryDbRow = Database['public']['Views']['property_financial_summary']['Row'];
 type OccupancyDbRow = Database['public']['Views']['property_occupancy']['Row'];
-type AttachmentDbRow = Database['public']['Tables']['attachments']['Row'];
+type AttachmentDbRow = Database['public']['Tables']['attachment']['Row'];
 type LeaseStatusDb = Database['public']['Enums']['lease_status'];
 
 type LeaseRow = LeaseAgreementDbRow & {
-  readonly tenants: { readonly first_name: string; readonly last_name: string; };
+  readonly tenant: { readonly first_name: string; readonly last_name: string; };
 };
 
 type PropertyData = Readonly<{
@@ -80,16 +80,16 @@ type PropertyData = Readonly<{
 type NavLinkTo = Readonly<{
   readonly tenant: NavLinkWithId;
   readonly lease: NavLinkWithId;
-  readonly transaction: NavLinkWithId;
+  readonly financialEntry: NavLinkWithId;
   readonly toList: NavLink;
 }>;
 
 type LeaseSortColumn = Extract<keyof LeaseAgreementDbRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status'>;
-type TransactionSortColumn = Extract<keyof TransactionDbRow, 'due_date' | 'amount'>;
+type FinancialEntrySortColumn = Extract<keyof FinancialEntryDbRow, 'value_date' | 'amount'>;
 type AttachmentSortColumn = 'created_at';
 
 type LeaseFilter = 'status' | 'dateFrom' | 'dateTo';
-type TransactionFilter = 'text' | 'dateFrom' | 'dateTo';
+type FinancialEntryFilter = 'text' | 'dateFrom' | 'dateTo';
 
 const LEASE_SORT_COLUMN_MAP: Readonly<Record<LeaseSortColumn, string>> = Object.freeze({
   start_date: 'start_date',
@@ -98,8 +98,8 @@ const LEASE_SORT_COLUMN_MAP: Readonly<Record<LeaseSortColumn, string>> = Object.
   lease_status: 'lease_status',
 });
 
-const TRANSACTION_SORT_COLUMN_MAP: Readonly<Record<TransactionSortColumn, string>> = Object.freeze({
-  due_date: 'due_date',
+const TRANSACTION_SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
+  value_date: 'value_date',
   amount: 'amount',
 });
 
@@ -123,7 +123,7 @@ export type PropertySProps = {
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
   readonly leases: FilteredQueryResult<LeaseRow, LeaseSortColumn, LeaseFilter>;
-  readonly transactions: FilteredQueryResult<TransactionDbRow, TransactionSortColumn, TransactionFilter>;
+  readonly financialEntries: FilteredQueryResult<FinancialEntryDbRow, FinancialEntrySortColumn, FinancialEntryFilter>;
   readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
@@ -139,7 +139,7 @@ type Props = {
 
 const fetchPropertyData = async (propertyId: string): Promise<PropertyData> => {
   const [propertyResult, occupancyResult, financialResult] = await Promise.all([
-    backendConnector.from('properties').select('*').eq('id', propertyId).single(),
+    backendConnector.from('property').select('*').eq('id', propertyId).single(),
     backendConnector.from('property_occupancy').select('*').eq('id', propertyId).maybeSingle(),
     backendConnector.from('property_financial_summary').select('*').eq('property_id', propertyId).maybeSingle(),
   ]);
@@ -155,17 +155,17 @@ const fetchPropertyData = async (propertyId: string): Promise<PropertyData> => {
 };
 
 const insertProperty = async (newRecord: PropertyInsert): Promise<string> => {
-  const result = await backendConnector.from('properties').insert(newRecord).select('id').single();
+  const result = await backendConnector.from('property').insert(newRecord).select('id').single();
   return result.error !== null ? Promise.reject(result.error) : result.data.id;
 };
 
 const updateProperty = async (propertyId: string, newRecord: PropertyUpdate): Promise<void> => {
-  const result = await backendConnector.from('properties').update(newRecord).eq('id', propertyId);
+  const result = await backendConnector.from('property').update(newRecord).eq('id', propertyId);
   return result.error !== null ? Promise.reject(result.error) : undefined;
 };
 
 const deleteProperty = async (propertyId: string): Promise<void> => {
-  const result = await backendConnector.from('properties').delete().eq('id', propertyId);
+  const result = await backendConnector.from('property').delete().eq('id', propertyId);
   return result.error !== null ? Promise.reject(result.error) : undefined;
 };
 
@@ -202,8 +202,8 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('lease_agreements')
-        .select('*, tenants(first_name,last_name)', { count: 'exact' })
+        .from('lease_agreement')
+        .select('*, tenant(first_name,last_name)', { count: 'exact' })
         .eq('property_id', propertyId ?? '')
         .order(LEASE_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const status = filterConfig.status ?? '';
@@ -219,15 +219,15 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     },
   });
 
-  const transactions = useFilteredPaginatedQuery<TransactionDbRow, TransactionSortColumn, TransactionFilter>({
-    queryKey: ['transactions', 'property', propertyId ?? ''],
-    defaultSort: { column: 'due_date', direction: 'desc' },
+  const financialEntries = useFilteredPaginatedQuery<FinancialEntryDbRow, FinancialEntrySortColumn, FinancialEntryFilter>({
+    queryKey: ['financialEntries', 'property', propertyId ?? ''],
+    defaultSort: { column: 'value_date', direction: 'desc' },
     pageSize: 5,
     enabled: propertyId !== null,
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('transactions')
+        .from('financial_entry')
         .select('*', { count: 'exact' })
         .eq('property_id', propertyId ?? '')
         .order(TRANSACTION_SORT_COLUMN_MAP[sortConfig.column], { ascending });
@@ -235,8 +235,8 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
       const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
-      const withDateFrom = dateFrom.length > 0 ? withText.gte('due_date', dateFrom) : withText;
-      const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('due_date', dateTo) : withDateFrom;
+      const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;
+      const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('value_date', dateTo) : withDateFrom;
       const result = await queryWithFilters.range(from, to);
       return result.error !== null
         ? Promise.reject(result.error)
@@ -252,7 +252,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     fetchPage: async ({ sort: sortConfig, from, to }) => {
       const ascending = sortConfig.direction === 'asc';
       const result = await backendConnector
-        .from('attachments')
+        .from('attachment')
         .select('*', { count: 'exact' })
         .eq('related_to_type', 'property')
         .eq('related_to_id', propertyId ?? '')
@@ -266,22 +266,22 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
 
   const deleteGuard = useQuery({
     queryKey: ['property', propertyId, 'deleteGuard'],
-    queryFn: async (): Promise<{ readonly leaseCount: number; readonly directTransactionCount: number }> => {
-      const [leaseResult, transactionResult] = await Promise.all([
+    queryFn: async (): Promise<{ readonly leaseCount: number; readonly directEntryCount: number }> => {
+      const [leaseResult, entryResult] = await Promise.all([
         backendConnector
-          .from('lease_agreements')
+          .from('lease_agreement')
           .select('id', { count: 'exact', head: true })
           .eq('property_id', propertyId ?? ''),
         backendConnector
-          .from('transactions')
+          .from('financial_entry')
           .select('id', { count: 'exact', head: true })
           .eq('property_id', propertyId ?? '')
           .is('lease_id', null),
       ]);
-      const combinedError = leaseResult.error ?? transactionResult.error;
+      const combinedError = leaseResult.error ?? entryResult.error;
       return combinedError !== null
         ? Promise.reject(combinedError)
-        : { leaseCount: leaseResult.count ?? 0, directTransactionCount: transactionResult.count ?? 0 };
+        : { leaseCount: leaseResult.count ?? 0, directEntryCount: entryResult.count ?? 0 };
     },
     enabled: propertyId !== null,
   });
@@ -347,10 +347,10 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
         .with('error', () => ({ tag: 'blocked' as const, reason: 'Nie udało się sprawdzić powiązań nieruchomości.' }))
         .with('success', () => {
           const leaseCount = deleteGuard.data?.leaseCount ?? 0;
-          const directTransactionCount = deleteGuard.data?.directTransactionCount ?? 0;
+          const directEntryCount = deleteGuard.data?.directEntryCount ?? 0;
           return leaseCount > 0
             ? { tag: 'blocked' as const, reason: `Nieruchomość jest powiązana z ${leaseCount} ${leaseCount === 1 ? 'umową najmu' : 'umowami najmu'} i nie może zostać usunięta.` }
-            : directTransactionCount > 0
+            : directEntryCount > 0
               ? { tag: 'blocked' as const, reason: 'Nieruchomość ma powiązane transakcje i nie może zostać usunięta.' }
               : { tag: 'allowed' as const, doDelete: (): void => { deleteMutation.mutate(id); } };
         })
@@ -378,7 +378,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,
     lease: ({ id: leaseId, content, style, ariaLabel }) => <Link to="/app/leases/$id" params={{ id: leaseId }} style={style} aria-label={ariaLabel}>{content}</Link>,
-    transaction: ({ id: transactionId, content, style, ariaLabel }) => <Link to="/app/transactions/$id" params={{ id: transactionId }} style={style} aria-label={ariaLabel}>{content}</Link>,
+    financialEntry: ({ id: entryId, content, style, ariaLabel }) => <Link to="/app/financial-entries/$id" params={{ id: entryId }} style={style} aria-label={ariaLabel}>{content}</Link>,
     toList: ({ content, style }) => <Link to="/app/properties" style={style}>{content}</Link>,
   };
 
@@ -391,7 +391,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
       onEditStart={onEditStart}
       submitState={submitState}
       leases={leases}
-      transactions={transactions}
+      financialEntries={financialEntries}
       attachments={attachments}
       navLinkTo={navLinkTo}
     />

@@ -18,7 +18,8 @@ const NAV_LABEL: { readonly [K in LinkKey]: string } = {
   properties: 'Properties',
   tenants: 'Tenants',
   leases: 'Leases',
-  transactions: 'Transakcje',
+  financialEntries: 'Finanse',
+  treasuries: 'Skarbce',
 };
 
 const NAV_KEY_ORDER: readonly LinkKey[] = [
@@ -26,7 +27,8 @@ const NAV_KEY_ORDER: readonly LinkKey[] = [
   'properties',
   'tenants',
   'leases',
-  'transactions',
+  'financialEntries',
+  'treasuries',
 ];
 
 // ── Authenticated shell (inner) ──

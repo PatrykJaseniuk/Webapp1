@@ -13,6 +13,7 @@ const mockSummary = {
   activeTenants: 32,
   totalUnpaidAmount: 15750.50,
   overdueItems: 7,
+  cashOnHand: 42782.50,
 };
 
 const meta: Meta<typeof AdminDashboard> = {
@@ -23,7 +24,8 @@ const meta: Meta<typeof AdminDashboard> = {
       leases: mockNavLink('Umowy'),
       tenants: mockNavLink('Najemcy'),
       properties: mockNavLink('Nieruchomości'),
-      transactions: mockNavLink('Transakcje'),
+      financialEntries: mockNavLink('Finanse'),
+      treasuries: mockNavLink('Skarbce'),
     },
     asyncData: { tag: 'fulfilled', data: mockSummary },
   },

@@ -38,7 +38,7 @@ describe('properties RLS', () => {
         (await (async () => {
           client = await signInAs('landlord');
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .select('*');
           expect(error).toBeNull();
           expect(
@@ -53,7 +53,7 @@ describe('properties RLS', () => {
       available &&
         (await (async () => {
           const { data, error } = await client
-            .from('properties')
+            .from('property')
             .insert({
               name: 'Test Property',
               address: 'Test Street 1',
@@ -75,7 +75,7 @@ describe('properties RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('properties')
+            .from('property')
             .update({ name: 'Updated Name' })
             .eq('id', TEST_UUIDS.property1);
           expect(error).toBeNull();
@@ -88,7 +88,7 @@ describe('properties RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('properties')
+            .from('property')
             .delete()
             .eq('name', 'Test Property');
           expect(error).toBeNull();
@@ -100,7 +100,7 @@ describe('properties RLS', () => {
         (await (async () => {
           // Restore: undo the update to property1 name
           await client
-            .from('properties')
+            .from('property')
             .update({ name: 'Apartament Warszawa Centrum' })
             .eq('id', TEST_UUIDS.property1);
           await signOut(client);
@@ -118,7 +118,7 @@ describe('properties RLS', () => {
         (await (async () => {
           client = await signInAs('tenant1');
           const { data, error } =
-            await client.from('properties').select('*');
+            await client.from('property').select('*');
           expect(error).toBeNull();
           const rows =
             data as ReadonlyArray<{ readonly id: string }>;
@@ -133,7 +133,7 @@ describe('properties RLS', () => {
       available &&
         (await (async () => {
           const { error } = await client
-            .from('properties')
+            .from('property')
             .insert({
               name: 'Unauthorized',
               address: 'Bad',
@@ -151,14 +151,14 @@ describe('properties RLS', () => {
       available &&
         (await (async () => {
           await client
-            .from('properties')
+            .from('property')
             .update({ name: 'Hacked' })
             .eq('id', TEST_UUIDS.property1);
           // RLS USING (is_landlord()) filters all rows for tenants →
           // PostgREST returns error: null with 0 rows affected (not a permission error).
           // Verify the property name was NOT changed.
           const { data: verify } = await client
-            .from('properties')
+            .from('property')
             .select('name')
             .eq('id', TEST_UUIDS.property1)
             .single();
@@ -180,7 +180,7 @@ describe('properties RLS', () => {
       (await (async () => {
         const client = await signInAs('tenant3');
         const { data, error } =
-          await client.from('properties').select('*');
+          await client.from('property').select('*');
         expect(error).toBeNull();
         const rows =
           data as ReadonlyArray<{ readonly id: string }>;

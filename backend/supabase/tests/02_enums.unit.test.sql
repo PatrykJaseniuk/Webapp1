@@ -26,7 +26,7 @@ SELECT enum_has_labels('public', 'tenant_status',
 SELECT enum_has_labels('public', 'lease_status',
     ARRAY['active', 'expired', 'terminated']);
 SELECT enum_has_labels('public', 'related_to_type',
-    ARRAY['property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense']);
+    ARRAY['property', 'tenant', 'lease', 'maintenance', 'meter_reading', 'expense', 'financial_entry']);
 SELECT enum_has_labels('public', 'file_type',
     ARRAY['image', 'video', 'pdf', 'document', 'other']);
 

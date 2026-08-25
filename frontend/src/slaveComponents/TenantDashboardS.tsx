@@ -45,7 +45,7 @@ export const TenantDashboardS = ({
         {navLinkTo.leases({ style: navCardStyle(), content: 'Moje umowy' })}
       </div>
       <div className={cardLinkClass}>
-        {navLinkTo.transactions({ style: navCardStyle(), content: 'Transakcje' })}
+        {navLinkTo.financialEntries({ style: navCardStyle(), content: 'Finanse' })}
       </div>
     </div>
   </div>
