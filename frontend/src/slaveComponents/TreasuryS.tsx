@@ -18,33 +18,23 @@ import {
   onFilterInput,
   setFilterString,
 } from './filter';
-import { amountClass } from './pills';
-import {
-  balanceGlyph,
-  balanceToneClass,
-  isBalanceSeriesContiguous,
-  pageBalances,
-} from './statement';
-import { StatementSummaryS } from './StatementSummaryS';
+import { amountClass, balanceGlyph, balanceToneClass } from './pills';
 
 type Data = NonNullable<Extract<TreasurySProps['asyncData'], { readonly tag: 'fulfilled' }>['data']>;
 type SubmitState = TreasurySProps['submitState'];
 type DeleteAction = TreasurySProps['deleteAction'];
 type Entries = TreasurySProps['entries'];
 type EntryRow = Extract<Entries['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
-type EntrySortColumn = Entries['sort']['config']['column'];
 type NavLinkTo = TreasurySProps['navLinkTo'];
 
-const ENTRY_COLUMNS: readonly ColumnDef<EntrySortColumn>[] = [
+// Fixed-order statement: ColumnDef<never> permits only `sortColumn: null`.
+const ENTRY_COLUMNS: readonly ColumnDef<never>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'value_date', label: 'Data', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'value_date', label: 'Data', sortColumn: null, align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[200px] pr-4' },
   { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
   { key: 'running_balance', label: 'Saldo', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
-
-const ENTRY_COLUMNS_WITHOUT_BALANCE: readonly ColumnDef<EntrySortColumn>[] =
-  ENTRY_COLUMNS.filter((c) => c.key !== 'running_balance');
 
 const entrySkeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
@@ -273,17 +263,6 @@ const TreasuryDetail = ({ data, navLinkTo, entries, onEditStart }: DetailProps):
           panel={
             <>
               <div className="min-w-[220px]">
-                <label htmlFor="treasury-entry-filter" className={filterLabelClass}>Szukaj (opis)</label>
-                <input
-                  id="treasury-entry-filter"
-                  type="search"
-                  value={entryFilter.config.text ?? ''}
-                  onChange={onFilterInput((v) => entryFilter.doFilter(setFilterString(entryFilter.config, 'text', v)))}
-                  placeholder="Wpisz fragment opisu…"
-                  className={`${filterInputClass} w-full`}
-                />
-              </div>
-              <div>
                 <label htmlFor="treasury-entry-date-from" className={filterLabelClass}>Data od</label>
                 <input
                   id="treasury-entry-date-from"
@@ -306,19 +285,9 @@ const TreasuryDetail = ({ data, navLinkTo, entries, onEditStart }: DetailProps):
             </>
           }
         />
-        <StatementSummaryS
-          balances={match(entries.asyncData)
-            .with({ tag: 'fulfilled' }, ({ data: pageData }) =>
-              pageBalances(pageData.rows, entries.sort.config.direction),
-            )
-            .otherwise(() => null)}
-          negativeLabel="saldo ujemne"
-          contiguous={isBalanceSeriesContiguous(entryFilter.config.text)}
-        />
-        <AsyncStateTableS<EntryRow, EntrySortColumn>
+        <AsyncStateTableS<EntryRow, never>
           asyncData={entries.asyncData}
-          columns={isBalanceSeriesContiguous(entryFilter.config.text) ? ENTRY_COLUMNS : ENTRY_COLUMNS_WITHOUT_BALANCE}
-          sort={entries.sort}
+          columns={ENTRY_COLUMNS}
           pagination={entries.pagination}
           skeletonRows={ENTRY_SKELETON_ROWS}
           emptyState={ENTRY_EMPTY}
@@ -336,13 +305,11 @@ const TreasuryDetail = ({ data, navLinkTo, entries, onEditStart }: DetailProps):
                 <div className="truncate">{e.description}</div>
               </td>
               <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums ${amountClass(e.amount)}`}>{formatPln(e.amount)}</td>
-              {isBalanceSeriesContiguous(entryFilter.config.text) ? (
-                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(e.running_balance)}`}>
-                  <span aria-hidden="true">{balanceGlyph(e.running_balance)} </span>
-                  {formatPln(e.running_balance)}
-                  {e.running_balance < 0 ? <span className="sr-only"> (saldo ujemne)</span> : null}
-                </td>
-              ) : null}
+              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(e.running_balance)}`}>
+                <span aria-hidden="true">{balanceGlyph(e.running_balance)} </span>
+                {formatPln(e.running_balance)}
+                {e.running_balance < 0 ? <span className="sr-only"> (saldo ujemne)</span> : null}
+              </td>
             </tr>
           )}
         />

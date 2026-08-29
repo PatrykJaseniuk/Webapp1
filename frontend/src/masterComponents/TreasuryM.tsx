@@ -6,7 +6,7 @@ import type { ComponentType } from 'react';
 import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { toAsyncData, useFilteredPaginatedQuery, type AsyncData, type FilteredQueryResult, type NavLink, type NavLinkWithId } from '@/generic';
+import { toAsyncData, useDateOrderedPaginatedQuery, type AsyncData, type NavLink, type NavLinkWithId, type PaginatedListResult } from '@/generic';
 
 type TreasuryRow = Database['public']['Tables']['treasury']['Row'];
 type TreasuryInsert = Database['public']['Tables']['treasury']['Insert'];
@@ -23,9 +23,9 @@ type TreasuryStatementRow = TreasuryStatementDbRow & {
   readonly running_balance: number;
 };
 
-// Only value_date — the running balance is monotonic only in (value_date, id).
-type TreasuryEntrySortColumn = 'value_date';
-type TreasuryEntryFilter = 'text' | 'dateFrom' | 'dateTo';
+// The treasury statement has NO sort — always value_date DESC, id DESC — and
+// only date-range filtering, so the running balance series is never broken.
+type TreasuryEntryFilter = 'dateFrom' | 'dateTo';
 
 export const treasuryInsertSchema = z.object({
   name: z.string().trim().min(1, 'Nazwa jest wymagana'),
@@ -71,7 +71,7 @@ type TreasuryDeleteAction =
 
 export type TreasurySProps = {
   readonly asyncData: AsyncData<TreasuryData | null>;
-  readonly entries: FilteredQueryResult<TreasuryStatementRow, TreasuryEntrySortColumn, TreasuryEntryFilter>;
+  readonly entries: PaginatedListResult<TreasuryStatementRow, TreasuryEntryFilter>;
   readonly doSubmit: (newRecord: TreasuryInsertInput) => void;
   readonly deleteAction: TreasuryDeleteAction;
   readonly doCancel: () => void;
@@ -217,26 +217,22 @@ export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
   // it, which is what makes reconciliation against a bank statement possible.
   // treasury_id is the view's PARTITION BY column, so filtering by it is pushed
   // into the window; date filters apply after it and carry the balance forward.
-  const entries = useFilteredPaginatedQuery<TreasuryStatementRow, TreasuryEntrySortColumn, TreasuryEntryFilter>({
+  const entries = useDateOrderedPaginatedQuery<TreasuryStatementRow, TreasuryEntryFilter>({
     queryKey: ['financialEntries', 'treasury', treasuryId ?? ''],
-    defaultSort: { column: 'value_date', direction: 'desc' },
     pageSize: 20,
     enabled: treasuryId !== null,
-    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
-      const ascending = sortConfig.direction === 'asc';
+    fetchPage: async ({ from, to, filter: filterConfig }) => {
       const baseQuery = backendConnector
         .from('treasury_statement')
         .select('*', { count: 'exact' })
         .eq('treasury_id', treasuryId ?? '')
-        .order('value_date', { ascending })
-        // Tie-break on `id` so `.range()` paginates over a total order and the
-        // running balance stays stable — see the note in FinancialEntriesM.
-        .order('id', { ascending });
-      const text = filterConfig.text ?? '';
+        // Fixed order: newest movement first, `id` breaking ties so pagination
+        // walks a total order and the running balance stays stable.
+        .order('value_date', { ascending: false })
+        .order('id', { ascending: false });
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
-      const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
-      const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;
+      const withDateFrom = dateFrom.length > 0 ? baseQuery.gte('value_date', dateFrom) : baseQuery;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('value_date', dateTo) : withDateFrom;
       const result = await queryWithFilters.range(from, to);
       return result.error !== null

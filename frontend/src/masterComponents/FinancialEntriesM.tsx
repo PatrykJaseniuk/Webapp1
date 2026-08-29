@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import type { AppRole } from '@/hooks/AuthContext';
-import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, type NavLinkWithId } from '@/generic';
+import { useDateOrderedPaginatedQuery, type ManyRecordsSlavePropsFixedOrder, type NavLink, type NavLinkWithId } from '@/generic';
 
 type FinancialEntryDbRow = Database['public']['Tables']['financial_entry']['Row'];
 
@@ -19,19 +19,15 @@ type NavLinkTo = Readonly<{
   readonly create?: NavLink;
 }>;
 
-type FinancialEntrySortColumn = Extract<keyof FinancialEntryDbRow, 'value_date' | 'amount'> | 'property';
+// Date range only. A financial table has no sort controls at all (see
+// useDateOrderedPaginatedQuery) and no free-text filter: any filter that removes
+// rows from the MIDDLE of the series would make the running balance jump by
+// amounts the user cannot see.
+type FinancialEntryFilter = 'dateFrom' | 'dateTo';
 
-const SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
-  value_date: 'value_date',
-  amount: 'amount',
-  property: 'property(name)',
-});
-
-type FinancialEntryFilter = 'text' | 'dateFrom' | 'dateTo';
-
-// Exported so the integration test executes the SAME select strings this master
+// Exported so the integration test executes the SAME select string this master
 // ships. PostgREST resolves embedded relationships at request time, so a broken
-// embed is invisible to tsc — only running these exact strings catches it.
+// embed is invisible to tsc — only running this exact string catches it.
 //
 // The `!lease_id` hint names the foreign key explicitly. It is not strictly
 // required today (financial_entry.lease_id is the only FK between the two
@@ -46,13 +42,7 @@ type FinancialEntryFilter = 'text' | 'dateFrom' | 'dateTo';
 export const FINANCIAL_ENTRY_LIST_SELECT =
   '*, property(name), lease_agreement!lease_id(start_date)';
 
-// Only when filtering BY property name does the join become inner: filtering on
-// an embedded column requires it, and rows without a property cannot match the
-// text anyway.
-export const FINANCIAL_ENTRY_LIST_SELECT_BY_PROPERTY =
-  '*, property!inner(name), lease_agreement!lease_id(start_date)';
-
-export type FinancialEntriesSProps = ManyRecordsSlaveProps<FinancialEntryListRow, FinancialEntrySortColumn, NavLinkTo, FinancialEntryFilter>;
+export type FinancialEntriesSProps = ManyRecordsSlavePropsFixedOrder<FinancialEntryListRow, NavLinkTo, FinancialEntryFilter>;
 
 type Props = {
   readonly Slave: ComponentType<FinancialEntriesSProps>;
@@ -63,30 +53,22 @@ export const FinancialEntriesM = ({
   Slave,
   role,
 }: Props): JSX.Element => {
-  const { asyncData, sort, pagination, filter } = useFilteredPaginatedQuery<FinancialEntryListRow, FinancialEntrySortColumn, FinancialEntryFilter>({
+  const { asyncData, pagination, filter } = useDateOrderedPaginatedQuery<FinancialEntryListRow, FinancialEntryFilter>({
     queryKey: ['financialEntries'],
-    defaultSort: { column: 'value_date', direction: 'desc' },
-    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
-      const ascending = sortConfig.direction === 'asc';
-      const text = filterConfig.text ?? '';
+    fetchPage: async ({ from, to, filter: filterConfig }) => {
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
       const baseQuery = backendConnector
         .from('financial_entry')
-        .select(
-          text.length > 0 ? FINANCIAL_ENTRY_LIST_SELECT_BY_PROPERTY : FINANCIAL_ENTRY_LIST_SELECT,
-          { count: 'exact' },
-        )
-        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
-        // `id` breaks ties so that `.range()` paginates over a TOTAL order.
-        // Without it, rows sharing a value_date (every rent charge dated the
-        // 1st) have no defined order and pagination can repeat one row on this
-        // page and skip another on the next. Matches the window ordering used
-        // by the `lease_balance` view (`ORDER BY fe.value_date, fe.id`).
-        .order('id', { ascending })
+        .select(FINANCIAL_ENTRY_LIST_SELECT, { count: 'exact' })
+        // A ledger is a sequence, always newest first. `id` breaks ties so that
+        // `.range()` paginates over a TOTAL order: rows sharing a value_date
+        // (every rent charge dated the 1st) otherwise have no defined order and
+        // pagination could repeat one row here and skip another on the next page.
+        .order('value_date', { ascending: false })
+        .order('id', { ascending: false })
         .range(from, to);
-      const withText = text.length > 0 ? baseQuery.ilike('property.name', `*${text}*`) : baseQuery;
-      const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;
+      const withDateFrom = dateFrom.length > 0 ? baseQuery.gte('value_date', dateFrom) : baseQuery;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('value_date', dateTo) : withDateFrom;
       const result = await queryWithFilters;
       return result.error !== null ? Promise.reject(result.error) : { rows: result.data ?? [], totalCount: result.count ?? 0 };
@@ -106,7 +88,6 @@ export const FinancialEntriesM = ({
     <Slave
       asyncData={asyncData}
       navLinkTo={navLinkTo}
-      sort={sort}
       pagination={pagination}
       filter={filter}
     />

@@ -18,17 +18,18 @@ import { AsyncStateTableS } from './AsyncStateTableS';
 
 type PageData = Extract<FinancialEntriesSProps['asyncData'], { readonly tag: 'fulfilled' }>['data'];
 type Row = PageData['rows'][number];
-type Sort = FinancialEntriesSProps['sort'];
-type SortColumn = Sort['config']['column'];
 type Filter = FinancialEntriesSProps['filter'];
 
-const COLUMNS: readonly ColumnDef<SortColumn>[] = [
+// ColumnDef<never> makes `sortColumn: never | null` — i.e. only `null` is
+// assignable. A financial table cannot declare a sortable column even by
+// accident: it is always ordered newest-first by its master.
+const COLUMNS: readonly ColumnDef<never>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'value_date', label: 'Termin', sortColumn: null, align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'property', label: 'Nieruchomość', sortColumn: 'property', align: 'left', className: 'min-w-[140px] pr-4' },
+  { key: 'property', label: 'Nieruchomość', sortColumn: null, align: 'left', className: 'min-w-[140px] pr-4' },
   { key: 'lease', label: 'Umowa', sortColumn: null, align: 'left', className: 'min-w-[140px] pr-4' },
-  { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
@@ -68,7 +69,6 @@ const buildFilterChips = (
   filter: Filter,
 ): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Nieruchomość: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
     { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
@@ -79,7 +79,6 @@ const buildFilterChips = (
 export const FinancialEntriesS = ({
   asyncData,
   navLinkTo,
-  sort,
   pagination,
   filter,
 }: FinancialEntriesSProps): JSX.Element => (
@@ -102,19 +101,6 @@ export const FinancialEntriesS = ({
         .otherwise(() => null)}
       panel={
         <>
-          <div className="min-w-[220px]">
-            <label htmlFor="txn-filter" className={labelClass}>
-              Szukaj (nieruchomość)
-            </label>
-            <input
-              id="txn-filter"
-              type="search"
-              value={filter.config.text ?? ''}
-              onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
-              placeholder="Wpisz nazwę nieruchomości…"
-              className={`${inputClass} w-full`}
-            />
-          </div>
           <div>
             <label htmlFor="txn-date-from" className={labelClass}>
               Termin od
@@ -142,10 +128,9 @@ export const FinancialEntriesS = ({
         </>
       }
     />
-    <AsyncStateTableS<Row, SortColumn>
+    <AsyncStateTableS<Row, never>
       asyncData={asyncData}
       columns={COLUMNS}
-      sort={sort}
       pagination={pagination}
       skeletonRows={SKELETON_ROWS}
       emptyState={EMPTY_DATABASE}

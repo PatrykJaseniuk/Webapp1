@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import type { Mock } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useFilteredPaginatedQuery } from './dataQuery';
+import { useDateOrderedPaginatedQuery, useFilteredPaginatedQuery } from './dataQuery';
 import type { FilterConfig } from './dataQuery';
 import type { ReactNode } from 'react';
 
@@ -184,5 +184,102 @@ describe('useFilteredPaginatedQuery', () => {
     );
     expect(staleCalls).toHaveLength(0);
     expect(result.current.filter.config).toEqual({});
+  });
+});
+// ──────────────────────────────────────────────────────────────
+// Fixed-order variant (financial statements)
+// ──────────────────────────────────────────────────────────────
+
+type FixedOrderFetchPage = (args: {
+  readonly from: number;
+  readonly to: number;
+  readonly filter: FilterConfig<TestFilterKey>;
+}) => Promise<{ readonly rows: readonly TestRow[]; readonly totalCount: number }>;
+
+const makeFixedOrderFetchPage = (): Mock<FixedOrderFetchPage> =>
+  vi.fn<FixedOrderFetchPage>().mockResolvedValue({ rows: [], totalCount: 0 });
+
+const renderFixedOrderQuery = (
+  fetchPage: Mock<FixedOrderFetchPage>,
+  overrides?: Record<string, unknown>,
+) =>
+  renderHook(
+    () =>
+      useDateOrderedPaginatedQuery<TestRow, TestFilterKey>({
+        queryKey: ['test-statement'],
+        fetchPage,
+        ...overrides,
+      }),
+    { wrapper: makeWrapper() },
+  );
+
+describe('useDateOrderedPaginatedQuery', () => {
+  it('calls fetchPage with only range and filter — no sort is passed at all', async () => {
+    const fetchPage = makeFixedOrderFetchPage();
+
+    renderFixedOrderQuery(fetchPage);
+
+    await waitFor(() => {
+      expect(fetchPage).toHaveBeenCalledTimes(1);
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith({ from: 0, to: 19, filter: {} });
+  });
+
+  it('exposes no sort controls in its result', async () => {
+    const fetchPage = makeFixedOrderFetchPage();
+
+    const { result } = renderFixedOrderQuery(fetchPage);
+
+    await waitFor(() => {
+      expect(fetchPage).toHaveBeenCalled();
+    });
+
+    expect('sort' in result.current).toBe(false);
+  });
+
+  it('still paginates', async () => {
+    const fetchPage = makeFixedOrderFetchPage();
+
+    const { result } = renderFixedOrderQuery(fetchPage, { pageSize: 5 });
+
+    await waitFor(() => {
+      expect(fetchPage).toHaveBeenCalledWith({ from: 0, to: 4, filter: {} });
+    });
+
+    act(() => {
+      result.current.pagination.nextPage();
+    });
+
+    await waitFor(() => {
+      expect(fetchPage).toHaveBeenCalledWith({ from: 5, to: 9, filter: {} });
+    });
+  });
+
+  it('applies a debounced filter change and resets to page 1', async () => {
+    vi.useFakeTimers();
+    const fetchPage = makeFixedOrderFetchPage();
+
+    const { result } = renderFixedOrderQuery(fetchPage, { pageSize: 5 });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    act(() => {
+      result.current.pagination.nextPage();
+    });
+
+    act(() => {
+      result.current.filter.doFilter({ text: 'abc' });
+    });
+
+    expect(result.current.pagination.page).toBe(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(fetchPage).toHaveBeenCalledWith({ from: 0, to: 4, filter: { text: 'abc' } });
   });
 });

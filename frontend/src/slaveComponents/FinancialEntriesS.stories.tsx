@@ -25,9 +25,6 @@ const makeEntry = (overrides?: Partial<Row>): Row =>
 
 const noop = (): void => {};
 
-type SortColumn = FinancialEntriesSProps['sort']['config']['column'];
-const sort = { config: { column: 'value_date' as SortColumn, direction: 'desc' as const }, doSort: noop };
-
 const pagination: FinancialEntriesSProps['pagination'] = {
   page: 1,
   pageSize: 20,
@@ -60,7 +57,6 @@ const meta: Meta<typeof FinancialEntriesS> = {
   ],
   args: {
     navLinkTo,
-    sort,
     pagination,
     filter: {
       config: {},

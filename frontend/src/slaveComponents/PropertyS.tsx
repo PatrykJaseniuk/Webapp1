@@ -11,17 +11,12 @@ import {
 import { buttonClass, FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
 import {
   amountClass,
+  balanceGlyph,
+  balanceToneClass,
   leaseStatusPillClass,
   propertyStatusPillClass,
 } from './pills';
 import { formatDate, formatPln } from './format';
-import {
-  balanceToneClass,
-  balanceGlyph,
-  isBalanceSeriesContiguous,
-  pageBalances,
-} from './statement';
-import { StatementSummaryS } from './StatementSummaryS';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { AsyncStateTableS } from './AsyncStateTableS';
 import type { ColumnDef } from './DataTableS';
@@ -57,7 +52,6 @@ type LeaseSortColumn = Leases['sort']['config']['column'];
 type LeaseFilter = Leases['filter'];
 type LeaseStatus = LeaseRow['lease_status'];
 type FinancialEntryRow = Extract<Transactions['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
-type FinancialEntrySortColumn = Transactions['sort']['config']['column'];
 type FinancialEntryFilter = Transactions['filter'];
 
 const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
@@ -69,18 +63,15 @@ const LEASE_COLUMNS: readonly ColumnDef<LeaseSortColumn>[] = [
   { key: 'lease_status', label: 'Status', sortColumn: 'lease_status', align: 'left', className: 'pr-4 whitespace-nowrap' },
 ];
 
-const TRANSACTION_COLUMNS: readonly ColumnDef<FinancialEntrySortColumn>[] = [
+// The property ledger is fixed-order: ColumnDef<never> permits only
+// `sortColumn: null`. The LEASE_COLUMNS table above stays sortable.
+const TRANSACTION_COLUMNS: readonly ColumnDef<never>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'value_date', label: 'Termin', sortColumn: null, align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
   { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
   { key: 'running_balance', label: 'Saldo', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
-
-// A text filter hides rows from the middle of the series, which would make the
-// balance column jump by invisible amounts — so it is dropped in that case.
-const TRANSACTION_COLUMNS_WITHOUT_BALANCE: readonly ColumnDef<FinancialEntrySortColumn>[] =
-  TRANSACTION_COLUMNS.filter((c) => c.key !== 'running_balance');
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
@@ -188,7 +179,6 @@ const buildLeaseFilterChips = (filter: LeaseFilter): readonly FilterChip[] => {
 
 const buildFinancialEntryFilterChips = (filter: FinancialEntryFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
     { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
@@ -363,17 +353,6 @@ const DetailContent = ({
             .otherwise(() => null)}
           panel={
             <div className="flex flex-wrap items-end gap-4">
-              <div className="min-w-[220px]">
-                <label htmlFor="property-txn-filter" className={filterLabelClass}>Szukaj (opis)</label>
-                <input
-                  id="property-txn-filter"
-                  type="search"
-                  value={entryFilter.config.text ?? ''}
-                  onChange={onFilterInput((v) => entryFilter.doFilter(setFilterString(entryFilter.config, 'text', v)))}
-                  placeholder="Wpisz fragment opisu…"
-                  className={`${filterInputClass} w-full`}
-                />
-              </div>
               <div>
                 <label htmlFor="property-txn-date-from" className={filterLabelClass}>Termin od</label>
                 <input
@@ -397,19 +376,9 @@ const DetailContent = ({
             </div>
           }
         />
-        <StatementSummaryS
-          balances={match(financialEntries.asyncData)
-            .with({ tag: 'fulfilled' }, ({ data: pageData }) =>
-              pageBalances(pageData.rows, financialEntries.sort.config.direction),
-            )
-            .otherwise(() => null)}
-          negativeLabel="strata narastająco"
-          contiguous={isBalanceSeriesContiguous(entryFilter.config.text)}
-        />
-        <AsyncStateTableS<FinancialEntryRow, FinancialEntrySortColumn>
+        <AsyncStateTableS<FinancialEntryRow, never>
           asyncData={financialEntries.asyncData}
-          columns={isBalanceSeriesContiguous(entryFilter.config.text) ? TRANSACTION_COLUMNS : TRANSACTION_COLUMNS_WITHOUT_BALANCE}
-          sort={financialEntries.sort}
+          columns={TRANSACTION_COLUMNS}
           pagination={financialEntries.pagination}
           skeletonRows={TRANSACTION_SKELETON_ROWS}
           emptyState={TRANSACTION_EMPTY}
@@ -427,13 +396,11 @@ const DetailContent = ({
                 <div className="truncate">{tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}</div>
               </td>
               <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
-              {isBalanceSeriesContiguous(entryFilter.config.text) ? (
-                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(tx.running_balance)}`}>
-                  <span aria-hidden="true">{balanceGlyph(tx.running_balance)} </span>
-                  {formatPln(tx.running_balance)}
-                  {tx.running_balance < 0 ? <span className="sr-only"> (strata narastająco)</span> : null}
-                </td>
-              ) : null}
+              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(tx.running_balance)}`}>
+                <span aria-hidden="true">{balanceGlyph(tx.running_balance)} </span>
+                {formatPln(tx.running_balance)}
+                {tx.running_balance < 0 ? <span className="sr-only"> (strata narastająco)</span> : null}
+              </td>
             </tr>
           )}
         />

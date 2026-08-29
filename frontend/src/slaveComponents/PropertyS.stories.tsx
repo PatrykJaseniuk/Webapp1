@@ -4,7 +4,7 @@ import { MemoryRouterProvider } from '@/test-router-utils';
 import { fn, userEvent, within, expect } from 'storybook/test';
 import { PropertyDetailS } from './PropertyS';
 import type { PropertySProps } from '@/masterComponents/PropertyM';
-import type { FilterConfig, FilteredQueryResult } from '@/generic';
+import type { FilterConfig, FilteredQueryResult, PaginatedListResult } from '@/generic';
 
 // ──────────────────────────────────────────────────────────────
 // Type derivations from the slave props
@@ -19,7 +19,6 @@ type LeaseRow = Extract<PropertySProps['leases']['asyncData'], { readonly tag: '
 type FinancialEntryRow = Extract<PropertySProps['financialEntries']['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type AttachmentRow = Extract<PropertySProps['attachments']['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
 type LeaseSortColumn = PropertySProps['leases']['sort']['config']['column'];
-type FinancialEntrySortColumn = PropertySProps['financialEntries']['sort']['config']['column'];
 type AttachmentSortColumn = PropertySProps['attachments']['sort']['config']['column'];
 type LeaseFilterKey = keyof PropertySProps['leases']['filter']['config'];
 type FinancialEntryFilterKey = keyof PropertySProps['financialEntries']['filter']['config'];
@@ -149,12 +148,28 @@ const makeResult = <TRow, S extends string, F extends string>(
   },
 });
 
+// The financial ledger is fixed-order, so its result carries no sort at all.
+const makeFixedOrderResult = <TRow, F extends string>(
+  rows: readonly TRow[],
+): PaginatedListResult<TRow, F> => ({
+  asyncData: { tag: 'fulfilled', data: { rows, totalCount: rows.length } },
+  filter: { config: {} as FilterConfig<F>, doFilter: noop },
+  pagination: {
+    page: 1,
+    pageSize: 20,
+    goToPage: noop,
+    setPageSize: noop,
+    prevPage: noop,
+    nextPage: noop,
+  },
+});
+
 const emptyLeases: PropertySProps['leases'] = makeResult<LeaseRow, LeaseSortColumn, LeaseFilterKey>('start_date', []);
-const emptyEntries: PropertySProps['financialEntries'] = makeResult<FinancialEntryRow, FinancialEntrySortColumn, FinancialEntryFilterKey>('value_date', []);
+const emptyEntries: PropertySProps['financialEntries'] = makeFixedOrderResult<FinancialEntryRow, FinancialEntryFilterKey>([]);
 const emptyAttachments: PropertySProps['attachments'] = makeResult<AttachmentRow, AttachmentSortColumn, never>('created_at', []);
 
 const populatedLeases: PropertySProps['leases'] = makeResult<LeaseRow, LeaseSortColumn, LeaseFilterKey>('start_date', [baseLease]);
-const populatedEntries: PropertySProps['financialEntries'] = makeResult<FinancialEntryRow, FinancialEntrySortColumn, FinancialEntryFilterKey>('value_date', [baseEntry]);
+const populatedEntries: PropertySProps['financialEntries'] = makeFixedOrderResult<FinancialEntryRow, FinancialEntryFilterKey>([baseEntry]);
 const populatedAttachments: PropertySProps['attachments'] = makeResult<AttachmentRow, AttachmentSortColumn, never>('created_at', [baseAttachment]);
 
 // ──────────────────────────────────────────────────────────────

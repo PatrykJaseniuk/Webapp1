@@ -203,7 +203,14 @@ const PaginationFooter = ({
 
 type DataTableSProps<TRow, SortColumn extends string> = {
   readonly columns: readonly ColumnDef<SortColumn>[];
-  readonly sort: Sort<SortColumn> | undefined;
+  // Optional: a table with a FIXED order (every financial statement) has no sort
+  // controls at all, and its columns are typed ColumnDef<never> so no column can
+  // declare itself sortable.
+  readonly sort?: Sort<SortColumn> | undefined;
+  // Drives the skeleton. This used to be inferred from `sort === undefined`,
+  // which made a legitimately unsortable table impossible to render — it would
+  // have shown skeletons forever.
+  readonly isPending: boolean;
   readonly isFetching: boolean;
   readonly rows: readonly TRow[];
   readonly skeletonRows: JSX.Element;
@@ -220,6 +227,7 @@ type DataTableSProps<TRow, SortColumn extends string> = {
 export const DataTableS = <TRow, SortColumn extends string>({
   columns,
   sort,
+  isPending,
   isFetching,
   rows,
   skeletonRows,
@@ -234,39 +242,41 @@ export const DataTableS = <TRow, SortColumn extends string>({
 }: DataTableSProps<TRow, SortColumn>): JSX.Element => {
   const emptyStateMinHeight = (pagination?.pageSize ?? 1) * ROW_HEIGHT_PX;
 
+  const body = isPending ?
+    skeletonRows :
+    rows.length === 0 ?
+      <tr>
+        <td colSpan={columns.length} className="p-0">
+          <div className="flex items-center justify-center" style={{ minHeight: `${emptyStateMinHeight}px` }}>
+            {emptyState}
+          </div>
+        </td>
+      </tr> :
+      rows.map(renderRow);
+
+  const headerCells = columns.map((col) =>
+    sort !== undefined && col.sortColumn !== null && col.label !== null ?
+      <SortHeader
+        key={col.key}
+        className={col.className}
+        column={col.sortColumn}
+        label={col.label}
+        sort={sort}
+        align={col.align}
+      /> :
+      <StaticHeaderCell key={col.key} col={col} />);
+
   const content = (
     <>
       {filterRow}
       <table className="w-full border-collapse text-left">
         <thead>
           <tr className="border-b border-gray-200 text-sm">
-            {columns.map((col) =>
-              sort !== undefined && col.sortColumn !== null && col.label !== null ?
-                <SortHeader
-                  key={col.key}
-                  className={col.className}
-                  column={col.sortColumn}
-                  label={col.label}
-                  sort={sort}
-                  align={col.align}
-                /> :
-                <StaticHeaderCell key={col.key} col={col} />)}
+            {headerCells}
           </tr>
         </thead>
-      <tbody>
-        {sort === undefined ?
-          skeletonRows :
-          rows.length === 0 ?
-            <tr>
-              <td colSpan={columns.length} className="p-0">
-                <div className="flex items-center justify-center" style={{ minHeight: `${emptyStateMinHeight}px` }}>
-                  {emptyState}
-                </div>
-              </td>
-            </tr> :
-            rows.map(renderRow)}
-      </tbody>
-    </table>
+        <tbody>{body}</tbody>
+      </table>
     </>
   );
 
@@ -280,32 +290,10 @@ export const DataTableS = <TRow, SortColumn extends string>({
         <table className="w-full border-collapse text-left">
           <thead className="sticky top-0 z-10 bg-white shadow-[0_1px_0_0_#e5e7eb]">
             <tr className="border-b border-gray-200 text-sm">
-              {columns.map((col) =>
-                sort !== undefined && col.sortColumn !== null && col.label !== null ?
-                  <SortHeader
-                    key={col.key}
-                    className={col.className}
-                    column={col.sortColumn}
-                    label={col.label}
-                    sort={sort}
-                    align={col.align}
-                  /> :
-                  <StaticHeaderCell key={col.key} col={col} />)}
+              {headerCells}
             </tr>
           </thead>
-          <tbody>
-            {sort === undefined ?
-              skeletonRows :
-              rows.length === 0 ?
-                <tr>
-                  <td colSpan={columns.length} className="p-0">
-                    <div className="flex items-center justify-center" style={{ minHeight: `${emptyStateMinHeight}px` }}>
-                      {emptyState}
-                    </div>
-                  </td>
-                </tr> :
-                rows.map(renderRow)}
-          </tbody>
+          <tbody>{body}</tbody>
         </table>
       </div>
       <div className="z-10 border-t border-gray-200 bg-white">

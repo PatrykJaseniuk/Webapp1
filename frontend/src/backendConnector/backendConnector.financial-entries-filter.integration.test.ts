@@ -25,7 +25,7 @@ import {
   TEST_UUIDS,
   type SupabaseClient,
 } from './test-setup';
-import { FINANCIAL_ENTRY_LIST_SELECT, FINANCIAL_ENTRY_LIST_SELECT_BY_PROPERTY } from '@/masterComponents/FinancialEntriesM';
+import { FINANCIAL_ENTRY_LIST_SELECT } from '@/masterComponents/FinancialEntriesM';
 
 const skip = (available: boolean): void => {
   expect(available).toBeDefined();
@@ -46,29 +46,6 @@ describe('financial entries filtered query', () => {
 
     afterAll(async () => {
       await signOut(client);
-    });
-
-    // A single request: filter the parent rows by the embedded
-    // to-one property column via a top-level .ilike().
-    it('ilike on embedded property.name matches financial entries', async () => {
-      skip(available);
-      available || true;
-      available &&
-        (await (async () => {
-          const { data, error } = await client
-            .from('financial_entry')
-            .select(FINANCIAL_ENTRY_LIST_SELECT_BY_PROPERTY)
-            .ilike('property.name', '*Gdańsk*');
-          expect(error).toBeNull();
-          const rows = data as ReadonlyArray<{
-            readonly property: { readonly name: string };
-          }>;
-          expect(rows.length).toBeGreaterThanOrEqual(1);
-          const allMatch = rows.every((r) =>
-            r.property.name.includes('Gdańsk'),
-          );
-          expect(allMatch).toBe(true);
-        })());
     });
 
     // Embedded relationship dot-notation is rejected inside an or()

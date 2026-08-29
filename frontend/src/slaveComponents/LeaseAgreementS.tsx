@@ -4,15 +4,8 @@ import type { LeaseAgreementSProps } from '@/masterComponents/LeaseAgreementM';
 import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 import { LEASE_STATUS_LABEL } from './domain';
-import { amountClass, leaseStatusPillClass } from './pills';
+import { amountClass, balanceGlyph, balanceToneClass, leaseStatusPillClass } from './pills';
 import { formatDate, formatPln } from './format';
-import {
-  balanceToneClass,
-  balanceGlyph,
-  isBalanceSeriesContiguous,
-  pageBalances,
-} from './statement';
-import { StatementSummaryS } from './StatementSummaryS';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { AsyncStateTableS } from './AsyncStateTableS';
 import type { ColumnDef } from './DataTableS';
@@ -44,20 +37,16 @@ type FinancialEntries = LeaseAgreementSProps['financialEntries'];
 type Attachments = LeaseAgreementSProps['attachments'];
 type FinancialEntryFilter = FinancialEntries['filter'];
 type FinancialEntryRow = Extract<FinancialEntries['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
-type FinancialEntrySortColumn = FinancialEntries['sort']['config']['column'];
 
-const COLUMNS: readonly ColumnDef<FinancialEntrySortColumn>[] = [
+// ColumnDef<never> permits only `sortColumn: null` — the ledger is always
+// value_date DESC, id DESC and has no sort controls at all.
+const COLUMNS: readonly ColumnDef<never>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
-  { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'value_date', label: 'Termin', sortColumn: null, align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
   { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
   { key: 'running_balance', label: 'Saldo', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
-
-// Without the balance column (text filter active) the table is one column
-// narrower, so the skeleton must match to avoid a width jump on load.
-const COLUMNS_WITHOUT_BALANCE: readonly ColumnDef<FinancialEntrySortColumn>[] =
-  COLUMNS.filter((c) => c.key !== 'running_balance');
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
@@ -85,7 +74,6 @@ const EMPTY_DATABASE = (
 
 const buildFilterChips = (filter: FinancialEntryFilter): readonly FilterChip[] => {
   const base: ReadonlyArray<{ readonly key: string; readonly label: string | null; readonly onRemove: () => void }> = Object.freeze([
-    { key: 'text', label: (filter.config.text ?? '').length > 0 ? `Opis: ${filter.config.text ?? ''}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'text', '')) },
     { key: 'dateFrom', label: (filter.config.dateFrom ?? '').length > 0 ? `Od: ${formatDate(filter.config.dateFrom ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateFrom', '')) },
     { key: 'dateTo', label: (filter.config.dateTo ?? '').length > 0 ? `Do: ${formatDate(filter.config.dateTo ?? '')}` : null, onRemove: () => filter.doFilter(setFilterString(filter.config, 'dateTo', '')) },
   ]);
@@ -200,19 +188,6 @@ const DetailContent = ({
               .otherwise(() => null)}
             panel={
               <>
-                <div className="min-w-[220px]">
-                  <label htmlFor="lease-txn-filter" className={filterLabelClass}>
-                    Szukaj (opis)
-                  </label>
-                  <input
-                    id="lease-txn-filter"
-                    type="search"
-                    value={filter.config.text ?? ''}
-                    onChange={onFilterInput((v) => filter.doFilter(setFilterString(filter.config, 'text', v)))}
-                    placeholder="Wpisz fragment opisu…"
-                    className={`${filterInputClass} w-full`}
-                  />
-                </div>
                 <div>
                   <label htmlFor="lease-txn-date-from" className={filterLabelClass}>
                     Termin od
@@ -240,19 +215,9 @@ const DetailContent = ({
               </>
             }
           />
-          <StatementSummaryS
-            balances={match(financialEntries.asyncData)
-              .with({ tag: 'fulfilled' }, ({ data: pageData }) =>
-                pageBalances(pageData.rows, financialEntries.sort.config.direction),
-              )
-              .otherwise(() => null)}
-            negativeLabel="zaległość najemcy"
-            contiguous={isBalanceSeriesContiguous(filter.config.text)}
-          />
-          <AsyncStateTableS<FinancialEntryRow, FinancialEntrySortColumn>
+          <AsyncStateTableS<FinancialEntryRow, never>
             asyncData={financialEntries.asyncData}
-            columns={isBalanceSeriesContiguous(filter.config.text) ? COLUMNS : COLUMNS_WITHOUT_BALANCE}
-            sort={financialEntries.sort}
+            columns={COLUMNS}
             pagination={financialEntries.pagination}
             skeletonRows={SKELETON_ROWS}
             emptyState={EMPTY_DATABASE}
@@ -275,13 +240,11 @@ const DetailContent = ({
                   </div>
                 </td>
                 <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
-                {isBalanceSeriesContiguous(filter.config.text) ? (
-                  <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(tx.running_balance)}`}>
-                    <span aria-hidden="true">{balanceGlyph(tx.running_balance)} </span>
-                    {formatPln(tx.running_balance)}
-                    {tx.running_balance < 0 ? <span className="sr-only"> (zaległość najemcy)</span> : null}
-                  </td>
-                ) : null}
+                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(tx.running_balance)}`}>
+                  <span aria-hidden="true">{balanceGlyph(tx.running_balance)} </span>
+                  {formatPln(tx.running_balance)}
+                  {tx.running_balance < 0 ? <span className="sr-only"> (zaległość najemcy)</span> : null}
+                </td>
               </tr>
             )}
           />

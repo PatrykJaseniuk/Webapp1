@@ -8,11 +8,13 @@ import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import {
   toAsyncData,
+  useDateOrderedPaginatedQuery,
   useFilteredPaginatedQuery,
   type AsyncData,
   type FilteredQueryResult,
   type NavLink,
   type NavLinkWithId,
+  type PaginatedListResult,
 } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
@@ -94,17 +96,14 @@ type NavLinkTo = Readonly<{
   readonly toList: NavLink;
 }>;
 
-// Only value_date is sortable. The running balance is monotonic ONLY in
-// (value_date, id) order — sorting by amount would leave each row's balance
-// individually correct but the column as a whole unreadable.
-type FinancialEntrySortColumn = 'value_date';
+// The lease ledger has NO sort at all — it is always value_date DESC, id DESC.
+// Only the attachments sub-table on this page remains sortable.
 type AttachmentSortColumn = 'created_at';
 
-type LeaseFinancialEntryFilter = 'text' | 'dateFrom' | 'dateTo';
-
-const SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
-  value_date: 'value_date',
-});
+// Only date-range filtering. No sort, no text search: the running balance is
+// only monotonic in (value_date, id) order, and a text filter would remove rows
+// from the middle of the series, making the balance jump by invisible amounts.
+type LeaseFinancialEntryFilter = 'dateFrom' | 'dateTo';
 
 type SubmitState =
   | { readonly tag: 'idle' }
@@ -126,7 +125,7 @@ export type LeaseAgreementSProps = {
   readonly doCancel: () => void;
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
-  readonly financialEntries: FilteredQueryResult<LeaseStatementRow, FinancialEntrySortColumn, LeaseFinancialEntryFilter>;
+  readonly financialEntries: PaginatedListResult<LeaseStatementRow, LeaseFinancialEntryFilter>;
   readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
@@ -215,13 +214,11 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
 
   const formOptions = toAsyncData(formOptionsQuery, () => { void formOptionsQuery.refetch(); });
 
-  const financialEntries = useFilteredPaginatedQuery<LeaseStatementRow, FinancialEntrySortColumn, LeaseFinancialEntryFilter>({
+  const financialEntries = useDateOrderedPaginatedQuery<LeaseStatementRow, LeaseFinancialEntryFilter>({
     queryKey: ['financialEntries', 'leaseAgreement', leaseId ?? ''],
-    defaultSort: { column: 'value_date', direction: 'desc' },
     pageSize: 5,
     enabled: leaseId !== null,
-    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
-      const ascending = sortConfig.direction === 'asc';
+    fetchPage: async ({ from, to, filter: filterConfig }) => {
       const baseQuery = backendConnector
         // lease_statement carries the per-entry running balance of this lease's
         // receivable account. Filtering by lease_id is a predicate on the view's
@@ -231,17 +228,13 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
         .from('lease_statement')
         .select('*', { count: 'exact' })
         .eq('lease_id', leaseId ?? '')
-        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
-        // Tie-break on `id` so `.range()` paginates over a total order — see
-        // the note in FinancialEntriesM. Required for a stable running balance:
-        // the displayed order must be the exact reverse of the window order
-        // `(value_date, id)` when sorting descending.
-        .order('id', { ascending });
-      const text = filterConfig.text ?? '';
+        // Fixed order: newest first, with `id` breaking ties so pagination walks
+        // a total order and the running balance reads monotonically.
+        .order('value_date', { ascending: false })
+        .order('id', { ascending: false });
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
-      const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
-      const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;
+      const withDateFrom = dateFrom.length > 0 ? baseQuery.gte('value_date', dateFrom) : baseQuery;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('value_date', dateTo) : withDateFrom;
       const result = await queryWithFilters.range(from, to);
       return result.error !== null

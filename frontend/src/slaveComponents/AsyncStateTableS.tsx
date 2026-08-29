@@ -11,7 +11,9 @@ type Sort<SortColumn extends string> = {
 type AsyncStateTableSProps<TRow, SortColumn extends string> = {
   readonly asyncData: AsyncData<{ readonly rows: readonly TRow[]; readonly totalCount: number }>;
   readonly columns: readonly ColumnDef<SortColumn>[];
-  readonly sort: Sort<SortColumn>;
+  // Omitted by fixed-order tables (financial statements), which are always
+  // ordered value_date DESC, id DESC by their master and expose no sort UI.
+  readonly sort?: Sort<SortColumn>;
   readonly pagination: {
     readonly page: number;
     readonly pageSize: number;
@@ -47,7 +49,8 @@ export const AsyncStateTableS = <TRow, SortColumn extends string>({
       .with({ tag: 'pending' }, () => (
         <DataTableS
           columns={columns}
-          sort={undefined}
+          sort={sort}
+          isPending={true}
           isFetching={true}
           rows={[]}
           skeletonRows={skeletonRows}
@@ -68,6 +71,7 @@ export const AsyncStateTableS = <TRow, SortColumn extends string>({
           pageSizeOptions={pageSizeOptions}
           columns={columns}
           sort={sort}
+          isPending={false}
           isFetching={isFetching ?? false}
           rows={data.rows}
           skeletonRows={skeletonRows}
