@@ -1,7 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
-import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
@@ -10,11 +9,16 @@ import {
   toAsyncData,
   useDateOrderedPaginatedQuery,
   useFilteredPaginatedQuery,
+  useCrudMutations,
+  deriveSubmitState,
+  formatDbError,
   type AsyncData,
+  type DetailMode,
   type FilteredQueryResult,
   type NavLink,
   type NavLinkWithId,
   type PaginatedListResult,
+  type SubmitState,
 } from '@/generic';
 
 type PropertyDbRow = Database['public']['Tables']['property']['Row'];
@@ -53,15 +57,12 @@ export const propertyInsertSchema = z.object({
 
 export type PropertyInsertInput = z.input<typeof propertyInsertSchema>;
 
-const formatZodIssues = (error: z.ZodError): string =>
-  error.issues.map((issue) => issue.message).join('; ');
-
-const formatDeleteError = (error: Error | null): string => {
-  const code = (error as { readonly code?: string } | null)?.code;
-  return code === '23503'
-    ? 'Nie można usunąć nieruchomości — jest powiązana z umowami najmu lub transakcjami.'
-    : error?.message ?? 'Wystąpił nieznany błąd';
-};
+// Postgres FK-violation (23503) message for deleting a property that still has
+// leases or direct financial entries.
+const PROPERTY_DELETE_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+  '23503': 'Nie można usunąć nieruchomości — jest powiązana z umowami najmu lub transakcjami.',
+});
+const DELETE_FALLBACK = 'Wystąpił nieznany błąd';
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
 type FinancialEntryDbRow = Database['public']['Views']['property_statement']['Row'];
 
@@ -112,12 +113,6 @@ const LEASE_SORT_COLUMN_MAP: Readonly<Record<LeaseSortColumn, string>> = Object.
   lease_status: 'lease_status',
 });
 
-type SubmitState =
-  | { readonly tag: 'idle' }
-  | { readonly tag: 'submitting' }
-  | { readonly tag: 'success' }
-  | { readonly tag: 'error'; readonly message: string };
-
 type PropertyDeleteAction =
   | { readonly tag: 'absent' }
   | { readonly tag: 'checking' }
@@ -137,9 +132,7 @@ export type PropertySProps = {
   readonly navLinkTo: NavLinkTo;
 };
 
-export type PropertyDetailMode =
-  | { readonly tag: 'create' }
-  | { readonly tag: 'edit'; readonly id: string };
+export type PropertyDetailMode = DetailMode;
 
 type Props = {
   readonly Slave: ComponentType<PropertySProps>;
@@ -181,7 +174,6 @@ const deleteProperty = async (propertyId: string): Promise<void> => {
 export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const propertyId = match(mode)
     .with({ tag: 'create' }, () => null)
@@ -299,58 +291,27 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     enabled: propertyId !== null,
   });
 
-  const insertMutation = useMutation({
-    mutationFn: (newRecord: PropertyInsert): Promise<string> => insertProperty(newRecord),
-    onSuccess: (newId) => {
-      void queryClient.invalidateQueries({ queryKey: ['properties'] });
-      void navigate({ to: '/app/properties/$id', params: { id: newId } });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, record }: { readonly id: string; readonly record: PropertyUpdate }): Promise<void> =>
-      updateProperty(id, record),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['properties'] });
-      void queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string): Promise<void> => deleteProperty(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['properties'] });
-      void queryClient.invalidateQueries({ queryKey: ['property', propertyId] });
-      void navigate({ to: '/app/properties' });
-    },
-  });
-
-  const doSubmit = (newRecord: PropertyInsertInput): void =>
-    match(propertyInsertSchema.safeParse(newRecord))
-      .with(
-        { success: true },
-        ({ data }) => {
-          setValidationError(null);
-          match(mode)
-            .with({ tag: 'create' }, () => insertMutation.mutate(data))
-            .with({ tag: 'edit' }, ({ id }) => updateMutation.mutate({ id, record: data }))
-            .exhaustive();
-        },
-      )
-      .with(
-        { success: false },
-        ({ error }) => {
-          setValidationError(formatZodIssues(error));
-        },
-      )
-      .exhaustive();
-
-  const onEditStart = (): void => {
-    insertMutation.reset();
-    updateMutation.reset();
-    deleteMutation.reset();
-    setValidationError(null);
-  };
+  const { insertMutation, updateMutation, deleteMutation, validationError, doSubmit, onEditStart } =
+    useCrudMutations<PropertyInsert>({
+      insertFn: (newRecord) => insertProperty(newRecord),
+      updateFn: (id, record) => updateProperty(id, record),
+      deleteFn: (id) => deleteProperty(id),
+      schema: propertyInsertSchema,
+      mode,
+      onInsertSuccess: (newId) => {
+        void queryClient.invalidateQueries({ queryKey: ['properties'] });
+        void navigate({ to: '/app/properties/$id', params: { id: newId } });
+      },
+      onUpdateSuccess: (id) => {
+        void queryClient.invalidateQueries({ queryKey: ['properties'] });
+        void queryClient.invalidateQueries({ queryKey: ['property', id] });
+      },
+      onDeleteSuccess: (id) => {
+        void queryClient.invalidateQueries({ queryKey: ['properties'] });
+        void queryClient.invalidateQueries({ queryKey: ['property', id] });
+        void navigate({ to: '/app/properties' });
+      },
+    });
 
   const deleteAction: PropertyDeleteAction = match(mode)
     .with({ tag: 'create' }, () => ({ tag: 'absent' as const }))
@@ -375,18 +336,16 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     void navigate({ to: '/app/properties' });
   };
 
-  const submitState: SubmitState =
-    insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
-      ? { tag: 'submitting' }
-      : validationError !== null
-        ? { tag: 'error', message: validationError }
-        : insertMutation.error !== null || updateMutation.error !== null
-          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error)?.message ?? 'Unknown error' }
-          : deleteMutation.error !== null
-            ? { tag: 'error', message: formatDeleteError(deleteMutation.error) }
-            : insertMutation.isSuccess || updateMutation.isSuccess
-              ? { tag: 'success' }
-              : { tag: 'idle' };
+  const submitState: SubmitState = deriveSubmitState({
+    isPending: insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    validationError,
+    insertError: insertMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+    insertSuccess: insertMutation.isSuccess,
+    updateSuccess: updateMutation.isSuccess,
+    formatDeleteError: (error) => formatDbError(error, PROPERTY_DELETE_MESSAGES, DELETE_FALLBACK),
+  });
 
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,

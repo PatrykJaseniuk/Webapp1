@@ -1,7 +1,6 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
-import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
@@ -10,11 +9,16 @@ import {
   toAsyncData,
   useDateOrderedPaginatedQuery,
   useFilteredPaginatedQuery,
+  useCrudMutations,
+  deriveSubmitState,
+  formatDbError,
   type AsyncData,
+  type DetailMode,
   type FilteredQueryResult,
   type NavLink,
   type NavLinkWithId,
   type PaginatedListResult,
+  type SubmitState,
 } from '@/generic';
 
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
@@ -62,15 +66,11 @@ export const leaseAgreementInsertSchema = z
 
 export type LeaseAgreementInsertInput = z.input<typeof leaseAgreementInsertSchema>;
 
-const formatZodIssues = (error: z.ZodError): string =>
-  error.issues.map((issue) => issue.message).join('; ');
-
-const formatDeleteError = (error: Error | null): string => {
-  const code = (error as { readonly code?: string } | null)?.code;
-  return code === '23503'
-    ? 'Nie można usunąć umowy — są z nią powiązane transakcje.'
-    : error?.message ?? 'Wystąpił nieznany błąd';
-};
+// Postgres FK-violation (23503) when deleting a lease still linked to transactions.
+const LEASE_DELETE_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+  '23503': 'Nie można usunąć umowy — są z nią powiązane transakcje.',
+});
+const LEASE_DELETE_FALLBACK = 'Wystąpił nieznany błąd';
 
 type TenantOption = { readonly id: string; readonly label: string };
 type PropertyOption = { readonly id: string; readonly label: string };
@@ -105,12 +105,6 @@ type AttachmentSortColumn = 'created_at';
 // from the middle of the series, making the balance jump by invisible amounts.
 type LeaseFinancialEntryFilter = 'dateFrom' | 'dateTo';
 
-type SubmitState =
-  | { readonly tag: 'idle' }
-  | { readonly tag: 'submitting' }
-  | { readonly tag: 'success' }
-  | { readonly tag: 'error'; readonly message: string };
-
 type LeaseAgreementDeleteAction =
   | { readonly tag: 'absent' }
   | { readonly tag: 'checking' }
@@ -130,9 +124,7 @@ export type LeaseAgreementSProps = {
   readonly navLinkTo: NavLinkTo;
 };
 
-export type LeaseAgreementDetailMode =
-  | { readonly tag: 'create' }
-  | { readonly tag: 'edit'; readonly id: string };
+export type LeaseAgreementDetailMode = DetailMode;
 
 type Props = {
   readonly Slave: ComponentType<LeaseAgreementSProps>;
@@ -185,7 +177,6 @@ const deleteLeaseAgreement = async (leaseId: string): Promise<void> => {
 export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const leaseId = match(mode)
     .with({ tag: 'create' }, () => null)
@@ -277,52 +268,27 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
     enabled: leaseId !== null,
   });
 
-  const insertMutation = useMutation({
-    mutationFn: (newRecord: LeaseAgreementInsert): Promise<string> => insertLeaseAgreement(newRecord),
-    onSuccess: (newId) => {
-      void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
-      void navigate({ to: '/app/leases/$id', params: { id: newId } });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, record }: { readonly id: string; readonly record: LeaseAgreementUpdate }): Promise<void> =>
-      updateLeaseAgreement(id, record),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
-      void queryClient.invalidateQueries({ queryKey: ['leaseAgreement', leaseId] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string): Promise<void> => deleteLeaseAgreement(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
-      void queryClient.invalidateQueries({ queryKey: ['leaseAgreement', leaseId] });
-      void navigate({ to: '/app/leases' });
-    },
-  });
-
-  const doSubmit = (newRecord: LeaseAgreementInsertInput): void =>
-    match(leaseAgreementInsertSchema.safeParse(newRecord))
-      .with({ success: true }, ({ data }) => {
-        setValidationError(null);
-        match(mode)
-          .with({ tag: 'create' }, () => insertMutation.mutate(data))
-          .with({ tag: 'edit' }, ({ id }) => updateMutation.mutate({ id, record: data }))
-          .exhaustive();
-      })
-      .with({ success: false }, ({ error }) => {
-        setValidationError(formatZodIssues(error));
-      })
-      .exhaustive();
-
-  const onEditStart = (): void => {
-    insertMutation.reset();
-    updateMutation.reset();
-    deleteMutation.reset();
-    setValidationError(null);
-  };
+  const { insertMutation, updateMutation, deleteMutation, validationError, doSubmit, onEditStart } =
+    useCrudMutations<LeaseAgreementInsert>({
+      insertFn: (newRecord) => insertLeaseAgreement(newRecord),
+      updateFn: (id, record) => updateLeaseAgreement(id, record),
+      deleteFn: (id) => deleteLeaseAgreement(id),
+      schema: leaseAgreementInsertSchema,
+      mode,
+      onInsertSuccess: (newId) => {
+        void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
+        void navigate({ to: '/app/leases/$id', params: { id: newId } });
+      },
+      onUpdateSuccess: (id) => {
+        void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
+        void queryClient.invalidateQueries({ queryKey: ['leaseAgreement', id] });
+      },
+      onDeleteSuccess: (id) => {
+        void queryClient.invalidateQueries({ queryKey: ['lease_agreements'] });
+        void queryClient.invalidateQueries({ queryKey: ['leaseAgreement', id] });
+        void navigate({ to: '/app/leases' });
+      },
+    });
 
   const deleteAction: LeaseAgreementDeleteAction = match(mode)
     .with({ tag: 'create' }, () => ({ tag: 'absent' as const }))
@@ -344,18 +310,16 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
     void navigate({ to: '/app/leases' });
   };
 
-  const submitState: SubmitState =
-    insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
-      ? { tag: 'submitting' }
-      : validationError !== null
-        ? { tag: 'error', message: validationError }
-        : insertMutation.error !== null || updateMutation.error !== null
-          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error)?.message ?? 'Unknown error' }
-          : deleteMutation.error !== null
-            ? { tag: 'error', message: formatDeleteError(deleteMutation.error) }
-            : insertMutation.isSuccess || updateMutation.isSuccess
-              ? { tag: 'success' }
-              : { tag: 'idle' };
+  const submitState: SubmitState = deriveSubmitState({
+    isPending: insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    validationError,
+    insertError: insertMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+    insertSuccess: insertMutation.isSuccess,
+    updateSuccess: updateMutation.isSuccess,
+    formatDeleteError: (error) => formatDbError(error, LEASE_DELETE_MESSAGES, LEASE_DELETE_FALLBACK),
+  });
 
   const navLinkTo: NavLinkTo = {
     tenant: ({ id: tenantId, content, style, ariaLabel }) => <Link to="/app/tenants/$id" params={{ id: tenantId }} style={style} aria-label={ariaLabel}>{content}</Link>,

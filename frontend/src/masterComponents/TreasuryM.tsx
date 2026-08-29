@@ -1,12 +1,11 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
-import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { toAsyncData, useDateOrderedPaginatedQuery, type AsyncData, type NavLink, type NavLinkWithId, type PaginatedListResult } from '@/generic';
+import { toAsyncData, useDateOrderedPaginatedQuery, useCrudMutations, deriveSubmitState, formatDbError, type AsyncData, type DetailMode, type NavLink, type NavLinkWithId, type PaginatedListResult, type SubmitState } from '@/generic';
 
 type TreasuryRow = Database['public']['Tables']['treasury']['Row'];
 type TreasuryInsert = Database['public']['Tables']['treasury']['Insert'];
@@ -34,17 +33,13 @@ export const treasuryInsertSchema = z.object({
 
 export type TreasuryInsertInput = z.input<typeof treasuryInsertSchema>;
 
-const formatZodIssues = (error: z.ZodError): string =>
-  error.issues.map((issue) => issue.message).join('; ');
-
-const formatMutationError = (error: Error | null): string => {
-  const code = (error as { readonly code?: string } | null)?.code;
-  return code === '23505'
-    ? 'Skarbiec o tej nazwie już istnieje.'
-    : code === '23503'
-      ? 'Nie można usunąć skarbca — ma powiązane zapisy finansowe.'
-      : error?.message ?? 'Wystąpił nieznany błąd';
-};
+// Postgres unique-violation (23505) on duplicate name; FK-violation (23503)
+// when a treasury still has financial entries.
+const TREASURY_MUTATION_MESSAGES: Readonly<Record<string, string>> = Object.freeze({
+  '23505': 'Skarbiec o tej nazwie już istnieje.',
+  '23503': 'Nie można usunąć skarbca — ma powiązane zapisy finansowe.',
+});
+const TREASURY_FALLBACK = 'Wystąpił nieznany błąd';
 
 type TreasuryData = Readonly<{
   readonly treasury: TreasuryRow | null;
@@ -57,12 +52,6 @@ type NavLinkTo = Readonly<{
   readonly toList: NavLink;
   readonly financialEntry: NavLinkWithId;
 }>;
-
-type SubmitState =
-  | { readonly tag: 'idle' }
-  | { readonly tag: 'submitting' }
-  | { readonly tag: 'success' }
-  | { readonly tag: 'error'; readonly message: string };
 
 type TreasuryDeleteAction =
   | { readonly tag: 'absent' }
@@ -80,9 +69,7 @@ export type TreasurySProps = {
   readonly navLinkTo: NavLinkTo;
 };
 
-export type TreasuryDetailMode =
-  | { readonly tag: 'create' }
-  | { readonly tag: 'edit'; readonly id: string };
+export type TreasuryDetailMode = DetailMode;
 
 type Props = {
   readonly Slave: ComponentType<TreasurySProps>;
@@ -123,7 +110,6 @@ const deleteTreasury = async (id: string): Promise<void> => {
 export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const treasuryId = match(mode)
     .with({ tag: 'create' }, () => null)
@@ -145,55 +131,34 @@ export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
     .with({ tag: 'edit' }, () => toAsyncData(query, () => { void query.refetch(); }))
     .exhaustive();
 
-  const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey: ['treasuries'] });
-    void queryClient.invalidateQueries({ queryKey: ['treasury', treasuryId] });
-    void queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
-    void queryClient.invalidateQueries({ queryKey: ['financialEntryFormOptions'] });
-  };
-
-  const insertMutation = useMutation({
-    mutationFn: (newRecord: TreasuryInsert): Promise<string> => insertTreasury(newRecord),
-    onSuccess: (newId) => {
-      invalidate();
-      void navigate({ to: '/app/treasuries/$id', params: { id: newId } });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, record }: { readonly id: string; readonly record: TreasuryUpdate }): Promise<void> =>
-      updateTreasury(id, record),
-    onSuccess: invalidate,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string): Promise<void> => deleteTreasury(id),
-    onSuccess: () => {
-      invalidate();
-      void navigate({ to: '/app/treasuries' });
-    },
-  });
-
-  const doSubmit = (newRecord: TreasuryInsertInput): void =>
-    match(treasuryInsertSchema.safeParse(newRecord))
-      .with({ success: true }, ({ data }) => {
-        setValidationError(null);
-        match(mode)
-          .with({ tag: 'create' }, () => insertMutation.mutate(data))
-          .with({ tag: 'edit' }, ({ id }) => updateMutation.mutate({ id, record: data }))
-          .exhaustive();
-      })
-      .with({ success: false }, ({ error }) => {
-        setValidationError(formatZodIssues(error));
-      })
-      .exhaustive();
-
-  const onEditStart = (): void => {
-    insertMutation.reset();
-    updateMutation.reset();
-    deleteMutation.reset();
-    setValidationError(null);
-  };
+  const { insertMutation, updateMutation, deleteMutation, validationError, doSubmit, onEditStart } =
+    useCrudMutations<TreasuryInsert>({
+      insertFn: (newRecord) => insertTreasury(newRecord),
+      updateFn: (id, record) => updateTreasury(id, record),
+      deleteFn: (id) => deleteTreasury(id),
+      schema: treasuryInsertSchema,
+      mode,
+      onInsertSuccess: (newId) => {
+        void queryClient.invalidateQueries({ queryKey: ['treasuries'] });
+        void queryClient.invalidateQueries({ queryKey: ['treasury', treasuryId] });
+        void queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+        void queryClient.invalidateQueries({ queryKey: ['financialEntryFormOptions'] });
+        void navigate({ to: '/app/treasuries/$id', params: { id: newId } });
+      },
+      onUpdateSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ['treasuries'] });
+        void queryClient.invalidateQueries({ queryKey: ['treasury', treasuryId] });
+        void queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+        void queryClient.invalidateQueries({ queryKey: ['financialEntryFormOptions'] });
+      },
+      onDeleteSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ['treasuries'] });
+        void queryClient.invalidateQueries({ queryKey: ['treasury', treasuryId] });
+        void queryClient.invalidateQueries({ queryKey: ['dashboardSummary'] });
+        void queryClient.invalidateQueries({ queryKey: ['financialEntryFormOptions'] });
+        void navigate({ to: '/app/treasuries' });
+      },
+    });
 
   // A treasury with entries can never be deleted (ON DELETE RESTRICT) — it is
   // deactivated instead, so its history stays intact.
@@ -241,16 +206,17 @@ export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
     },
   });
 
-  const submitState: SubmitState =
-    insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
-      ? { tag: 'submitting' }
-      : validationError !== null
-        ? { tag: 'error', message: validationError }
-        : insertMutation.error !== null || updateMutation.error !== null || deleteMutation.error !== null
-          ? { tag: 'error', message: formatMutationError(insertMutation.error ?? updateMutation.error ?? deleteMutation.error) }
-          : insertMutation.isSuccess || updateMutation.isSuccess
-            ? { tag: 'success' }
-            : { tag: 'idle' };
+  const submitState: SubmitState = deriveSubmitState({
+    isPending: insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    validationError,
+    insertError: insertMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+    insertSuccess: insertMutation.isSuccess,
+    updateSuccess: updateMutation.isSuccess,
+    formatInsertUpdateError: (error) => formatDbError(error, TREASURY_MUTATION_MESSAGES, TREASURY_FALLBACK),
+    formatDeleteError: (error) => formatDbError(error, TREASURY_MUTATION_MESSAGES, TREASURY_FALLBACK),
+  });
 
   const navLinkTo: NavLinkTo = {
     toList: ({ content, style }) => <Link to="/app/treasuries" style={style}>{content}</Link>,
