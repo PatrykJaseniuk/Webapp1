@@ -584,6 +584,86 @@ export type Database = {
           },
         ]
       }
+      lease_statement: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          lease_id: string | null
+          property_id: string | null
+          running_balance: number | null
+          treasury_id: string | null
+          updated_at: string | null
+          value_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "active_leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreement"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_balance"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["current_lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_balance"
+            referencedColumns: ["treasury_id"]
+          },
+        ]
+      }
       property_financial_summary: {
         Row: {
           address: string | null
@@ -629,6 +709,86 @@ export type Database = {
           },
         ]
       }
+      property_statement: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          lease_id: string | null
+          property_id: string | null
+          running_balance: number | null
+          treasury_id: string | null
+          updated_at: string | null
+          value_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "active_leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreement"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_balance"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["current_lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_balance"
+            referencedColumns: ["treasury_id"]
+          },
+        ]
+      }
       treasury_balance: {
         Row: {
           balance: number | null
@@ -639,6 +799,86 @@ export type Database = {
           treasury_name: string | null
         }
         Relationships: []
+      }
+      treasury_statement: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string | null
+          lease_id: string | null
+          property_id: string | null
+          running_balance: number | null
+          treasury_id: string | null
+          updated_at: string | null
+          value_date: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "active_leases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_agreement"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "lease_balance"
+            referencedColumns: ["lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_lease_id_fkey"
+            columns: ["lease_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["current_lease_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_financial_summary"
+            referencedColumns: ["property_id"]
+          },
+          {
+            foreignKeyName: "financial_entry_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_occupancy"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_entry_treasury_id_fkey"
+            columns: ["treasury_id"]
+            isOneToOne: false
+            referencedRelation: "treasury_balance"
+            referencedColumns: ["treasury_id"]
+          },
+        ]
       }
     }
     Functions: {

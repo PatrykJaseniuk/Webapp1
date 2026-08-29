@@ -6,7 +6,7 @@
 -- rent because rent lives on the lease) must fail here.
 
 BEGIN;
-SELECT plan(24);
+SELECT plan(32);
 
 -- ── View existence ─────────────────────────────
 SELECT has_view('public', 'active_leases',              'active_leases view exists');
@@ -148,6 +148,78 @@ SELECT results_eq(
     $$ SELECT count(*) FROM public.financial_entry_review $$,
     $$ VALUES (2::bigint) $$,
     'review view flags the 2 treasury-only movements'
+);
+
+-- ================================================
+-- STATEMENT VIEWS (RUNNING BALANCE)
+-- ================================================
+-- The running balance is the only figure in the system that must agree with an
+-- aggregate computed a completely different way. These tests pin that agreement:
+-- the LAST running_balance of an account must equal that account's total.
+
+SELECT has_view('public', 'lease_statement',    'lease_statement view exists');
+SELECT has_view('public', 'property_statement', 'property_statement view exists');
+SELECT has_view('public', 'treasury_statement', 'treasury_statement view exists');
+
+-- Final running balance per lease == lease_balance.balance, for EVERY lease.
+-- A window frame or ordering mistake shows up here immediately.
+SELECT is_empty(
+    $$ SELECT lb.lease_id
+       FROM public.lease_balance lb
+       JOIN (
+           SELECT DISTINCT ON (lease_id) lease_id, running_balance
+           FROM public.lease_statement
+           ORDER BY lease_id, value_date DESC, id DESC
+       ) ls ON ls.lease_id = lb.lease_id
+       WHERE ls.running_balance <> lb.balance $$,
+    'lease_statement final running_balance agrees with lease_balance for every lease'
+);
+
+-- Same cross-check for cash: treasury_statement vs treasury_balance.
+SELECT is_empty(
+    $$ SELECT tb.treasury_id
+       FROM public.treasury_balance tb
+       JOIN (
+           SELECT DISTINCT ON (treasury_id) treasury_id, running_balance
+           FROM public.treasury_statement
+           ORDER BY treasury_id, value_date DESC, id DESC
+       ) ts ON ts.treasury_id = tb.treasury_id
+       WHERE ts.running_balance <> tb.balance $$,
+    'treasury_statement final running_balance agrees with treasury_balance'
+);
+
+-- And for the property result: property_statement vs property_financial_summary.
+SELECT is_empty(
+    $$ SELECT pfs.property_id
+       FROM public.property_financial_summary pfs
+       JOIN (
+           SELECT DISTINCT ON (property_id) property_id, running_balance
+           FROM public.property_statement
+           ORDER BY property_id, value_date DESC, id DESC
+       ) ps ON ps.property_id = pfs.property_id
+       WHERE ps.running_balance <> pfs.net_profit $$,
+    'property_statement final running_balance agrees with property_financial_summary.net_profit'
+);
+
+-- TIE-BREAK REGRESSION TEST.
+-- Lease 1 has two charges on the SAME value_date (2025-07-10: -112.50 and
+-- -45.00). With a RANGE frame or without the `id` tie-break, both rows would
+-- report the same peer-group total (-157.50) instead of stepping through it.
+SELECT results_eq(
+    $$ SELECT running_balance
+       FROM public.lease_statement
+       WHERE lease_id = 'c0000000-0000-0000-0000-000000000001'
+         AND value_date = '2025-07-10'
+       ORDER BY value_date, id $$,
+    $$ VALUES (-112.50::numeric), (-157.50::numeric) $$,
+    'entries sharing a value_date step the running balance one row at a time'
+);
+
+-- The statement must not invent or drop rows: one row per referenced account.
+SELECT results_eq(
+    $$ SELECT count(*) FROM public.lease_statement $$,
+    $$ SELECT count(*) FROM public.financial_entry WHERE lease_id IS NOT NULL $$,
+    'lease_statement covers exactly the lease-referencing entries'
 );
 
 SELECT finish();

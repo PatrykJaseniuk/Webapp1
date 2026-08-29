@@ -136,7 +136,16 @@ export const TreasuriesS = ({
             </span>
           </td>
           <td className="h-12 py-0 pr-4">{activePill(row.is_active ?? false)}</td>
-          <td className="h-12 py-0 pr-4 text-right text-sm text-gray-700">{row.entry_count ?? 0}</td>
+          <td className="h-12 py-0 pr-4 text-right text-sm text-gray-700 [&_a]:text-blue-600 hover:[&_a]:underline">
+            {(row.entry_count ?? 0) > 0
+              ? navLinkTo.treasury({
+                  id: row.treasury_id,
+                  style: {},
+                  content: String(row.entry_count ?? 0),
+                  ariaLabel: `Zobacz wyciąg skarbca ${row.treasury_name ?? ''} (${row.entry_count ?? 0} zapisów)`,
+                })
+              : <span className="text-gray-400">0</span>}
+          </td>
           <td className="h-12 py-0 pr-4 text-sm text-gray-700">
             {row.last_value_date !== null && row.last_value_date !== undefined ? formatDate(row.last_value_date) : '—'}
           </td>

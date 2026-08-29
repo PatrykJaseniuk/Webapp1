@@ -6,6 +6,13 @@ import { ErrorMessage } from './ErrorMessageS';
 import { LEASE_STATUS_LABEL } from './domain';
 import { amountClass, leaseStatusPillClass } from './pills';
 import { formatDate, formatPln } from './format';
+import {
+  balanceToneClass,
+  balanceGlyph,
+  isBalanceSeriesContiguous,
+  pageBalances,
+} from './statement';
+import { StatementSummaryS } from './StatementSummaryS';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { AsyncStateTableS } from './AsyncStateTableS';
 import type { ColumnDef } from './DataTableS';
@@ -43,8 +50,14 @@ const COLUMNS: readonly ColumnDef<FinancialEntrySortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'running_balance', label: 'Saldo', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
+
+// Without the balance column (text filter active) the table is one column
+// narrower, so the skeleton must match to avoid a width jump on load.
+const COLUMNS_WITHOUT_BALANCE: readonly ColumnDef<FinancialEntrySortColumn>[] =
+  COLUMNS.filter((c) => c.key !== 'running_balance');
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
@@ -56,6 +69,7 @@ const SKELETON_ROWS = (
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-24`} /></td>
       </tr>
     ))}
   </>
@@ -226,9 +240,18 @@ const DetailContent = ({
               </>
             }
           />
+          <StatementSummaryS
+            balances={match(financialEntries.asyncData)
+              .with({ tag: 'fulfilled' }, ({ data: pageData }) =>
+                pageBalances(pageData.rows, financialEntries.sort.config.direction),
+              )
+              .otherwise(() => null)}
+            negativeLabel="zaległość najemcy"
+            contiguous={isBalanceSeriesContiguous(filter.config.text)}
+          />
           <AsyncStateTableS<FinancialEntryRow, FinancialEntrySortColumn>
             asyncData={financialEntries.asyncData}
-            columns={COLUMNS}
+            columns={isBalanceSeriesContiguous(filter.config.text) ? COLUMNS : COLUMNS_WITHOUT_BALANCE}
             sort={financialEntries.sort}
             pagination={financialEntries.pagination}
             skeletonRows={SKELETON_ROWS}
@@ -251,7 +274,14 @@ const DetailContent = ({
                     {tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}
                   </div>
                 </td>
-                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
+                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
+                {isBalanceSeriesContiguous(filter.config.text) ? (
+                  <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(tx.running_balance)}`}>
+                    <span aria-hidden="true">{balanceGlyph(tx.running_balance)} </span>
+                    {formatPln(tx.running_balance)}
+                    {tx.running_balance < 0 ? <span className="sr-only"> (zaległość najemcy)</span> : null}
+                  </td>
+                ) : null}
               </tr>
             )}
           />

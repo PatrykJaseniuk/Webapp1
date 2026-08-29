@@ -6,11 +6,26 @@ import type { ComponentType } from 'react';
 import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
-import { toAsyncData, type AsyncData, type NavLink } from '@/generic';
+import { toAsyncData, useFilteredPaginatedQuery, type AsyncData, type FilteredQueryResult, type NavLink, type NavLinkWithId } from '@/generic';
 
 type TreasuryRow = Database['public']['Tables']['treasury']['Row'];
 type TreasuryInsert = Database['public']['Tables']['treasury']['Insert'];
 type TreasuryUpdate = Database['public']['Tables']['treasury']['Update'];
+type TreasuryStatementDbRow = Database['public']['Views']['treasury_statement']['Row'];
+
+// View columns come back nullable; re-tighten the ones the view cannot null.
+// See the note in LeaseAgreementM.
+type TreasuryStatementRow = TreasuryStatementDbRow & {
+  readonly id: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly value_date: string;
+  readonly running_balance: number;
+};
+
+// Only value_date — the running balance is monotonic only in (value_date, id).
+type TreasuryEntrySortColumn = 'value_date';
+type TreasuryEntryFilter = 'text' | 'dateFrom' | 'dateTo';
 
 export const treasuryInsertSchema = z.object({
   name: z.string().trim().min(1, 'Nazwa jest wymagana'),
@@ -40,6 +55,7 @@ type TreasuryData = Readonly<{
 
 type NavLinkTo = Readonly<{
   readonly toList: NavLink;
+  readonly financialEntry: NavLinkWithId;
 }>;
 
 type SubmitState =
@@ -55,6 +71,7 @@ type TreasuryDeleteAction =
 
 export type TreasurySProps = {
   readonly asyncData: AsyncData<TreasuryData | null>;
+  readonly entries: FilteredQueryResult<TreasuryStatementRow, TreasuryEntrySortColumn, TreasuryEntryFilter>;
   readonly doSubmit: (newRecord: TreasuryInsertInput) => void;
   readonly deleteAction: TreasuryDeleteAction;
   readonly doCancel: () => void;
@@ -196,6 +213,38 @@ export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
     void navigate({ to: '/app/treasuries' });
   };
 
+  // The cash statement for this treasury: every movement with the balance after
+  // it, which is what makes reconciliation against a bank statement possible.
+  // treasury_id is the view's PARTITION BY column, so filtering by it is pushed
+  // into the window; date filters apply after it and carry the balance forward.
+  const entries = useFilteredPaginatedQuery<TreasuryStatementRow, TreasuryEntrySortColumn, TreasuryEntryFilter>({
+    queryKey: ['financialEntries', 'treasury', treasuryId ?? ''],
+    defaultSort: { column: 'value_date', direction: 'desc' },
+    pageSize: 20,
+    enabled: treasuryId !== null,
+    fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
+      const ascending = sortConfig.direction === 'asc';
+      const baseQuery = backendConnector
+        .from('treasury_statement')
+        .select('*', { count: 'exact' })
+        .eq('treasury_id', treasuryId ?? '')
+        .order('value_date', { ascending })
+        // Tie-break on `id` so `.range()` paginates over a total order and the
+        // running balance stays stable — see the note in FinancialEntriesM.
+        .order('id', { ascending });
+      const text = filterConfig.text ?? '';
+      const dateFrom = filterConfig.dateFrom ?? '';
+      const dateTo = filterConfig.dateTo ?? '';
+      const withText = text.length > 0 ? baseQuery.ilike('description', `*${text}*`) : baseQuery;
+      const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;
+      const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('value_date', dateTo) : withDateFrom;
+      const result = await queryWithFilters.range(from, to);
+      return result.error !== null
+        ? Promise.reject(result.error)
+        : { rows: (result.data ?? []) as readonly TreasuryStatementRow[], totalCount: result.count ?? 0 };
+    },
+  });
+
   const submitState: SubmitState =
     insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
       ? { tag: 'submitting' }
@@ -209,6 +258,7 @@ export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
 
   const navLinkTo: NavLinkTo = {
     toList: ({ content, style }) => <Link to="/app/treasuries" style={style}>{content}</Link>,
+    financialEntry: ({ id: entryId, content, style, ariaLabel }) => <Link to="/app/financial-entries/$id" params={{ id: entryId }} style={style} aria-label={ariaLabel}>{content}</Link>,
   };
 
   return (
@@ -220,6 +270,7 @@ export const TreasuryDetailM = ({ Slave, mode }: Props): JSX.Element => {
       onEditStart={onEditStart}
       submitState={submitState}
       navLinkTo={navLinkTo}
+      entries={entries}
     />
   );
 };

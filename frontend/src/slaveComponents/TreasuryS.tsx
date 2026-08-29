@@ -6,10 +6,69 @@ import { LoadingSpinner } from './LoadingSpinnerS';
 import { ErrorMessage } from './ErrorMessageS';
 import { buttonClass, FormErrorS, inputClass, labelClass as formLabelClass } from './formUi';
 import { formatDate, formatPln } from './format';
+import { AsyncStateTableS } from './AsyncStateTableS';
+import type { ColumnDef } from './DataTableS';
+import { EmptyStateS, FilterEmptyStateS } from './EmptyStateS';
+import { FilterToolbarS } from './FilterToolbarS';
+import {
+  activeFilterCount,
+  inputClass as filterInputClass,
+  isFilterActive,
+  labelClass as filterLabelClass,
+  onFilterInput,
+  setFilterString,
+} from './filter';
+import { amountClass } from './pills';
+import {
+  balanceGlyph,
+  balanceToneClass,
+  isBalanceSeriesContiguous,
+  pageBalances,
+} from './statement';
+import { StatementSummaryS } from './StatementSummaryS';
 
 type Data = NonNullable<Extract<TreasurySProps['asyncData'], { readonly tag: 'fulfilled' }>['data']>;
 type SubmitState = TreasurySProps['submitState'];
 type DeleteAction = TreasurySProps['deleteAction'];
+type Entries = TreasurySProps['entries'];
+type EntryRow = Extract<Entries['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
+type EntrySortColumn = Entries['sort']['config']['column'];
+type NavLinkTo = TreasurySProps['navLinkTo'];
+
+const ENTRY_COLUMNS: readonly ColumnDef<EntrySortColumn>[] = [
+  { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
+  { key: 'value_date', label: 'Data', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
+  { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[200px] pr-4' },
+  { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'running_balance', label: 'Saldo', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
+];
+
+const ENTRY_COLUMNS_WITHOUT_BALANCE: readonly ColumnDef<EntrySortColumn>[] =
+  ENTRY_COLUMNS.filter((c) => c.key !== 'running_balance');
+
+const entrySkeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
+
+const ENTRY_SKELETON_ROWS = (
+  <>
+    {Array.from({ length: 6 }, (_, i) => (
+      <tr key={`entry-skel-${i}`} className="border-b border-gray-100">
+        <td className="pl-4 h-12 py-0 pr-6"><div className={`${entrySkeletonBar} w-6`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${entrySkeletonBar} w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${entrySkeletonBar} w-40`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${entrySkeletonBar} ml-auto w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${entrySkeletonBar} ml-auto w-24`} /></td>
+      </tr>
+    ))}
+  </>
+);
+
+const ENTRY_EMPTY = (
+  <EmptyStateS
+    iconPath="M3 10h18M3 14h18M9 6h.01M15 18h.01M3 6v12a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2z"
+    title="Brak ruchów pieniędzy"
+    description="Ten skarbiec nie ma jeszcze żadnych zapisów finansowych."
+  />
+);
 
 const sectionClass = 'rounded-lg border border-gray-200 bg-white p-6 shadow-sm';
 const sectionTitleClass = 'mb-4 text-lg font-semibold text-gray-900';
@@ -148,16 +207,18 @@ const TreasuryForm = ({
 
 type DetailProps = {
   readonly data: Data;
-  readonly navLinkTo: TreasurySProps['navLinkTo'];
+  readonly navLinkTo: NavLinkTo;
+  readonly entries: Entries;
   readonly onEditStart: () => void;
 };
 
-const TreasuryDetail = ({ data, navLinkTo, onEditStart }: DetailProps): JSX.Element => {
+const TreasuryDetail = ({ data, navLinkTo, entries, onEditStart }: DetailProps): JSX.Element => {
   const t = data.treasury;
+  const entryFilter = entries.filter;
   return t === null ? (
     <p className="py-8 text-center text-gray-500">Nie znaleziono skarbca.</p>
   ) : (
-    <div className="mx-auto max-w-3xl space-y-6 py-8">
+    <div className="mx-auto max-w-5xl space-y-6 py-8">
       <div className="flex items-start justify-between">
         <div>
           <span className="[&_a]:text-sm [&_a]:text-blue-600 hover:[&_a]:underline">
@@ -195,6 +256,97 @@ const TreasuryDetail = ({ data, navLinkTo, onEditStart }: DetailProps): JSX.Elem
           </div>
         </div>
       </div>
+
+      <div className={sectionClass}>
+        <h2 className={sectionTitleClass}>Wyciąg</h2>
+        <p className="mb-3 text-xs text-gray-500">
+          Ruchy pieniędzy z saldem po każdej pozycji — do uzgodnienia z wyciągiem bankowym.
+        </p>
+        <FilterToolbarS
+          isFilterActive={isFilterActive(entryFilter.config)}
+          activeFilterCount={activeFilterCount(entryFilter.config)}
+          clearFilter={() => entryFilter.doFilter({})}
+          chips={[]}
+          resultCount={match(entries.asyncData)
+            .with({ tag: 'fulfilled' }, ({ data: pageData }) => `Znaleziono: ${pageData.totalCount}`)
+            .otherwise(() => null)}
+          panel={
+            <>
+              <div className="min-w-[220px]">
+                <label htmlFor="treasury-entry-filter" className={filterLabelClass}>Szukaj (opis)</label>
+                <input
+                  id="treasury-entry-filter"
+                  type="search"
+                  value={entryFilter.config.text ?? ''}
+                  onChange={onFilterInput((v) => entryFilter.doFilter(setFilterString(entryFilter.config, 'text', v)))}
+                  placeholder="Wpisz fragment opisu…"
+                  className={`${filterInputClass} w-full`}
+                />
+              </div>
+              <div>
+                <label htmlFor="treasury-entry-date-from" className={filterLabelClass}>Data od</label>
+                <input
+                  id="treasury-entry-date-from"
+                  type="date"
+                  value={entryFilter.config.dateFrom ?? ''}
+                  onChange={onFilterInput((v) => entryFilter.doFilter(setFilterString(entryFilter.config, 'dateFrom', v)))}
+                  className={filterInputClass}
+                />
+              </div>
+              <div>
+                <label htmlFor="treasury-entry-date-to" className={filterLabelClass}>Data do</label>
+                <input
+                  id="treasury-entry-date-to"
+                  type="date"
+                  value={entryFilter.config.dateTo ?? ''}
+                  onChange={onFilterInput((v) => entryFilter.doFilter(setFilterString(entryFilter.config, 'dateTo', v)))}
+                  className={filterInputClass}
+                />
+              </div>
+            </>
+          }
+        />
+        <StatementSummaryS
+          balances={match(entries.asyncData)
+            .with({ tag: 'fulfilled' }, ({ data: pageData }) =>
+              pageBalances(pageData.rows, entries.sort.config.direction),
+            )
+            .otherwise(() => null)}
+          negativeLabel="saldo ujemne"
+          contiguous={isBalanceSeriesContiguous(entryFilter.config.text)}
+        />
+        <AsyncStateTableS<EntryRow, EntrySortColumn>
+          asyncData={entries.asyncData}
+          columns={isBalanceSeriesContiguous(entryFilter.config.text) ? ENTRY_COLUMNS : ENTRY_COLUMNS_WITHOUT_BALANCE}
+          sort={entries.sort}
+          pagination={entries.pagination}
+          skeletonRows={ENTRY_SKELETON_ROWS}
+          emptyState={ENTRY_EMPTY}
+          filteredEmptyState={<FilterEmptyStateS clearFilter={() => entryFilter.doFilter({})} />}
+          isFilterActive={isFilterActive(entryFilter.config)}
+          maxHeight={null}
+          pageSizeOptions={[20, 50, 100]}
+          renderRow={(e) => (
+            <tr key={e.id} className="group border-b border-gray-100 text-sm hover:bg-gray-50">
+              <td className="pl-4 h-12 py-0 pr-6 [&_a]:text-blue-600 hover:[&_a]:text-blue-800 focus-visible:[&_a]:outline-none focus-visible:[&_a]:ring-2 focus-visible:[&_a]:ring-blue-500">
+                {navLinkTo.financialEntry({ id: e.id, style: { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', borderRadius: '6px' }, content: '→', ariaLabel: `Szczegóły zapisu finansowego: ${e.description}` })}
+              </td>
+              <td className="h-12 py-0 pr-4 text-gray-600 whitespace-nowrap">{formatDate(e.value_date)}</td>
+              <td className="h-12 py-0 pr-4 text-gray-600" title={e.description}>
+                <div className="truncate">{e.description}</div>
+              </td>
+              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums ${amountClass(e.amount)}`}>{formatPln(e.amount)}</td>
+              {isBalanceSeriesContiguous(entryFilter.config.text) ? (
+                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(e.running_balance)}`}>
+                  <span aria-hidden="true">{balanceGlyph(e.running_balance)} </span>
+                  {formatPln(e.running_balance)}
+                  {e.running_balance < 0 ? <span className="sr-only"> (saldo ujemne)</span> : null}
+                </td>
+              ) : null}
+            </tr>
+          )}
+        />
+      </div>
     </div>
   );
 };
@@ -207,6 +359,7 @@ export const TreasuryDetailS = ({
   onEditStart,
   submitState,
   navLinkTo,
+  entries,
 }: TreasurySProps): JSX.Element => {
   const [editing, setEditing] = useState(false);
 
@@ -251,7 +404,7 @@ export const TreasuryDetailS = ({
               onCancel={cancelEdit}
             />
           ) : (
-            <TreasuryDetail data={data} navLinkTo={navLinkTo} onEditStart={startEdit} />
+            <TreasuryDetail data={data} navLinkTo={navLinkTo} entries={entries} onEditStart={startEdit} />
           ),
         )
         .exhaustive()}

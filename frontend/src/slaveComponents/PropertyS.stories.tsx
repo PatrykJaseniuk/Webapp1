@@ -107,6 +107,7 @@ const baseEntry: FinancialEntryRow = {
   description: 'Czynsz styczeń',
   amount: -2500,
   value_date: '2024-02-01',
+  running_balance: -2500,
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
   created_by: null,

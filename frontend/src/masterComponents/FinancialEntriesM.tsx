@@ -78,6 +78,12 @@ export const FinancialEntriesM = ({
           { count: 'exact' },
         )
         .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
+        // `id` breaks ties so that `.range()` paginates over a TOTAL order.
+        // Without it, rows sharing a value_date (every rent charge dated the
+        // 1st) have no defined order and pagination can repeat one row on this
+        // page and skip another on the next. Matches the window ordering used
+        // by the `lease_balance` view (`ORDER BY fe.value_date, fe.id`).
+        .order('id', { ascending })
         .range(from, to);
       const withText = text.length > 0 ? baseQuery.ilike('property.name', `*${text}*`) : baseQuery;
       const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;

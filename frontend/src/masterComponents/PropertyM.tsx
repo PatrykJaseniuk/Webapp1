@@ -61,7 +61,17 @@ const formatDeleteError = (error: Error | null): string => {
     : error?.message ?? 'Wystąpił nieznany błąd';
 };
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
-type FinancialEntryDbRow = Database['public']['Tables']['financial_entry']['Row'];
+type FinancialEntryDbRow = Database['public']['Views']['property_statement']['Row'];
+
+// View columns are all nullable in the generated types; re-tighten the ones the
+// view can never produce as null. See the note in LeaseAgreementM.
+type PropertyStatementRow = FinancialEntryDbRow & {
+  readonly id: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly value_date: string;
+  readonly running_balance: number;
+};
 type FinancialSummaryDbRow = Database['public']['Views']['property_financial_summary']['Row'];
 type OccupancyDbRow = Database['public']['Views']['property_occupancy']['Row'];
 type AttachmentDbRow = Database['public']['Tables']['attachment']['Row'];
@@ -85,7 +95,9 @@ type NavLinkTo = Readonly<{
 }>;
 
 type LeaseSortColumn = Extract<keyof LeaseAgreementDbRow, 'start_date' | 'end_date' | 'monthly_rent' | 'lease_status'>;
-type FinancialEntrySortColumn = Extract<keyof FinancialEntryDbRow, 'value_date' | 'amount'>;
+// Only value_date is sortable — the running balance is monotonic only in
+// (value_date, id) order. See the note in LeaseAgreementM.
+type FinancialEntrySortColumn = 'value_date';
 type AttachmentSortColumn = 'created_at';
 
 type LeaseFilter = 'status' | 'dateFrom' | 'dateTo';
@@ -100,7 +112,6 @@ const LEASE_SORT_COLUMN_MAP: Readonly<Record<LeaseSortColumn, string>> = Object.
 
 const ENTRY_SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
   value_date: 'value_date',
-  amount: 'amount',
 });
 
 type SubmitState =
@@ -123,7 +134,7 @@ export type PropertySProps = {
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
   readonly leases: FilteredQueryResult<LeaseRow, LeaseSortColumn, LeaseFilter>;
-  readonly financialEntries: FilteredQueryResult<FinancialEntryDbRow, FinancialEntrySortColumn, FinancialEntryFilter>;
+  readonly financialEntries: FilteredQueryResult<PropertyStatementRow, FinancialEntrySortColumn, FinancialEntryFilter>;
   readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
@@ -219,7 +230,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     },
   });
 
-  const financialEntries = useFilteredPaginatedQuery<FinancialEntryDbRow, FinancialEntrySortColumn, FinancialEntryFilter>({
+  const financialEntries = useFilteredPaginatedQuery<PropertyStatementRow, FinancialEntrySortColumn, FinancialEntryFilter>({
     queryKey: ['financialEntries', 'property', propertyId ?? ''],
     defaultSort: { column: 'value_date', direction: 'desc' },
     pageSize: 5,
@@ -227,10 +238,18 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('financial_entry')
+        // property_statement carries the cumulative property result per entry.
+        // Filtering by property_id hits the view's PARTITION BY column, so it is
+        // pushed into the window; date filters apply after it and therefore
+        // carry the balance forward. Landlord/admin only — see the RLS note on
+        // the view: a tenant would see a partial sum.
+        .from('property_statement')
         .select('*', { count: 'exact' })
         .eq('property_id', propertyId ?? '')
-        .order(ENTRY_SORT_COLUMN_MAP[sortConfig.column], { ascending });
+        .order(ENTRY_SORT_COLUMN_MAP[sortConfig.column], { ascending })
+        // Tie-break on `id` so `.range()` paginates over a total order — see
+        // the note in FinancialEntriesM. Required for a stable running balance.
+        .order('id', { ascending });
       const text = filterConfig.text ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
@@ -240,7 +259,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
       const result = await queryWithFilters.range(from, to);
       return result.error !== null
         ? Promise.reject(result.error)
-        : { rows: result.data ?? [], totalCount: result.count ?? 0 };
+        : { rows: (result.data ?? []) as readonly PropertyStatementRow[], totalCount: result.count ?? 0 };
     },
   });
 

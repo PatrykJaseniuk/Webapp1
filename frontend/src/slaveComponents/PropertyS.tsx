@@ -15,6 +15,13 @@ import {
   propertyStatusPillClass,
 } from './pills';
 import { formatDate, formatPln } from './format';
+import {
+  balanceToneClass,
+  balanceGlyph,
+  isBalanceSeriesContiguous,
+  pageBalances,
+} from './statement';
+import { StatementSummaryS } from './StatementSummaryS';
 import { labelClass, sectionClass, sectionTitleClass, valueClass } from './detail';
 import { AsyncStateTableS } from './AsyncStateTableS';
 import type { ColumnDef } from './DataTableS';
@@ -66,8 +73,14 @@ const TRANSACTION_COLUMNS: readonly ColumnDef<FinancialEntrySortColumn>[] = [
   { key: 'action', label: null, sortColumn: null, align: 'left', className: 'pl-4 w-10 pr-6' },
   { key: 'value_date', label: 'Termin', sortColumn: 'value_date', align: 'left', className: 'pr-4 whitespace-nowrap' },
   { key: 'description', label: 'Opis', sortColumn: null, align: 'left', className: 'min-w-[180px] pr-4' },
-  { key: 'amount', label: 'Kwota', sortColumn: 'amount', align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'amount', label: 'Kwota', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
+  { key: 'running_balance', label: 'Saldo', sortColumn: null, align: 'right', className: 'pr-4 whitespace-nowrap' },
 ];
+
+// A text filter hides rows from the middle of the series, which would make the
+// balance column jump by invisible amounts — so it is dropped in that case.
+const TRANSACTION_COLUMNS_WITHOUT_BALANCE: readonly ColumnDef<FinancialEntrySortColumn>[] =
+  TRANSACTION_COLUMNS.filter((c) => c.key !== 'running_balance');
 
 const skeletonBar = 'h-4 animate-pulse rounded bg-gray-200';
 
@@ -94,6 +107,7 @@ const TRANSACTION_SKELETON_ROWS = (
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-20`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} w-32`} /></td>
         <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-20`} /></td>
+        <td className="h-12 py-0 pr-4"><div className={`${skeletonBar} ml-auto w-24`} /></td>
       </tr>
     ))}
   </>
@@ -383,9 +397,18 @@ const DetailContent = ({
             </div>
           }
         />
+        <StatementSummaryS
+          balances={match(financialEntries.asyncData)
+            .with({ tag: 'fulfilled' }, ({ data: pageData }) =>
+              pageBalances(pageData.rows, financialEntries.sort.config.direction),
+            )
+            .otherwise(() => null)}
+          negativeLabel="strata narastająco"
+          contiguous={isBalanceSeriesContiguous(entryFilter.config.text)}
+        />
         <AsyncStateTableS<FinancialEntryRow, FinancialEntrySortColumn>
           asyncData={financialEntries.asyncData}
-          columns={TRANSACTION_COLUMNS}
+          columns={isBalanceSeriesContiguous(entryFilter.config.text) ? TRANSACTION_COLUMNS : TRANSACTION_COLUMNS_WITHOUT_BALANCE}
           sort={financialEntries.sort}
           pagination={financialEntries.pagination}
           skeletonRows={TRANSACTION_SKELETON_ROWS}
@@ -403,7 +426,14 @@ const DetailContent = ({
               <td className="h-12 py-0 pr-4 text-gray-600" title={tx.description ?? undefined}>
                 <div className="truncate">{tx.description !== null ? tx.description : <span className="text-gray-400">—</span>}</div>
               </td>
-              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
+              <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums ${amountClass(tx.amount)}`}>{formatPln(tx.amount)}</td>
+              {isBalanceSeriesContiguous(entryFilter.config.text) ? (
+                <td className={`h-12 py-0 pr-4 text-right whitespace-nowrap font-mono tabular-nums font-medium ${balanceToneClass(tx.running_balance)}`}>
+                  <span aria-hidden="true">{balanceGlyph(tx.running_balance)} </span>
+                  {formatPln(tx.running_balance)}
+                  {tx.running_balance < 0 ? <span className="sr-only"> (strata narastająco)</span> : null}
+                </td>
+              ) : null}
             </tr>
           )}
         />

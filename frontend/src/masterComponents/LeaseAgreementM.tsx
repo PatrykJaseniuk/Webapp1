@@ -18,7 +18,20 @@ import {
 type LeaseAgreementDbRow = Database['public']['Tables']['lease_agreement']['Row'];
 type LeaseAgreementInsert = Database['public']['Tables']['lease_agreement']['Insert'];
 type LeaseAgreementUpdate = Database['public']['Tables']['lease_agreement']['Update'];
-type FinancialEntryDbRow = Database['public']['Tables']['financial_entry']['Row'];
+type FinancialEntryDbRow = Database['public']['Views']['lease_statement']['Row'];
+
+// Postgres drops NOT NULL through a view, so every generated view column is
+// nullable. Re-tighten the ones the view can never actually produce as null:
+// each is NOT NULL on financial_entry, and running_balance is a SUM over a frame
+// that always contains at least the current row. Same approach as
+// TreasuriesM's TreasuryListRow.
+type LeaseStatementRow = FinancialEntryDbRow & {
+  readonly id: string;
+  readonly description: string;
+  readonly amount: number;
+  readonly value_date: string;
+  readonly running_balance: number;
+};
 type AttachmentDbRow = Database['public']['Tables']['attachment']['Row'];
 
 export const leaseAgreementInsertSchema = z
@@ -81,14 +94,16 @@ type NavLinkTo = Readonly<{
   readonly toList: NavLink;
 }>;
 
-type FinancialEntrySortColumn = Extract<keyof FinancialEntryDbRow, 'value_date' | 'amount'>;
+// Only value_date is sortable. The running balance is monotonic ONLY in
+// (value_date, id) order — sorting by amount would leave each row's balance
+// individually correct but the column as a whole unreadable.
+type FinancialEntrySortColumn = 'value_date';
 type AttachmentSortColumn = 'created_at';
 
 type LeaseFinancialEntryFilter = 'text' | 'dateFrom' | 'dateTo';
 
 const SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
   value_date: 'value_date',
-  amount: 'amount',
 });
 
 type SubmitState =
@@ -111,7 +126,7 @@ export type LeaseAgreementSProps = {
   readonly doCancel: () => void;
   readonly onEditStart: () => void;
   readonly submitState: SubmitState;
-  readonly financialEntries: FilteredQueryResult<FinancialEntryDbRow, FinancialEntrySortColumn, LeaseFinancialEntryFilter>;
+  readonly financialEntries: FilteredQueryResult<LeaseStatementRow, FinancialEntrySortColumn, LeaseFinancialEntryFilter>;
   readonly attachments: FilteredQueryResult<AttachmentDbRow, AttachmentSortColumn, never>;
   readonly navLinkTo: NavLinkTo;
 };
@@ -200,7 +215,7 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
 
   const formOptions = toAsyncData(formOptionsQuery, () => { void formOptionsQuery.refetch(); });
 
-  const financialEntries = useFilteredPaginatedQuery<FinancialEntryDbRow, FinancialEntrySortColumn, LeaseFinancialEntryFilter>({
+  const financialEntries = useFilteredPaginatedQuery<LeaseStatementRow, FinancialEntrySortColumn, LeaseFinancialEntryFilter>({
     queryKey: ['financialEntries', 'leaseAgreement', leaseId ?? ''],
     defaultSort: { column: 'value_date', direction: 'desc' },
     pageSize: 5,
@@ -208,10 +223,20 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
       const baseQuery = backendConnector
-        .from('financial_entry')
+        // lease_statement carries the per-entry running balance of this lease's
+        // receivable account. Filtering by lease_id is a predicate on the view's
+        // PARTITION BY column, so it is pushed into the window and the balances
+        // are this lease's own series. Date filters are applied AFTER the window,
+        // so a filtered page still carries the balance forward from before it.
+        .from('lease_statement')
         .select('*', { count: 'exact' })
         .eq('lease_id', leaseId ?? '')
-        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending });
+        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
+        // Tie-break on `id` so `.range()` paginates over a total order — see
+        // the note in FinancialEntriesM. Required for a stable running balance:
+        // the displayed order must be the exact reverse of the window order
+        // `(value_date, id)` when sorting descending.
+        .order('id', { ascending });
       const text = filterConfig.text ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
@@ -221,7 +246,7 @@ export const LeaseAgreementDetailM = ({ Slave, mode }: Props): JSX.Element => {
       const result = await queryWithFilters.range(from, to);
       return result.error !== null
         ? Promise.reject(result.error)
-        : { rows: result.data ?? [], totalCount: result.count ?? 0 };
+        : { rows: (result.data ?? []) as readonly LeaseStatementRow[], totalCount: result.count ?? 0 };
     },
   });
 
