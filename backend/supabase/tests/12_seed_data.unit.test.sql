@@ -3,7 +3,7 @@
 -- ================================================
 
 BEGIN;
-SELECT plan(16);
+SELECT plan(15);
 
 -- ── User roles ──────────────────────────────────
 SELECT results_eq(
@@ -98,8 +98,8 @@ SELECT results_eq(
 
 SELECT results_eq(
     $$ SELECT count(*) FROM public.financial_entry $$,
-    $$ VALUES (52::bigint) $$,
-    '52 financial entries seeded'
+    $$ VALUES (41::bigint) $$,
+    '41 financial entries seeded'
 );
 
 -- Every entry must reference at least one account
@@ -108,13 +108,6 @@ SELECT results_eq(
        WHERE lease_id IS NULL AND property_id IS NULL AND treasury_id IS NULL $$,
     $$ VALUES (0::bigint) $$,
     'every financial entry references at least one account'
-);
-
--- Every lease knows which entry is its deposit charge
-SELECT results_eq(
-    $$ SELECT count(*) FROM public.lease_agreement WHERE deposit_entry_id IS NOT NULL $$,
-    $$ VALUES (4::bigint) $$,
-    'all 4 leases linked to their deposit charge'
 );
 
 SELECT finish();

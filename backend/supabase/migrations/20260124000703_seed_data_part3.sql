@@ -9,19 +9,9 @@
 -- ================================================
 
 -- ===== LEASE 2: Krakow Apartment (Anna Nowak) - ONE MONTH OUTSTANDING =====
--- Deposit settled, rent paid March-May 2025, June 2025 charged but unpaid.
+-- Rent paid March-May 2025; June 2025 charged but unpaid.
 
 INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
-    ('d0000000-0000-0000-0000-000000000100',
-     'c0000000-0000-0000-0000-000000000002', NULL, NULL,
-     'Security deposit - charged', -4200.00, '2025-03-01',
-     '2025-02-25 14:00:00+00', '2025-02-25 14:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    ('d0000000-0000-0000-0000-000000000101',
-     'c0000000-0000-0000-0000-000000000002', NULL, 'f0000000-0000-0000-0000-000000000001',
-     'Security deposit - received', 4200.00, '2025-03-01',
-     '2025-03-01 14:00:00+00', '2025-03-01 14:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
     ('d0000000-0000-0000-0000-000000000102',
      'c0000000-0000-0000-0000-000000000002', NULL, NULL,
      'Monthly rent - March 2025 - charged', -4200.00, '2025-03-01',
@@ -60,19 +50,9 @@ INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, desc
 
 
 -- ===== LEASE 3: Gdansk House (Piotr Wisniewski) - TWO MONTHS OVERDUE =====
--- Deposit settled, rent paid January-February 2024, March and April 2024 unpaid.
+-- Rent paid January-February 2024; March and April 2024 charged but unpaid.
 
 INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
-    ('d0000000-0000-0000-0000-000000000200',
-     'c0000000-0000-0000-0000-000000000003', NULL, NULL,
-     'Security deposit - charged', -6500.00, '2024-01-01',
-     '2023-12-15 09:00:00+00', '2023-12-15 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    ('d0000000-0000-0000-0000-000000000201',
-     'c0000000-0000-0000-0000-000000000003', NULL, 'f0000000-0000-0000-0000-000000000001',
-     'Security deposit - received', 6500.00, '2024-01-01',
-     '2024-01-01 09:00:00+00', '2024-01-01 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
     ('d0000000-0000-0000-0000-000000000202',
      'c0000000-0000-0000-0000-000000000003', NULL, NULL,
      'Monthly rent - January 2024 - charged', -6500.00, '2024-01-01',

@@ -97,9 +97,6 @@ const baseLease: LeaseRow = {
   updated_at: '2024-01-01T00:00:00Z',
   created_by: null,
   tenant: { first_name: 'Jan', last_name: 'Kowalski' },
-  deposit_entry_id: null,
-  deposit_released: null,
-  deposit_retained: null,
 };
 
 const baseEntry: FinancialEntryRow = {

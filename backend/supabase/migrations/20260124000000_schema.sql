@@ -131,11 +131,10 @@ CREATE TABLE public.treasury (
 --   - lease_id                -> tenant/lease-scoped accrual (charge / credit)
 --   - property_id             -> landlord/property-scoped result (income / expense)
 --   - treasury_id             -> cash movement (inflow / outflow)
---   - lease + treasury        -> deposit received / returned (cash, NOT income)
+--   - lease + treasury        -> tenant cash movement that is not income
 --   - lease + property + treasury -> rent payment / refund (cash AND income)
 --   - property + treasury     -> property expense / income paid in cash
 --   - property only           -> reclassification onto the property without cash
---                               (e.g. retained deposit granted to the property)
 --
 -- Consequences of the rule:
 --   lease account    = accrual receivable ledger (negative = tenant owes)
@@ -165,20 +164,14 @@ CREATE TABLE public.financial_entry (
 );
 
 -- ================================================
--- DEPOSIT SETTLEMENT (on lease_agreement)
+-- LEASE DEPOSIT (contract term only)
 -- ================================================
--- Added after financial_entry because of the circular reference:
---   financial_entry.lease_id -> lease_agreement.id
---   lease_agreement.deposit_entry_id -> financial_entry.id
+-- lease_agreement.deposit_amount records the deposit agreed in the contract.
+-- It is informational ONLY: the system does not track deposit receipt,
+-- retention or return, and no deposit money is represented in the ledger.
 --
--- deposit_entry_id  identifies THE deposit charge of the lease, so a deposit
---                   charge can be told apart from a rent/utility charge
---                   (both are lease-only negative entries).
--- deposit_released  how much of the deposit was returned to the tenant.
--- deposit_retained  how much was retained and granted to the property.
--- Both are NULL until the deposit is settled; once set they must add up to
--- deposit_amount (enforced in the constraints migration).
-ALTER TABLE public.lease_agreement
-    ADD COLUMN deposit_entry_id uuid REFERENCES public.financial_entry(id) ON DELETE RESTRICT,
-    ADD COLUMN deposit_released decimal(10,2),
-    ADD COLUMN deposit_retained decimal(10,2);
+-- Deposit settlement tracking was deliberately removed. If it is ever
+-- reintroduced, model it as its own table whose columns REFERENCE real
+-- financial_entry rows, rather than as amount columns on lease_agreement:
+-- copied amounts cannot be forced to agree with the ledger and will drift,
+-- which is the same defect as a stored paid/overdue flag.

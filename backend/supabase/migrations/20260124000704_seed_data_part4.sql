@@ -1,30 +1,18 @@
 -- ================================================
 -- RENTAL MANAGEMENT SYSTEM - SEED DATA (PART 4)
 -- ================================================
--- Part 4: Lease 4 closing (partial deposit release), property-level and
--- treasury-level entries, attachments, and deposit settlement.
+-- Part 4: Lease 4 entries, property-level and treasury-level entries,
+-- and attachments.
 -- This file is split to keep migration files under 400 lines
 
 -- ================================================
 -- SECTION 8: FINANCIAL ENTRIES (CONTINUED)
 -- ================================================
 
--- ===== LEASE 4: Lodz Apartment (Maria Lewandowska) - EXPIRED, DEPOSIT PARTIALLY RELEASED =====
--- Deposit 2800.00: 2300.00 returned to the tenant, 500.00 retained and granted
--- to the property for damages. The lease account nets to zero, deposit_held
--- drops to 500.00 and deposit_outstanding to 0.00 once deposit_retained is set.
+-- ===== LEASE 4: Lodz Apartment (Maria Lewandowska) - EXPIRED, FULLY SETTLED =====
+-- Two months of rent, each charged and paid, so the lease account nets to zero.
 
 INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
-    ('d0000000-0000-0000-0000-000000000300',
-     'c0000000-0000-0000-0000-000000000004', NULL, NULL,
-     'Security deposit - charged', -2800.00, '2024-01-01',
-     '2023-12-20 11:00:00+00', '2023-12-20 11:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    ('d0000000-0000-0000-0000-000000000301',
-     'c0000000-0000-0000-0000-000000000004', NULL, 'f0000000-0000-0000-0000-000000000001',
-     'Security deposit - received', 2800.00, '2024-01-01',
-     '2024-01-01 11:00:00+00', '2024-01-01 11:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
     ('d0000000-0000-0000-0000-000000000302',
      'c0000000-0000-0000-0000-000000000004', NULL, NULL,
      'Monthly rent - January 2024 - charged', -2800.00, '2024-01-01',
@@ -43,27 +31,7 @@ INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, desc
     ('d0000000-0000-0000-0000-000000000305',
      'c0000000-0000-0000-0000-000000000004', 'a0000000-0000-0000-0000-000000000006', 'f0000000-0000-0000-0000-000000000001',
      'Monthly rent - February 2024 - paid', 2800.00, '2024-02-05',
-     '2024-02-05 09:00:00+00', '2024-02-05 09:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    -- Deposit settlement, step 1: release the portion returned to the tenant
-    ('d0000000-0000-0000-0000-000000000306',
-     'c0000000-0000-0000-0000-000000000004', NULL, NULL,
-     'Security deposit - released to tenant', 2300.00, '2025-01-15',
-     '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    -- Deposit settlement, step 2: pay that portion out
-    ('d0000000-0000-0000-0000-000000000307',
-     'c0000000-0000-0000-0000-000000000004', NULL, 'f0000000-0000-0000-0000-000000000001',
-     'Security deposit - returned to tenant', -2300.00, '2025-01-15',
-     '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    -- Deposit settlement, step 3: retained portion granted to the property.
-    -- Property only: the cash arrived earlier as the deposit, so no cash leg.
-    ('d0000000-0000-0000-0000-000000000308',
-     NULL, 'a0000000-0000-0000-0000-000000000006', NULL,
-     'Security deposit - retained for damages, granted to property', 500.00, '2025-01-15',
-     '2025-01-15 10:00:00+00', '2025-01-15 10:00:00+00', '00000000-0000-0000-0000-000000000002');
-
+     '2024-02-05 09:00:00+00', '2024-02-05 09:00:00+00', '00000000-0000-0000-0000-000000000002');
 
 -- ===== PROPERTY-LEVEL ENTRIES (property + treasury: expense paid in cash) =====
 
@@ -157,7 +125,7 @@ INSERT INTO public.attachment (id, related_to_type, related_to_id, file_name, fi
 -- 2. Properties: Various types (apartment, house, commercial, room)
 -- 3. Tenants: Active, past, and applicant statuses
 -- 4. Leases: Active, expired, and ending soon scenarios
--- 5. Transactions: Rent, utilities, deposits, and property expenses
+-- 5. Financial entries: rent, utilities and property expenses
 -- 6. Attachments: Various document and image types
 --
 -- Test User Credentials (for Supabase Auth):
@@ -176,25 +144,3 @@ INSERT INTO public.attachment (id, related_to_type, related_to_id, file_name, fi
 
 INSERT INTO public.attachment (id, related_to_type, related_to_id, file_name, file_url, file_type, file_size, description, created_by, created_at) VALUES
     ('aad00000-0000-0000-0000-000000000040', 'financial_entry', 'e0000000-0000-0000-0000-000000000001', 'plumbing_invoice_fv.pdf', '/uploads/entries/warsaw_plumbing_fv.pdf', 'pdf', 180000, 'Invoice for the plumbing repair entry', '00000000-0000-0000-0000-000000000002', '2025-06-15 14:00:00+00');
-
-
--- ================================================
--- SECTION 10: DEPOSIT SETTLEMENT
--- ================================================
--- Link each lease to its deposit charge so a deposit charge can be told apart
--- from a rent charge (both are lease-only negative entries).
-
-UPDATE public.lease_agreement SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000001'
-    WHERE id = 'c0000000-0000-0000-0000-000000000001';
-UPDATE public.lease_agreement SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000100'
-    WHERE id = 'c0000000-0000-0000-0000-000000000002';
-UPDATE public.lease_agreement SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000200'
-    WHERE id = 'c0000000-0000-0000-0000-000000000003';
-
--- Lease 4 is settled: 2300.00 returned to the tenant + 500.00 retained = 2800.00 charged.
--- The check_deposit_settlement constraint enforces that these add up to deposit_amount.
-UPDATE public.lease_agreement
-    SET deposit_entry_id = 'd0000000-0000-0000-0000-000000000300',
-        deposit_released = 2300.00,
-        deposit_retained = 500.00
-    WHERE id = 'c0000000-0000-0000-0000-000000000004';

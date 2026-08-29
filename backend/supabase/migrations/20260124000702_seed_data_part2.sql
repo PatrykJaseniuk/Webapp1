@@ -181,22 +181,10 @@ INSERT INTO public.treasury (id, name, is_active, created_at, updated_at, create
 -- lease account nets to zero:
 --   charge   lease only                     -> receivable created
 --   payment  lease + property + treasury    -> settles it, income, cash in
---   deposit  lease + treasury               -> cash in, NOT income
 --
 -- ===== LEASE 1: Warsaw Apartment (Jan Kowalski) - FULLY SETTLED =====
 
 INSERT INTO public.financial_entry (id, lease_id, property_id, treasury_id, description, amount, value_date, created_at, updated_at, created_by) VALUES
-    -- Deposit: charged, then paid into the bank account (cash, not income)
-    ('d0000000-0000-0000-0000-000000000001',
-     'c0000000-0000-0000-0000-000000000001', NULL, NULL,
-     'Security deposit - charged', -3500.00, '2025-06-01',
-     '2025-05-20 10:00:00+00', '2025-05-20 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
-    ('d0000000-0000-0000-0000-000000000002',
-     'c0000000-0000-0000-0000-000000000001', NULL, 'f0000000-0000-0000-0000-000000000001',
-     'Security deposit - received', 3500.00, '2025-06-01',
-     '2025-06-01 10:00:00+00', '2025-06-01 10:00:00+00', '00000000-0000-0000-0000-000000000002'),
-
     -- Rent June 2025: charged, then paid
     ('d0000000-0000-0000-0000-000000000003',
      'c0000000-0000-0000-0000-000000000001', NULL, NULL,

@@ -48,5 +48,3 @@ CREATE INDEX idx_financial_entries_treasury_value ON public.financial_entry(trea
 CREATE INDEX idx_treasuries_is_active ON public.treasury(is_active);
 CREATE INDEX idx_treasuries_created_by ON public.treasury(created_by);
 
--- LEASE DEPOSIT SETTLEMENT INDEX
-CREATE INDEX idx_leases_deposit_entry_id ON public.lease_agreement(deposit_entry_id);

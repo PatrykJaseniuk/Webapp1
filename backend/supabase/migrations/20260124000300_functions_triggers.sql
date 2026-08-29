@@ -54,8 +54,8 @@ BEGIN
     
     -- When a lease stops being active (terminated, expired or deleted), check if
     -- the property should be released. Guarded on the lease no longer being
-    -- active, so an unrelated UPDATE of a still-active lease (e.g. setting
-    -- deposit_entry_id) cannot free an occupied property.
+    -- active, so an unrelated UPDATE of a still-active lease (e.g. editing the
+    -- rent or notes) cannot free an occupied property.
     IF (TG_OP = 'DELETE') OR (TG_OP = 'UPDATE' AND NEW.lease_status <> 'active') THEN
         -- Use OLD for DELETE, NEW for UPDATE
         DECLARE
@@ -211,48 +211,6 @@ BEGIN
 END;
 $$;
 
--- Function to validate that lease_agreement.deposit_entry_id really points at the
--- deposit charge of that lease: a lease-only negative entry of the same lease whose
--- absolute amount equals the contractual deposit_amount.
-CREATE OR REPLACE FUNCTION public.validate_lease_deposit_entry()
-RETURNS TRIGGER
-LANGUAGE plpgsql
-SET search_path = public
-AS $$
-DECLARE
-    entry_lease_id uuid;
-    entry_property_id uuid;
-    entry_treasury_id uuid;
-    entry_amount decimal(10,2);
-BEGIN
-    IF NEW.deposit_entry_id IS NOT NULL THEN
-        SELECT lease_id, property_id, treasury_id, amount
-        INTO entry_lease_id, entry_property_id, entry_treasury_id, entry_amount
-        FROM public.financial_entry
-        WHERE id = NEW.deposit_entry_id;
-
-        IF entry_lease_id IS DISTINCT FROM NEW.id THEN
-            RAISE EXCEPTION 'deposit_entry_id must reference an entry of this lease';
-        END IF;
-
-        IF entry_property_id IS NOT NULL OR entry_treasury_id IS NOT NULL THEN
-            RAISE EXCEPTION 'deposit_entry_id must reference a lease-only accrual entry';
-        END IF;
-
-        IF entry_amount >= 0 THEN
-            RAISE EXCEPTION 'deposit_entry_id must reference a charge (negative amount)';
-        END IF;
-
-        IF abs(entry_amount) != NEW.deposit_amount THEN
-            RAISE EXCEPTION 'deposit charge (%) does not match lease deposit_amount (%)',
-                abs(entry_amount), NEW.deposit_amount;
-        END IF;
-    END IF;
-
-    RETURN NEW;
-END;
-$$;
-
 CREATE TRIGGER update_financial_entries_updated_at
     BEFORE UPDATE ON public.financial_entry
     FOR EACH ROW
@@ -273,11 +231,6 @@ CREATE TRIGGER revalidate_lease_entry_refs_trigger
     BEFORE UPDATE ON public.lease_agreement
     FOR EACH ROW
     EXECUTE FUNCTION public.revalidate_lease_entry_refs();
-
-CREATE TRIGGER validate_lease_deposit_entry_trigger
-    BEFORE INSERT OR UPDATE ON public.lease_agreement
-    FOR EACH ROW
-    EXECUTE FUNCTION public.validate_lease_deposit_entry();
 
 -- TREASURIES TRIGGERS
 CREATE TRIGGER update_treasuries_updated_at

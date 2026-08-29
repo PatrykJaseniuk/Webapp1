@@ -65,8 +65,6 @@ export type LeaseFormOptions = Readonly<{
   readonly properties: readonly PropertyOption[];
 }>;
 
-type ClosingStatementDbRow = Database['public']['Views']['lease_closing_statement']['Row'];
-
 type LeaseAgreementData = Readonly<{
   readonly leaseAgreement:
     | (LeaseAgreementDbRow & {
@@ -74,7 +72,6 @@ type LeaseAgreementData = Readonly<{
         readonly property: { readonly name: string };
       })
     | null;
-  readonly closingStatement: ClosingStatementDbRow | null;
 }>;
 
 type NavLinkTo = Readonly<{
@@ -129,22 +126,14 @@ type Props = {
 };
 
 const fetchLeaseAgreementData = async (leaseId: string): Promise<LeaseAgreementData> => {
-  const [result, closingResult] = await Promise.all([
-    backendConnector
-      .from('lease_agreement')
-      .select('*, tenant(first_name,last_name), property(name)')
-      .eq('id', leaseId)
-      .single(),
-    backendConnector
-      .from('lease_closing_statement')
-      .select('*')
-      .eq('lease_id', leaseId)
-      .maybeSingle(),
-  ]);
-  const combinedError = result.error ?? closingResult.error;
-  return combinedError !== null
-    ? Promise.reject(combinedError)
-    : { leaseAgreement: result.data ?? null, closingStatement: closingResult.data ?? null };
+  const result = await backendConnector
+    .from('lease_agreement')
+    .select('*, tenant(first_name,last_name), property(name)')
+    .eq('id', leaseId)
+    .single();
+  return result.error !== null
+    ? Promise.reject(result.error)
+    : { leaseAgreement: result.data ?? null };
 };
 
 const fetchFormOptions = async (): Promise<LeaseFormOptions> => {

@@ -3,7 +3,7 @@
 -- ================================================
 
 BEGIN;
-SELECT plan(49);
+SELECT plan(46);
 
 -- ── lease_agreements ────────────────────────────
 SELECT has_column('public', 'lease_agreement', 'id',               'leases.id');
@@ -61,11 +61,6 @@ SELECT has_column('public', 'financial_entry', 'created_at',  'financial_entries
 SELECT has_column('public', 'financial_entry', 'updated_at',  'financial_entries.updated_at');
 SELECT has_column('public', 'financial_entry', 'created_by',  'financial_entries.created_by');
 SELECT col_is_pk('public', 'financial_entry', 'id',           'financial_entries PK');
-
--- ── lease deposit settlement columns ────────────
-SELECT has_column('public', 'lease_agreement', 'deposit_entry_id', 'leases.deposit_entry_id');
-SELECT has_column('public', 'lease_agreement', 'deposit_released', 'leases.deposit_released');
-SELECT has_column('public', 'lease_agreement', 'deposit_retained', 'leases.deposit_retained');
 
 SELECT finish();
 ROLLBACK;

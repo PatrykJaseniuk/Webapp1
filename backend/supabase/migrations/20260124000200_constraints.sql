@@ -38,17 +38,6 @@ ALTER TABLE public.lease_agreement
 -- Prevent multiple active leases for the same property
 -- Note: This is enforced via triggers in functions_triggers.sql
 
--- Deposit settlement: once settled, the returned and retained parts must add up
--- to the contractual deposit amount (the invariant "released + retained = charged").
-ALTER TABLE public.lease_agreement
-    ADD CONSTRAINT check_deposit_settlement
-    CHECK (
-        (deposit_released IS NULL AND deposit_retained IS NULL)
-        OR (deposit_released IS NOT NULL AND deposit_retained IS NOT NULL
-            AND deposit_released >= 0 AND deposit_retained >= 0
-            AND deposit_released + deposit_retained = deposit_amount)
-    );
-
 -- TREASURIES CONSTRAINTS
 ALTER TABLE public.treasury
     ADD CONSTRAINT unique_treasury_name

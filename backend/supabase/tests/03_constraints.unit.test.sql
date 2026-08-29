@@ -3,7 +3,7 @@
 -- ================================================
 
 BEGIN;
-SELECT plan(22);
+SELECT plan(20);
 
 -- ── properties constraints ──────────────────────
 SELECT col_has_check('public', 'property', 'monthly_rent', 'props: monthly_rent CHECK');
@@ -113,22 +113,6 @@ SELECT throws_ok(
 SELECT throws_ok(
     $$ INSERT INTO public.treasury (name) VALUES ('   ') $$,
     '23514'
-);
-
--- ── deposit settlement constraint ───────────────
--- released + retained must equal the contractual deposit_amount (3500.00)
-SELECT throws_ok(
-    $$ UPDATE public.lease_agreement
-       SET deposit_released = 1000, deposit_retained = 500
-       WHERE id = 'c0000000-0000-0000-0000-000000000001' $$,
-    '23514'
-);
-
-SELECT lives_ok(
-    $$ UPDATE public.lease_agreement
-       SET deposit_released = 3000, deposit_retained = 500
-       WHERE id = 'c0000000-0000-0000-0000-000000000001' $$,
-    'leases: deposit settlement adding up to deposit_amount accepted'
 );
 
 SELECT finish();

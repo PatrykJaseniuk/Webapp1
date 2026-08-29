@@ -34,8 +34,6 @@ type SubmitState = LeaseAgreementSProps['submitState'];
 type DeleteAction = LeaseAgreementSProps['deleteAction'];
 type NavLinkTo = LeaseAgreementSProps['navLinkTo'];
 type FinancialEntries = LeaseAgreementSProps['financialEntries'];
-type LeaseData = NonNullable<Extract<LeaseAgreementSProps['asyncData'], { readonly tag: 'fulfilled' }>['data']>;
-type ClosingStatement = NonNullable<LeaseData['closingStatement']>;
 type Attachments = LeaseAgreementSProps['attachments'];
 type FinancialEntryFilter = FinancialEntries['filter'];
 type FinancialEntryRow = Extract<FinancialEntries['asyncData'], { readonly tag: 'fulfilled' }>['data']['rows'][number];
@@ -125,51 +123,6 @@ const toInsert = (d: LeaseDraft): LeaseInsert => ({
   notes: d.notes === '' ? null : d.notes,
 });
 
-// Deposit settlement panel: every figure comes from lease_closing_statement,
-// so the slave performs no arithmetic of its own.
-const DepositPanel = ({ statement }: { readonly statement: ClosingStatement }): JSX.Element => {
-  const outstanding = statement.deposit_outstanding ?? 0;
-  const settled = statement.deposit_released !== null;
-  return (
-    <div className={sectionClass}>
-      <h2 className={sectionTitleClass}>Kaucja</h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        <div>
-          <p className={labelClass}>Naliczona</p>
-          <p className={valueClass}>{formatPln(statement.deposit_charged ?? 0)}</p>
-        </div>
-        <div>
-          <p className={labelClass}>Wpłacona</p>
-          <p className={valueClass}>{formatPln(statement.deposit_paid ?? 0)}</p>
-        </div>
-        <div>
-          <p className={labelClass}>W posiadaniu</p>
-          <p className={valueClass}>{formatPln(statement.deposit_held ?? 0)}</p>
-        </div>
-        {settled ? (
-          <div>
-            <p className={labelClass}>Zwrócona najemcy</p>
-            <p className={valueClass}>{formatPln(statement.deposit_released ?? 0)}</p>
-          </div>
-        ) : undefined}
-        {settled ? (
-          <div>
-            <p className={labelClass}>Zatrzymana</p>
-            <p className={valueClass}>{formatPln(statement.deposit_retained ?? 0)}</p>
-          </div>
-        ) : undefined}
-        <div>
-          <p className={labelClass}>Do zwrotu</p>
-          <p className={`text-sm font-semibold ${outstanding > 0 ? 'text-amber-700' : 'text-green-700'}`}>
-            <span aria-hidden="true">{outstanding > 0 ? '● ' : '✓ '}</span>
-            {formatPln(outstanding)}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 type DetailContentProps = {
   readonly data: LeaseAgreementData;
   readonly navLinkTo: NavLinkTo;
@@ -186,7 +139,6 @@ const DetailContent = ({
   onEdit,
 }: DetailContentProps): JSX.Element => {
   const l = data.leaseAgreement;
-  const closingStatement = data.closingStatement;
   const filter = financialEntries.filter;
   return l === null ?
     (
@@ -221,8 +173,6 @@ const DetailContent = ({
           </div>
           {l.notes !== null ? <div className="mt-4"><p className={labelClass}>Notatki</p><p className={`${valueClass} mt-1 whitespace-pre-wrap`}>{l.notes}</p></div> : undefined}
         </div>
-
-        {closingStatement !== null ? <DepositPanel statement={closingStatement} /> : undefined}
 
         <div className={sectionClass}>
           <h2 className={sectionTitleClass}>Zapisy finansowe</h2>

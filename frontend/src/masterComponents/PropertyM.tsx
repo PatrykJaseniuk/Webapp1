@@ -98,7 +98,7 @@ const LEASE_SORT_COLUMN_MAP: Readonly<Record<LeaseSortColumn, string>> = Object.
   lease_status: 'lease_status',
 });
 
-const TRANSACTION_SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
+const ENTRY_SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Object.freeze({
   value_date: 'value_date',
   amount: 'amount',
 });
@@ -230,7 +230,7 @@ export const PropertyDetailM = ({ Slave, mode }: Props): JSX.Element => {
         .from('financial_entry')
         .select('*', { count: 'exact' })
         .eq('property_id', propertyId ?? '')
-        .order(TRANSACTION_SORT_COLUMN_MAP[sortConfig.column], { ascending });
+        .order(ENTRY_SORT_COLUMN_MAP[sortConfig.column], { ascending });
       const text = filterConfig.text ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';

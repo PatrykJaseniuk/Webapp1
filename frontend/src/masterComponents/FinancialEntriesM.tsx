@@ -8,7 +8,7 @@ import { useFilteredPaginatedQuery, type ManyRecordsSlaveProps, type NavLink, ty
 type FinancialEntryDbRow = Database['public']['Tables']['financial_entry']['Row'];
 
 type FinancialEntryListRow = FinancialEntryDbRow & {
-  readonly property: { readonly name: string };
+  readonly property: { readonly name: string } | null;
   readonly lease_agreement: { readonly start_date: string } | null;
 };
 
@@ -29,6 +29,29 @@ const SORT_COLUMN_MAP: Readonly<Record<FinancialEntrySortColumn, string>> = Obje
 
 type FinancialEntryFilter = 'text' | 'dateFrom' | 'dateTo';
 
+// Exported so the integration test executes the SAME select strings this master
+// ships. PostgREST resolves embedded relationships at request time, so a broken
+// embed is invisible to tsc — only running these exact strings catches it.
+//
+// The `!lease_id` hint names the foreign key explicitly. It is not strictly
+// required today (financial_entry.lease_id is the only FK between the two
+// tables), but a second FK in either direction would make an unhinted embed
+// ambiguous and PostgREST would reject the request with PGRST201. Naming the FK
+// costs nothing and keeps that failure mode out of reach.
+//
+// `property(name)` is a LEFT join on purpose. Most of the ledger has no
+// property_id — every accrual charge is lease-only, and deposit cash legs and
+// treasury-only movements carry no property either — so an inner join would
+// silently hide over half of all entries, including every unpaid charge.
+export const FINANCIAL_ENTRY_LIST_SELECT =
+  '*, property(name), lease_agreement!lease_id(start_date)';
+
+// Only when filtering BY property name does the join become inner: filtering on
+// an embedded column requires it, and rows without a property cannot match the
+// text anyway.
+export const FINANCIAL_ENTRY_LIST_SELECT_BY_PROPERTY =
+  '*, property!inner(name), lease_agreement!lease_id(start_date)';
+
 export type FinancialEntriesSProps = ManyRecordsSlaveProps<FinancialEntryListRow, FinancialEntrySortColumn, NavLinkTo, FinancialEntryFilter>;
 
 type Props = {
@@ -45,14 +68,17 @@ export const FinancialEntriesM = ({
     defaultSort: { column: 'value_date', direction: 'desc' },
     fetchPage: async ({ sort: sortConfig, from, to, filter: filterConfig }) => {
       const ascending = sortConfig.direction === 'asc';
-      const baseQuery = backendConnector
-        .from('financial_entry')
-        .select('*, property!inner(name), lease_agreement(start_date)', { count: 'exact' })
-        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
-        .range(from, to);
       const text = filterConfig.text ?? '';
       const dateFrom = filterConfig.dateFrom ?? '';
       const dateTo = filterConfig.dateTo ?? '';
+      const baseQuery = backendConnector
+        .from('financial_entry')
+        .select(
+          text.length > 0 ? FINANCIAL_ENTRY_LIST_SELECT_BY_PROPERTY : FINANCIAL_ENTRY_LIST_SELECT,
+          { count: 'exact' },
+        )
+        .order(SORT_COLUMN_MAP[sortConfig.column], { ascending })
+        .range(from, to);
       const withText = text.length > 0 ? baseQuery.ilike('property.name', `*${text}*`) : baseQuery;
       const withDateFrom = dateFrom.length > 0 ? withText.gte('value_date', dateFrom) : withText;
       const queryWithFilters = dateTo.length > 0 ? withDateFrom.lte('value_date', dateTo) : withDateFrom;

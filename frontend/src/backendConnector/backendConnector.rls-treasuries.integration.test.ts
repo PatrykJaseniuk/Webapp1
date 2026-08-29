@@ -52,7 +52,7 @@ describe('treasuries RLS', () => {
             .eq('treasury_id', TEST_UUIDS.treasuryBank)
             .single();
           expect(error).toBeNull();
-          expect(data?.balance).toBe(42782.5);
+          expect(data?.balance).toBe(28082.5);
           await signOut(client);
         })());
     });

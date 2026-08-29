@@ -106,10 +106,6 @@ SELECT
     p.name as property_name,
     COALESCE(SUM(fe.amount), 0) as balance,
     GREATEST(0, -COALESCE(SUM(fe.amount), 0)) as total_unpaid_amount,
-    -- Deposit cash still in hand: lease cash legs that are NOT income
-    -- (treasury set, property unset) — deposits in minus deposits returned.
-    COALESCE(SUM(fe.amount) FILTER (
-        WHERE fe.treasury_id IS NOT NULL AND fe.property_id IS NULL), 0) as deposit_held,
     uc.earliest_unpaid_value_date,
     COALESCE(uc.overdue_items_count, 0) as overdue_items_count
 FROM public.lease_agreement la
@@ -121,75 +117,13 @@ GROUP BY la.id, t.first_name, t.last_name, p.name,
          uc.earliest_unpaid_value_date, uc.overdue_items_count;
 
 -- ================================================
--- VIEW 4: LEASE CLOSING STATEMENT
--- ================================================
--- Everything needed to settle a lease:
---   deposit_charged     — contractual amount (linked entry: deposit_entry_id)
---   deposit_paid        — deposit cash actually received
---   deposit_held        — deposit cash received minus deposit cash returned
---   deposit_released    — part returned to the tenant   (set at settlement)
---   deposit_retained    — part granted to the property  (set at settlement)
---   deposit_outstanding — still owed back to the tenant (held minus retained)
--- SECURITY INVOKER: Respects RLS policies of querying user
-
-CREATE VIEW public.lease_closing_statement
-WITH (security_invoker = true) AS
-SELECT
-    la.id as lease_id,
-    la.tenant_id,
-    la.property_id,
-    la.lease_status,
-    la.deposit_entry_id,
-    t.first_name || ' ' || t.last_name as tenant_name,
-    p.name as property_name,
-    la.deposit_amount as deposit_charged,
-    COALESCE(SUM(fe.amount) FILTER (
-        WHERE fe.treasury_id IS NOT NULL AND fe.property_id IS NULL AND fe.amount > 0), 0) as deposit_paid,
-    COALESCE(SUM(fe.amount) FILTER (
-        WHERE fe.treasury_id IS NOT NULL AND fe.property_id IS NULL), 0) as deposit_held,
-    la.deposit_released,
-    la.deposit_retained,
-    COALESCE(SUM(fe.amount) FILTER (
-        WHERE fe.treasury_id IS NOT NULL AND fe.property_id IS NULL), 0)
-        - COALESCE(la.deposit_retained, 0) as deposit_outstanding,
-    GREATEST(0, -COALESCE(SUM(fe.amount), 0)) as arrears,
-    COALESCE(SUM(fe.amount), 0) as lease_balance
-FROM public.lease_agreement la
-JOIN public.tenant t ON la.tenant_id = t.id
-JOIN public.property p ON la.property_id = p.id
-LEFT JOIN public.financial_entry fe ON la.id = fe.lease_id
-GROUP BY la.id, t.first_name, t.last_name, p.name;
-
--- ================================================
--- VIEW 5: DEPOSIT OBLIGATION
--- ================================================
--- Deposits still owed on leases that are no longer active — the operational
--- "who do we still have to pay back" list.
-
-CREATE VIEW public.deposit_obligation
-WITH (security_invoker = true) AS
-SELECT
-    lease_id,
-    tenant_id,
-    tenant_name,
-    property_name,
-    lease_status,
-    deposit_charged,
-    deposit_held,
-    deposit_retained,
-    deposit_outstanding
-FROM public.lease_closing_statement
-WHERE lease_status <> 'active'
-  AND deposit_outstanding <> 0;
-
--- ================================================
--- VIEW 6: PROPERTY FINANCIAL SUMMARY
+-- VIEW 4: PROPERTY FINANCIAL SUMMARY
 -- ================================================
 -- Income and expenses per property, derived from the signed ledger.
 -- Income = positive amounts; expenses = negative amounts.
 -- Rent reaches the property because a rent payment is tagged
--- (lease + property + treasury); deposits never carry property_id and are
--- therefore correctly excluded from income.
+-- (lease + property + treasury); lease cash legs left untagged are therefore
+-- correctly excluded from income.
 -- SECURITY INVOKER: Respects RLS policies of querying user
 
 CREATE VIEW public.property_financial_summary
@@ -208,7 +142,7 @@ LEFT JOIN public.financial_entry fe ON p.id = fe.property_id
 GROUP BY p.id;
 
 -- ================================================
--- VIEW 7: TREASURY BALANCE
+-- VIEW 5: TREASURY BALANCE
 -- ================================================
 -- Cash on hand per treasury — reconcilable against a bank statement.
 -- SECURITY INVOKER: Respects RLS policies of querying user
@@ -227,7 +161,7 @@ LEFT JOIN public.financial_entry fe ON tr.id = fe.treasury_id
 GROUP BY tr.id;
 
 -- ================================================
--- VIEW 8: FINANCIAL ENTRY REVIEW
+-- VIEW 6: FINANCIAL ENTRY REVIEW
 -- ================================================
 -- Data-quality worklist. The posting rule cannot be fully enforced by
 -- constraints (intent is not stored), so shapes that are legal but frequently
@@ -248,7 +182,7 @@ FROM (
         CASE
             WHEN fe.lease_id IS NOT NULL AND fe.treasury_id IS NOT NULL
                  AND fe.property_id IS NULL AND fe.amount > 0
-                THEN 'lease cash-in without property: deposit receipt, or a rent payment missing property_id'
+                THEN 'lease cash-in without property: a rent payment missing property_id?'
             WHEN fe.lease_id IS NULL AND fe.property_id IS NULL
                 THEN 'treasury-only movement: not attributed to a property or a lease'
             WHEN fe.property_id IS NOT NULL AND fe.treasury_id IS NULL
@@ -260,7 +194,7 @@ FROM (
 WHERE flagged.review_reason IS NOT NULL;
 
 -- ================================================
--- VIEW 9: DASHBOARD SUMMARY
+-- VIEW 7: DASHBOARD SUMMARY
 -- ================================================
 -- Single-row aggregate for the dashboards. Money is summed in SQL (numeric),
 -- never accumulated as floating point in the client.
@@ -289,8 +223,6 @@ GRANT SELECT
     ON public.active_leases,
            public.property_occupancy,
            public.lease_balance,
-           public.lease_closing_statement,
-           public.deposit_obligation,
            public.property_financial_summary,
            public.treasury_balance,
            public.financial_entry_review,
