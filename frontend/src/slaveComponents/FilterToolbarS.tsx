@@ -76,6 +76,7 @@ export const FilterToolbarS = ({
         ) : null}
       </div>
       <div
+        id="filter-panel"
         className={`absolute left-0 top-full z-20 mt-1 flex flex-wrap items-end gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-lg transition-all duration-200 ${showFilterPanel ? popoverOpen : popoverClosed}`}
       >
         {panel}

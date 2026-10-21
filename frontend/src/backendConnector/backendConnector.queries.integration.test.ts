@@ -33,11 +33,11 @@ describe('complex queries', () => {
     let client: SupabaseClient;
 
     beforeAll(async () => {
-      client = await signInAs('landlord');
+      client = available ? await signInAs('landlord') : ({} as SupabaseClient);
     });
 
     afterAll(async () => {
-      await signOut(client);
+      available && (await signOut(client));
     });
 
     // ═════════════════════════════════════════════════════════

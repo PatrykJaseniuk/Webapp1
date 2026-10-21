@@ -84,7 +84,7 @@ export const LoginForm = ({
               <li key={email}>
                 <span className="font-medium text-gray-800">{role}:</span>{' '}
                 <span className="font-mono">{email}</span>
-                <span className="font-mono text-gray-400"> / {password}</span>
+                <span className="font-mono text-gray-500"> / {password}</span>
               </li>
             ))}
           </ul>

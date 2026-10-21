@@ -248,8 +248,8 @@ describe('LeaseAgreementsM (integration)', () => {
         await user.click(screen.getByRole('button', { name: /Filtry/ }));
 
         expect(screen.getByLabelText('Status')).toBeInTheDocument();
-        expect(screen.getByLabelText('Data od')).toBeInTheDocument();
-        expect(screen.getByLabelText('Data do')).toBeInTheDocument();
+        expect(screen.getByLabelText('Data rozpoczęcia od')).toBeInTheDocument();
+        expect(screen.getByLabelText('Data rozpoczęcia do')).toBeInTheDocument();
         expect(screen.getByLabelText('Szukaj')).toBeInTheDocument();
       })());
   });
@@ -355,7 +355,7 @@ describe('LeaseAgreementsM (integration)', () => {
         await user.click(screen.getByRole('button', { name: /Filtry/ }));
 
         // Set "Data od" to 2025-01-01 — should exclude lease 3 (start_date 2024-01-01)
-        const dateFromInput = screen.getByLabelText('Data od');
+        const dateFromInput = screen.getByLabelText('Data rozpoczęcia od');
         await user.clear(dateFromInput);
         await user.type(dateFromInput, '2025-01-01');
 

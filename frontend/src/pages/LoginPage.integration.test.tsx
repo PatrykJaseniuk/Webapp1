@@ -152,6 +152,6 @@ describe('LoginPage (integration)', () => {
       </MemoryRouterProvider>,
     );
 
-    expect(screen.getByText('Loading…')).toBeInTheDocument();
+    expect(screen.getByText('Ładowanie…')).toBeInTheDocument();
   });
 });
