@@ -132,6 +132,7 @@ jobs:
           version: latest
       - run: supabase link --project-ref ${{ secrets.PRODUCTION_PROJECT_ID }}
       - run: supabase db reset --linked --yes
+      - run: supabase config push --yes
 
   build-frontend:
     name: Build Frontend (artifact)
