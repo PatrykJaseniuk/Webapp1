@@ -58,8 +58,8 @@ test.describe('Login', () => {
   test('has a link to the signup page', async ({ page }) => {
     await page.goto('/#/login');
 
-    const signupLink = page.getByText('Zarejestruj się');
+    const signupLink = page.getByRole('link', { name: 'Zarejestruj się' });
     await expect(signupLink).toBeVisible();
-    await expect(signupLink).toHaveAttribute('href', '/signup');
+    await expect(signupLink).toHaveAttribute('href', '/#/signup');
   });
 });
