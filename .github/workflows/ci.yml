@@ -89,6 +89,9 @@ jobs:
     defaults:
       run:
         working-directory: frontend
+    env:
+      VITE_SUPABASE_URL: http://127.0.0.1:54321
+      VITE_SUPABASE_ANON_KEY: your-anon-key-here
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -78,18 +78,18 @@ test-backend: ## Run pgTAP tests
 	echo "=== Resetting database (migrations + seed) ==="; \
 	(cd backend/supabase && npx supabase db reset); \
 	echo "=== Running pgTAP tests ==="; \
-	for f in backend/supabase/tests/*.test.sql; do \
-		echo "--- $$(basename $$f) ---"; \
-		(cd backend/supabase && npx supabase db test $$f 2>/dev/null) \
-		|| echo "  (pgTAP CLI test runner — verify separately with psql)"; \
-	done; \
+	(cd backend/supabase && npx supabase test db --local tests/*.test.sql); \
 	echo "=== Backend tests complete ==="
 
 # ── E2E Tests ──────────────────────────────────────────────────────────────────
 
 test-e2e: ## Run Playwright E2E tests (no side effects — only stops backend if it started it)
 	@echo "=== Ensuring Playwright browsers are installed ==="
-	(cd frontend && npx playwright install chromium 2>/dev/null || true)
+	@if ls "$$HOME/.cache/ms-playwright"/chromium* >/dev/null 2>&1; then \
+		echo "  Playwright browsers already installed — skipping"; \
+	else \
+		(cd frontend && npx playwright install chromium); \
+	fi
 	@WE_STARTED=false; \
 	trap 'if [ "$$WE_STARTED" = "true" ]; then echo "=== Stopping backend (started by test-e2e) ==="; (cd backend/supabase && npx supabase stop); fi' INT TERM EXIT; \
 	echo "=== Checking Supabase status ==="; \
@@ -106,7 +106,18 @@ test-e2e: ## Run Playwright E2E tests (no side effects — only stops backend if
 	(cd frontend && npx playwright test) || exit 1; \
 	echo "=== E2E tests complete ==="
 
-test-all: test-frontend test-backend test-e2e ## Run all tests (frontend + backend + E2E incl. Lighthouse)
+test-all: test-frontend ## Run all tests (frontend + backend pgTAP + E2E) with a single Supabase lifecycle
+	@trap '$(MAKE) stop' INT TERM EXIT; \
+	echo "=== Ensuring Playwright browsers are installed ==="; \
+	(ls "$$HOME/.cache/ms-playwright"/chromium* >/dev/null 2>&1 || (cd frontend && npx playwright install chromium)) && \
+	echo "=== Starting Supabase ===" && \
+	(cd backend/supabase && npx supabase start) && \
+	echo "=== Resetting database (migrations + seed) ===" && \
+	(cd backend/supabase && npx supabase db reset) && \
+	echo "=== Running pgTAP tests ===" && \
+	(cd backend/supabase && npx supabase test db --local tests/*.test.sql) && \
+	echo "=== Running Playwright E2E tests ===" && \
+	(cd frontend && npx playwright test)
 
 # ── Build (full clean rebuild → build → cleanup) ──────────────────────────────
 
