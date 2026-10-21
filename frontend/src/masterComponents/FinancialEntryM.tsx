@@ -1,16 +1,20 @@
 import { Link, useNavigate } from '@tanstack/react-router';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { match } from 'ts-pattern';
-import { useState } from 'react';
 import type { ComponentType } from 'react';
 import { z } from 'zod';
 import { backendConnector } from '@/backendConnector/backendConnector';
 import type { Database } from '@/backendConnector';
 import {
   toAsyncData,
+  useCrudMutations,
+  deriveSubmitState,
+  formatDbError,
   type AsyncData,
+  type DetailMode,
   type NavLink,
   type NavLinkWithId,
+  type SubmitState,
 } from '@/generic';
 
 type FinancialEntryRow = Database['public']['Tables']['financial_entry']['Row'];
@@ -47,11 +51,9 @@ export const financialEntryInsertSchema = z
 
 export type FinancialEntryInsertInput = z.input<typeof financialEntryInsertSchema>;
 
-const formatZodIssues = (error: z.ZodError): string =>
-  error.issues.map((issue) => issue.message).join('; ');
-
-const formatDeleteError = (error: Error | null): string =>
-  error?.message ?? 'Wystąpił nieznany błąd';
+// FinancialEntry deletion has no Postgres-code-specific message; the fallback is
+// the raw message in Polish.
+const FINANCIAL_DELETE_FALLBACK = 'Wystąpił nieznany błąd';
 
 type PropertyOption = { readonly id: string; readonly label: string };
 type LeaseOption = { readonly id: string; readonly label: string; readonly propertyId: string };
@@ -76,12 +78,6 @@ type NavLinkTo = Readonly<{
   readonly toList: NavLink;
 }>;
 
-type SubmitState =
-  | { readonly tag: 'idle' }
-  | { readonly tag: 'submitting' }
-  | { readonly tag: 'success' }
-  | { readonly tag: 'error'; readonly message: string };
-
 type FinancialEntryDeleteAction =
   | { readonly tag: 'absent' }
   | { readonly tag: 'allowed'; readonly doDelete: () => void };
@@ -97,9 +93,7 @@ export type FinancialEntrySProps = {
   readonly navLinkTo: NavLinkTo;
 };
 
-export type FinancialEntryDetailMode =
-  | { readonly tag: 'create' }
-  | { readonly tag: 'edit'; readonly id: string };
+export type FinancialEntryDetailMode = DetailMode;
 
 type Props = {
   readonly Slave: ComponentType<FinancialEntrySProps>;
@@ -204,7 +198,6 @@ const leasePropertyMismatch = (
 export const FinancialEntryDetailM = ({ Slave, mode }: Props): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const entryId = match(mode)
     .with({ tag: 'create' }, () => null)
@@ -233,57 +226,29 @@ export const FinancialEntryDetailM = ({ Slave, mode }: Props): JSX.Element => {
 
   const formOptions = toAsyncData(formOptionsQuery, () => { void formOptionsQuery.refetch(); });
 
-  const insertMutation = useMutation({
-    mutationFn: (newRecord: FinancialEntryInsert): Promise<string> => insertFinancialEntry(newRecord),
-    onSuccess: (newId) => {
-      void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
-      void navigate({ to: '/app/financial-entries/$id', params: { id: newId } });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, record }: { readonly id: string; readonly record: FinancialEntryUpdate }): Promise<void> =>
-      updateFinancialEntry(id, record),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
-      void queryClient.invalidateQueries({ queryKey: ['financialEntry', entryId] });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string): Promise<void> => deleteFinancialEntry(id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
-      void queryClient.invalidateQueries({ queryKey: ['financialEntry', entryId] });
-      void navigate({ to: '/app/financial-entries' });
-    },
-  });
-
-  const doSubmit = (newRecord: FinancialEntryInsertInput): void =>
-    match(financialEntryInsertSchema.safeParse(newRecord))
-      .with({ success: true }, ({ data }) => {
-        const mismatch = leasePropertyMismatch(data.lease_id, data.property_id, formOptionsQuery.data ?? null);
-        setValidationError(mismatch);
-        match(mismatch)
-          .with(null, () =>
-            match(mode)
-              .with({ tag: 'create' }, () => insertMutation.mutate(data))
-              .with({ tag: 'edit' }, ({ id }) => updateMutation.mutate({ id, record: data }))
-              .exhaustive(),
-          )
-          .otherwise(() => undefined);
-      })
-      .with({ success: false }, ({ error }) => {
-        setValidationError(formatZodIssues(error));
-      })
-      .exhaustive();
-
-  const onEditStart = (): void => {
-    insertMutation.reset();
-    updateMutation.reset();
-    deleteMutation.reset();
-    setValidationError(null);
-  };
+  const { insertMutation, updateMutation, deleteMutation, validationError, doSubmit, onEditStart } =
+    useCrudMutations<FinancialEntryInsert>({
+      insertFn: (newRecord) => insertFinancialEntry(newRecord),
+      updateFn: (id, record) => updateFinancialEntry(id, record),
+      deleteFn: (id) => deleteFinancialEntry(id),
+      schema: financialEntryInsertSchema,
+      mode,
+      onAfterValidate: (record) =>
+        leasePropertyMismatch(record.lease_id ?? null, record.property_id ?? null, formOptionsQuery.data ?? null),
+      onInsertSuccess: (newId) => {
+        void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
+        void navigate({ to: '/app/financial-entries/$id', params: { id: newId } });
+      },
+      onUpdateSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
+        void queryClient.invalidateQueries({ queryKey: ['financialEntry', entryId] });
+      },
+      onDeleteSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: ['financialEntries'] });
+        void queryClient.invalidateQueries({ queryKey: ['financialEntry', entryId] });
+        void navigate({ to: '/app/financial-entries' });
+      },
+    });
 
   const deleteAction: FinancialEntryDeleteAction = match(mode)
     .with({ tag: 'create' }, () => ({ tag: 'absent' as const }))
@@ -294,18 +259,16 @@ export const FinancialEntryDetailM = ({ Slave, mode }: Props): JSX.Element => {
     void navigate({ to: '/app/financial-entries' });
   };
 
-  const submitState: SubmitState =
-    insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending
-      ? { tag: 'submitting' }
-      : validationError !== null
-        ? { tag: 'error', message: validationError }
-        : insertMutation.error !== null || updateMutation.error !== null
-          ? { tag: 'error', message: (insertMutation.error ?? updateMutation.error)?.message ?? 'Unknown error' }
-          : deleteMutation.error !== null
-            ? { tag: 'error', message: formatDeleteError(deleteMutation.error) }
-            : insertMutation.isSuccess || updateMutation.isSuccess
-              ? { tag: 'success' }
-              : { tag: 'idle' };
+  const submitState: SubmitState = deriveSubmitState({
+    isPending: insertMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    validationError,
+    insertError: insertMutation.error,
+    updateError: updateMutation.error,
+    deleteError: deleteMutation.error,
+    insertSuccess: insertMutation.isSuccess,
+    updateSuccess: updateMutation.isSuccess,
+    formatDeleteError: (error) => formatDbError(error, {}, FINANCIAL_DELETE_FALLBACK),
+  });
 
   const navLinkTo: NavLinkTo = {
     toProperty: ({ id: propertyId, content, style }) => <Link to="/app/properties/$id" params={{ id: propertyId }} style={style}>{content}</Link>,
