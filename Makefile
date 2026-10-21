@@ -30,18 +30,20 @@ setup: ## Install all dependencies and prepare .env
 
 # ── Development (full clean rebuild, cleanup on exit) ─────────────────────────
 
-dev: ## Full pure rebuild: start → reset DB → gen types → frontend → cleanup
+dev: ## Full pure rebuild: stop → start → reset DB → gen types → frontend → cleanup
 	@trap '$(MAKE) stop' INT TERM EXIT; \
-	echo "=== Starting Supabase ==="; \
-	(cd backend/supabase && npx supabase start); \
-	echo "=== Resetting database (migrations + seed) ==="; \
-	(cd backend/supabase && npx supabase db reset); \
-	echo "=== Generating database types ==="; \
-	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/backendConnector/__generated__/database.types.ts); \
-	echo "Types written to frontend/src/backendConnector/__generated__/database.types.ts"; \
-	echo "=== Ensuring frontend dependencies ==="; \
-	(cd frontend && npm install); \
-	echo "=== Starting frontend (Vite + Storybook) ==="; \
+	echo "=== Stopping any stale Supabase state ==="; \
+	(cd backend/supabase && npx supabase stop --no-backup 2>/dev/null || true); \
+	echo "=== Starting Supabase ===" && \
+	(cd backend/supabase && npx supabase start) && \
+	echo "=== Resetting database (migrations + seed) ===" && \
+	(cd backend/supabase && npx supabase db reset) && \
+	echo "=== Generating database types ===" && \
+	(cd backend/supabase && npx supabase gen types typescript --local > ../../frontend/src/backendConnector/__generated__/database.types.ts) && \
+	echo "Types written to frontend/src/backendConnector/__generated__/database.types.ts" && \
+	echo "=== Ensuring frontend dependencies ===" && \
+	(cd frontend && npm install) && \
+	echo "=== Starting frontend (Vite + Storybook) ===" && \
 	(cd frontend && { npm run storybook & npm run dev -- --open; })
 
 # ── Stop / Cleanup ────────────────────────────────────────────────────────────
